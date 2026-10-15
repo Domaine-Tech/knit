@@ -229,27 +229,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Barre de filtre rapide */}
       <div style={{ padding: '0 12px 8px 12px' }}>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            padding: '4px 8px',
-            backgroundColor: 'var(--knit-surface)',
-            border: '1px solid var(--knit-border)',
-            borderRadius: 'var(--knit-radius-sm)',
-          }}
-        >
+        <div className="knit-input-group">
           <DuotoneIcon name="search" size={12} style={{ color: 'var(--knit-text-muted)' }} />
           <input
             type="text"
+            className="knit-input-seamless"
             placeholder="Filtrer les notes..."
             value={filterText}
             onChange={(e) => setFilterText(e.target.value)}
             style={{
-              border: 'none',
-              outline: 'none',
-              background: 'transparent',
               width: '100%',
               fontSize: 12,
               color: 'var(--knit-text)',
@@ -269,6 +257,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <input
             autoFocus
             type="text"
+            className="knit-input"
             placeholder="nom-note.md..."
             value={newFileName}
             onChange={(e) => setNewFileName(e.target.value)}
@@ -277,13 +266,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             }}
             style={{
               width: '100%',
-              padding: '4px 8px',
-              backgroundColor: 'var(--knit-surface)',
-              border: '1px solid var(--knit-primary)',
-              borderRadius: 'var(--knit-radius-sm)',
-              fontSize: 12,
-              color: 'var(--knit-text)',
-              outline: 'none',
             }}
           />
         </form>

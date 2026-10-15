@@ -68,6 +68,14 @@ Toutes les interfaces collaboratives dans Knit doivent respecter les principes s
 - **Actions d'onglets** : *Fermer*, *Fermer les autres*, *Fermer à droite*, *Fermer tous les onglets*, *Figer l'aperçu*, *Rouvrir dernier fermé*, *Copier chemins*.
 - **Actions d'éditeur** : *Couper*, *Copier*, *Coller*, *Tout sélectionner*, *Rechercher / Remplacer*, *Sauvegarder*, *Révéler dans l'explorateur*, *Copier chemins*.
 
+## 10. Système de Formulaires Centralisé & Robustesse Événements (`forms.css`)
+- **Centralisation (`forms.css`)** : Ne jamais styliser d'inputs ou boutons de manière isolée avec des classes ad-hoc. Utiliser les composants et classes standards (`.knit-input`, `.knit-input-group`, `.knit-input-seamless`, `.knit-checkbox`, `.knit-label`, `.knit-btn`, `.knit-btn-primary`).
+- **Focus Rings & Tokens** : Les focus rings utilisent strictement `--knit-primary` et `--knit-primary-alpha`. Les checkboxes utilisent une coche SVG blanche sur fond d'accentuation `--knit-primary`.
+- **Robustesse du clic molette (`button === 1`)** :
+  - `onMouseDown` : Réserver à `if (e.button === 1) e.preventDefault()` pour empêcher le curseur de boussole de défilement (compass scroll).
+  - `onAuxClick` : Placer l'action applicative unique ici (ex: ouverture de note, fermeture d'onglet). Ne jamais appeler l'action métier dans les deux événements.
+  - `toastStore` : Dédoublonnage automatique des toasts identiques émis à moins de 400ms d'intervalle.
+
 
 
 

@@ -182,6 +182,7 @@ export const TabBar: React.FC<TabBarProps> = ({ tabs, activeTabId, onNewNote }) 
   return (
     <div
       onContextMenu={handleBarContextMenu}
+      onMouseDown={handleMouseDown}
       style={{
         display: 'flex',
         alignItems: 'center',

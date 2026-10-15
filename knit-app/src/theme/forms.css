@@ -44,6 +44,36 @@ input::placeholder,
   color: var(--knit-text-muted);
 }
 
+/* Champs texte intégrés / sans bordure (pour groupes de recherche avec icône) */
+.knit-input-seamless,
+input.knit-input-seamless,
+.knit-input-seamless:focus,
+input.knit-input-seamless:focus {
+  border: none !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
+  padding: 0 !important;
+  height: auto !important;
+}
+
+/* Groupe de saisie avec icône intégrée */
+.knit-input-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background-color: var(--knit-surface);
+  border: 1px solid var(--knit-border);
+  border-radius: var(--knit-radius-sm);
+  transition: border-color var(--knit-transition-fast),
+              box-shadow var(--knit-transition-fast);
+}
+
+.knit-input-group:focus-within {
+  border-color: var(--knit-primary) !important;
+  box-shadow: 0 0 0 2px var(--knit-primary-alpha) !important;
+}
+
 /* === 2. CASES À COCHER (CHECKBOXES SUR-MESURE) === */
 input[type="checkbox"],
 .knit-checkbox {
