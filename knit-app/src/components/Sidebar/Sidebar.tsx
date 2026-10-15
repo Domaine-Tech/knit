@@ -38,8 +38,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       .map((node) => {
         if (node.is_dir) {
           const matchingChildren = filterNodes(node.children, query);
-          if (matchingChildren.length > 0 || node.name.toLowerCase().includes(lower)) {
+          if (matchingChildren.length > 0) {
             return { ...node, children: matchingChildren };
+          }
+          if (node.name.toLowerCase().includes(lower)) {
+            return node;
           }
           return null;
         } else {
@@ -237,6 +240,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
             placeholder="Filtrer les notes..."
             value={filterText}
             onChange={(e) => setFilterText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') setFilterText('');
+            }}
             style={{
               width: '100%',
               fontSize: 12,
@@ -289,17 +295,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
               color: 'var(--knit-text-muted)',
             }}
           >
-            {filterText ? 'Aucun résultat' : 'Coffre vide'}
+            {filterText ? `Aucun résultat pour "${filterText}"` : 'Coffre vide'}
           </div>
         ) : (
           filtered.map((node) => (
             <TreeNode
-              key={`${node.id}-${treeKey}`}
+              key={`${node.id}-${treeKey}-${Boolean(filterText.trim())}`}
               node={node}
               activePath={activePath}
               onSelectFile={onSelectFile}
               onMiddleClickFile={onMiddleClickFile}
-              defaultExpanded={isAllExpanded}
+              defaultExpanded={isAllExpanded || Boolean(filterText.trim())}
+              searchQuery={filterText.trim()}
             />
           ))
         )}

@@ -12,7 +12,45 @@ interface TreeNodeProps {
   onMiddleClickFile: (path: string) => void;
   depth?: number;
   defaultExpanded?: boolean;
+  searchQuery?: string;
 }
+
+// Surlignage discret et élégant des termes recherchés selon les tokens Knit
+const HighlightedText: React.FC<{ text: string; query?: string }> = ({ text, query }) => {
+  if (!query || !query.trim()) {
+    return <>{text}</>;
+  }
+
+  const q = query.trim().toLowerCase();
+  const lower = text.toLowerCase();
+  const index = lower.indexOf(q);
+
+  if (index === -1) {
+    return <>{text}</>;
+  }
+
+  const before = text.slice(0, index);
+  const match = text.slice(index, index + q.length);
+  const after = text.slice(index + q.length);
+
+  return (
+    <>
+      {before}
+      <mark
+        style={{
+          backgroundColor: 'var(--knit-primary-alpha)',
+          color: 'var(--knit-primary)',
+          fontWeight: 700,
+          borderRadius: 'var(--knit-radius-xs)',
+          padding: '0 2px',
+        }}
+      >
+        {match}
+      </mark>
+      <HighlightedText text={after} query={query} />
+    </>
+  );
+};
 
 export const TreeNode: React.FC<TreeNodeProps> = ({
   node,
@@ -21,14 +59,22 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
   onMiddleClickFile,
   depth = 0,
   defaultExpanded = false,
+  searchQuery = '',
 }) => {
   // Par défaut sur les gros coffres, les dossiers commencent FERMÉS
-  // Sauf si le fichier actif en cours d'édition se trouve dans ce sous-dossier ou si Déplier tout est actif
+  // Sauf si le fichier actif en cours d'édition se trouve dans ce sous-dossier,
+  // ou si "Déplier tout" est actif, ou si une recherche est en cours
   const isAncestorOfActive = Boolean(
     activePath && node.is_dir && (activePath === node.path || activePath.startsWith(node.path + '/'))
   );
 
-  const [isOpen, setIsOpen] = useState(() => defaultExpanded || isAncestorOfActive);
+  const isSearchActive = Boolean(searchQuery && searchQuery.trim().length > 0);
+  const [isManualOpen, setIsManualOpen] = useState<boolean | null>(null);
+
+  // Déplié si l'utilisateur a explicitement cliqué, sinon auto : recherche active, "Déplier tout" ou parent de la note active
+  const isOpen = isManualOpen !== null
+    ? isManualOpen
+    : Boolean(defaultExpanded || isAncestorOfActive || isSearchActive);
 
   const isSelected = !node.is_dir && node.path === activePath;
 
@@ -51,7 +97,7 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (node.is_dir) {
-      setIsOpen(!isOpen);
+      setIsManualOpen(!isOpen);
     } else {
       // Simple clic -> aperçu
       onSelectFile(node.path, true);
@@ -79,7 +125,7 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
           id: 'toggle-dir',
           label: isOpen ? 'Replier le dossier' : 'Déplier le dossier',
           icon: isOpen ? 'chevron-down' : 'chevron-right',
-          onClick: () => setIsOpen(!isOpen),
+          onClick: () => setIsManualOpen(!isOpen),
         },
         { id: 'div-dir-1', divider: true },
         {
@@ -93,7 +139,7 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
               const relPath = `${node.path}/${cleanName}`;
               vaultStore.createFile(relPath, `# ${cleanName.replace(/\.md$/, '')}\n\n`).then(() => {
                 onSelectFile(relPath, false);
-                setIsOpen(true);
+                setIsManualOpen(true);
                 toast.success('Note créée', relPath);
               });
             }
@@ -108,7 +154,7 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
             if (dirName && dirName.trim()) {
               const relPath = `${node.path}/${dirName.trim()}`;
               vaultStore.createDir(relPath).then(() => {
-                setIsOpen(true);
+                setIsManualOpen(true);
                 toast.success('Dossier créé', relPath);
               });
             }
@@ -263,7 +309,7 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
             />
             <DuotoneIcon name={isOpen ? 'folder-open' : 'folder'} size={15} />
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {node.name}
+              <HighlightedText text={node.name} query={searchQuery} />
             </span>
           </>
         ) : (
@@ -271,7 +317,7 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
             <span style={{ width: 12 }} />
             <DuotoneIcon name="file-markdown" size={14} />
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-              {node.name}
+              <HighlightedText text={node.name} query={searchQuery} />
             </span>
           </>
         )}
@@ -288,6 +334,7 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
               onMiddleClickFile={onMiddleClickFile}
               depth={depth + 1}
               defaultExpanded={defaultExpanded}
+              searchQuery={searchQuery}
             />
           ))}
         </div>
