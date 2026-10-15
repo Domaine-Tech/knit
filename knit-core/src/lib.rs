@@ -81,18 +81,25 @@ mod tests {
         // Fichiers autorisés
         vault::tree::create_file(vault_root, "note.md", None).expect("create note.md");
         vault::tree::create_file(vault_root, "doc.markdown", None).expect("create doc.markdown");
-        vault::tree::create_file(vault_root, ".knitshare", Some("vault_name: test")).expect("create .knitshare");
         vault::tree::create_file(vault_root, "KNIT.md", Some("instructions")).expect("create KNIT.md");
 
-        // Fichier ignoré (binaire, non supporté)
+        // Fichiers et dossiers cachés (commençant par '.') ignorés
+        vault::tree::create_file(vault_root, ".knitshare", Some("vault_name: test")).expect("create .knitshare");
+        vault::tree::create_file(vault_root, ".gitignore", Some("target/")).expect("create .gitignore");
+        vault::tree::create_dir(vault_root, ".cursor").expect("create .cursor dir");
+        vault::tree::create_file(vault_root, ".cursor/rule.md", None).expect("create inside .cursor");
+
+        // Fichier binaire ignoré
         std::fs::write(vault_root.join("image.png"), b"binary").expect("write image.png");
 
         let tree = vault::tree::read_vault_tree(vault_root).expect("read tree");
         let names: Vec<String> = tree.into_iter().map(|n| n.name).collect();
         assert!(names.contains(&"note.md".to_string()));
         assert!(names.contains(&"doc.markdown".to_string()));
-        assert!(names.contains(&".knitshare".to_string()));
         assert!(names.contains(&"KNIT.md".to_string()));
+        assert!(!names.contains(&".knitshare".to_string()));
+        assert!(!names.contains(&".gitignore".to_string()));
+        assert!(!names.contains(&".cursor".to_string()));
         assert!(!names.contains(&"image.png".to_string()));
     }
 }

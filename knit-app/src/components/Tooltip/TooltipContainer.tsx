@@ -44,7 +44,7 @@ export const TooltipContainer: React.FC = () => {
       if (!text) return;
 
       const shortcut = target.getAttribute('data-shortcut') || undefined;
-      const preferredPos = (target.getAttribute('data-tooltip-pos') as TooltipState['position']) || 'bottom';
+      const preferredPos = (target.getAttribute('data-tooltip-pos') as TooltipState['position']) || 'top';
 
       lastTargetRef.current = target;
 
@@ -61,21 +61,34 @@ export const TooltipContainer: React.FC = () => {
 
         let pos = preferredPos;
         let x = rect.left + rect.width / 2;
-        let y = rect.bottom + 6;
+        let y = rect.top - 8;
 
-        if (pos === 'top' || (pos === 'bottom' && rect.bottom + 36 > window.innerHeight)) {
-          pos = 'top';
-          y = rect.top - 6;
-        } else if (pos === 'bottom' && rect.top < 36) {
-          pos = 'bottom';
-          y = rect.bottom + 6;
+        if (pos === 'top') {
+          // Si trop près du bord supérieur de la fenêtre, basculer proprement en dessous
+          if (rect.top - 36 < 0) {
+            pos = 'bottom';
+            y = rect.bottom + 8;
+          } else {
+            y = rect.top - 8;
+          }
+        } else if (pos === 'bottom') {
+          // Si trop près du bord inférieur, basculer au-dessus
+          if (rect.bottom + 36 > window.innerHeight) {
+            pos = 'top';
+            y = rect.top - 8;
+          } else {
+            y = rect.bottom + 8;
+          }
         } else if (pos === 'left') {
-          x = rect.left - 6;
+          x = rect.left - 8;
           y = rect.top + rect.height / 2;
         } else if (pos === 'right') {
-          x = rect.right + 6;
+          x = rect.right + 8;
           y = rect.top + rect.height / 2;
         }
+
+        // Évite le débordement horizontal hors de la fenêtre
+        x = Math.max(70, Math.min(window.innerWidth - 70, x));
 
         setState({
           text,

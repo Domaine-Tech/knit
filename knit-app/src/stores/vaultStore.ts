@@ -28,13 +28,6 @@ const DEMO_FILES: FileNode[] = [
     children: [],
   },
   {
-    id: '.knitshare',
-    name: '.knitshare',
-    path: '.knitshare',
-    is_dir: false,
-    children: [],
-  },
-  {
     id: 'KNIT.md',
     name: 'KNIT.md',
     path: 'KNIT.md',

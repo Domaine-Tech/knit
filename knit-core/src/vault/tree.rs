@@ -97,9 +97,8 @@ fn read_dir_recursive(vault_root: &Path, current_dir: &Path) -> Result<Vec<FileN
         let path = entry.path();
         let name = entry.file_name().to_string_lossy().to_string();
 
-        // Dossiers et fichiers ignorés (système, versioning, caches)
-        if name.starts_with(".git")
-            || name == ".knit"
+        // Dossiers et fichiers ignorés (fichiers/dossiers cachés commençant par '.', caches, build)
+        if name.starts_with('.')
             || name == "target"
             || name == "node_modules"
             || name == "dist"
@@ -124,12 +123,11 @@ fn read_dir_recursive(vault_root: &Path, current_dir: &Path) -> Result<Vec<FileN
             });
         } else if file_type.is_file() {
             let ext = path.extension().map(|e| e.to_string_lossy().to_string());
-            // Nous affichons les fichiers Markdown .md, .markdown, .txt et les fichiers techniques comme .knitshare
+            // Nous affichons les fichiers Markdown .md, .markdown, .txt et les fichiers autorisés comme KNIT.md
             let is_md_or_text = ext
                 .as_ref()
                 .map(|e| e.eq_ignore_ascii_case("md") || e.eq_ignore_ascii_case("markdown") || e.eq_ignore_ascii_case("txt"))
                 .unwrap_or(false)
-                || name == ".knitshare"
                 || name == "KNIT.md";
 
             if is_md_or_text {
