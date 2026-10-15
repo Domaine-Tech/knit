@@ -76,6 +76,15 @@ Toutes les interfaces collaboratives dans Knit doivent respecter les principes s
   - `onAuxClick` : Placer l'action applicative unique ici (ex: ouverture de note, fermeture d'onglet). Ne jamais appeler l'action métier dans les deux événements.
   - `toastStore` : Dédoublonnage automatique des toasts identiques émis à moins de 400ms d'intervalle.
 
+## 11. Tooltips Modernes (`TooltipContainer`) & Lisibilité des Icônes
+- **Infobulles réactives & sobres** :
+  - Ne jamais utiliser le comportement natif du système d'exploitation. Utiliser `<Tooltip>` ou les attributs `data-tooltip="Texte"` et `data-shortcut="Ctrl+X"`.
+  - Le `TooltipContainer` global intercepte automatiquement tout attribut `title` pour supprimer le popup natif de l'OS et extraire les raccourcis dans un badge `<kbd>`.
+  - Rendu épuré : fond `--knit-surface`, bordure fine `--knit-border`, ombre douce `--knit-shadow-md`, délai court (220ms au premier survol, 40ms en transition continue).
+- **Tracés vectoriels des icônes (`DuotoneIcon`)** :
+  - Les icônes d'actions à 14px doivent avoir un tracé contrasté (strokeWidth >= 40 en viewBox 512).
+  - Éviter les lignes parallèles trop rapprochées ou les chevrons fermés qui forment des pâtés de pixels à petite échelle. Privilégier des angles orthogonaux à 90° et des flèches franches.
+
 
 
 

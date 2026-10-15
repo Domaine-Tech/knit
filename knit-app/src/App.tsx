@@ -5,6 +5,7 @@ import { TabBar } from './components/Tabs/TabBar';
 import { Editor } from './components/Editor/Editor';
 import { ToastContainer } from './components/Toast/ToastContainer';
 import { ContextMenuContainer } from './components/ContextMenu/ContextMenuContainer';
+import { TooltipContainer } from './components/Tooltip/TooltipContainer';
 import type { ThemeMode } from './theme/theme';
 import {
   getStoredTheme,
@@ -302,6 +303,9 @@ export const App: React.FC = () => {
 
       {/* Menu contextuel centralisé */}
       <ContextMenuContainer />
+
+      {/* Tooltips modernes et unifiés */}
+      <TooltipContainer />
     </div>
   );
 };

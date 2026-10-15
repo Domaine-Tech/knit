@@ -194,22 +194,37 @@ export const DuotoneIcon: React.FC<DuotoneIconProps> = ({
       case 'sync':
         return (
           <>
+            <circle cx="256" cy="256" r="44" fill={secondaryFill} fillOpacity="0.25" />
             <path
-              d="M400 256 C400 335.5 335.5 400 256 400 C194 400 141 360.7 121 306"
+              d="M106 256 C106 173 173 106 256 106 C320 106 375 146 396 202"
               fill="none"
               stroke={primaryStroke}
-              strokeWidth="32"
+              strokeWidth="40"
               strokeLinecap="round"
             />
-            <polyline points="100,230 120,310 200,290" fill="none" stroke={primaryStroke} strokeWidth="32" strokeLinecap="round" strokeLinejoin="round" />
-            <path
-              d="M112 256 C112 176.5 176.5 112 256 112 C318 112 371 151.3 391 206"
+            <polyline
+              points="426,132 400,212 320,186"
               fill="none"
               stroke={primaryStroke}
-              strokeWidth="32"
+              strokeWidth="40"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M406 256 C406 339 339 406 256 406 C192 406 137 366 116 310"
+              fill="none"
+              stroke={primaryStroke}
+              strokeWidth="40"
               strokeLinecap="round"
             />
-            <polyline points="412,282 392,202 312,222" fill="none" stroke={primaryStroke} strokeWidth="32" strokeLinecap="round" strokeLinejoin="round" />
+            <polyline
+              points="86,380 112,300 192,326"
+              fill="none"
+              stroke={primaryStroke}
+              strokeWidth="40"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </>
         );
 

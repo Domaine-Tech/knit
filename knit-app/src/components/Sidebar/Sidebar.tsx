@@ -196,7 +196,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--knit-text)')}
             onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--knit-text-secondary)')}
           >
-            <DuotoneIcon name={isAllExpanded ? 'collapse-all' : 'expand-all'} size={13} />
+            <DuotoneIcon name={isAllExpanded ? 'collapse-all' : 'expand-all'} size={14} />
           </button>
           <button
             onClick={() => setIsCreatingFile(true)}
@@ -222,7 +222,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--knit-text)')}
             onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--knit-text-secondary)')}
           >
-            <DuotoneIcon name="sync" size={13} />
+            <DuotoneIcon name="sync" size={14} />
           </button>
         </div>
       </div>

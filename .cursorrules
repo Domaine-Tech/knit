@@ -39,6 +39,9 @@ Pour toute modification du frontend React (`knit-app`) :
 - **Design System des Formulaires (`src/theme/forms.css`) & Robustesse Clic Molette** :
   - **Zéro composant de formulaire natif dépareillé** : Tous les `input`, `checkbox`, `button` et labels doivent utiliser les classes et variables de `forms.css` (`.knit-input`, `.knit-input-group`, `.knit-input-seamless`, `.knit-checkbox`, `.knit-label`, `.knit-btn`).
   - **Conventions Clic Molette (`button === 1`)** : Toujours neutraliser le curseur boussole navigateur via `if (e.button === 1) e.preventDefault()` dans `onMouseDown`, et placer exclusivement l'action applicative (ouvrir note, fermer onglet) dans `onAuxClick` pour éviter tout double déclenchement. Le `toastStore` déduplique automatiquement les toasts identiques < 400ms.
+- **Tooltips Modernes & Rendu des Icônes** :
+  - **Interdiction des infobulles OS par défaut** : Utiliser le composant `<Tooltip>` ou les attributs `data-tooltip="Texte"` et `data-shortcut="Ctrl+X"`. Le conteneur global `TooltipContainer` intercepte automatiquement tout attribut `title` et extrait les raccourcis dans un badge `<kbd>`.
+  - **Lisibilité des icônes à 14px** : Dans `DuotoneIcon`, veiller à ce que les tracés vectoriels à petite échelle utilisent un `strokeWidth` lisible (>= 40) et des têtes de flèches franches et contrastées pour éliminer tout flou de pixellisation.
 
 ---
 

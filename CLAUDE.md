@@ -27,5 +27,8 @@ Knit est une application collaborative local-first et peer-to-peer (P2P) pour la
 7. **Formulaires Centralisés & Robustesse des Événements Souris** :
    - Tout champ de formulaire (`input`, `checkbox`, `button`, `label`) doit utiliser le système centralisé défini dans `src/theme/forms.css` et les tokens Knit. Interdiction des éléments de formulaires natifs dépareillés.
    - Clic molette (`e.button === 1`) : Toujours bloquer la boussole de défilement navigateur avec `if (e.button === 1) e.preventDefault()` dans `onMouseDown`, et placer exclusivement l'action métier dans `onAuxClick` pour éliminer tout double déclenchement.
+8. **Tooltips Modernes & Netteté des Icônes** :
+   - Ne jamais recourir aux infobulles natives de l'OS. Utiliser le composant `<Tooltip>` ou les attributs `data-tooltip="Action"` et `data-shortcut="Ctrl+X"`. Le `TooltipContainer` global intercepte automatiquement les attributs `title` et extrait les raccourcis en badges `<kbd>`.
+   - Les tracés d'icônes (`DuotoneIcon`) doivent être ultra-lisibles aux petites tailles (14px) avec des traits nets et des têtes de flèches bien découpées.
 
 
