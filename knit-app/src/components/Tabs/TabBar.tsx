@@ -15,13 +15,10 @@ interface TabBarProps {
 export const TabBar: React.FC<TabBarProps> = ({ tabs, activeTabId, onNewNote }) => {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
-  // Gestion du clic molette (middle click: button === 1)
-  const handleMouseDown = (e: React.MouseEvent, tabId: string) => {
+  // Empêche l'icône de scroll compass sur clic molette (la fermeture est gérée par onAuxClick)
+  const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button === 1) {
-      // Clic molette -> Fermer immédiatement l'onglet
       e.preventDefault();
-      e.stopPropagation();
-      tabStore.closeTab(tabId);
     }
   };
 
@@ -215,7 +212,7 @@ export const TabBar: React.FC<TabBarProps> = ({ tabs, activeTabId, onNewNote }) 
               onDragStart={() => handleDragStart(index)}
               onDragOver={handleDragOver}
               onDrop={() => handleDrop(index)}
-              onMouseDown={(e) => handleMouseDown(e, tab.id)}
+              onMouseDown={handleMouseDown}
               onContextMenu={(e) => handleTabContextMenu(e, tab, index)}
               onAuxClick={(e) => {
                 if (e.button === 1) {

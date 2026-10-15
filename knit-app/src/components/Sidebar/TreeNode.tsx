@@ -33,16 +33,15 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
   const isSelected = !node.is_dir && node.path === activePath;
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (!node.is_dir && e.button === 1) {
-      // Clic molette sur fichier -> ouvrir en nouvel onglet permanent en arrière-plan
+    if (e.button === 1) {
+      // Empêche l'icône de défilement automatique (compass scroll wheel) du navigateur
       e.preventDefault();
-      e.stopPropagation();
-      onMiddleClickFile(node.path);
     }
   };
 
   const handleAuxClick = (e: React.MouseEvent) => {
     if (!node.is_dir && e.button === 1) {
+      // Clic molette sur fichier -> ouvrir en nouvel onglet permanent en arrière-plan (une seule fois)
       e.preventDefault();
       e.stopPropagation();
       onMiddleClickFile(node.path);

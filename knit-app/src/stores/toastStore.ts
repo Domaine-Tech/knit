@@ -32,11 +32,25 @@ class ToastStore {
   }
 
   public show(toast: Omit<ToastItem, 'id' | 'createdAt'>): string {
-    const id = `toast-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const now = Date.now();
+
+    // Protection anti-doublon immédiat (< 400ms pour le même type/titre/message)
+    const recentDuplicate = this.toasts.find(
+      (t) =>
+        t.title === toast.title &&
+        t.message === toast.message &&
+        t.type === toast.type &&
+        now - t.createdAt < 400
+    );
+    if (recentDuplicate) {
+      return recentDuplicate.id;
+    }
+
+    const id = `toast-${now}-${Math.random().toString(36).substring(2, 7)}`;
     const newItem: ToastItem = {
       ...toast,
       id,
-      createdAt: Date.now(),
+      createdAt: now,
     };
 
     // Si on dépasse le max, on retire le plus ancien
