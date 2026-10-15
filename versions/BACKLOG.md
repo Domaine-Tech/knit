@@ -31,6 +31,7 @@
 | B-001 | Scaffolder le projet Tauri v2 + React | 🔴 | 📋 | Sprint 1 |
 | B-002 | Intégrer CodeMirror 6 avec `@codemirror/lang-markdown` | 🔴 | 📋 | Sprint 1 |
 | B-003 | Créer le composant Sidebar (arbre de fichiers) | 🟠 | 📋 | Sprint 1 |
+| B-003b | Système d'onglets (Multi-tabs, clic molette open/close, drag & drop, Ctrl+W/Tab) | 🔴 | 📋 | Sprint 1 |
 | B-004 | Implémenter la lecture/écriture de fichiers via Tauri IPC | 🔴 | 📋 | Sprint 1 |
 | B-005 | Créer le Design Token System (CSS variables) | 🟠 | 📋 | Sprint 1 |
 | B-006 | Implémenter le thème clair/sombre + slider hue | 🟡 | 📋 | Sprint 1 |

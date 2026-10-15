@@ -86,6 +86,54 @@ Pour garantir que l'application ne dégage **jamais** la sensation d'un template
 4. **Keyboard-First absolu** :
    - Une application professionnelle se pilote aux raccourcis clavier. Si une action nécessite 4 clics de souris, l'UX a échoué.
 
+---
+
+## 📑 Système d'Onglets & Conventions Universelles (Souris & Clavier)
+
+Knit intègre un système multi-onglets ultra-rapide respectant **100% des conventions universelles** des navigateurs modernes et des meilleurs IDE (VS Code, Obsidian, Chrome).
+
+```
+┌──────┬──────────────────────┬──────────────────────┬──────┐
+│  📌  │ 📄 architecture.md × │ 📄 accueil.md      × │  +   │
+└──────┴──────────────────────┴──────────────────────┴──────┘
+```
+
+### 1. Conventions Souris (Comportement Naturel & Molette)
+
+| Action Souris | Cible | Effet attendu |
+|---|---|---|
+| **Clic gauche simple** | Fichier dans l'arbre | Ouvre en mode **Aperçu** (*titre en italique*). Cliquer sur un autre fichier réutilise cet onglet sans en empiler 50 |
+| **Double-clic** | Fichier dans l'arbre | Fige l'onglet en mode **Permanent** (*titre droit*) |
+| **Clic Molette (Middle Click)** | Fichier dans l'arbre | **Ouvre immédiatement dans un nouvel onglet** en arrière-plan sans remplacer l'onglet actuel |
+| **Clic Molette (Middle Click)** | Sur un onglet | **Ferme immédiatement l'onglet** (standard universel Chrome/Firefox/VS Code) |
+| **Clic gauche sur `×`** | Bouton croix de l'onglet | Ferme l'onglet |
+| **Double-clic** | Zone vide de la barre d'onglets | Crée une nouvelle note vierge (`Ctrl+N`) |
+| **Glisser-Déposer (Drag & Drop)** | Onglet | Réorganise l'ordre des onglets horizontalement |
+| **Glisser vers le bord** | Onglet | **Scinde la vue (Split View)** à droite ou en bas pour afficher 2 notes côte à côte |
+| **Clic droit** | Sur un onglet | **Menu contextuel** complet (Fermer, Fermer les autres, Fermer à droite, Épingler, Copier le chemin) |
+
+### 2. Raccourcis Clavier Universels (Keyboard-First)
+
+| Raccourci | Action |
+|---|---|
+| **`Ctrl + W`** | Fermer l'onglet actif |
+| **`Ctrl + Shift + T`** | **Rouvrir le dernier onglet fermé** (historique de réouverture) |
+| **`Ctrl + Tab`** | Passer à l'onglet suivant |
+| **`Ctrl + Shift + Tab`** | Revenir à l'onglet précédent |
+| **`Ctrl + 1` à `Ctrl + 8`** | Sauter directement à l'onglet 1 à 8 |
+| **`Ctrl + 9`** | Sauter au dernier onglet de la barre |
+| **`Ctrl + T`** ou **`Ctrl + N`** | Ouvrir un nouvel onglet / nouvelle note |
+| **`Ctrl + \`** | Diviser la vue en deux panneaux verticaux (Split View) |
+| **`Ctrl + Clic`** | Sur un WikiLink `[[...]]` ou un fichier : ouvre dans un nouvel onglet |
+
+### 3. Anatomie Visuelle & États des Onglets
+- **Onglet Actif** : surface opaque nette (`--knit-surface`), bordure inférieure ou supérieure fine de 2px liée à `--knit-primary`, texte à 100% d'opacité.
+- **Onglet Inactif** : fond discret (`--knit-bg`), texte atténué (`--knit-text-secondary`). Au survol : passage fluide en `--knit-surface-hover`.
+- **Onglet Épinglé (Pinned Tab)** : réduit à une icône ou un pictogramme fixe tout à gauche, sans bouton de fermeture accidentelle.
+- **Indicateur de modifications / Présence** :
+  - Si un collaborateur ou un agent IA édite ce document en arrière-plan : petite pastille de couleur miniature discrète sur le bord de l'onglet.
+
+
 
 ---
 

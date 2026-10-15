@@ -10,6 +10,10 @@
 - **Scaffolding de l'application** : Tauri v2 avec frontend React + TypeScript.
 - **Éditeur Markdown brut** : Intégration de CodeMirror 6 avec `@codemirror/lang-markdown` sans perte de formattage.
 - **Explorateur de coffre-fort** : Sidebar avec arborescence des fichiers et dossiers locaux.
+- **Système Multi-Onglets (Tabs)** :
+  - Clic molette sur un fichier de la sidebar : ouverture directe dans un nouvel onglet.
+  - Clic molette sur un onglet : fermeture instantanée (`Ctrl+W`).
+  - Mode aperçu (*preview*) vs permanent, réorganisation par drag-and-drop et raccourcis universels (`Ctrl+Tab`, `Ctrl+Shift+T`).
 - **Design System sobre & arrondi** : Variables CSS unifiées, thème clair/sombre, personnalisation de la teinte primaire (`--knit-hue`).
 - **Iconographie Reicon Duotone** : Icônes vectorielles légères avec coloration dynamique de la seconde couche selon la teinte active.
 - **Système de Toast centralisé** : Notifications non intrusives en bas à droite (info, warning, error, success, sync animé) avec empilement fluide.

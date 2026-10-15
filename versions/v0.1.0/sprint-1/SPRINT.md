@@ -17,6 +17,7 @@
 | B-001 | Scaffolder le projet Tauri v2 + React + TypeScript | 🔴 | 📋 | — |
 | B-002 | Intégrer CodeMirror 6 avec `@codemirror/lang-markdown` | 🔴 | 📋 | — |
 | B-003 | Créer le composant Sidebar (arbre récursif de fichiers `.md`) | 🟠 | 📋 | — |
+| B-003b | Système d'onglets (Multi-tabs, clic molette open/close, drag & drop, Ctrl+W/Tab) | 🔴 | 📋 | — |
 | B-004 | Implémenter la lecture/écriture de fichiers via commandes Tauri IPC | 🔴 | 📋 | — |
 | B-005 | Créer le Design Token System (variables CSS HSL, rayons arrondis) | 🟠 | 📋 | — |
 | B-006 | Implémenter le thème clair/sombre + slider interactif `--knit-hue` | 🟡 | 📋 | — |
@@ -30,7 +31,9 @@
 - [ ] L'application démarre rapidement (< 1s) sous Windows et Linux.
 - [ ] On peut sélectionner un dossier local via une boîte de dialogue native.
 - [ ] L'arbre affiche l'ensemble des fichiers `.md` du dossier sélectionné.
-- [ ] Cliquer sur un fichier l'ouvre dans CodeMirror 6 avec coloration syntaxique Markdown.
+- [ ] Cliquer sur un fichier l'ouvre dans un onglet (mode aperçu ou permanent).
+- [ ] Le clic molette sur un fichier de la sidebar l'ouvre dans un nouvel onglet permanent.
+- [ ] Le clic molette sur un onglet ferme immédiatement l'onglet (`Ctrl+W`).
 - [ ] Sauvegarder (`Ctrl+S` ou auto-save) écrit le contenu exact sur le disque.
 - [ ] Le slider de couleur ajuste instantanément l'accent de l'application sans rechargement.
 - [ ] Les icônes Reicon en mode Duotone intègrent la couleur primaire dynamiquement.

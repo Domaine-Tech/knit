@@ -44,3 +44,11 @@ Toutes les interfaces collaboratives dans Knit doivent respecter les principes s
 - **Micro-contrastes au lieu d'ombres massives** : Utiliser des bordures nettes de 1px (`var(--knit-border)`) et de faibles ombres légères.
 - **Transitions instantanées** : Durée de transition de 80ms à 150ms. Pas d'effets élastiques ou d'animations gadget qui ralentissent l'utilisateur.
 
+## 7. Système d'Onglets & Conventions Molette / Clavier
+- **Clic molette sur fichier (sidebar)** : ouvrir dans un nouvel onglet permanent.
+- **Clic molette sur onglet** : fermer immédiatement l'onglet.
+- **Aperçu vs Permanent** : simple clic = onglet aperçu (remplaçable) ; double-clic ou frappe = permanent.
+- **Raccourcis essentiels** : `Ctrl+W` (fermer), `Ctrl+Shift+T` (rouvrir dernier fermé), `Ctrl+Tab` (suivant), `Ctrl+\` (split).
+- **Glisser-déposer d'onglets** : réordonnancement fluide et split view par glissement vers les bordures.
+
+
