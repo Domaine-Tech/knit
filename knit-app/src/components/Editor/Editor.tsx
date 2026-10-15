@@ -62,7 +62,11 @@ export const Editor: React.FC<EditorProps> = ({
         borderLeftColor: 'var(--knit-primary)',
         borderLeftWidth: '2px',
       },
-      '&.cm-focused .cm-selectionBackground, ::selection': {
+      /* Sélection active ou inactive : toujours à la couleur d'accent du client */
+      '.cm-selectionBackground, &.cm-focused .cm-selectionBackground, .cm-selectionLayer .cm-selectionBackground': {
+        backgroundColor: 'var(--knit-primary-alpha) !important',
+      },
+      '& ::selection, ::selection': {
         backgroundColor: 'var(--knit-primary-alpha) !important',
       },
       '.cm-gutters': {
@@ -214,6 +218,32 @@ export const Editor: React.FC<EditorProps> = ({
         customKeymap,
         keymap.of([...searchKeymap, ...historyKeymap, ...defaultKeymap]),
         knitEditorTheme,
+        EditorView.domEventHandlers({
+          mousedown: (event, view) => {
+            if (event.button === 2) {
+              const sel = view.state.selection.main;
+              if (!sel.empty) {
+                // Si tout le document est sélectionné (ex: Tout sélectionner)
+                if (sel.from === 0 && sel.to === view.state.doc.length) {
+                  if (!view.hasFocus) {
+                    view.focus();
+                  }
+                  return true;
+                }
+
+                // Ou si le clic droit se situe dans la plage de sélection
+                const pos = view.posAtCoords({ x: event.clientX, y: event.clientY });
+                if (pos !== null && pos >= sel.from && pos <= sel.to) {
+                  if (!view.hasFocus) {
+                    view.focus();
+                  }
+                  return true;
+                }
+              }
+            }
+            return false;
+          },
+        }),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             const newText = update.state.doc.toString();
@@ -280,6 +310,7 @@ export const Editor: React.FC<EditorProps> = ({
                   view.dispatch({
                     changes: { from: sel.from, to: sel.to, insert: '' },
                   });
+                  view.focus();
                 }
               },
             },
@@ -290,6 +321,9 @@ export const Editor: React.FC<EditorProps> = ({
               shortcut: 'Ctrl+C',
               onClick: () => {
                 navigator.clipboard.writeText(selection);
+                if (view) {
+                  view.focus();
+                }
               },
             },
           ]
@@ -308,6 +342,7 @@ export const Editor: React.FC<EditorProps> = ({
                 changes: { from: sel.from, to: sel.to, insert: text },
                 selection: { anchor: sel.from + text.length },
               });
+              view.focus();
             }
           } catch {
             // Permission de presse-papier non accordée
@@ -321,6 +356,7 @@ export const Editor: React.FC<EditorProps> = ({
         shortcut: 'Ctrl+A',
         onClick: () => {
           if (view) {
+            view.focus();
             view.dispatch({
               selection: { anchor: 0, head: view.state.doc.length },
             });

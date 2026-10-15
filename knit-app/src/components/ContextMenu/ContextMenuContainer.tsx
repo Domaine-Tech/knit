@@ -108,6 +108,10 @@ export const ContextMenuContainer: React.FC = () => {
           <button
             key={item.id || `item-${index}`}
             disabled={isDisabled}
+            onMouseDown={(e) => {
+              // Évite de transférer le focus au bouton et de dé-focaliser l'éditeur
+              e.preventDefault();
+            }}
             onClick={() => {
               if (isDisabled) return;
               contextMenu.close();
