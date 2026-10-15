@@ -38,6 +38,7 @@
 | B-006 | Implémenter le thème clair/sombre + slider hue | 🟡 | ✅ | Sprint 1 |
 | B-006a | Intégrer les icônes Reicon (style Duotone) adaptées à `--knit-hue` | 🟠 | ✅ | Sprint 1 |
 | B-006b | Système de Toast centralisé (bottom-right, animations, store optimisé) | 🟠 | ✅ | Sprint 1 |
+| B-006c | Système de Menu Contextuel centralisé (clic droit personnalisé, désactivation natif) | 🟠 | ✅ | Sprint 1 |
 
 ### Sprint 2 — CRDT & File Watcher
 

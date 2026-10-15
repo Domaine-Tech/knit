@@ -6,6 +6,7 @@ import { markdown } from '@codemirror/lang-markdown';
 import { search, searchKeymap, openSearchPanel } from '@codemirror/search';
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
 import { tags } from '@lezer/highlight';
+import { contextMenu } from '../../stores/contextMenuStore';
 
 interface EditorProps {
   content: string;
@@ -246,8 +247,103 @@ export const Editor: React.FC<EditorProps> = ({
     }
   }, [content]);
 
+  const handleEditorContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const view = viewRef.current;
+    const selection = view
+      ? view.state.sliceDoc(
+          view.state.selection.main.from,
+          view.state.selection.main.to
+        )
+      : '';
+    const hasSelection = selection.length > 0;
+
+    contextMenu.show(e, [
+      {
+        id: 'cut',
+        label: 'Couper',
+        shortcut: 'Ctrl+X',
+        disabled: !hasSelection,
+        onClick: () => {
+          if (hasSelection && view) {
+            const sel = view.state.selection.main;
+            navigator.clipboard.writeText(selection);
+            view.dispatch({
+              changes: { from: sel.from, to: sel.to, insert: '' },
+            });
+          }
+        },
+      },
+      {
+        id: 'copy',
+        label: 'Copier',
+        icon: 'copy',
+        shortcut: 'Ctrl+C',
+        disabled: !hasSelection,
+        onClick: () => {
+          if (hasSelection) {
+            navigator.clipboard.writeText(selection);
+          }
+        },
+      },
+      {
+        id: 'paste',
+        label: 'Coller',
+        icon: 'clipboard',
+        shortcut: 'Ctrl+V',
+        onClick: async () => {
+          try {
+            const text = await navigator.clipboard.readText();
+            if (text && view) {
+              const sel = view.state.selection.main;
+              view.dispatch({
+                changes: { from: sel.from, to: sel.to, insert: text },
+                selection: { anchor: sel.from + text.length },
+              });
+            }
+          } catch {
+            // Permission de presse-papier non accordée
+          }
+        },
+      },
+      { id: 'div-editor-1', divider: true },
+      {
+        id: 'select-all',
+        label: 'Tout sélectionner',
+        shortcut: 'Ctrl+A',
+        onClick: () => {
+          if (view) {
+            view.dispatch({
+              selection: { anchor: 0, head: view.state.doc.length },
+            });
+          }
+        },
+      },
+      { id: 'div-editor-2', divider: true },
+      {
+        id: 'search',
+        label: 'Rechercher',
+        icon: 'search',
+        shortcut: 'Ctrl+F',
+        onClick: () => {
+          if (view) openSearchPanel(view);
+        },
+      },
+      {
+        id: 'save',
+        label: 'Sauvegarder',
+        icon: 'save',
+        shortcut: 'Ctrl+S',
+        onClick: () => onSaveRef.current(),
+      },
+    ]);
+  };
+
   return (
     <div
+      onContextMenu={handleEditorContextMenu}
       style={{
         flex: 1,
         height: '100%',

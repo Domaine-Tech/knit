@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import type { Tab } from '../../stores/tabStore';
 import { tabStore } from '../../stores/tabStore';
+import { vaultStore } from '../../stores/vaultStore';
+import { toast } from '../../stores/toastStore';
+import { contextMenu } from '../../stores/contextMenuStore';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 
 interface TabBarProps {
@@ -37,8 +40,78 @@ export const TabBar: React.FC<TabBarProps> = ({ tabs, activeTabId, onNewNote }) 
     setDraggedIndex(null);
   };
 
+  const handleTabContextMenu = (e: React.MouseEvent, tab: Tab) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    contextMenu.show(e, [
+      {
+        id: 'close',
+        label: 'Fermer',
+        icon: 'close',
+        shortcut: 'Ctrl+W',
+        onClick: () => tabStore.closeTab(tab.id),
+      },
+      {
+        id: 'close-others',
+        label: 'Fermer les autres onglets',
+        disabled: tabs.length <= 1,
+        onClick: () => tabStore.closeOtherTabs(tab.id),
+      },
+      { id: 'div-tab-1', divider: true },
+      ...(tab.isPreview
+        ? [
+            {
+              id: 'pin',
+              label: 'Figer l\'onglet (Mode permanent)',
+              icon: 'pin' as const,
+              onClick: () => tabStore.pinTab(tab.id),
+            },
+          ]
+        : []),
+      {
+        id: 'copy-path',
+        label: 'Copier le chemin du fichier',
+        icon: 'copy' as const,
+        onClick: () => {
+          navigator.clipboard.writeText(tab.path);
+          toast.info('Chemin copié', tab.path);
+        },
+      },
+      { id: 'div-tab-2', divider: true },
+      {
+        id: 'reopen-closed',
+        label: 'Rouvrir le dernier onglet fermé',
+        shortcut: 'Ctrl+Shift+T',
+        onClick: () => tabStore.reopenLastClosed((p) => vaultStore.readFile(p)),
+      },
+    ]);
+  };
+
+  const handleBarContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    contextMenu.show(e, [
+      {
+        id: 'new-note',
+        label: 'Nouvelle note',
+        icon: 'plus',
+        shortcut: 'Ctrl+N',
+        onClick: () => onNewNote?.(),
+      },
+      {
+        id: 'reopen-closed',
+        label: 'Rouvrir le dernier onglet fermé',
+        shortcut: 'Ctrl+Shift+T',
+        onClick: () => tabStore.reopenLastClosed((p) => vaultStore.readFile(p)),
+      },
+    ]);
+  };
+
   return (
     <div
+      onContextMenu={handleBarContextMenu}
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -70,6 +143,7 @@ export const TabBar: React.FC<TabBarProps> = ({ tabs, activeTabId, onNewNote }) 
               onDragOver={handleDragOver}
               onDrop={() => handleDrop(index)}
               onMouseDown={(e) => handleMouseDown(e, tab.id)}
+              onContextMenu={(e) => handleTabContextMenu(e, tab)}
               onAuxClick={(e) => {
                 if (e.button === 1) {
                   e.preventDefault();

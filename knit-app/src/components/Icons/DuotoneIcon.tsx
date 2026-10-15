@@ -21,7 +21,12 @@ export type IconName =
   | 'slider'
   | 'vault'
   | 'collapse-all'
-  | 'expand-all';
+  | 'expand-all'
+  | 'copy'
+  | 'trash'
+  | 'external-link'
+  | 'clipboard'
+  | 'pin';
 
 interface DuotoneIconProps {
   name: IconName;
@@ -342,6 +347,101 @@ export const DuotoneIcon: React.FC<DuotoneIconProps> = ({
               fill="none"
               stroke={primaryStroke}
               strokeWidth="36"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </>
+        );
+
+      case 'copy':
+        return (
+          <>
+            <rect
+              x="176"
+              y="176"
+              width="256"
+              height="256"
+              rx="40"
+              fill={secondaryFill}
+              fillOpacity="0.18"
+              stroke={primaryStroke}
+              strokeWidth="32"
+            />
+            <path
+              d="M336 128 L336 88 C336 74.7 325.3 64 312 64 L104 64 C90.7 64 80 74.7 80 88 L80 296 C80 309.3 90.7 320 104 320 L144 320"
+              fill="none"
+              stroke={primaryStroke}
+              strokeWidth="32"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </>
+        );
+
+      case 'trash':
+        return (
+          <>
+            <path
+              d="M96 128 L128 432 C130 449.7 144.3 464 162 464 L350 464 C367.7 464 382 449.7 384 432 L416 128 Z"
+              fill={secondaryFill}
+              fillOpacity="0.18"
+              stroke={primaryStroke}
+              strokeWidth="32"
+              strokeLinejoin="round"
+            />
+            <line x1="64" y1="128" x2="448" y2="128" stroke={primaryStroke} strokeWidth="32" strokeLinecap="round" />
+            <path d="M192 128 L192 80 C192 62.3 206.3 48 224 48 L288 48 C305.7 48 320 62.3 320 80 L320 128" fill="none" stroke={primaryStroke} strokeWidth="32" strokeLinejoin="round" />
+            <line x1="208" y1="208" x2="208" y2="384" stroke={primaryStroke} strokeWidth="28" strokeLinecap="round" />
+            <line x1="304" y1="208" x2="304" y2="384" stroke={primaryStroke} strokeWidth="28" strokeLinecap="round" />
+          </>
+        );
+
+      case 'external-link':
+        return (
+          <>
+            <path
+              d="M256 128 L112 128 C94.3 128 80 142.3 80 160 L80 400 C80 417.7 94.3 432 112 432 L352 432 C369.7 432 384 417.7 384 400 L384 256"
+              fill={secondaryFill}
+              fillOpacity="0.15"
+              stroke={primaryStroke}
+              strokeWidth="32"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <polyline points="288,80 432,80 432,224" fill="none" stroke={primaryStroke} strokeWidth="36" strokeLinecap="round" strokeLinejoin="round" />
+            <line x1="432" y1="80" x2="240" y2="272" stroke={primaryStroke} strokeWidth="36" strokeLinecap="round" />
+          </>
+        );
+
+      case 'clipboard':
+        return (
+          <>
+            <rect
+              x="96"
+              y="96"
+              width="320"
+              height="352"
+              rx="40"
+              fill={secondaryFill}
+              fillOpacity="0.18"
+              stroke={primaryStroke}
+              strokeWidth="32"
+            />
+            <rect x="176" y="48" width="160" height="80" rx="16" fill="var(--knit-surface)" stroke={primaryStroke} strokeWidth="28" />
+            <line x1="160" y1="224" x2="352" y2="224" stroke={primaryStroke} strokeWidth="24" strokeLinecap="round" />
+            <line x1="160" y1="304" x2="304" y2="304" stroke={primaryStroke} strokeWidth="24" strokeLinecap="round" />
+          </>
+        );
+
+      case 'pin':
+        return (
+          <>
+            <path
+              d="M176 64 L336 64 L304 192 L368 256 L272 256 L256 448 L240 256 L144 256 L208 192 Z"
+              fill={secondaryFill}
+              fillOpacity="0.22"
+              stroke={primaryStroke}
+              strokeWidth="32"
               strokeLinecap="round"
               strokeLinejoin="round"
             />

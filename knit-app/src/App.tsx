@@ -4,6 +4,7 @@ import { Sidebar } from './components/Sidebar/Sidebar';
 import { TabBar } from './components/Tabs/TabBar';
 import { Editor } from './components/Editor/Editor';
 import { ToastContainer } from './components/Toast/ToastContainer';
+import { ContextMenuContainer } from './components/ContextMenu/ContextMenuContainer';
 import type { ThemeMode } from './theme/theme';
 import {
   getStoredTheme,
@@ -153,6 +154,15 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleSaveActiveNote, handleNewNote]);
 
+  // Désactivation globale du menu contextuel natif du navigateur / webview
+  useEffect(() => {
+    const handleGlobalContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener('contextmenu', handleGlobalContextMenu);
+    return () => window.removeEventListener('contextmenu', handleGlobalContextMenu);
+  }, []);
+
   const activeTab = tabStore.activeTab;
 
   return (
@@ -280,6 +290,9 @@ export const App: React.FC = () => {
 
       {/* Notifications Toast */}
       <ToastContainer />
+
+      {/* Menu contextuel centralisé */}
+      <ContextMenuContainer />
     </div>
   );
 };

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import type { FileNode } from '../../stores/vaultStore';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
+import { contextMenu } from '../../stores/contextMenuStore';
+import { toast } from '../../stores/toastStore';
 
 interface TreeNodeProps {
   node: FileNode;
@@ -64,6 +66,57 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
     }
   };
 
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (node.is_dir) {
+      contextMenu.show(e, [
+        {
+          id: 'toggle-dir',
+          label: isOpen ? 'Replier le dossier' : 'Déplier le dossier',
+          icon: isOpen ? 'chevron-down' : 'chevron-right',
+          onClick: () => setIsOpen(!isOpen),
+        },
+        { id: 'div-dir', divider: true },
+        {
+          id: 'copy-dir-path',
+          label: 'Copier le chemin relatif',
+          icon: 'copy',
+          onClick: () => {
+            navigator.clipboard.writeText(node.path);
+            toast.info('Chemin copié', node.path);
+          },
+        },
+      ]);
+    } else {
+      contextMenu.show(e, [
+        {
+          id: 'open-file',
+          label: 'Ouvrir',
+          icon: 'file-markdown',
+          onClick: () => onSelectFile(node.path, false),
+        },
+        {
+          id: 'open-tab-bg',
+          label: 'Ouvrir dans un nouvel onglet',
+          icon: 'external-link',
+          onClick: () => onMiddleClickFile(node.path),
+        },
+        { id: 'div-file-1', divider: true },
+        {
+          id: 'copy-path',
+          label: 'Copier le chemin relatif',
+          icon: 'copy',
+          onClick: () => {
+            navigator.clipboard.writeText(node.path);
+            toast.info('Chemin copié', node.path);
+          },
+        },
+      ]);
+    }
+  };
+
   return (
     <div>
       <div
@@ -71,6 +124,7 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
         onDoubleClick={handleDoubleClick}
         onMouseDown={handleMouseDown}
         onAuxClick={handleAuxClick}
+        onContextMenu={handleContextMenu}
         style={{
           display: 'flex',
           alignItems: 'center',

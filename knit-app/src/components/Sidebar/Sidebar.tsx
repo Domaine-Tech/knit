@@ -4,6 +4,7 @@ import { vaultStore } from '../../stores/vaultStore';
 import { TreeNode } from './TreeNode';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { toast } from '../../stores/toastStore';
+import { contextMenu } from '../../stores/contextMenuStore';
 
 interface SidebarProps {
   files: FileNode[];
@@ -68,10 +69,45 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
+  const handleSidebarContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    contextMenu.show(e, [
+      {
+        id: 'new-file',
+        label: 'Nouveau fichier .md',
+        icon: 'plus',
+        shortcut: 'Ctrl+N',
+        onClick: () => setIsCreatingFile(true),
+      },
+      {
+        id: 'toggle-all',
+        label: isAllExpanded ? 'Replier tous les dossiers' : 'Déplier tous les dossiers',
+        icon: isAllExpanded ? 'collapse-all' : 'expand-all',
+        onClick: handleToggleExpandAll,
+      },
+      {
+        id: 'reload-tree',
+        label: 'Actualiser l\'arborescence',
+        icon: 'sync',
+        onClick: () => vaultStore.reloadTree(),
+      },
+      { id: 'div-sidebar', divider: true },
+      {
+        id: 'open-vault',
+        label: 'Ouvrir un coffre-fort...',
+        icon: 'folder-open',
+        onClick: () => vaultStore.pickAndOpenVault(),
+      },
+    ]);
+  };
+
   const filtered = filterNodes(files, filterText);
 
   return (
     <aside
+      onContextMenu={handleSidebarContextMenu}
       style={{
         width: 250,
         height: '100%',

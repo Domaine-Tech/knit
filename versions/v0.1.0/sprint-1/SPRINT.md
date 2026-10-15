@@ -24,6 +24,7 @@
 | B-006 | Implémenter le thème clair/sombre + slider interactif `--knit-hue` | 🟡 | ✅ | Antigravity |
 | B-006a | Intégrer les icônes Reicon (style Duotone) adaptées à `--knit-hue` | 🟠 | ✅ | Antigravity |
 | B-006b | Système de Toast centralisé (bottom-right, animations, store optimisé) | 🟠 | ✅ | Antigravity |
+| B-006c | Système de Menu Contextuel centralisé (clic droit personnalisé, désactivation natif) | 🟠 | ✅ | Antigravity |
 
 ---
 
@@ -40,6 +41,7 @@
 - [x] Le slider de couleur ajuste instantanément l'accent de l'application sans rechargement.
 - [x] Les icônes Reicon en mode Duotone intègrent la couleur primaire dynamiquement.
 - [x] Le système de Toast affiche des messages en bas à droite avec auto-dismiss et animation de stack.
+- [x] Le clic droit navigateur natif est désactivé et remplacé par un menu contextuel applicatif sur-mesure (Sidebar, Onglets, Éditeur).
 
 ---
 
@@ -49,7 +51,7 @@
 
 | Date | Tâche ajoutée | Raison | Intégré au sprint ? |
 |---|---|---|---|
-| — | — | — | — |
+| 2026-10-15 | B-006c : Menu Contextuel centralisé | Remplacer le clic droit webview natif par un menu applicatif sur-mesure (Sidebar, Onglets, Éditeur) | Oui |
 
 ---
 
