@@ -82,62 +82,7 @@ export const Editor: React.FC<EditorProps> = ({
         backgroundColor: 'var(--knit-surface-hover)',
         color: 'var(--knit-text)',
       },
-      /* Barre de recherche CodeMirror stylée */
-      '.cm-panels': {
-        backgroundColor: 'var(--knit-surface)',
-        color: 'var(--knit-text)',
-        borderBottom: '1px solid var(--knit-border)',
-      },
-      '.cm-panels.cm-panels-top': {
-        borderBottom: '1px solid var(--knit-border)',
-      },
-      '.cm-search': {
-        display: 'flex',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: '6px',
-        padding: '8px 16px',
-        backgroundColor: 'var(--knit-surface)',
-        fontSize: '12px',
-      },
-      '.cm-search br': {
-        width: '100%',
-        height: '0px',
-        margin: '0',
-      },
-      '.cm-search label': {
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '4px',
-        cursor: 'pointer',
-        userSelect: 'none',
-        color: 'var(--knit-text-secondary)',
-      },
-      '.cm-search button[name="close"]': {
-        marginLeft: 'auto',
-      },
-      '.cm-search input': {
-        padding: '4px 8px',
-        borderRadius: 'var(--knit-radius-sm)',
-        border: '1px solid var(--knit-border)',
-        backgroundColor: 'var(--knit-bg)',
-        color: 'var(--knit-text)',
-        outline: 'none',
-      },
-      '.cm-search input:focus': {
-        borderColor: 'var(--knit-primary)',
-      },
-      '.cm-search button': {
-        padding: '4px 10px',
-        borderRadius: 'var(--knit-radius-sm)',
-        border: '1px solid var(--knit-border)',
-        backgroundColor: 'var(--knit-bg)',
-        color: 'var(--knit-text)',
-        cursor: 'pointer',
-      },
-      '.cm-search button:hover': {
-        backgroundColor: 'var(--knit-surface-hover)',
-      },
+      /* Surlignage dynamique des correspondances de recherche */
       '.cm-searchMatch': {
         backgroundColor: 'hsla(var(--knit-hue), 80%, 50%, 0.3)',
       },
@@ -214,6 +159,19 @@ export const Editor: React.FC<EditorProps> = ({
         EditorView.lineWrapping,
         syntaxHighlighting(knitHighlightStyle, { fallback: true }),
         markdown(),
+        EditorState.phrases.of({
+          'Find': 'Rechercher...',
+          'Replace': 'Remplacer par...',
+          'next': 'Suivant',
+          'previous': 'Précédent',
+          'all': 'Tout',
+          'match case': 'Casse',
+          'by word': 'Mot entier',
+          'regexp': 'RegEx',
+          'replace': 'Remplacer',
+          'replace all': 'Tout remplacer',
+          'close': 'Fermer',
+        }),
         search({ top: true }),
         customKeymap,
         keymap.of([...searchKeymap, ...historyKeymap, ...defaultKeymap]),

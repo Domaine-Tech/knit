@@ -1,0 +1,227 @@
+/* ==========================================================================
+   KNIT FORM DESIGN SYSTEM & CENTRALE UI
+   Composants de formulaires unifiés, sobres et conformes aux tokens Knit
+   ========================================================================== */
+
+/* === 1. CHAMPS DE SAISIE TEXTUELS === */
+input[type="text"],
+input[type="search"],
+input[type="password"],
+input[type="email"],
+input:not([type]),
+.knit-input,
+.cm-search input.cm-textfield {
+  height: 28px;
+  padding: 4px 10px;
+  border-radius: var(--knit-radius-sm);
+  border: 1px solid var(--knit-border);
+  background-color: var(--knit-bg);
+  color: var(--knit-text);
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color var(--knit-transition-fast),
+              box-shadow var(--knit-transition-fast),
+              background-color var(--knit-transition-fast);
+}
+
+input[type="text"]:hover,
+input[type="search"]:hover,
+.cm-search input.cm-textfield:hover {
+  border-color: var(--knit-text-muted);
+}
+
+input[type="text"]:focus,
+input[type="search"]:focus,
+.cm-search input.cm-textfield:focus {
+  border-color: var(--knit-primary) !important;
+  box-shadow: 0 0 0 2px var(--knit-primary-alpha) !important;
+  background-color: var(--knit-surface) !important;
+}
+
+input::placeholder,
+.cm-search input.cm-textfield::placeholder {
+  color: var(--knit-text-muted);
+}
+
+/* === 2. CASES À COCHER (CHECKBOXES SUR-MESURE) === */
+input[type="checkbox"],
+.knit-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 15px;
+  height: 15px;
+  border: 1.5px solid var(--knit-border);
+  border-radius: var(--knit-radius-xs);
+  background-color: var(--knit-bg);
+  cursor: pointer;
+  position: relative;
+  vertical-align: middle;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  flex-shrink: 0;
+  transition: border-color var(--knit-transition-fast),
+              background-color var(--knit-transition-fast),
+              box-shadow var(--knit-transition-fast);
+}
+
+input[type="checkbox"]:hover {
+  border-color: var(--knit-primary);
+  background-color: var(--knit-surface-hover);
+}
+
+input[type="checkbox"]:focus-visible {
+  outline: none;
+  border-color: var(--knit-primary);
+  box-shadow: 0 0 0 2px var(--knit-primary-alpha);
+}
+
+input[type="checkbox"]:checked {
+  background-color: var(--knit-primary) !important;
+  border-color: var(--knit-primary) !important;
+}
+
+input[type="checkbox"]:checked::after {
+  content: "";
+  width: 4px;
+  height: 8px;
+  border: solid #FFFFFF;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  margin-bottom: 2px;
+  display: block;
+}
+
+/* === 3. LABELS DE FORMULAIRE === */
+.knit-label,
+.cm-search label {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  cursor: pointer !important;
+  color: var(--knit-text-secondary) !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  user-select: none !important;
+  padding: 3px 6px !important;
+  border-radius: var(--knit-radius-xs) !important;
+  transition: color var(--knit-transition-fast),
+              background-color var(--knit-transition-fast);
+}
+
+.knit-label:hover,
+.cm-search label:hover {
+  color: var(--knit-text) !important;
+  background-color: var(--knit-surface-hover) !important;
+}
+
+/* === 4. BOUTONS D'ACTION & FORMULAIRE === */
+button.knit-btn,
+.cm-search button.cm-button {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: var(--knit-radius-sm);
+  border: 1px solid var(--knit-border) !important;
+  background-image: none !important;
+  background-color: var(--knit-surface) !important;
+  color: var(--knit-text) !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--knit-transition-fast),
+              border-color var(--knit-transition-fast),
+              color var(--knit-transition-fast);
+  white-space: nowrap;
+  outline: none;
+  user-select: none;
+}
+
+button.knit-btn:hover,
+.cm-search button.cm-button:hover {
+  background-color: var(--knit-surface-hover) !important;
+  border-color: var(--knit-text-secondary) !important;
+  color: var(--knit-text) !important;
+}
+
+button.knit-btn:active,
+.cm-search button.cm-button:active {
+  background-color: var(--knit-surface-active) !important;
+  transform: translateY(1px);
+}
+
+/* Boutons d'action accentués (ex: suivant / remplacer) */
+button.knit-btn-primary,
+.cm-search button.cm-button[name="next"],
+.cm-search button.cm-button[name="replace"] {
+  background-color: var(--knit-primary-alpha) !important;
+  border-color: var(--knit-primary) !important;
+  color: var(--knit-primary) !important;
+  font-weight: 600 !important;
+}
+
+button.knit-btn-primary:hover,
+.cm-search button.cm-button[name="next"]:hover,
+.cm-search button.cm-button[name="replace"]:hover {
+  background-color: var(--knit-primary) !important;
+  color: #FFFFFF !important;
+}
+
+/* === 5. BARRE DE RECHERCHE & REMPLACEMENT CODEMIRROR 6 === */
+.cm-panels {
+  background-color: var(--knit-surface) !important;
+  border-bottom: 1px solid var(--knit-border) !important;
+  color: var(--knit-text) !important;
+  box-shadow: var(--knit-shadow-md);
+  z-index: 50;
+}
+
+.cm-panels.cm-panels-top {
+  border-bottom: 1px solid var(--knit-border) !important;
+}
+
+.cm-search {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 6px 8px !important;
+  padding: 8px 14px !important;
+  background-color: var(--knit-surface) !important;
+  font-size: 12px !important;
+}
+
+/* Séparateur pour agencer la ligne de remplacement */
+.cm-search br {
+  flex-basis: 100% !important;
+  width: 0 !important;
+  height: 0 !important;
+  margin: 2px 0 !important;
+}
+
+/* Bouton de fermeture de la barre de recherche */
+.cm-search button[name="close"] {
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: var(--knit-radius-xs) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: var(--knit-text-muted) !important;
+  cursor: pointer !important;
+  font-size: 16px !important;
+  line-height: 1 !important;
+  border: none !important;
+  background: transparent !important;
+  margin-left: auto !important;
+  transition: all var(--knit-transition-fast) !important;
+  position: static !important;
+}
+
+.cm-search button[name="close"]:hover {
+  background-color: var(--knit-surface-hover) !important;
+  color: var(--knit-text) !important;
+}
