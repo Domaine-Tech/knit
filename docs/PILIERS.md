@@ -235,6 +235,10 @@ L'utilisateur choisit **une seule valeur** : le `--knit-hue` (un angle de 0 à 3
 | Sidebar pleine d'icônes colorées | Navigation minimale, hiérarchie claire |
 | Typo fantaisie / titres en gras partout | Inter (ou équivalent), hiérarchie par taille uniquement |
 | Dark mode = fond bleu marine | Dark mode = vrais noirs/gris neutres |
+| Clic droit natif du navigateur web | Menu contextuel applicatif sur-mesure, réactif et centralisé |
+
+> [!NOTE]
+> **Menus contextuels applicatifs systématiques** : Tout nouvel élément interactif doit disposer d'un menu contextuel centralisé adapté (chemins relatifs/absolus, liens Markdown, manipulation de fichiers/onglets, révélation système).
 
 ---
 

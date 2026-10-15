@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { FileNode } from '../../stores/vaultStore';
+import { vaultStore } from '../../stores/vaultStore';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { contextMenu } from '../../stores/contextMenuStore';
 import { toast } from '../../stores/toastStore';
@@ -70,6 +71,9 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
     e.preventDefault();
     e.stopPropagation();
 
+    const absPath = vaultStore.getAbsolutePath(node.path);
+    const mdLink = `[${node.name.replace(/\.md$/, '')}](${node.path})`;
+
     if (node.is_dir) {
       contextMenu.show(e, [
         {
@@ -78,14 +82,74 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
           icon: isOpen ? 'chevron-down' : 'chevron-right',
           onClick: () => setIsOpen(!isOpen),
         },
-        { id: 'div-dir', divider: true },
+        { id: 'div-dir-1', divider: true },
         {
-          id: 'copy-dir-path',
+          id: 'new-file-in-dir',
+          label: 'Nouveau fichier dans ce dossier...',
+          icon: 'plus',
+          onClick: () => {
+            const fileName = window.prompt(`Nouveau fichier dans "${node.name}" :`, 'nouvelle-note.md');
+            if (fileName && fileName.trim()) {
+              const cleanName = fileName.trim().endsWith('.md') ? fileName.trim() : `${fileName.trim()}.md`;
+              const relPath = `${node.path}/${cleanName}`;
+              vaultStore.createFile(relPath, `# ${cleanName.replace(/\.md$/, '')}\n\n`).then(() => {
+                onSelectFile(relPath, false);
+                setIsOpen(true);
+                toast.success('Note créée', relPath);
+              });
+            }
+          },
+        },
+        {
+          id: 'new-dir-in-dir',
+          label: 'Nouveau dossier...',
+          icon: 'folder-plus',
+          onClick: () => {
+            const dirName = window.prompt(`Nouveau sous-dossier dans "${node.name}" :`, 'nouveau-dossier');
+            if (dirName && dirName.trim()) {
+              const relPath = `${node.path}/${dirName.trim()}`;
+              vaultStore.createDir(relPath).then(() => {
+                setIsOpen(true);
+                toast.success('Dossier créé', relPath);
+              });
+            }
+          },
+        },
+        { id: 'div-dir-2', divider: true },
+        {
+          id: 'reveal-dir',
+          label: "Révéler dans l'explorateur",
+          icon: 'external-link',
+          onClick: () => {
+            vaultStore.revealInExplorer(node.path);
+          },
+        },
+        { id: 'div-dir-3', divider: true },
+        {
+          id: 'copy-dir-rel-path',
           label: 'Copier le chemin relatif',
           icon: 'copy',
           onClick: () => {
             navigator.clipboard.writeText(node.path);
-            toast.info('Chemin copié', node.path);
+            toast.info('Chemin relatif copié', node.path);
+          },
+        },
+        {
+          id: 'copy-dir-abs-path',
+          label: 'Copier le chemin absolu',
+          icon: 'copy',
+          onClick: () => {
+            navigator.clipboard.writeText(absPath);
+            toast.info('Chemin absolu copié', absPath);
+          },
+        },
+        {
+          id: 'copy-dir-name',
+          label: 'Copier le nom du dossier',
+          icon: 'clipboard',
+          onClick: () => {
+            navigator.clipboard.writeText(node.name);
+            toast.info('Nom copié', node.name);
           },
         },
       ]);
@@ -105,12 +169,48 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
         },
         { id: 'div-file-1', divider: true },
         {
-          id: 'copy-path',
+          id: 'reveal-file',
+          label: "Révéler dans l'explorateur",
+          icon: 'external-link',
+          onClick: () => {
+            vaultStore.revealInExplorer(node.path);
+          },
+        },
+        { id: 'div-file-2', divider: true },
+        {
+          id: 'copy-rel-path',
           label: 'Copier le chemin relatif',
           icon: 'copy',
           onClick: () => {
             navigator.clipboard.writeText(node.path);
-            toast.info('Chemin copié', node.path);
+            toast.info('Chemin relatif copié', node.path);
+          },
+        },
+        {
+          id: 'copy-abs-path',
+          label: 'Copier le chemin absolu',
+          icon: 'copy',
+          onClick: () => {
+            navigator.clipboard.writeText(absPath);
+            toast.info('Chemin absolu copié', absPath);
+          },
+        },
+        {
+          id: 'copy-name',
+          label: 'Copier le nom du fichier',
+          icon: 'clipboard',
+          onClick: () => {
+            navigator.clipboard.writeText(node.name);
+            toast.info('Nom copié', node.name);
+          },
+        },
+        {
+          id: 'copy-md-link',
+          label: 'Copier le lien Markdown',
+          icon: 'link',
+          onClick: () => {
+            navigator.clipboard.writeText(mdLink);
+            toast.info('Lien Markdown copié', mdLink);
           },
         },
       ]);

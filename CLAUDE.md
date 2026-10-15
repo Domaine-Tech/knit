@@ -22,4 +22,7 @@ Knit est une application collaborative local-first et peer-to-peer (P2P) pour la
    - Utiliser des messages de commit en français.
 5. **Typage Strict (sauf si contre-productif)** :
    - TypeScript rigoureux (`strict: true`, pas de `any`) et Rust idiomatique (`Result<T, KnitError>`) pour garantir des contrats d'interfaces fiables entre agents IA et développeurs. Ne déroger que si un sur-typage théorique bloque la productivité.
+6. **Menus Contextuels Applicatifs Systématiques** :
+   - Le clic droit natif est désactivé au profit d'un menu sur-mesure centralisé (`contextMenuStore`). Tout composant interactif créé ou modifié doit inclure son menu contextuel adapté (ex: copie des chemins relatifs/absolus, lien Markdown, actions de fichiers et d'onglets).
+
 

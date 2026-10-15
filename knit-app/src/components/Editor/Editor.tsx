@@ -7,6 +7,8 @@ import { search, searchKeymap, openSearchPanel } from '@codemirror/search';
 import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
 import { tags } from '@lezer/highlight';
 import { contextMenu } from '../../stores/contextMenuStore';
+import { vaultStore } from '../../stores/vaultStore';
+import { toast } from '../../stores/toastStore';
 
 interface EditorProps {
   content: string;
@@ -260,6 +262,10 @@ export const Editor: React.FC<EditorProps> = ({
       : '';
     const hasSelection = selection.length > 0;
 
+    const absPath = vaultStore.getAbsolutePath(path);
+    const fileName = path.split('/').pop() || path;
+    const mdLink = `[${fileName.replace(/\.md$/, '')}](${path})`;
+
     contextMenu.show(e, [
       {
         id: 'cut',
@@ -332,11 +338,65 @@ export const Editor: React.FC<EditorProps> = ({
         },
       },
       {
+        id: 'replace',
+        label: 'Rechercher & Remplacer',
+        shortcut: 'Ctrl+H',
+        onClick: () => {
+          if (view) {
+            openSearchPanel(view);
+            setTimeout(() => {
+              const replaceInput = view.dom.querySelector('.cm-search input[name="replace"]') as HTMLInputElement | null;
+              if (replaceInput) {
+                replaceInput.focus();
+                replaceInput.select();
+              }
+            }, 20);
+          }
+        },
+      },
+      {
         id: 'save',
         label: 'Sauvegarder',
         icon: 'save',
         shortcut: 'Ctrl+S',
         onClick: () => onSaveRef.current(),
+      },
+      { id: 'div-editor-3', divider: true },
+      {
+        id: 'reveal-file',
+        label: "Révéler dans l'explorateur",
+        icon: 'external-link',
+        onClick: () => {
+          vaultStore.revealInExplorer(path);
+        },
+      },
+      { id: 'div-editor-4', divider: true },
+      {
+        id: 'copy-rel-path',
+        label: 'Copier le chemin relatif',
+        icon: 'copy',
+        onClick: () => {
+          navigator.clipboard.writeText(path);
+          toast.info('Chemin relatif copié', path);
+        },
+      },
+      {
+        id: 'copy-abs-path',
+        label: 'Copier le chemin absolu',
+        icon: 'copy',
+        onClick: () => {
+          navigator.clipboard.writeText(absPath);
+          toast.info('Chemin absolu copié', absPath);
+        },
+      },
+      {
+        id: 'copy-md-link',
+        label: 'Copier le lien Markdown',
+        icon: 'link',
+        onClick: () => {
+          navigator.clipboard.writeText(mdLink);
+          toast.info('Lien Markdown copié', mdLink);
+        },
       },
     ]);
   };

@@ -26,7 +26,9 @@ export type IconName =
   | 'trash'
   | 'external-link'
   | 'clipboard'
-  | 'pin';
+  | 'pin'
+  | 'link'
+  | 'folder-plus';
 
 interface DuotoneIconProps {
   name: IconName;
@@ -445,6 +447,40 @@ export const DuotoneIcon: React.FC<DuotoneIconProps> = ({
               strokeLinecap="round"
               strokeLinejoin="round"
             />
+          </>
+        );
+
+      case 'link':
+        return (
+          <>
+            <path
+              d="M208 304 L304 208 M168 256 L128 296 C97 327 97 377 128 408 C159 439 209 439 240 408 L280 368 M344 256 L384 216 C415 185 415 135 384 104 C353 73 303 73 272 104 L232 144"
+              fill="none"
+              stroke={primaryStroke}
+              strokeWidth="36"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </>
+        );
+
+      case 'folder-plus':
+        return (
+          <>
+            <path
+              d="M32 80 C32 62.3 46.3 48 64 48 L170.7 48 C187.7 48 203.9 54.7 216 66.7 L245.3 96 L416 96 C433.7 96 448 110.3 448 128 L448 384 C448 401.7 433.7 416 416 416 L64 416 C46.3 416 32 401.7 32 384 Z"
+              fill={secondaryFill}
+              fillOpacity="0.18"
+            />
+            <path
+              d="M32 80 C32 62.3 46.3 48 64 48 L170.7 48 C187.7 48 203.9 54.7 216 66.7 L245.3 96 L416 96 C433.7 96 448 110.3 448 128 L448 384 C448 401.7 433.7 416 416 416 L64 416 C46.3 416 32 401.7 32 384 Z"
+              fill="none"
+              stroke={primaryStroke}
+              strokeWidth="32"
+              strokeLinejoin="round"
+            />
+            <line x1="240" y1="210" x2="240" y2="310" stroke={primaryStroke} strokeWidth="36" strokeLinecap="round" />
+            <line x1="190" y1="260" x2="290" y2="260" stroke={primaryStroke} strokeWidth="36" strokeLinecap="round" />
           </>
         );
 

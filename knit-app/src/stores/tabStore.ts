@@ -137,6 +137,31 @@ class TabStore {
     this.notify();
   }
 
+  public closeTabsToTheRight(id: string) {
+    const index = this.tabs.findIndex((t) => t.id === id);
+    if (index === -1) return;
+
+    const removed = this.tabs.slice(index + 1);
+    removed.forEach((tab) => {
+      this.closedTabsHistory.push({ path: tab.path, title: tab.title });
+    });
+    this.tabs = this.tabs.slice(0, index + 1);
+
+    if (this.activeTabId && !this.tabs.some((t) => t.id === this.activeTabId)) {
+      this.activeTabId = id;
+    }
+    this.notify();
+  }
+
+  public closeAllTabs() {
+    this.tabs.forEach((tab) => {
+      this.closedTabsHistory.push({ path: tab.path, title: tab.title });
+    });
+    this.tabs = [];
+    this.activeTabId = null;
+    this.notify();
+  }
+
   public reopenLastClosed(getContent?: (path: string) => Promise<string>) {
     const last = this.closedTabsHistory.pop();
     if (!last) return;

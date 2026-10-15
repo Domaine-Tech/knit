@@ -41,7 +41,7 @@
 - [x] Le slider de couleur ajuste instantanément l'accent de l'application sans rechargement.
 - [x] Les icônes Reicon en mode Duotone intègrent la couleur primaire dynamiquement.
 - [x] Le système de Toast affiche des messages en bas à droite avec auto-dismiss et animation de stack.
-- [x] Le clic droit navigateur natif est désactivé et remplacé par un menu contextuel applicatif sur-mesure (Sidebar, Onglets, Éditeur).
+- [x] Le clic droit navigateur natif est désactivé et remplacé par un menu contextuel applicatif sur-mesure complet (Sidebar, Onglets, Éditeur, En-tête) avec options de copie (relatif, absolu, nom, lien Markdown), révélation explorateur et règles IA documentées.
 
 ---
 

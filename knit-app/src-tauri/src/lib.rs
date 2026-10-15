@@ -13,6 +13,7 @@ pub fn run() {
             create_vault_file,
             create_vault_dir,
             pick_vault_folder,
+            reveal_in_explorer,
         ])
         .run(tauri::generate_context!())
         .expect("Erreur lors de l'exécution de l'application Knit Tauri");

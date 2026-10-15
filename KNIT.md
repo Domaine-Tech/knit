@@ -55,4 +55,6 @@ knit/
 4. **Ne jamais altérer le formatage Markdown pur** lors de l'édition (compatibilité CodeMirror 6)
 5. **Utiliser des messages de commit clairs** en français
 6. **Typage strict (sauf si contre-productif)** : Coder en TypeScript strict et Rust idiomatique sans `any` pour sécuriser les modifications des agents IA, sans tomber dans un sur-typage théorique si cela nuit à la productivité réelle.
+7. **Menus contextuels applicatifs centralisés** : Le clic droit webview natif est proscrit. Pour toute nouvelle interface ou modification d'écran dans `knit-app`, alimenter systématiquement le menu contextuel centralisé (`contextMenuStore.show`) avec les actions clés (copie de chemins relatifs et absolus, liens Markdown, manipulation de fichiers/onglets, révélation).
+
 

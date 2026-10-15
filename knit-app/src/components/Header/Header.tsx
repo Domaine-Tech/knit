@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import type { ThemeMode } from '../../theme/theme';
 import { ColorPickerPopover } from './ColorPickerPopover';
+import { contextMenu } from '../../stores/contextMenuStore';
+import { vaultStore } from '../../stores/vaultStore';
 
 interface HeaderProps {
   theme: ThemeMode;
@@ -23,8 +25,52 @@ export const Header: React.FC<HeaderProps> = ({
   onTriggerDemoSync,
 }) => {
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
+
+  const handleHeaderContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    contextMenu.show(e, [
+      {
+        id: 'header-save',
+        label: 'Sauvegarder la note active',
+        icon: 'save',
+        shortcut: 'Ctrl+S',
+        disabled: !canSave,
+        onClick: onSave,
+      },
+      {
+        id: 'header-sync',
+        label: 'Simuler un événement de sync P2P',
+        icon: 'sync',
+        onClick: onTriggerDemoSync,
+      },
+      { id: 'div-header-1', divider: true },
+      {
+        id: 'header-theme',
+        label: theme === 'dark' ? 'Basculer en thème clair' : 'Basculer en thème sombre',
+        icon: theme === 'dark' ? 'sun' : 'moon',
+        onClick: onThemeToggle,
+      },
+      {
+        id: 'header-reset-color',
+        label: 'Réinitialiser la couleur d’accent (28°)',
+        icon: 'slider',
+        onClick: () => onHueChange(28),
+      },
+      { id: 'div-header-2', divider: true },
+      {
+        id: 'header-open-vault',
+        label: 'Ouvrir un coffre-fort...',
+        icon: 'folder-open',
+        onClick: () => vaultStore.pickAndOpenVault(),
+      },
+    ]);
+  };
+
   return (
     <header
+      onContextMenu={handleHeaderContextMenu}
       style={{
         height: 44,
         backgroundColor: 'var(--knit-bg)',

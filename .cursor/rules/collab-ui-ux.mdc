@@ -56,5 +56,18 @@ Toutes les interfaces collaboratives dans Knit doivent respecter les principes s
 - **Recherche globale (`Ctrl+Shift+F`)** : volet latéral dédié avec affichage des extraits de contexte et filtres (`tag:`, `path:`).
 - **Système de tags** : parsing des métadonnées frontmatter `tags: [...]` et détection des `#tags` inline avec autocomplétion.
 
+## 9. Menus Contextuels Applicatifs (Clic Droit Spécifique & Centralisé)
+- **Désactivation globale** : Le menu contextuel natif du navigateur / webview est désactivé avec `e.preventDefault()`.
+- **Règle de développement continue** : Pour tout nouveau composant interactif ou refonte de vue, **toujours brancher un menu contextuel sur-mesure** via `contextMenu.show(e, items)`.
+- **Actions obligatoires sur fichiers et dossiers** :
+  - *Copier le chemin relatif*
+  - *Copier le chemin absolu* (chemin système complet du coffre)
+  - *Copier le nom du fichier / dossier*
+  - *Copier le lien Markdown* (`[titre](chemin)`)
+  - *Révéler dans l'explorateur de fichiers* (Tauri `reveal_in_explorer` ou fallback)
+- **Actions d'onglets** : *Fermer*, *Fermer les autres*, *Fermer à droite*, *Fermer tous les onglets*, *Figer l'aperçu*, *Rouvrir dernier fermé*, *Copier chemins*.
+- **Actions d'éditeur** : *Couper*, *Copier*, *Coller*, *Tout sélectionner*, *Rechercher / Remplacer*, *Sauvegarder*, *Révéler dans l'explorateur*, *Copier chemins*.
+
+
 
 

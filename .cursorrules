@@ -32,6 +32,10 @@ Pour toute modification du frontend React (`knit-app`) :
 - **Présence multi-fichiers** : Cercles d'avatars de 18px avec initiales majuscules dans l'arborescence des fichiers (sidebar). Infobulle sobre au survol, saut au clic vers le fichier du pair.
 - **Toasts non intrusifs** : Ancrés en bas à droite (`bottom: 24px; right: 24px`), max 4 empilés, regroupement dynamique avec debounce pour éviter le spam.
 - **Icônes** : Utiliser **Reicon** en mode Duotone (couche 2 avec opacité 20% liée à `--knit-hue`).
+- **Menus Contextuels Applicatifs Systématiques (Clic Droit)** :
+  - Le clic droit webview / navigateur natif est désactivé globalement (`e.preventDefault()`).
+  - **Règle de développement continue** : Lors de l'ajout ou de la refonte de tout composant interactif (arborescence, onglets, éditeur, barres d'outils, en-têtes, etc.), **toujours implémenter ou mettre à jour son menu contextuel dédié** via `contextMenu.show(e, items)`.
+  - Pour les fichiers et dossiers, proposer systématiquement le panel d'actions complet : *Copier le chemin relatif*, *Copier le chemin absolu*, *Copier le nom*, *Copier le lien Markdown* (`[titre](chemin)`), et *Révéler dans l'explorateur*.
 
 ---
 

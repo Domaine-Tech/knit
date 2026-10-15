@@ -1,4 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
+import { toast } from './toastStore';
 
 export interface FileNode {
   id: string;
@@ -311,6 +312,53 @@ class VaultStore {
       content: initialContent,
     });
     await this.reloadTree();
+  }
+
+  public async createDir(relPath: string): Promise<void> {
+    if (!this.currentVaultPath) return;
+
+    if (!isTauriEnvironment()) {
+      await this.reloadTree();
+      return;
+    }
+
+    try {
+      await invoke('create_vault_dir', {
+        vaultPath: this.currentVaultPath,
+        relPath,
+      });
+      await this.reloadTree();
+    } catch (err: unknown) {
+      toast.error('Erreur lors de la création du dossier', String(err));
+    }
+  }
+
+  public getAbsolutePath(relPath: string = ''): string {
+    if (!this.currentVaultPath) return relPath;
+    const cleanRel = relPath.replace(/\\/g, '/').replace(/^\/+/, '');
+    const cleanVault = this.currentVaultPath.replace(/\\/g, '/').replace(/\/+$/, '');
+    return cleanRel ? `${cleanVault}/${cleanRel}` : cleanVault;
+  }
+
+  public async revealInExplorer(relPath: string = ''): Promise<void> {
+    if (!this.currentVaultPath) return;
+
+    const fullPath = this.getAbsolutePath(relPath);
+
+    if (!isTauriEnvironment()) {
+      await navigator.clipboard.writeText(fullPath);
+      toast.info('Chemin copié (mode démo web)', fullPath);
+      return;
+    }
+
+    try {
+      await invoke('reveal_in_explorer', {
+        vaultPath: this.currentVaultPath,
+        relPath,
+      });
+    } catch (err: unknown) {
+      toast.error('Impossible d’ouvrir l’explorateur', String(err));
+    }
   }
 }
 

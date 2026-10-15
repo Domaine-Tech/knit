@@ -73,14 +73,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
     e.preventDefault();
     e.stopPropagation();
 
+    const vaultRoot = vaultStore.currentVaultPath || '';
+
     contextMenu.show(e, [
       {
         id: 'new-file',
-        label: 'Nouveau fichier .md',
+        label: 'Nouvelle note .md',
         icon: 'plus',
         shortcut: 'Ctrl+N',
         onClick: () => setIsCreatingFile(true),
       },
+      {
+        id: 'new-root-folder',
+        label: 'Nouveau dossier...',
+        icon: 'folder-plus',
+        onClick: () => {
+          const dirName = window.prompt('Nom du nouveau dossier :', 'nouveau-dossier');
+          if (dirName && dirName.trim()) {
+            vaultStore.createDir(dirName.trim()).then(() => {
+              toast.success('Dossier créé', dirName.trim());
+            });
+          }
+        },
+      },
+      { id: 'div-sidebar-1', divider: true },
       {
         id: 'toggle-all',
         label: isAllExpanded ? 'Replier tous les dossiers' : 'Déplier tous les dossiers',
@@ -89,11 +105,33 @@ export const Sidebar: React.FC<SidebarProps> = ({
       },
       {
         id: 'reload-tree',
-        label: 'Actualiser l\'arborescence',
+        label: "Actualiser l'arborescence",
         icon: 'sync',
         onClick: () => vaultStore.reloadTree(),
       },
-      { id: 'div-sidebar', divider: true },
+      { id: 'div-sidebar-2', divider: true },
+      ...(vaultRoot
+        ? [
+            {
+              id: 'reveal-vault',
+              label: "Révéler le coffre dans l'explorateur",
+              icon: 'external-link' as const,
+              onClick: () => {
+                vaultStore.revealInExplorer('');
+              },
+            },
+            {
+              id: 'copy-vault-path',
+              label: 'Copier le chemin du coffre',
+              icon: 'copy' as const,
+              onClick: () => {
+                navigator.clipboard.writeText(vaultRoot);
+                toast.info('Chemin du coffre copié', vaultRoot);
+              },
+            },
+            { id: 'div-sidebar-3', divider: true },
+          ]
+        : []),
       {
         id: 'open-vault',
         label: 'Ouvrir un coffre-fort...',

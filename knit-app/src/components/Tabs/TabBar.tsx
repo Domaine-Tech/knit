@@ -40,9 +40,12 @@ export const TabBar: React.FC<TabBarProps> = ({ tabs, activeTabId, onNewNote }) 
     setDraggedIndex(null);
   };
 
-  const handleTabContextMenu = (e: React.MouseEvent, tab: Tab) => {
+  const handleTabContextMenu = (e: React.MouseEvent, tab: Tab, index: number) => {
     e.preventDefault();
     e.stopPropagation();
+
+    const absPath = vaultStore.getAbsolutePath(tab.path);
+    const mdLink = `[${tab.title.replace(/\.md$/, '')}](${tab.path})`;
 
     contextMenu.show(e, [
       {
@@ -58,27 +61,76 @@ export const TabBar: React.FC<TabBarProps> = ({ tabs, activeTabId, onNewNote }) 
         disabled: tabs.length <= 1,
         onClick: () => tabStore.closeOtherTabs(tab.id),
       },
+      {
+        id: 'close-to-right',
+        label: 'Fermer les onglets à droite',
+        disabled: index >= tabs.length - 1,
+        onClick: () => tabStore.closeTabsToTheRight(tab.id),
+      },
+      {
+        id: 'close-all',
+        label: 'Fermer tous les onglets',
+        danger: true,
+        onClick: () => tabStore.closeAllTabs(),
+      },
       { id: 'div-tab-1', divider: true },
       ...(tab.isPreview
         ? [
             {
               id: 'pin',
-              label: 'Figer l\'onglet (Mode permanent)',
+              label: "Figer l'onglet (Mode permanent)",
               icon: 'pin' as const,
               onClick: () => tabStore.pinTab(tab.id),
             },
+            { id: 'div-tab-pin', divider: true },
           ]
         : []),
       {
-        id: 'copy-path',
-        label: 'Copier le chemin du fichier',
-        icon: 'copy' as const,
+        id: 'reveal-file',
+        label: "Révéler dans l'explorateur",
+        icon: 'external-link' as const,
         onClick: () => {
-          navigator.clipboard.writeText(tab.path);
-          toast.info('Chemin copié', tab.path);
+          vaultStore.revealInExplorer(tab.path);
         },
       },
       { id: 'div-tab-2', divider: true },
+      {
+        id: 'copy-rel-path',
+        label: 'Copier le chemin relatif',
+        icon: 'copy' as const,
+        onClick: () => {
+          navigator.clipboard.writeText(tab.path);
+          toast.info('Chemin relatif copié', tab.path);
+        },
+      },
+      {
+        id: 'copy-abs-path',
+        label: 'Copier le chemin absolu',
+        icon: 'copy' as const,
+        onClick: () => {
+          navigator.clipboard.writeText(absPath);
+          toast.info('Chemin absolu copié', absPath);
+        },
+      },
+      {
+        id: 'copy-name',
+        label: 'Copier le nom du fichier',
+        icon: 'clipboard' as const,
+        onClick: () => {
+          navigator.clipboard.writeText(tab.title);
+          toast.info('Nom copié', tab.title);
+        },
+      },
+      {
+        id: 'copy-md-link',
+        label: 'Copier le lien Markdown',
+        icon: 'link' as const,
+        onClick: () => {
+          navigator.clipboard.writeText(mdLink);
+          toast.info('Lien Markdown copié', mdLink);
+        },
+      },
+      { id: 'div-tab-3', divider: true },
       {
         id: 'reopen-closed',
         label: 'Rouvrir le dernier onglet fermé',
@@ -106,6 +158,17 @@ export const TabBar: React.FC<TabBarProps> = ({ tabs, activeTabId, onNewNote }) 
         shortcut: 'Ctrl+Shift+T',
         onClick: () => tabStore.reopenLastClosed((p) => vaultStore.readFile(p)),
       },
+      ...(tabs.length > 0
+        ? [
+            { id: 'div-bar-1', divider: true },
+            {
+              id: 'close-all-tabs',
+              label: 'Fermer tous les onglets',
+              danger: true,
+              onClick: () => tabStore.closeAllTabs(),
+            },
+          ]
+        : []),
     ]);
   };
 
@@ -143,7 +206,7 @@ export const TabBar: React.FC<TabBarProps> = ({ tabs, activeTabId, onNewNote }) 
               onDragOver={handleDragOver}
               onDrop={() => handleDrop(index)}
               onMouseDown={(e) => handleMouseDown(e, tab.id)}
-              onContextMenu={(e) => handleTabContextMenu(e, tab)}
+              onContextMenu={(e) => handleTabContextMenu(e, tab, index)}
               onAuxClick={(e) => {
                 if (e.button === 1) {
                   e.preventDefault();

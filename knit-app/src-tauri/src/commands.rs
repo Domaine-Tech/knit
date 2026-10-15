@@ -48,3 +48,62 @@ pub async fn pick_vault_folder(app: tauri::AppHandle) -> Result<Option<String>, 
         None => Ok(None),
     }
 }
+
+#[tauri::command]
+pub async fn reveal_in_explorer(vault_path: String, rel_path: String) -> Result<(), String> {
+    let path = Path::new(&vault_path);
+    let target = if rel_path.is_empty() {
+        path.to_path_buf()
+    } else {
+        vault::resolve_safe_path(path, &rel_path).map_err(|e| e.to_string())?
+    };
+
+    #[cfg(target_os = "windows")]
+    {
+        use std::process::Command;
+        if target.is_dir() {
+            Command::new("explorer")
+                .arg(&target)
+                .spawn()
+                .map_err(|e| e.to_string())?;
+        } else {
+            Command::new("explorer")
+                .arg(format!("/select,{}", target.display()))
+                .spawn()
+                .map_err(|e| e.to_string())?;
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        use std::process::Command;
+        if target.is_dir() {
+            Command::new("open")
+                .arg(&target)
+                .spawn()
+                .map_err(|e| e.to_string())?;
+        } else {
+            Command::new("open")
+                .args(["-R", &target.to_string_lossy()])
+                .spawn()
+                .map_err(|e| e.to_string())?;
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        use std::process::Command;
+        let parent = if target.is_dir() {
+            &target
+        } else {
+            target.parent().unwrap_or(&target)
+        };
+        Command::new("xdg-open")
+            .arg(parent)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+
+    Ok(())
+}
+
