@@ -8,8 +8,12 @@ import { toast } from '../../stores/toastStore';
 interface TreeNodeProps {
   node: FileNode;
   activePath: string | null;
+  selectedPath?: string | null;
+  onSelectTreeNode?: (path: string, isDir: boolean, name: string) => void;
   onSelectFile: (path: string, preview: boolean) => void;
   onMiddleClickFile: (path: string) => void;
+  onRenameFile?: (path: string) => void;
+  onDeletePath?: (path: string, isDir: boolean, name: string) => void;
   depth?: number;
   defaultExpanded?: boolean;
   searchQuery?: string;
@@ -55,8 +59,12 @@ const HighlightedText: React.FC<{ text: string; query?: string }> = ({ text, que
 export const TreeNode: React.FC<TreeNodeProps> = ({
   node,
   activePath,
+  selectedPath,
+  onSelectTreeNode,
   onSelectFile,
   onMiddleClickFile,
+  onRenameFile,
+  onDeletePath,
   depth = 0,
   defaultExpanded = false,
   searchQuery = '',
@@ -76,7 +84,9 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
     ? isManualOpen
     : Boolean(defaultExpanded || isAncestorOfActive || isSearchActive);
 
-  const isSelected = !node.is_dir && node.path === activePath;
+  const isSelected = selectedPath
+    ? node.path === selectedPath
+    : (!node.is_dir && node.path === activePath);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button === 1) {
@@ -96,11 +106,37 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    onSelectTreeNode?.(node.path, node.is_dir, node.name);
     if (node.is_dir) {
       setIsManualOpen(!isOpen);
     } else {
       // Simple clic -> aperçu
       onSelectFile(node.path, true);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Si la touche Suppr / Delete (ou Cmd/Ctrl+Backspace) est pressée
+    if (e.key === 'Delete' || ((e.metaKey || e.ctrlKey) && e.key === 'Backspace')) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (onDeletePath) {
+        onDeletePath(node.path, node.is_dir, node.name);
+      }
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+      if (node.is_dir) {
+        setIsManualOpen(!isOpen);
+      } else {
+        onSelectFile(node.path, false);
+      }
+    } else if (e.key === 'F2') {
+      e.preventDefault();
+      e.stopPropagation();
+      if (onRenameFile) {
+        onRenameFile(node.path);
+      }
     }
   };
 
@@ -115,6 +151,7 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    onSelectTreeNode?.(node.path, node.is_dir, node.name);
 
     const absPath = vaultStore.getAbsolutePath(node.path);
     const mdLink = `[${node.name.replace(/\.md$/, '')}](${node.path})`;
@@ -197,6 +234,17 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
             toast.info('Nom copié', node.name);
           },
         },
+        { id: 'div-dir-delete', divider: true },
+        {
+          id: 'delete-dir',
+          label: 'Supprimer le dossier...',
+          icon: 'trash',
+          shortcut: 'Suppr',
+          danger: true,
+          onClick: () => {
+            if (onDeletePath) onDeletePath(node.path, true, node.name);
+          },
+        },
       ]);
     } else {
       contextMenu.show(e, [
@@ -213,6 +261,14 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
           onClick: () => onMiddleClickFile(node.path),
         },
         { id: 'div-file-1', divider: true },
+        {
+          id: 'rename-file',
+          label: 'Renommer / Déplacer...',
+          icon: 'clipboard' as const,
+          onClick: () => {
+            if (onRenameFile) onRenameFile(node.path);
+          },
+        },
         {
           id: 'reveal-file',
           label: "Révéler dans l'explorateur",
@@ -258,6 +314,17 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
             toast.info('Lien Markdown copié', mdLink);
           },
         },
+        { id: 'div-file-delete', divider: true },
+        {
+          id: 'delete-file',
+          label: 'Supprimer la note...',
+          icon: 'trash',
+          shortcut: 'Suppr',
+          danger: true,
+          onClick: () => {
+            if (onDeletePath) onDeletePath(node.path, false, node.name);
+          },
+        },
       ]);
     }
   };
@@ -265,11 +332,16 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
   return (
     <div>
       <div
+        tabIndex={0}
+        role="treeitem"
+        aria-selected={isSelected}
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
         onMouseDown={handleMouseDown}
         onAuxClick={handleAuxClick}
         onContextMenu={handleContextMenu}
+        onKeyDown={handleKeyDown}
+        onFocus={() => onSelectTreeNode?.(node.path, node.is_dir, node.name)}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -278,9 +350,13 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
           paddingLeft: depth * 14 + 10,
           borderRadius: 'var(--knit-radius-sm)',
           cursor: 'pointer',
+          outline: 'none',
           backgroundColor: isSelected
             ? 'var(--knit-primary-alpha)'
             : 'transparent',
+          boxShadow: isSelected
+            ? 'inset 0 0 0 1px var(--knit-primary-alpha)'
+            : 'none',
           color: isSelected
             ? 'var(--knit-primary)'
             : 'var(--knit-text)',
@@ -330,8 +406,12 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
               key={child.id}
               node={child}
               activePath={activePath}
+              selectedPath={selectedPath}
+              onSelectTreeNode={onSelectTreeNode}
               onSelectFile={onSelectFile}
               onMiddleClickFile={onMiddleClickFile}
+              onRenameFile={onRenameFile}
+              onDeletePath={onDeletePath}
               depth={depth + 1}
               defaultExpanded={defaultExpanded}
               searchQuery={searchQuery}

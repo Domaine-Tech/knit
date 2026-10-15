@@ -18,6 +18,7 @@ import type { FileNode } from './stores/vaultStore';
 import { tabStore } from './stores/tabStore';
 import type { Tab } from './stores/tabStore';
 import { toast } from './stores/toastStore';
+import { historyStore } from './stores/historyStore';
 import { DuotoneIcon } from './components/Icons/DuotoneIcon';
 
 export const App: React.FC = () => {
@@ -131,6 +132,17 @@ export const App: React.FC = () => {
       } else if (isMod && e.key.toLowerCase() === 'n') {
         e.preventDefault();
         handleNewNote();
+      } else if (isMod && !e.shiftKey && e.key.toLowerCase() === 'z') {
+        // Annulation globale (Ctrl+Z) hors des champs texte/éditeur
+        const activeEl = document.activeElement;
+        const isTextInput =
+          activeEl?.closest('.cm-editor') ||
+          ['INPUT', 'TEXTAREA'].includes(activeEl?.tagName || '');
+
+        if (!isTextInput && historyStore.canUndo()) {
+          e.preventDefault();
+          historyStore.undo();
+        }
       } else if (isMod && e.key.toLowerCase() === 'f') {
         // Si le focus n'est pas dans l'éditeur, on donne le focus à l'éditeur CodeMirror
         const editorDom = document.querySelector('.cm-content') as HTMLElement | null;

@@ -177,6 +177,12 @@
       "description": "Permission identifier",
       "oneOf": [
         {
+          "description": "Enables the commit_vault_trash command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-commit-vault-trash",
+          "markdownDescription": "Enables the commit_vault_trash command without any pre-configured scope."
+        },
+        {
           "description": "Enables the create_vault_dir command without any pre-configured scope.",
           "type": "string",
           "const": "allow-create-vault-dir",
@@ -189,10 +195,28 @@
           "markdownDescription": "Enables the create_vault_file command without any pre-configured scope."
         },
         {
+          "description": "Enables the delete_vault_path command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-delete-vault-path",
+          "markdownDescription": "Enables the delete_vault_path command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the get_file_backlinks command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-get-file-backlinks",
+          "markdownDescription": "Enables the get_file_backlinks command without any pre-configured scope."
+        },
+        {
           "description": "Enables the get_vault_tree command without any pre-configured scope.",
           "type": "string",
           "const": "allow-get-vault-tree",
           "markdownDescription": "Enables the get_vault_tree command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the parse_frontmatter command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-parse-frontmatter",
+          "markdownDescription": "Enables the parse_frontmatter command without any pre-configured scope."
         },
         {
           "description": "Enables the pick_vault_folder command without any pre-configured scope.",
@@ -207,16 +231,64 @@
           "markdownDescription": "Enables the read_vault_file command without any pre-configured scope."
         },
         {
+          "description": "Enables the rename_vault_file command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-rename-vault-file",
+          "markdownDescription": "Enables the rename_vault_file command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the restore_vault_path command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-restore-vault-path",
+          "markdownDescription": "Enables the restore_vault_path command without any pre-configured scope."
+        },
+        {
           "description": "Enables the reveal_in_explorer command without any pre-configured scope.",
           "type": "string",
           "const": "allow-reveal-in-explorer",
           "markdownDescription": "Enables the reveal_in_explorer command without any pre-configured scope."
         },
         {
+          "description": "Enables the save_vault_asset command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-save-vault-asset",
+          "markdownDescription": "Enables the save_vault_asset command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the start_vault_watcher command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-start-vault-watcher",
+          "markdownDescription": "Enables the start_vault_watcher command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the stop_vault_watcher command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-stop-vault-watcher",
+          "markdownDescription": "Enables the stop_vault_watcher command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the trash_vault_path command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-trash-vault-path",
+          "markdownDescription": "Enables the trash_vault_path command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the update_frontmatter command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-update-frontmatter",
+          "markdownDescription": "Enables the update_frontmatter command without any pre-configured scope."
+        },
+        {
           "description": "Enables the write_vault_file command without any pre-configured scope.",
           "type": "string",
           "const": "allow-write-vault-file",
           "markdownDescription": "Enables the write_vault_file command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the commit_vault_trash command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-commit-vault-trash",
+          "markdownDescription": "Denies the commit_vault_trash command without any pre-configured scope."
         },
         {
           "description": "Denies the create_vault_dir command without any pre-configured scope.",
@@ -231,10 +303,28 @@
           "markdownDescription": "Denies the create_vault_file command without any pre-configured scope."
         },
         {
+          "description": "Denies the delete_vault_path command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-delete-vault-path",
+          "markdownDescription": "Denies the delete_vault_path command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_file_backlinks command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-get-file-backlinks",
+          "markdownDescription": "Denies the get_file_backlinks command without any pre-configured scope."
+        },
+        {
           "description": "Denies the get_vault_tree command without any pre-configured scope.",
           "type": "string",
           "const": "deny-get-vault-tree",
           "markdownDescription": "Denies the get_vault_tree command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the parse_frontmatter command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-parse-frontmatter",
+          "markdownDescription": "Denies the parse_frontmatter command without any pre-configured scope."
         },
         {
           "description": "Denies the pick_vault_folder command without any pre-configured scope.",
@@ -249,10 +339,52 @@
           "markdownDescription": "Denies the read_vault_file command without any pre-configured scope."
         },
         {
+          "description": "Denies the rename_vault_file command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-rename-vault-file",
+          "markdownDescription": "Denies the rename_vault_file command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the restore_vault_path command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-restore-vault-path",
+          "markdownDescription": "Denies the restore_vault_path command without any pre-configured scope."
+        },
+        {
           "description": "Denies the reveal_in_explorer command without any pre-configured scope.",
           "type": "string",
           "const": "deny-reveal-in-explorer",
           "markdownDescription": "Denies the reveal_in_explorer command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the save_vault_asset command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-save-vault-asset",
+          "markdownDescription": "Denies the save_vault_asset command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the start_vault_watcher command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-start-vault-watcher",
+          "markdownDescription": "Denies the start_vault_watcher command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the stop_vault_watcher command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-stop-vault-watcher",
+          "markdownDescription": "Denies the stop_vault_watcher command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the trash_vault_path command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-trash-vault-path",
+          "markdownDescription": "Denies the trash_vault_path command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the update_frontmatter command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-update-frontmatter",
+          "markdownDescription": "Denies the update_frontmatter command without any pre-configured scope."
         },
         {
           "description": "Denies the write_vault_file command without any pre-configured scope.",

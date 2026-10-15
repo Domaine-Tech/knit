@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-delete-vault-path"
+description = "Enables the delete_vault_path command without any pre-configured scope."
+commands.allow = ["delete_vault_path"]
+
+[[permission]]
+identifier = "deny-delete-vault-path"
+description = "Denies the delete_vault_path command without any pre-configured scope."
+commands.deny = ["delete_vault_path"]

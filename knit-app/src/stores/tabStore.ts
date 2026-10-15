@@ -234,6 +234,28 @@ class TabStore {
     this.tabs.splice(toIndex, 0, moved);
     this.notify();
   }
+
+  public renameTab(oldPath: string, newPath: string) {
+    const tab = this.tabs.find((t) => t.id === oldPath || t.path === oldPath);
+    if (tab) {
+      tab.id = newPath;
+      tab.path = newPath;
+      tab.title = newPath.split('/').pop() || newPath;
+      if (this.activeTabId === oldPath) {
+        this.activeTabId = newPath;
+      }
+      this.notify();
+    }
+  }
+
+  public closeTabsForPath(path: string) {
+    const toClose = this.tabs.filter(
+      (t) => t.path === path || t.path.startsWith(path + '/')
+    );
+    for (const tab of toClose) {
+      this.closeTab(tab.id);
+    }
+  }
 }
 
 export const tabStore = new TabStore();

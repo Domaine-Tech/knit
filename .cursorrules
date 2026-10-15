@@ -42,6 +42,11 @@ Pour toute modification du frontend React (`knit-app`) :
 - **Tooltips Modernes & Rendu des Icônes** :
   - **Interdiction des infobulles OS par défaut** : Utiliser le composant `<Tooltip>` ou les attributs `data-tooltip="Texte"` et `data-shortcut="Ctrl+X"`. Le conteneur global `TooltipContainer` intercepte automatiquement tout attribut `title` et extrait les raccourcis dans un badge `<kbd>`.
   - **Lisibilité des icônes à 14px** : Dans `DuotoneIcon`, veiller à ce que les tracés vectoriels à petite échelle utilisent un `strokeWidth` lisible (>= 40) et des têtes de flèches franches et contrastées pour éliminer tout flou de pixellisation.
+- **Actions Destructives Réversibles & Annulation Globale (`Ctrl + Z`)** :
+  - **Pas de modale intrusive bloquante** pour les suppressions de fichiers/dossiers. L'action s'exécute immédiatement avec fluidité.
+  - **Double filet de sécurité** : L'élément est placé dans la corbeille locale `.knit/trash/` puis transféré dans la Corbeille de l'OS (`trash::delete`).
+  - **Toast d'annulation (`toast.undoable`) & `historyStore`** : L'action propose systématiquement un bouton « Annuler » dans le toast (8 secondes) et s'enregistre dans `historyStore`.
+  - **Gestion centralisée de `Ctrl + Z`** : Dans l'éditeur, `Ctrl + Z` gère l'historique de frappe texte. Hors de l'éditeur, `Ctrl + Z` déclenche l'annulation de la dernière action globale enregistrée.
 
 ---
 

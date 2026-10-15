@@ -14,6 +14,15 @@ pub enum KnitError {
     #[error("Coffre-fort introuvable : {0}")]
     VaultNotFound(String),
 
+    #[error("Erreur Watcher : {0}")]
+    Watcher(String),
+
+    #[error("Erreur Frontmatter : {0}")]
+    Frontmatter(String),
+
+    #[error("Erreur Refactoring de liens : {0}")]
+    LinkRefactor(String),
+
     #[error("Erreur interne : {0}")]
     Custom(String),
 }

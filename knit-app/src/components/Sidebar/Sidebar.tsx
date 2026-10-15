@@ -5,6 +5,8 @@ import { TreeNode } from './TreeNode';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { toast } from '../../stores/toastStore';
 import { contextMenu } from '../../stores/contextMenuStore';
+import { tabStore } from '../../stores/tabStore';
+import { historyStore } from '../../stores/historyStore';
 
 interface SidebarProps {
   files: FileNode[];
@@ -22,6 +24,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [filterText, setFilterText] = useState('');
   const [isCreatingFile, setIsCreatingFile] = useState(false);
   const [newFileName, setNewFileName] = useState('');
+  const [renameTarget, setRenameTarget] = useState<{ oldPath: string; newPath: string } | null>(null);
+  const [selectedNode, setSelectedNode] = useState<{ path: string; isDir: boolean; name: string } | null>(null);
   const [isAllExpanded, setIsAllExpanded] = useState(false);
   const [treeKey, setTreeKey] = useState(0);
 
@@ -71,6 +75,76 @@ export const Sidebar: React.FC<SidebarProps> = ({
       toast.error('Erreur de création', String(err));
     }
   };
+
+  const handleRenameSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!renameTarget) return;
+    const { oldPath, newPath } = renameTarget;
+    const cleanNew = newPath.trim();
+    if (!cleanNew || cleanNew === oldPath) {
+      setRenameTarget(null);
+      return;
+    }
+
+    try {
+      const report = await vaultStore.renameFile(oldPath, cleanNew);
+      tabStore.renameTab(oldPath, cleanNew);
+      setRenameTarget(null);
+      toast.success(
+        'Fichier renommé & liens refactorisés',
+        `${report.links_updated} lien(s) mis à jour dans ${report.files_modified} fichier(s)`
+      );
+    } catch (err: unknown) {
+      toast.error('Erreur lors du renommage', String(err));
+    }
+  };
+
+  const handleDelete = async (path: string, isDir: boolean, name: string) => {
+    try {
+      const trashRecord = await vaultStore.trashPath(path);
+      tabStore.closeTabsForPath(path);
+
+      let commitTimer: number | null = window.setTimeout(async () => {
+        commitTimer = null;
+        historyStore.remove(`trash-${trashRecord.trash_id}`);
+        await vaultStore.commitTrash(trashRecord.trash_id);
+      }, 8000);
+
+      const doUndo = async () => {
+        if (commitTimer) {
+          clearTimeout(commitTimer);
+          commitTimer = null;
+        }
+        historyStore.remove(`trash-${trashRecord.trash_id}`);
+        await vaultStore.restoreTrash(trashRecord.trash_id);
+        if (!isDir) {
+          tabStore.openTab(path, false);
+        }
+        toast.success(
+          isDir ? 'Dossier restauré' : 'Note restaurée',
+          `"${name}" a été restauré`
+        );
+      };
+
+      historyStore.push({
+        id: `trash-${trashRecord.trash_id}`,
+        description: `Suppression de ${name}`,
+        undo: doUndo,
+      });
+
+      toast.undoable(
+        isDir ? 'Dossier supprimé' : 'Note supprimée',
+        `"${name}" déplacé vers la corbeille`,
+        () => {
+          doUndo();
+        },
+        8000
+      );
+    } catch (err: unknown) {
+      toast.error('Erreur de suppression', String(err));
+    }
+  };
+
 
   const handleSidebarContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -298,11 +372,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Liste de l'arborescence */}
       <div
+        tabIndex={-1}
+        onKeyDown={(e) => {
+          if (e.key === 'Delete' || ((e.metaKey || e.ctrlKey) && e.key === 'Backspace')) {
+            const activeEl = document.activeElement;
+            const isInput = ['INPUT', 'TEXTAREA'].includes(activeEl?.tagName || '') || activeEl?.closest('.cm-editor');
+            if (isInput) return;
+
+            const target = selectedNode || (activePath ? { path: activePath, isDir: false, name: activePath.split('/').pop() || activePath } : null);
+            if (target) {
+              e.preventDefault();
+              e.stopPropagation();
+              handleDelete(target.path, target.isDir, target.name);
+            }
+          }
+        }}
         style={{
           flex: 1,
           overflowY: 'auto',
           overflowX: 'hidden',
           padding: '4px 6px',
+          outline: 'none',
         }}
       >
         {filtered.length === 0 ? (
@@ -322,8 +412,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
               key={`${node.id}-${treeKey}-${Boolean(filterText.trim())}`}
               node={node}
               activePath={activePath}
+              selectedPath={selectedNode?.path ?? activePath}
+              onSelectTreeNode={(path, isDir, name) => setSelectedNode({ path, isDir, name })}
               onSelectFile={onSelectFile}
               onMiddleClickFile={onMiddleClickFile}
+              onRenameFile={(path) => setRenameTarget({ oldPath: path, newPath: path })}
+              onDeletePath={(path, isDir, name) => handleDelete(path, isDir, name)}
               defaultExpanded={isAllExpanded || Boolean(filterText.trim())}
               searchQuery={filterText.trim()}
             />
@@ -362,6 +456,79 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <span>Ouvrir un coffre...</span>
         </button>
       </div>
+
+      {/* Boîte de dialogue modale de renommage avec refactoring de liens */}
+      {renameTarget && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.65)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            backdropFilter: 'blur(2px)',
+          }}
+          onClick={() => setRenameTarget(null)}
+        >
+          <div
+            style={{
+              backgroundColor: 'var(--knit-surface)',
+              border: '1px solid var(--knit-border)',
+              borderRadius: 'var(--knit-radius-md)',
+              padding: '20px 24px',
+              width: '440px',
+              maxWidth: '90vw',
+              boxShadow: 'var(--knit-shadow-lg)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: '0 0 8px', fontSize: '15px', color: 'var(--knit-text)' }}>
+              Renommer ou déplacer la note
+            </h3>
+            <p style={{ margin: '0 0 16px', fontSize: '12px', color: 'var(--knit-text-muted)', lineHeight: '1.5' }}>
+              Tous les liens Markdown et WikiLinks pointant vers cette note dans l'ensemble du coffre seront automatiquement recalculés et mis à jour.
+            </p>
+            <form onSubmit={handleRenameSubmit}>
+              <div style={{ marginBottom: 16 }}>
+                <label className="knit-label" style={{ marginBottom: 6, display: 'block' }}>
+                  Nouveau chemin / nom du fichier :
+                </label>
+                <input
+                  className="knit-input"
+                  autoFocus
+                  type="text"
+                  value={renameTarget.newPath}
+                  onChange={(e) => setRenameTarget({ ...renameTarget, newPath: e.target.value })}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') setRenameTarget(null);
+                  }}
+                  style={{ width: '100%', fontFamily: 'var(--knit-font-mono)', fontSize: '13px' }}
+                />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                <button
+                  type="button"
+                  className="knit-btn"
+                  onClick={() => setRenameTarget(null)}
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="knit-btn knit-btn-primary"
+                >
+                  Refactoriser & Renommer
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </aside>
   );
 };

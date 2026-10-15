@@ -1,5 +1,8 @@
 import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
+import type { UnlistenFn } from '@tauri-apps/api/event';
 import { toast } from './toastStore';
+import { crdtManager } from '../crdt/crdtManager';
 
 export interface FileNode {
   id: string;
@@ -8,6 +11,29 @@ export interface FileNode {
   is_dir: boolean;
   extension?: string;
   children: FileNode[];
+}
+
+export interface FrontmatterDoc {
+  has_frontmatter: boolean;
+  raw_frontmatter?: string;
+  fields: Record<string, string>;
+  ordered_keys: string[];
+  body: string;
+}
+
+export interface LinkRefactorReport {
+  files_scanned: number;
+  files_modified: number;
+  links_updated: number;
+  modified_files: string[];
+}
+
+export interface TrashRecord {
+  trash_id: string;
+  original_rel_path: string;
+  item_name: string;
+  is_dir: boolean;
+  deleted_at: number;
 }
 
 type VaultListener = () => void;
@@ -92,18 +118,12 @@ Knit est votre outil de documentation et de gestion de projet collaborative **Lo
 
 ---
 
-## 🚀 Fonctionnalités du Sprint 1
-
-- **Éditeur CodeMirror 6** fidèle au texte brut, sans balises cachées.
-- **Système multi-onglets complet** :
-  - **Clic molette** sur un fichier pour l'ouvrir dans un nouvel onglet permanent.
-  - **Clic molette** sur un onglet pour le fermer immédiatement (\`Ctrl+W\`).
-  - Raccourcis universels : \`Ctrl+Tab\`, \`Ctrl+Shift+T\`, \`Ctrl+1..8\`.
-- **Recherche & Remplacement** intégrés via \`Ctrl+F\` et \`Ctrl+H\`.
-- **Design System sobre & soigné** :
-  - Thème clair et sombre mat (style Obsidian).
-  - Slider interactif pour calibrer l'accent principal \`--knit-hue\`.
-- **Notifications Toast** centralisées en bas à droite avec regroupement anti-spam.
+## 🚀 Fonctionnalités du Sprint 2
+- **Moteur CRDT Yjs** connecté à CodeMirror 6 avec synchronisation bidirectionnelle.
+- **File Watcher Rust** avec **Triple Garde WriteGuard** (is_writing + hash XXH3 + debounce 100ms) pour une coexistence sans boucle avec les agents IA (Cursor, Claude Code, scripts).
+- **Refactoring automatique des liens** : mise à jour instantanée de tous les liens relatifs et WikiLinks du coffre lors du déplacement ou renommage d'un document.
+- **Gestion du presse-papier & Drag & Drop** d'images directement dans le dossier \`assets/\`.
+- **Intégrité absolue des métadonnées Frontmatter YAML** préservant indentations et commentaires.
 
 ---
 
@@ -118,6 +138,7 @@ statuses:
   - termine
 `,
   'KNIT.md': `# Directives IA pour ce coffre-fort
+
 - Conserver le Markdown pur sans format propriétaire.
 - Préserver les frontmatters YAML.
 - Travailler directement dans les fichiers locaux.
@@ -171,14 +192,13 @@ class VaultStore {
 
   private listeners: Set<VaultListener> = new Set();
   private localContents: Record<string, string> = { ...DEMO_CONTENTS };
+  private unlistenFns: UnlistenFn[] = [];
 
   constructor() {
-    // Si on a un chemin sauvegardé ou en mode démo
     const savedPath = localStorage.getItem('knit-last-vault-path');
     if (savedPath && isTauriEnvironment()) {
       this.openVault(savedPath);
     } else {
-      // Démarre en mode démo par défaut
       this.currentVaultPath = 'Knit Demo Vault';
       this.files = DEMO_FILES;
     }
@@ -198,7 +218,6 @@ class VaultStore {
 
   public async pickAndOpenVault(): Promise<boolean> {
     if (!isTauriEnvironment()) {
-      // En navigateur pur, on simule l'ouverture
       this.currentVaultPath = 'Knit Workspace (Web Dev)';
       this.files = DEMO_FILES;
       this.notify();
@@ -227,7 +246,58 @@ class VaultStore {
   public async openVault(path: string): Promise<void> {
     this.currentVaultPath = path;
     localStorage.setItem('knit-last-vault-path', path);
+
+    // Initialisation ou redémarrage du watcher FS natif
+    await this.setupWatcher(path);
     await this.reloadTree();
+  }
+
+  private async setupWatcher(path: string) {
+    // Nettoyer les écouteurs précédents
+    for (const unlisten of this.unlistenFns) {
+      unlisten();
+    }
+    this.unlistenFns = [];
+
+    if (!isTauriEnvironment()) return;
+
+    try {
+      await invoke('start_vault_watcher', { vaultPath: path });
+
+      const u1 = await listen<{ path: string; content: string }>(
+        'vault_file_changed',
+        (event) => {
+          const { path: relPath, content } = event.payload;
+          this.localContents[relPath] = content;
+
+          // Injection dans Yjs via crdtManager
+          const updated = crdtManager.applyExternalContent(relPath, content);
+          if (updated) {
+            const fileName = relPath.split('/').pop() || relPath;
+            toast.info(
+              'Synchronisation externe',
+              `Fichier "${fileName}" mis à jour par un agent externe`
+            );
+          }
+          this.notify();
+        }
+      );
+
+      const u2 = await listen<{ path: string }>('vault_file_deleted', (event) => {
+        const { path: relPath } = event.payload;
+        delete this.localContents[relPath];
+        crdtManager.removeDoc(relPath);
+        this.reloadTree();
+      });
+
+      const u3 = await listen('vault_tree_changed', () => {
+        this.reloadTree();
+      });
+
+      this.unlistenFns.push(u1, u2, u3);
+    } catch (err: unknown) {
+      console.warn('Impossible de démarrer le Vault Watcher :', err);
+    }
   }
 
   public async reloadTree(): Promise<void> {
@@ -267,10 +337,12 @@ class VaultStore {
       return `# ${relPath}\nNouveau document`;
     }
 
-    return await invoke<string>('read_vault_file', {
+    const content = await invoke<string>('read_vault_file', {
       vaultPath: this.currentVaultPath,
       relPath,
     });
+    this.localContents[relPath] = content;
+    return content;
   }
 
   public async writeFile(relPath: string, content: string): Promise<void> {
@@ -278,8 +350,9 @@ class VaultStore {
       throw new Error('Aucun coffre-fort ouvert');
     }
 
+    this.localContents[relPath] = content;
+
     if (!isTauriEnvironment()) {
-      this.localContents[relPath] = content;
       return;
     }
 
@@ -324,6 +397,196 @@ class VaultStore {
     } catch (err: unknown) {
       toast.error('Erreur lors de la création du dossier', String(err));
     }
+  }
+
+  public async saveAsset(base64Data: string, filenameHint?: string): Promise<string> {
+    if (!this.currentVaultPath) {
+      throw new Error('Aucun coffre-fort ouvert');
+    }
+
+    if (!isTauriEnvironment()) {
+      const timestamp = Date.now();
+      const name = filenameHint || `img-${timestamp}.png`;
+      const relPath = `assets/${name}`;
+      this.localContents[relPath] = base64Data;
+      return relPath;
+    }
+
+    return await invoke<string>('save_vault_asset', {
+      vaultPath: this.currentVaultPath,
+      filenameHint,
+      base64Data,
+    });
+  }
+
+  public async renameFile(oldRelPath: string, newRelPath: string): Promise<LinkRefactorReport> {
+    if (!this.currentVaultPath) {
+      throw new Error('Aucun coffre-fort ouvert');
+    }
+
+    if (!isTauriEnvironment()) {
+      const content = this.localContents[oldRelPath] || '';
+      delete this.localContents[oldRelPath];
+      this.localContents[newRelPath] = content;
+      await this.reloadTree();
+      return {
+        files_scanned: 1,
+        files_modified: 0,
+        links_updated: 0,
+        modified_files: [],
+      };
+    }
+
+    const report = await invoke<LinkRefactorReport>('rename_vault_file', {
+      vaultPath: this.currentVaultPath,
+      oldRelPath,
+      newRelPath,
+    });
+
+    await this.reloadTree();
+    return report;
+  }
+
+  public async trashPath(relPath: string): Promise<TrashRecord> {
+    if (!this.currentVaultPath) {
+      throw new Error('Aucun coffre-fort ouvert');
+    }
+
+    if (!isTauriEnvironment()) {
+      const isDir = !relPath.includes('.');
+      const itemName = relPath.split('/').pop() || relPath;
+      const backupContent = this.localContents[relPath];
+      delete this.localContents[relPath];
+      crdtManager.removeDoc(relPath);
+      await this.reloadTree();
+      const mockRecord: TrashRecord = {
+        trash_id: `mock-${Date.now()}`,
+        original_rel_path: relPath,
+        item_name: itemName,
+        is_dir: isDir,
+        deleted_at: Date.now(),
+      };
+      (this as any)._mockTrash = (this as any)._mockTrash || {};
+      (this as any)._mockTrash[mockRecord.trash_id] = { relPath, backupContent };
+      return mockRecord;
+    }
+
+    const record = await invoke<TrashRecord>('trash_vault_path', {
+      vaultPath: this.currentVaultPath,
+      relPath,
+    });
+
+    delete this.localContents[relPath];
+    crdtManager.removeDoc(relPath);
+    await this.reloadTree();
+    return record;
+  }
+
+  public async restoreTrash(trashId: string): Promise<string> {
+    if (!this.currentVaultPath) {
+      throw new Error('Aucun coffre-fort ouvert');
+    }
+
+    if (!isTauriEnvironment()) {
+      const mock = (this as any)._mockTrash?.[trashId];
+      if (mock) {
+        if (mock.backupContent !== undefined) {
+          this.localContents[mock.relPath] = mock.backupContent;
+        }
+        delete (this as any)._mockTrash[trashId];
+        await this.reloadTree();
+        return mock.relPath;
+      }
+      return '';
+    }
+
+    const restoredPath = await invoke<string>('restore_vault_path', {
+      vaultPath: this.currentVaultPath,
+      trashId,
+    });
+
+    await this.reloadTree();
+    return restoredPath;
+  }
+
+  public async commitTrash(trashId: string): Promise<void> {
+    if (!this.currentVaultPath || !isTauriEnvironment()) return;
+    try {
+      await invoke('commit_vault_trash', {
+        vaultPath: this.currentVaultPath,
+        trashId,
+      });
+    } catch {
+      // Ignore si déjà commis ou restauré
+    }
+  }
+
+  public async deletePath(relPath: string): Promise<void> {
+    if (!this.currentVaultPath) {
+      throw new Error('Aucun coffre-fort ouvert');
+    }
+
+    if (!isTauriEnvironment()) {
+      delete this.localContents[relPath];
+      crdtManager.removeDoc(relPath);
+      await this.reloadTree();
+      return;
+    }
+
+    await invoke('delete_vault_path', {
+      vaultPath: this.currentVaultPath,
+      relPath,
+    });
+
+    delete this.localContents[relPath];
+    crdtManager.removeDoc(relPath);
+    await this.reloadTree();
+  }
+
+  public async parseFrontmatter(content: string): Promise<FrontmatterDoc> {
+    if (!isTauriEnvironment()) {
+      const match = content.match(/^---\n([\s\S]*?)\n---/);
+      if (!match) {
+        return {
+          has_frontmatter: false,
+          fields: {},
+          ordered_keys: [],
+          body: content,
+        };
+      }
+      const raw = match[1];
+      const fields: Record<string, string> = {};
+      const ordered_keys: string[] = [];
+      for (const line of raw.split('\n')) {
+        const parts = line.split(':');
+        if (parts.length >= 2) {
+          const k = parts[0].trim();
+          const v = parts.slice(1).join(':').trim();
+          fields[k] = v;
+          ordered_keys.push(k);
+        }
+      }
+      return {
+        has_frontmatter: true,
+        raw_frontmatter: raw,
+        fields,
+        ordered_keys,
+        body: content.slice(match[0].length).trimStart(),
+      };
+    }
+
+    return await invoke<FrontmatterDoc>('parse_frontmatter', { content });
+  }
+
+  public async updateFrontmatter(content: string, key: string, value: string): Promise<string> {
+    if (!isTauriEnvironment()) {
+      if (content.startsWith('---')) {
+        return content.replace(new RegExp(`(${key}\\s*:\\s*)([^\\n]+)`), `$1${value}`);
+      }
+      return `---\n${key}: ${value}\n---\n\n${content}`;
+    }
+
+    return await invoke<string>('update_frontmatter', { content, key, value });
   }
 
   public getAbsolutePath(relPath: string = ''): string {

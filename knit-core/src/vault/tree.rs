@@ -205,3 +205,248 @@ pub fn create_dir(vault_root: &Path, rel_path: &str) -> Result<()> {
     }
     Ok(())
 }
+
+use std::sync::atomic::{AtomicU64, Ordering};
+
+static TRASH_SEQ: AtomicU64 = AtomicU64::new(1);
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct TrashRecord {
+    pub trash_id: String,
+    pub original_rel_path: String,
+    pub item_name: String,
+    pub is_dir: bool,
+    pub deleted_at: u64,
+}
+
+/// Déplace un fichier ou un dossier vers la corbeille locale du coffre (.knit/trash/<trash_id>/)
+/// Permet une annulation immédiate (Ctrl+Z ou bouton "Annuler" dans le toast)
+pub fn trash_path(vault_root: &Path, rel_path: &str) -> Result<TrashRecord> {
+    let safe_path = resolve_safe_path(vault_root, rel_path)?;
+    if !safe_path.exists() {
+        return Err(KnitError::Custom(format!(
+            "Chemin introuvable : {}",
+            rel_path
+        )));
+    }
+
+    let is_dir = safe_path.is_dir();
+    let item_name = safe_path
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_else(|| "element".to_string());
+
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as u64;
+    let seq = TRASH_SEQ.fetch_add(1, Ordering::Relaxed);
+    let trash_id = format!("{}-{}", now, seq);
+
+    let trash_container = vault_root.join(".knit").join("trash").join(&trash_id);
+    fs::create_dir_all(&trash_container)?;
+
+    let staged_item = trash_container.join(&item_name);
+    // Déplacement atomique au sein du même filesystem
+    if fs::rename(&safe_path, &staged_item).is_err() {
+        // En cas d'erreur de renommage (ex: cross-device), copie puis suppression
+        if is_dir {
+            copy_dir_all(&safe_path, &staged_item)?;
+            fs::remove_dir_all(&safe_path)?;
+        } else {
+            fs::copy(&safe_path, &staged_item)?;
+            fs::remove_file(&safe_path)?;
+        }
+    }
+
+    let record = TrashRecord {
+        trash_id,
+        original_rel_path: rel_path.to_string(),
+        item_name,
+        is_dir,
+        deleted_at: now,
+    };
+
+    let meta_json = serde_json::to_string_pretty(&record)
+        .map_err(|e| KnitError::Custom(format!("Erreur sérialisation meta trash : {}", e)))?;
+    fs::write(trash_container.join("meta.json"), meta_json)?;
+
+    Ok(record)
+}
+
+/// Restaure un élément depuis la corbeille locale vers son emplacement d'origine
+pub fn restore_trash_path(vault_root: &Path, trash_id: &str) -> Result<String> {
+    let trash_container = vault_root.join(".knit").join("trash").join(trash_id);
+    if !trash_container.exists() {
+        return Err(KnitError::Custom(format!(
+            "Élément introuvable dans la corbeille : {}",
+            trash_id
+        )));
+    }
+
+    let meta_path = trash_container.join("meta.json");
+    if !meta_path.exists() {
+        return Err(KnitError::Custom("Métadonnées de corbeille manquantes".to_string()));
+    }
+
+    let meta_content = fs::read_to_string(&meta_path)?;
+    let record: TrashRecord = serde_json::from_str(&meta_content)
+        .map_err(|e| KnitError::Custom(format!("Format métadonnées corbeille invalide : {}", e)))?;
+
+    let staged_item = trash_container.join(&record.item_name);
+    if !staged_item.exists() {
+        return Err(KnitError::Custom(format!(
+            "Fichier staged introuvable : {:?}",
+            staged_item
+        )));
+    }
+
+    let original_target = resolve_safe_path(vault_root, &record.original_rel_path)?;
+    if let Some(parent) = original_target.parent() {
+        if !parent.exists() {
+            fs::create_dir_all(parent)?;
+        }
+    }
+
+    if fs::rename(&staged_item, &original_target).is_err() {
+        if record.is_dir {
+            copy_dir_all(&staged_item, &original_target)?;
+            let _ = fs::remove_dir_all(&staged_item);
+        } else {
+            fs::copy(&staged_item, &original_target)?;
+            let _ = fs::remove_file(&staged_item);
+        }
+    }
+
+    let _ = fs::remove_dir_all(&trash_container);
+
+    Ok(record.original_rel_path)
+}
+
+/// Envoie un élément de la corbeille locale vers la corbeille du système d'exploitation
+pub fn commit_trash_to_os(vault_root: &Path, trash_id: &str) -> Result<()> {
+    let trash_container = vault_root.join(".knit").join("trash").join(trash_id);
+    if !trash_container.exists() {
+        return Ok(());
+    }
+
+    let meta_path = trash_container.join("meta.json");
+    if meta_path.exists() {
+        if let Ok(meta_content) = fs::read_to_string(&meta_path) {
+            if let Ok(record) = serde_json::from_str::<TrashRecord>(&meta_content) {
+                let staged_item = trash_container.join(&record.item_name);
+                if staged_item.exists() {
+                    // Envoi vers la corbeille de l'OS via la crate `trash`
+                    match trash::delete(&staged_item) {
+                        Ok(()) => {
+                            // Déplacement vers la corbeille OS réussi : on nettoie le dossier conteneur
+                            let _ = fs::remove_dir_all(&trash_container);
+                        }
+                        Err(e) => {
+                            // Si la corbeille de l'OS n'est pas disponible sur ce volume (ex: lecteur
+                            // réseau, dossier Nextcloud synchronisé, clé USB), on CONSERVE le fichier
+                            // dans .knit/trash/ pour ne JAMAIS détruire les données par mégarde.
+                            eprintln!(
+                                "trash::delete impossible sur ce volume ({}), fichier conservé dans .knit/trash/",
+                                e
+                            );
+                        }
+                    }
+                    return Ok(());
+                }
+            }
+        }
+    }
+
+    let _ = fs::remove_dir_all(&trash_container);
+    Ok(())
+}
+
+fn copy_dir_all(src: &Path, dst: &Path) -> Result<()> {
+    fs::create_dir_all(dst)?;
+    for entry in fs::read_dir(src)? {
+        let entry = entry?;
+        let file_type = entry.file_type()?;
+        if file_type.is_dir() {
+            copy_dir_all(&entry.path(), &dst.join(entry.file_name()))?;
+        } else {
+            fs::copy(entry.path(), dst.join(entry.file_name()))?;
+        }
+    }
+    Ok(())
+}
+
+/// Supprime définitivement un fichier ou un dossier du coffre-fort
+pub fn delete_path(vault_root: &Path, rel_path: &str) -> Result<()> {
+    let safe_path = resolve_safe_path(vault_root, rel_path)?;
+    if !safe_path.exists() {
+        return Err(KnitError::Custom(format!(
+            "Chemin introuvable : {}",
+            rel_path
+        )));
+    }
+    if safe_path.is_dir() {
+        fs::remove_dir_all(&safe_path)?;
+    } else {
+        fs::remove_file(&safe_path)?;
+    }
+    Ok(())
+}
+
+/// Écriture du contenu d'un fichier dans le coffre avec protection WriteGuard
+pub fn write_file_content_with_guard(
+    vault_root: &Path,
+    rel_path: &str,
+    content: &str,
+    guard: &crate::watcher::guard::WriteGuard,
+) -> Result<()> {
+    let safe_path = resolve_safe_path(vault_root, rel_path)?;
+    if let Some(parent) = safe_path.parent() {
+        if !parent.exists() {
+            fs::create_dir_all(parent)?;
+        }
+    }
+    let bytes = content.as_bytes();
+    guard.begin_write(&safe_path, bytes);
+    let res = fs::write(&safe_path, bytes);
+    guard.end_write(&safe_path);
+    res?;
+    Ok(())
+}
+
+/// Renomme ou déplace un fichier du coffre et refactorise automatiquement tous les liens référents
+pub fn rename_file_and_refactor(
+    vault_root: &Path,
+    old_rel_path: &str,
+    new_rel_path: &str,
+    guard: &crate::watcher::guard::WriteGuard,
+) -> Result<crate::markdown::LinkRefactorReport> {
+    let safe_old = resolve_safe_path(vault_root, old_rel_path)?;
+    if !safe_old.exists() {
+        return Err(KnitError::Custom(format!(
+            "Fichier source introuvable : {}",
+            old_rel_path
+        )));
+    }
+
+    let safe_new = resolve_safe_path(vault_root, new_rel_path)?;
+    if safe_new.exists() {
+        return Err(KnitError::Custom(format!(
+            "Un fichier existe déjà à l'emplacement cible : {}",
+            new_rel_path
+        )));
+    }
+
+    if let Some(parent) = safe_new.parent() {
+        if !parent.exists() {
+            fs::create_dir_all(parent)?;
+        }
+    }
+
+    fs::rename(&safe_old, &safe_new)?;
+
+    // Refactorise automatiquement tous les liens dans le coffre
+    let report = crate::markdown::refactor_links_in_vault(vault_root, old_rel_path, new_rel_path, guard)?;
+    Ok(report)
+}
+

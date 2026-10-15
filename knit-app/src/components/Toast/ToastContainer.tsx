@@ -115,6 +115,31 @@ export const ToastContainer: React.FC = () => {
                 {item.message}
               </div>
             )}
+
+            {item.action && (
+              <div style={{ marginTop: 6 }}>
+                <button
+                  type="button"
+                  className="knit-btn"
+                  style={{
+                    fontSize: 11,
+                    padding: '3px 10px',
+                    height: 'auto',
+                    backgroundColor: 'var(--knit-primary)',
+                    color: '#ffffff',
+                    fontWeight: 600,
+                    borderRadius: 'var(--knit-radius-xs)',
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    item.action?.onClick();
+                    toast.dismiss(item.id);
+                  }}
+                >
+                  {item.action.label}
+                </button>
+              </div>
+            )}
           </div>
 
           <button

@@ -395,24 +395,6 @@ export const DuotoneIcon: React.FC<DuotoneIconProps> = ({
           </>
         );
 
-      case 'trash':
-        return (
-          <>
-            <path
-              d="M96 128 L128 432 C130 449.7 144.3 464 162 464 L350 464 C367.7 464 382 449.7 384 432 L416 128 Z"
-              fill={secondaryFill}
-              fillOpacity="0.18"
-              stroke={primaryStroke}
-              strokeWidth="32"
-              strokeLinejoin="round"
-            />
-            <line x1="64" y1="128" x2="448" y2="128" stroke={primaryStroke} strokeWidth="32" strokeLinecap="round" />
-            <path d="M192 128 L192 80 C192 62.3 206.3 48 224 48 L288 48 C305.7 48 320 62.3 320 80 L320 128" fill="none" stroke={primaryStroke} strokeWidth="32" strokeLinejoin="round" />
-            <line x1="208" y1="208" x2="208" y2="384" stroke={primaryStroke} strokeWidth="28" strokeLinecap="round" />
-            <line x1="304" y1="208" x2="304" y2="384" stroke={primaryStroke} strokeWidth="28" strokeLinecap="round" />
-          </>
-        );
-
       case 'external-link':
         return (
           <>
@@ -447,6 +429,35 @@ export const DuotoneIcon: React.FC<DuotoneIconProps> = ({
             <rect x="176" y="48" width="160" height="80" rx="16" fill="var(--knit-surface)" stroke={primaryStroke} strokeWidth="28" />
             <line x1="160" y1="224" x2="352" y2="224" stroke={primaryStroke} strokeWidth="24" strokeLinecap="round" />
             <line x1="160" y1="304" x2="304" y2="304" stroke={primaryStroke} strokeWidth="24" strokeLinecap="round" />
+          </>
+        );
+
+      case 'trash':
+        return (
+          <>
+            <path
+              d="M128 160 L144 448 C144 465.7 158.3 480 176 480 L336 480 C353.7 480 368 465.7 368 448 L384 160 Z"
+              fill={secondaryFill}
+              fillOpacity="0.18"
+            />
+            <path
+              d="M128 160 L144 448 C144 465.7 158.3 480 176 480 L336 480 C353.7 480 368 465.7 368 448 L384 160 Z"
+              fill="none"
+              stroke={primaryStroke}
+              strokeWidth="32"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M80 128 L432 128 M192 128 L192 80 C192 62.3 206.3 48 224 48 L288 48 C305.7 48 320 62.3 320 80 L320 128"
+              fill="none"
+              stroke={primaryStroke}
+              strokeWidth="32"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <line x1="208" y1="224" x2="208" y2="400" stroke={primaryStroke} strokeWidth="28" strokeLinecap="round" />
+            <line x1="256" y1="224" x2="256" y2="400" stroke={primaryStroke} strokeWidth="28" strokeLinecap="round" />
+            <line x1="304" y1="224" x2="304" y2="400" stroke={primaryStroke} strokeWidth="28" strokeLinecap="round" />
           </>
         );
 

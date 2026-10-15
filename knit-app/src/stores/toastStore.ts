@@ -1,5 +1,10 @@
 export type ToastType = 'info' | 'warning' | 'error' | 'success' | 'sync';
 
+export interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
 export interface ToastItem {
   id: string;
   type: ToastType;
@@ -7,6 +12,7 @@ export interface ToastItem {
   message?: string;
   count?: number;
   duration?: number;
+  action?: ToastAction;
   createdAt: number;
 }
 
@@ -97,6 +103,19 @@ class ToastStore {
 
   public error(title: string, message?: string) {
     return this.show({ type: 'error', title, message });
+  }
+
+  public undoable(title: string, message: string, onUndo: () => void, duration = 8000) {
+    return this.show({
+      type: 'info',
+      title,
+      message,
+      duration,
+      action: {
+        label: 'Annuler',
+        onClick: onUndo,
+      },
+    });
   }
 
   /// Toast de synchronisation avec debounce et incrément dynamique

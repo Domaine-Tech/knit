@@ -24,31 +24,38 @@ impl WriteGuard {
         }
     }
 
+    fn normalize_path(path: &Path) -> PathBuf {
+        path.canonicalize().unwrap_or_else(|_| path.to_path_buf())
+    }
+
     /// Appelé AVANT d'écrire un .md sur disque par Knit
     pub fn begin_write(&self, path: &Path, content: &[u8]) {
+        let normalized = Self::normalize_path(path);
         let mut state = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
-        state.is_writing.insert(path.to_path_buf(), true);
-        state.last_written_hash.insert(path.to_path_buf(), xxh3_64(content));
+        state.is_writing.insert(normalized.clone(), true);
+        state.last_written_hash.insert(normalized, xxh3_64(content));
     }
 
     /// Appelé APRÈS l'écriture pour désactiver le flag
     pub fn end_write(&self, path: &Path) {
+        let normalized = Self::normalize_path(path);
         let mut state = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
-        state.is_writing.insert(path.to_path_buf(), false);
+        state.is_writing.insert(normalized, false);
     }
 
     /// Détermine si un événement de modification du File Watcher provient d'un agent externe
     pub fn is_external_change(&self, path: &Path, new_content: &[u8]) -> bool {
+        let normalized = Self::normalize_path(path);
         let state = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         // Garde 1 : En train d'écrire nous-mêmes
-        if *state.is_writing.get(path).unwrap_or(&false) {
+        if *state.is_writing.get(&normalized).unwrap_or(&false) {
             return false;
         }
 
         // Garde 2 : Hash identique au dernier hash écrit
         let new_hash = xxh3_64(new_content);
-        if let Some(&last_hash) = state.last_written_hash.get(path) {
+        if let Some(&last_hash) = state.last_written_hash.get(&normalized) {
             if new_hash == last_hash {
                 return false;
             }
@@ -60,7 +67,8 @@ impl WriteGuard {
 
     /// Met à jour manuellement le hash de référence après synchronisation externe
     pub fn record_external_hash(&self, path: &Path, content: &[u8]) {
+        let normalized = Self::normalize_path(path);
         let mut state = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
-        state.last_written_hash.insert(path.to_path_buf(), xxh3_64(content));
+        state.last_written_hash.insert(normalized, xxh3_64(content));
     }
 }

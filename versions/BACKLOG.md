@@ -44,14 +44,16 @@
 
 | # | Tâche | Priorité | Statut | Sprint |
 |---|---|---|---|---|
-| B-007 | Intégrer Yjs avec `y-codemirror.next` | 🔴 | 📋 | Sprint 2 |
-| B-008 | Implémenter le File Watcher Rust (crate `notify`) | 🔴 | 📋 | Sprint 2 |
-| B-009 | Implémenter le WriteGuard (triple garde anti-boucle) | 🔴 | 📋 | Sprint 2 |
-| B-010 | Boucle CRDT ↔ FS (écriture `.md` depuis CRDT, injection depuis watcher) | 🔴 | 📋 | Sprint 2 |
-| B-011 | Parseur YAML frontmatter (lecture/écriture) | 🟠 | 📋 | Sprint 2 |
-| B-011a | Gestion du presse-papier & paste d'images (`Ctrl+V`, Drag&Drop vers `assets/`) | 🟠 | 📋 | Sprint 2 |
-| B-011b | Refactoring automatique des liens (mise à jour auto lors du déplacement/renommage) | 🔴 | 📋 | Sprint 2 |
-| B-012 | Test d'intégration : modifier un `.md` dans Cursor → mise à jour dans Knit | 🟠 | 📋 | Sprint 2 |
+| B-007 | Intégrer Yjs avec `y-codemirror.next` | 🔴 | ✅ | Sprint 2 |
+| B-008 | Implémenter le File Watcher Rust (crate `notify`) | 🔴 | ✅ | Sprint 2 |
+| B-009 | Implémenter le WriteGuard (triple garde anti-boucle) | 🔴 | ✅ | Sprint 2 |
+| B-010 | Boucle CRDT ↔ FS (écriture `.md` depuis CRDT, injection depuis watcher) | 🔴 | ✅ | Sprint 2 |
+| B-011 | Parseur YAML frontmatter (lecture/écriture) | 🟠 | ✅ | Sprint 2 |
+| B-011a | Gestion du presse-papier & paste d'images (`Ctrl+V`, Drag&Drop vers `assets/`) | 🟠 | ✅ | Sprint 2 |
+| B-011b | Refactoring automatique des liens (mise à jour auto lors du déplacement/renommage) | 🔴 | ✅ | Sprint 2 |
+| B-012 | Test d'intégration : modifier un `.md` dans Cursor → mise à jour dans Knit | 🟠 | ✅ | Sprint 2 |
+| B-012a | Suppression réversible dans la Corbeille de l'OS (Win/Mac/Linux) & Undo | 🟠 | ✅ | Sprint 2 |
+| B-012b | Revoir le staging `.knit/trash` & Ctrl+Z (restauration OS native vers `.knit/trash` au lieu du chemin d'origine) | 🟠 | 📋 | Sprint 2 (À revoir) |
 
 ---
 
