@@ -1,0 +1,46 @@
+---
+description: Règles de design et de code pour l'interface utilisateur collaborative (sobre, fluide, non intrusive)
+globs: knit-app/src/**/*.{tsx,ts,css}
+---
+
+# Règles UI/UX pour la Collaboration Sobre & Fluide
+
+Toutes les interfaces collaboratives dans Knit doivent respecter les principes suivants :
+
+## 1. Zéro Bruit Visuel (Low Cognitive Load)
+- **Pas de mouvement agressif** : Lors du déplacement du curseur d'un collaborateur distant, appliquer une interpolation linéaire douce (**Lerp**) avec échantillonnage à 50ms-100ms.
+- **Rétraction automatique des badges** : Le badge d'initiales/nom au-dessus d'un curseur distant doit se rétracter après 3 secondes d'inactivité en une puce discrète de 4px.
+- **Translucidité des sélections** : Ne JAMAIS appliquer un fond opaque sur la sélection d'un tiers. Utiliser `rgba(..., 0.18)` ou `color-mix(in srgb, var(--user-color) 18%, transparent)`.
+
+## 2. Palette Collaborateurs Sobre & Déterministe
+- Utiliser la palette des 10 teintes feutrées calibrées définie dans `docs/UI_UX.md`.
+- Assigner la couleur via un hash stable : `hash(peer_id) % 10`.
+- Réserver exclusivement le violet `#8B5CF6` et l'icône `🤖` pour les agents d'intelligence artificielle.
+
+## 3. Présence dans la Sidebar (File Tree) & En-tête
+- Afficher des pastilles circulaires de 18px avec initiales majuscules (`border-radius: 50%`) à droite du nom de fichier.
+- **Empilement & Dépassement (`+N`)** :
+  - Dans la sidebar : afficher au maximum 2 avatars (`[TH][AL]`), puis un cercle neutre `+N` si davantage de pairs sont actifs.
+  - Dans l'en-tête de note : afficher jusqu'à 4 avatars, puis `+N`.
+  - Au survol ou au clic sur `+N`, ouvrir un popover vertical sobre listant tous les collaborateurs surnuméraires.
+- Au survol d'un avatar, afficher un popover sobre (nom, statut d'édition, ligne/section, dernière activité).
+- Au clic sur un avatar, déclencher la navigation vers le fichier et faire défiler l'éditeur vers la position du pair avec un pulse doux de 200ms.
+
+## 4. Système de Toast Centralisé
+- Position fixe : `bottom: 24px; right: 24px`.
+- Empilement vertical vers le haut, plafonné à 4 toasts maximum.
+- Toujours regrouper les notifications de synchronisation distante avec un debounce pour éviter les rafales de popups.
+- Style sobre : fond `--knit-surface`, bordure fine `--knit-border`, icônes Reicon Duotone.
+
+## 5. Héritage Notion & Obsidian (Keyboard-First)
+- **Menu Slash (`/`)** : Implémenter l'autocomplétion sur ligne vide pour insérer `/titre`, `/tache`, `/callout`, `/mermaid`, `/code`, `/image`.
+- **WikiLinks (`[[...]]`)** : Détection et suggestion instantanée des notes du coffre dès la frappe de `[[`.
+- **Quick Switcher (`Ctrl+O`) & Palette (`Ctrl+P`)** : Navigation ultra-rapide par recherche floue sans lever les mains du clavier.
+- **Callouts Markdown** : Support visuel sobre des alertes GFM (`> [!NOTE]`, `> [!TIP]`, `> [!WARNING]`).
+
+## 6. Manifeste Anti-Look « Codé par IA »
+- **Zéro gradient fluo** : Interdiction des boutons ou bannières avec des dégradés saturés (rose/violet/cyan néon).
+- **Vrais noirs mats (Style Obsidian)** : Le thème sombre utilise `#141414`, `#1E1E1E` et `#252525`. Aucun fond bleu marine spatial (`#0F172A`).
+- **Micro-contrastes au lieu d'ombres massives** : Utiliser des bordures nettes de 1px (`var(--knit-border)`) et de faibles ombres légères.
+- **Transitions instantanées** : Durée de transition de 80ms à 150ms. Pas d'effets élastiques ou d'animations gadget qui ralentissent l'utilisateur.
+

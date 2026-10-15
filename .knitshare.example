@@ -1,0 +1,20 @@
+# .knitshare — Configuration partagée du coffre-fort Knit
+# Ce fichier est synchronisé en P2P entre tous les pairs du coffre.
+# Il peut être lu et modifié aussi bien par les humains que par les agents IA.
+
+nom: "Knit Workspace"
+version: 1
+
+structure:
+  wiki: "wiki/"
+  taches: "projet/taches/"
+  sprints: "projet/sprints/"
+  assets: "assets/"
+
+conventions:
+  statuts: [backlog, a-faire, en-cours, en-revue, termine]
+  priorites: [basse, moyenne, haute, critique]
+  format_id: "task-{NNN}"
+
+mermaid:
+  theme_sync: true           # Les diagrammes s'adaptent dynamiquement au thème de l'utilisateur

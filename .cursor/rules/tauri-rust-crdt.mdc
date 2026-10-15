@@ -1,0 +1,28 @@
+---
+description: Règles pour le backend Rust (knit-core, src-tauri), le File Watcher anti-boucle et la synchronisation P2P/CRDT
+globs: knit-core/**/*.rs, knit-app/src-tauri/**/*.rs
+---
+
+# Règles Backend Rust, CRDT & Réseau P2P
+
+## 1. Triple Garde Anti-Boucle (WriteGuard)
+- Ne JAMAIS écrire un fichier sur le disque sans activer le flag `is_writing` dans le `WriteGuard`.
+- Tout événement émis par `notify` doit passer par la vérification du hash `XXH3` et le debounce de 100ms avant d'être injecté dans Yjs.
+- Seules les modifications ayant un hash différent de la dernière écriture de Knit doivent être traitées comme des modifications externes (ex: IA ou éditeur tiers).
+
+## 2. Séparation Stricte Local vs Synchronisé
+- Le répertoire `.knit/` est strictement LOCAL :
+  - Clé privée Ed25519 dans `.knit/identity/` (ne JAMAIS la propager en P2P).
+  - Cache Mermaid et snapshots compactés dans `.knit/snapshots/`.
+- Le fichier `.knitshare` est SYNCHRONISÉ :
+  - Nom du coffre, chemins de structure, conventions d'équipe.
+  - Doit être lisible par un humain et sérialisé en YAML propre.
+
+## 3. Gestion des Médias (Iroh Blobs)
+- Les images et pièces jointes du dossier `assets/` ne doivent JAMAIS transiter par l'OpLog textuel Yjs.
+- Elles doivent être hachées en BLAKE3 et transférées par morceaux via le protocole Iroh Blobs.
+- Le frontend reçoit le chemin relatif local (ex: `assets/img-YYYYMMDD-HHmmss.png`).
+
+## 4. Concurrence & Performance
+- Éviter les verrous bloquants `std::sync::Mutex` dans les contextes asynchrones ; préférer `tokio::sync::RwLock` ou des canaux mpsc.
+- Utiliser `xxhash-rust::xxh3` pour toutes les opérations de hachage rapide en mémoire.

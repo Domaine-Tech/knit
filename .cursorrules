@@ -1,0 +1,50 @@
+# 🧶 Knit — Directives Officielles pour Agents IA (.cursorrules)
+
+Vous êtes un agent IA collaborant au développement de **Knit**, une application collaborative local-first et peer-to-peer (P2P) en Markdown pur.
+
+---
+
+## 🏛️ Architecture & Philosophie du Projet
+
+1. **Local-First & P2P Souverain** :
+   - Fichiers `.md` stockés en clair sur le disque de l'utilisateur.
+   - Synchronisation réseau P2P chiffrée de bout en bout via **Iroh** (QUIC). Aucun serveur central de stockage.
+   - Images et médias stockés dans `assets/` et synchronisés via **Iroh Blobs**.
+   - Données locales dans `.knit/` (JAMAIS versionné ni partagé). Configuration partagée dans `.knitshare` (versionné et synchronisé).
+
+2. **Éditeur Markdown Pur (CodeMirror 6)** :
+   - Le texte est du Markdown brut. Ne JAMAIS introduire de format propriétaire, d'AST JSON opaque ou de balises cachées.
+   - Respecter scrupuleusement les frontmatters YAML (`---`) en tête de fichier pour les tâches et métadonnées.
+
+3. **Moteur CRDT & File Watcher (Triple Garde)** :
+   - Moteur CRDT : **Yjs**.
+   - File Watcher Rust (`notify`) protégé par `WriteGuard` (flag `is_writing` + hash `XXH3` + debounce 100ms) pour éliminer toute boucle infinie.
+
+---
+
+## 🎨 Principes UI/UX Collaboratifs (Sober & Fluid)
+
+Pour toute modification du frontend React (`knit-app`) :
+- **Pas de look IA gadget** : Aucun dégradé néon criard, pas d'ombres violettes agressives, pas de glassmorphism flou lourd.
+- **Sobriété & Design System** : Utiliser exclusivement les variables CSS de `docs/UI_UX.md` (`--knit-hue`, `--knit-primary`, `--knit-radius-md`, etc.).
+- **Palette Collaborateurs Sobre** : 10 teintes feutrées stables, calculées déterministement par `hash(peer_id) % 10`.
+- **Curseurs distants discrets** : Barre fine de 2px, sélection de texte à 15-20% d'opacité max, badge d'initiales qui s'estompe après 3 secondes d'inactivité.
+- **Présence multi-fichiers** : Cercles d'avatars de 18px avec initiales majuscules dans l'arborescence des fichiers (sidebar). Infobulle sobre au survol, saut au clic vers le fichier du pair.
+- **Toasts non intrusifs** : Ancrés en bas à droite (`bottom: 24px; right: 24px`), max 4 empilés, regroupement dynamique avec debounce pour éviter le spam.
+- **Icônes** : Utiliser **Reicon** en mode Duotone (couche 2 avec opacité 20% liée à `--knit-hue`).
+
+---
+
+## 📦 Règles de Code & Méthodologie Agile
+
+1. **Rust (knit-core & src-tauri)** :
+   - Code idiomatique, `clippy` sans warning, gestion d'erreurs explicite (`Result<T, KnitError>`).
+   - I/O asynchrones (`tokio`) pour ne jamais bloquer le thread principal Tauri.
+2. **TypeScript / React (knit-app)** :
+   - Typage strict (`strict: true`), aucun `any`.
+   - Composants fonctionnels légers, séparation stricte entre composants d'UI purs et stores d'état (`toastStore`, `vaultStore`).
+3. **Gestion des Sprints & Backlog** :
+   - Consulter `versions/BACKLOG.md` avant toute implémentation.
+   - Si une nouvelle tâche ou un bug est détecté en cours de travail, l'ajouter à `versions/BACKLOG.md` avec le statut `💡 nouveau` et le consigner dans la section *"Ajouts en cours de sprint"* du `SPRINT.md` actif.
+   - Ne jamais supprimer de tâches ou de documentation sans consigne explicite.
+   - Rédiger les messages de commits en français clair et concis (ex: `feat(editor): ajout du collage d'images depuis le presse-papier`).

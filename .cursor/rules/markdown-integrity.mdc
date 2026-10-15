@@ -1,0 +1,25 @@
+---
+description: Règles de préservation de l'intégrité du Markdown pur et des métadonnées YAML
+globs: **/*.md, **/*.yaml, **/*.yml
+---
+
+# Règles d'Intégrité Markdown & Frontmatter
+
+## 1. Markdown Pur & Zéro Artefact
+- Les fichiers stockés sur le disque doivent rester du standard CommonMark / GitHub Flavored Markdown (GFM) pur.
+- Ne JAMAIS insérer de balises propriétaires ou de commentaires cachés spécifiques à un moteur.
+- L'éditeur repose sur CodeMirror 6 : préserver les sauts de lignes et les espaces d'origine lors des diffs.
+
+## 2. Intégrité des Frontmatters YAML
+- Tout fichier tâche ou wiki comportant un bloc d'en-tête `---` doit impérativement conserver sa structure YAML valide.
+- Champs obligatoires pour les tâches (`projet/taches/*.md`) :
+  - `id`: identifiant unique (ex: `task-001`)
+  - `titre`: nom de la tâche
+  - `statut`: l'un des statuts définis dans `.knitshare` (ex: `a-faire`, `en-cours`, `termine`)
+  - `priorite`: `basse`, `moyenne`, `haute`, ou `critique`
+- Ne jamais réordonner arbitrairement les clés de frontmatter lors des sauvegardes automatisées.
+
+## 3. Blocs Mermaid
+- Tout diagramme doit être encapsulé dans un bloc standard ```` ```mermaid ````.
+- Privilégier les diagrammes vectoriels sobres (`graph`, `flowchart`, `sequenceDiagram`).
+- Éviter d'insérer des styles CSS inline dans le code Mermaid : le moteur Knit applique automatiquement le thème lié à `--knit-hue`.

@@ -1,0 +1,180 @@
+# 📦 Système de Versioning
+
+> Comment Knit gère ses versions, ses sprints, et son backlog.
+
+---
+
+## Méthodologie
+
+### Format de version
+
+**SemVer** : `vMAJOR.MINOR.PATCH`
+
+| Composant | Quand on incrémente |
+|---|---|
+| **MAJOR** | Changement incompatible (format de vault, protocole P2P) |
+| **MINOR** | Nouvelle fonctionnalité rétrocompatible |
+| **PATCH** | Correction de bug |
+
+### Structure des sprints
+
+Chaque version contient **1 à 3 sprints** de **1 à 2 semaines** chacun.
+
+```
+versions/
+├── VERSIONING.md           # Ce fichier
+├── BACKLOG.md              # Backlog global (modifiable à tout moment)
+│
+├── v0.1.0/                 # Version 0.1.0 — Éditeur Local
+│   ├── CHANGELOG.md        # Ce qui a changé dans cette version
+│   ├── sprint-1/
+│   │   └── SPRINT.md       # Objectifs, tâches, statut du sprint
+│   └── sprint-2/
+│       └── SPRINT.md
+│
+├── v0.2.0/                 # Version 0.2.0 — Réseau P2P
+│   ├── CHANGELOG.md
+│   ├── sprint-3/
+│   │   └── SPRINT.md
+│   └── sprint-4/
+│       └── SPRINT.md
+│
+├── v0.3.0/                 # Version 0.3.0 — Vues Projet & Mermaid
+│   ├── CHANGELOG.md
+│   ├── sprint-5/
+│   │   └── SPRINT.md
+│   └── sprint-6/
+│       └── SPRINT.md
+│
+└── v1.0.0/                 # Version 1.0.0 — Production Release
+    ├── CHANGELOG.md
+    ├── sprint-7/
+    │   └── SPRINT.md
+    └── sprint-8/
+        └── SPRINT.md
+```
+
+---
+
+## Règles du backlog
+
+### Le backlog est TOUJOURS modifiable
+
+Le fichier `BACKLOG.md` peut être mis à jour **à tout moment**, y compris en milieu de sprint. C'est la liste vivante de tout ce qui reste à faire.
+
+### Ajout en milieu de sprint
+
+Quand une nouvelle tâche est ajoutée au backlog **pendant** un sprint en cours :
+
+1. Ajouter la tâche dans `BACKLOG.md` avec le statut `💡 nouveau`
+2. Dans le `SPRINT.md` du sprint en cours, ajouter une entrée dans la section **"Ajouts en cours de sprint"**
+3. La tâche n'est **PAS** automatiquement ajoutée au sprint en cours — elle sera planifiée dans un sprint futur, sauf décision contraire
+
+### Statuts des tâches dans le backlog
+
+| Icône | Statut | Signification |
+|---|---|---|
+| 💡 | `nouveau` | Vient d'être ajouté, pas encore planifié |
+| 📋 | `planifie` | Assigné à un sprint spécifique |
+| 🔄 | `en-cours` | En cours de développement |
+| ✅ | `termine` | Terminé et livré |
+| ❌ | `annule` | Annulé / abandonné |
+| ⏸️ | `suspendu` | Mis en pause, à reprendre plus tard |
+
+### Priorités
+
+| Icône | Priorité |
+|---|---|
+| 🔴 | Critique — Bloquant |
+| 🟠 | Haute — Important pour le sprint |
+| 🟡 | Moyenne — Souhaitable |
+| 🟢 | Basse — Nice to have |
+
+---
+
+## Format d'un SPRINT.md
+
+```markdown
+# Sprint N — [Nom du sprint]
+
+> Objectif : [Objectif principal en une phrase]
+
+| Info | Détail |
+|---|---|
+| **Version** | vX.Y.Z |
+| **Durée** | [date début] → [date fin] |
+| **Statut** | 🟡 En cours / ✅ Terminé / ❌ Annulé |
+
+## Tâches du sprint
+
+| # | Tâche | Priorité | Statut | Assigné |
+|---|---|---|---|---|
+| 1 | Description... | 🔴 | ✅ | — |
+| 2 | Description... | 🟠 | 🔄 | — |
+
+## Ajouts en cours de sprint
+
+> Tâches ajoutées au backlog pendant ce sprint.
+
+| Date | Tâche ajoutée | Raison | Intégré au sprint ? |
+|---|---|---|---|
+| — | — | — | — |
+
+## Rétrospective
+
+### Ce qui a bien marché
+- ...
+
+### Ce qu'on peut améliorer
+- ...
+```
+
+---
+
+## Format d'un CHANGELOG.md
+
+```markdown
+# Changelog — vX.Y.Z
+
+> [Description courte de la version]
+
+## ✨ Nouveautés
+- Feature 1
+- Feature 2
+
+## 🐛 Corrections
+- Bug fix 1
+
+## 🔧 Technique
+- Refactoring, optimisation...
+
+## 💥 Breaking Changes
+- (si applicable)
+```
+
+---
+
+## Roadmap
+
+```mermaid
+gantt
+    title Roadmap Knit
+    dateFormat YYYY-MM-DD
+    axisFormat %d %b
+
+    section v0.1.0 — Éditeur Local
+    Sprint 1 : s1, 2026-10-20, 14d
+    Sprint 2 : s2, after s1, 14d
+
+    section v0.2.0 — Réseau P2P
+    Sprint 3 : s3, after s2, 14d
+    Sprint 4 : s4, after s3, 14d
+
+    section v0.3.0 — Vues & Mermaid
+    Sprint 5 : s5, after s4, 14d
+    Sprint 6 : s6, after s5, 14d
+
+    section v1.0.0 — Production
+    Sprint 7 : s7, after s6, 14d
+    Sprint 8 : s8, after s7, 14d
+```
