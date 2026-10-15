@@ -132,13 +132,59 @@ knit/
 
 ---
 
-## Trois boucles critiques
+## Boucles critiques de synchronisation & refactoring
 
 | Boucle | Déclencheur | Flux |
 |---|---|---|
 | **Humain → Réseau** | L'utilisateur tape dans l'éditeur | Éditeur → CRDT → P2P → Pairs + écriture `.md` sur disque |
 | **IA → Réseau** | Un agent IA modifie un `.md` | File Watcher → diff → CRDT → P2P → Pairs |
 | **Réseau → Local** | Un pair envoie une modification | P2P → CRDT → mise à jour éditeur + écriture `.md` sur disque |
+| **Déplacement / Renommage** | Un fichier est déplacé ou renommé (UI ou disque) | File Watcher/UI → Index Backlinks → Recalcul chemins relatifs → Mise à jour atomique CRDT des fichiers référents |
+
+---
+
+## 🔗 Refactoring Automatique des Liens (Auto-Link Refactoring)
+
+Lorsqu'un fichier ou un sous-dossier est déplacé ou renommé (par exemple `wiki/archi.md` déplacé vers `wiki/core/architecture.md`), **aucun lien ne doit être cassé**.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as 👤 Utilisateur / IA
+    participant FS as 📁 Système de fichiers
+    participant Watcher as 🦀 Watcher Rust
+    participant Graph as 🕸️ Graphe de Liens (Backlinks)
+    participant CRDT as ⚡ Moteur CRDT Yjs
+    participant Disk as 📄 Fichiers référents
+
+    User->>FS: Déplace fichier.md vers dossier/fichier.md
+    FS->>Watcher: Événement Rename(old_path, new_path)
+    Watcher->>Graph: Trouve tous les fichiers pointant vers old_path
+    Graph->>CRDT: Calcule les nouveaux chemins relatifs & WikiLinks
+    CRDT->>Disk: Applique la mise à jour des liens (WriteGuard)
+    CRDT->>CRDT: Diffuse la mise à jour aux pairs P2P
+```
+
+### 1. Le Graphe de Liens Inversés (Backlink Graph)
+Knit maintient en mémoire un graphe orienté de toutes les relations entre documents :
+- Pour chaque fichier, Knit connaît la liste exacte des notes qui pointent vers lui.
+- Le graphe est mis à jour à chaque modification sans re-scanner tout le disque.
+
+### 2. Détection bidirectionnelle (UI et Disque)
+- **Déplacement dans Knit (UI)** : Glisser-déposer un fichier dans un autre dossier de la sidebar ou renommer la note.
+- **Déplacement externe (Disque / IA)** : Si Cursor, Claude Code ou une commande terminal (`mv`) déplace le fichier, l'événement `notify::Rename` est immédiatement intercepté par le backend Rust.
+
+### 3. Mise à jour intelligente des deux formats de liens
+- **Liens Markdown relatifs standards** :
+  - `[Architecture](../wiki/archi.md)` est recalculé en fonction de la position respective de la note appelante : `[Architecture](../wiki/core/architecture.md)`.
+- **WikiLinks (`[[...]]`)** :
+  - `[[archi]]` est mis à jour en `[[architecture]]` ou `[[core/architecture]]`.
+- **Images & Pièces Jointes (`assets/`)** :
+  - Si une image est renommée ou déplacée, toutes les balises `![Image](assets/...)` sont refactorisées automatiquement.
+
+### 4. Notification & Traçabilité
+- Un toast discret informe l'utilisateur : *"📁 Fichier déplacé : 6 liens mis à jour dans 3 fichiers"*.
+- L'opération est enregistrée dans l'historique CRDT de chaque fichier référent (avec possibilité de Time Travel/Undo).
 
 ---
 

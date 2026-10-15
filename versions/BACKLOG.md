@@ -49,6 +49,7 @@
 | B-010 | Boucle CRDT ↔ FS (écriture `.md` depuis CRDT, injection depuis watcher) | 🔴 | 📋 | Sprint 2 |
 | B-011 | Parseur YAML frontmatter (lecture/écriture) | 🟠 | 📋 | Sprint 2 |
 | B-011a | Gestion du presse-papier & paste d'images (`Ctrl+V`, Drag&Drop vers `assets/`) | 🟠 | 📋 | Sprint 2 |
+| B-011b | Refactoring automatique des liens (mise à jour auto lors du déplacement/renommage) | 🔴 | 📋 | Sprint 2 |
 | B-012 | Test d'intégration : modifier un `.md` dans Cursor → mise à jour dans Knit | 🟠 | 📋 | Sprint 2 |
 
 ---

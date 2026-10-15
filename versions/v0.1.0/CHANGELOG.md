@@ -23,6 +23,7 @@
   - File watcher Rust ultra-rapide basé sur `notify`.
   - Triple garde anti-boucle infinie (flag `isWriting`, hash XXH3, debounce 100ms).
 - **Frontmatter YAML** : Détection, parsing et préservation transparente des métadonnées.
+- **Refactoring Automatique des Liens (Auto-Link Update)** : Déplacer ou renommer une note ou une image met à jour instantanément tous les liens relatifs et WikiLinks du coffre pour bannir les liens brisés.
 
 ---
 

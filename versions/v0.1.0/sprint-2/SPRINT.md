@@ -20,6 +20,7 @@
 | B-010 | Boucle bidirectionnelle CRDT ↔ FS (CRDT écrit sur FS, FS injecte dans Yjs) | 🔴 | 📋 | — |
 | B-011 | Parseur YAML frontmatter (lecture/écriture propre sans casser le Markdown) | 🟠 | 📋 | — |
 | B-011a | Gestion du presse-papier & paste d'images (`Ctrl+V`, Drag&Drop vers `assets/`) | 🟠 | 📋 | — |
+| B-011b | Refactoring automatique des liens (mise à jour auto lors du déplacement/renommage) | 🔴 | 📋 | — |
 | B-012 | Test d'intégration : modifier un `.md` dans Cursor/IDE externe → synchro Knit | 🟠 | 📋 | — |
 
 ---
@@ -31,6 +32,7 @@
 - [ ] Une modification externe (via Cursor, VS Code, script shell ou Claude Code) met à jour l'éditeur Knit en temps réel sans perte de curseur.
 - [ ] Les frontmatters YAML sont préservés à l'identique (clés, indentations, sauts de ligne).
 - [ ] Coller une image (`Ctrl+V`) ou la glisser-déposer enregistre le binaire dans `assets/` et insère le lien Markdown instantanément.
+- [ ] Déplacer ou renommer un fichier met à jour automatiquement tous les liens relatifs et WikiLinks qui pointaient vers lui dans l'ensemble du coffre.
 - [ ] Test automatisé de concurrence : écriture simultanée interne et externe sans corruption.
 
 ---
