@@ -31,14 +31,17 @@ export const Header: React.FC<HeaderProps> = ({
     e.stopPropagation();
 
     contextMenu.show(e, [
-      {
-        id: 'header-save',
-        label: 'Sauvegarder la note active',
-        icon: 'save',
-        shortcut: 'Ctrl+S',
-        disabled: !canSave,
-        onClick: onSave,
-      },
+      ...(canSave
+        ? [
+            {
+              id: 'header-save',
+              label: 'Sauvegarder la note active',
+              icon: 'save' as const,
+              shortcut: 'Ctrl+S',
+              onClick: onSave,
+            },
+          ]
+        : []),
       {
         id: 'header-sync',
         label: 'Simuler un événement de sync P2P',
@@ -72,53 +75,18 @@ export const Header: React.FC<HeaderProps> = ({
     <header
       onContextMenu={handleHeaderContextMenu}
       style={{
-        height: 44,
+        height: 40,
         backgroundColor: 'var(--knit-bg)',
         borderBottom: '1px solid var(--knit-border)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '0 16px',
+        padding: '0 14px',
         userSelect: 'none',
         flexShrink: 0,
       }}
     >
-      {/* Marque Knit */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div
-          style={{
-            width: 26,
-            height: 26,
-            borderRadius: 'var(--knit-radius-sm)',
-            backgroundColor: 'var(--knit-primary)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#FFFFFF',
-            fontWeight: 800,
-            fontSize: 14,
-            boxShadow: 'var(--knit-shadow-sm)',
-          }}
-        >
-          🧶
-        </div>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-          <span style={{ fontWeight: 700, fontSize: 15, letterSpacing: '-0.02em' }}>
-            Knit
-          </span>
-          <span
-            style={{
-              fontSize: 11,
-              color: 'var(--knit-text-muted)',
-              fontFamily: 'var(--knit-font-mono)',
-            }}
-          >
-            v0.1.0 (Sprint 1)
-          </span>
-        </div>
-      </div>
-
-      {/* Contrôles du centre : actions */}
+      {/* Contrôles de gauche : actions principales */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <button
           onClick={onSave}

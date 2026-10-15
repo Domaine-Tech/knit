@@ -267,33 +267,33 @@ export const Editor: React.FC<EditorProps> = ({
     const mdLink = `[${fileName.replace(/\.md$/, '')}](${path})`;
 
     contextMenu.show(e, [
-      {
-        id: 'cut',
-        label: 'Couper',
-        shortcut: 'Ctrl+X',
-        disabled: !hasSelection,
-        onClick: () => {
-          if (hasSelection && view) {
-            const sel = view.state.selection.main;
-            navigator.clipboard.writeText(selection);
-            view.dispatch({
-              changes: { from: sel.from, to: sel.to, insert: '' },
-            });
-          }
-        },
-      },
-      {
-        id: 'copy',
-        label: 'Copier',
-        icon: 'copy',
-        shortcut: 'Ctrl+C',
-        disabled: !hasSelection,
-        onClick: () => {
-          if (hasSelection) {
-            navigator.clipboard.writeText(selection);
-          }
-        },
-      },
+      ...(hasSelection
+        ? [
+            {
+              id: 'cut',
+              label: 'Couper',
+              shortcut: 'Ctrl+X',
+              onClick: () => {
+                if (hasSelection && view) {
+                  const sel = view.state.selection.main;
+                  navigator.clipboard.writeText(selection);
+                  view.dispatch({
+                    changes: { from: sel.from, to: sel.to, insert: '' },
+                  });
+                }
+              },
+            },
+            {
+              id: 'copy',
+              label: 'Copier',
+              icon: 'copy' as const,
+              shortcut: 'Ctrl+C',
+              onClick: () => {
+                navigator.clipboard.writeText(selection);
+              },
+            },
+          ]
+        : []),
       {
         id: 'paste',
         label: 'Coller',

@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Knit",
+        "title": "Knit — v0.1.0 (Sprint 1)",
         "width": 1280,
         "height": 820,
         "minWidth": 850,

@@ -55,24 +55,34 @@ export const TabBar: React.FC<TabBarProps> = ({ tabs, activeTabId, onNewNote }) 
         shortcut: 'Ctrl+W',
         onClick: () => tabStore.closeTab(tab.id),
       },
-      {
-        id: 'close-others',
-        label: 'Fermer les autres onglets',
-        disabled: tabs.length <= 1,
-        onClick: () => tabStore.closeOtherTabs(tab.id),
-      },
-      {
-        id: 'close-to-right',
-        label: 'Fermer les onglets à droite',
-        disabled: index >= tabs.length - 1,
-        onClick: () => tabStore.closeTabsToTheRight(tab.id),
-      },
-      {
-        id: 'close-all',
-        label: 'Fermer tous les onglets',
-        danger: true,
-        onClick: () => tabStore.closeAllTabs(),
-      },
+      ...(tabs.length > 1
+        ? [
+            {
+              id: 'close-others',
+              label: 'Fermer les autres onglets',
+              onClick: () => tabStore.closeOtherTabs(tab.id),
+            },
+          ]
+        : []),
+      ...(index < tabs.length - 1
+        ? [
+            {
+              id: 'close-to-right',
+              label: 'Fermer les onglets à droite',
+              onClick: () => tabStore.closeTabsToTheRight(tab.id),
+            },
+          ]
+        : []),
+      ...(tabs.length > 1
+        ? [
+            {
+              id: 'close-all',
+              label: 'Fermer tous les onglets',
+              danger: true,
+              onClick: () => tabStore.closeAllTabs(),
+            },
+          ]
+        : []),
       { id: 'div-tab-1', divider: true },
       ...(tab.isPreview
         ? [

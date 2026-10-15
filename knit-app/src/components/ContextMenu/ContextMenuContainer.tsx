@@ -1,7 +1,29 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { contextMenu } from '../../stores/contextMenuStore';
-import type { ContextMenuState } from '../../stores/contextMenuStore';
+import type { ContextMenuItem, ContextMenuState } from '../../stores/contextMenuStore';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
+
+// Masque complètement les actions non disponibles et purge les séparateurs orphelins/doublons
+const getSanitizedMenuItems = (rawItems: ContextMenuItem[]): ContextMenuItem[] => {
+  const activeOnly = rawItems.filter((item) => !item.disabled);
+
+  const sanitized: ContextMenuItem[] = [];
+  for (const item of activeOnly) {
+    if (item.divider) {
+      if (sanitized.length > 0 && !sanitized[sanitized.length - 1].divider) {
+        sanitized.push(item);
+      }
+    } else {
+      sanitized.push(item);
+    }
+  }
+
+  if (sanitized.length > 0 && sanitized[sanitized.length - 1].divider) {
+    sanitized.pop();
+  }
+
+  return sanitized;
+};
 
 export const ContextMenuContainer: React.FC = () => {
   const [menuState, setMenuState] = useState<ContextMenuState>(contextMenu.state);
@@ -36,7 +58,8 @@ export const ContextMenuContainer: React.FC = () => {
     };
   }, [menuState.isOpen]);
 
-  if (!menuState.isOpen) return null;
+  const visibleItems = getSanitizedMenuItems(menuState.items);
+  if (!menuState.isOpen || visibleItems.length === 0) return null;
 
   return (
     <div
@@ -64,7 +87,7 @@ export const ContextMenuContainer: React.FC = () => {
         e.stopPropagation();
       }}
     >
-      {menuState.items.map((item, index) => {
+      {visibleItems.map((item, index) => {
         if (item.divider) {
           return (
             <div
