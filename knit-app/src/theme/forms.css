@@ -53,20 +53,27 @@ input.knit-input-seamless:focus {
   box-shadow: none !important;
   background-color: transparent !important;
   padding: 0 !important;
-  height: auto !important;
+  margin: 0 !important;
+  height: 26px !important;
+  line-height: 26px !important;
+  font-size: 12px !important;
+  display: block !important;
+  outline: none !important;
 }
 
 /* Groupe de saisie avec icône intégrée */
 .knit-input-group {
   display: flex;
   align-items: center;
+  height: 28px;
+  padding: 0 8px;
   gap: 6px;
-  padding: 4px 8px;
   background-color: var(--knit-surface);
   border: 1px solid var(--knit-border);
   border-radius: var(--knit-radius-sm);
   transition: border-color var(--knit-transition-fast),
               box-shadow var(--knit-transition-fast);
+  box-sizing: border-box;
 }
 
 .knit-input-group:focus-within {

@@ -233,7 +233,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Barre de filtre rapide */}
       <div style={{ padding: '0 12px 8px 12px' }}>
         <div className="knit-input-group">
-          <DuotoneIcon name="search" size={12} style={{ color: 'var(--knit-text-muted)' }} />
+          <DuotoneIcon name="search" size={13} style={{ color: 'var(--knit-text-muted)', flexShrink: 0 }} />
           <input
             type="text"
             className="knit-input-seamless"
@@ -243,14 +243,33 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onKeyDown={(e) => {
               if (e.key === 'Escape') setFilterText('');
             }}
+            spellCheck={false}
+            autoComplete="off"
+            autoCorrect="off"
             style={{
+              flex: 1,
               width: '100%',
+              minWidth: 0,
               fontSize: 12,
               color: 'var(--knit-text)',
             }}
           />
           {filterText && (
-            <button onClick={() => setFilterText('')} style={{ color: 'var(--knit-text-muted)' }}>
+            <button
+              onClick={() => setFilterText('')}
+              title="Effacer la recherche (Échap)"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 16,
+                height: 16,
+                padding: 0,
+                color: 'var(--knit-text-muted)',
+                flexShrink: 0,
+                borderRadius: 'var(--knit-radius-xs)',
+              }}
+            >
               <DuotoneIcon name="close" size={10} />
             </button>
           )}
