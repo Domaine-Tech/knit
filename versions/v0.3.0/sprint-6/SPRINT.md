@@ -20,6 +20,7 @@
 | B-030 | Mode interactif code ↔ rendu (clic pour basculer en édition textuelle) | 🟠 | 📋 | — |
 | B-030a | Menu Slash Command (`/`) & Callouts GFM (`> [!NOTE]`) (Notion) | 🟠 | 📋 | — |
 | B-030b | Multi-onglets & Split View (`Ctrl+\`) (Obsidian) | 🟡 | 📋 | — |
+| B-030c | Mode Live Preview (style Obsidian : masquer balises Markdown hors curseur) | 🔴 | 📋 | — |
 | B-031 | Optimisation de rendu : debounce 300ms et cache SVG pour éviter les saccades | 🟡 | 📋 | — |
 
 ---
@@ -28,6 +29,7 @@
 
 - [ ] Les blocs de code ```` ```mermaid ```` s'affichent par défaut sous forme de diagrammes SVG élégants aux angles arrondis.
 - [ ] Cliquer sur le diagramme ou placer le curseur dessus affiche le code source éditable.
+- [ ] Les éléments Markdown (titres `#`, gras `**`, listes à cocher `- [ ]`) sont rendus visuellement et révèlent leur syntaxe brute au survol/clic de la ligne (Live Preview Obsidian).
 - [ ] Taper `/` sur une ligne vide ouvre le menu de sélection rapide Notion-like sans latence.
 - [ ] Les callouts (`> [!NOTE]`, `> [!TIP]`) s'affichent avec une bordure fine et un fond feutré.
 - [ ] `Ctrl+\` divise la vue pour afficher 2 notes côte à côte en mode split view.

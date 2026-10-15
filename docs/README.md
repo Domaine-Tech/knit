@@ -13,6 +13,7 @@ Bienvenue dans la documentation officielle du projet **Knit**.
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Architecture technique, modules Tauri/Rust, protocole de synchronisation |
 | [UI_UX.md](UI_UX.md) | Design system, tokens CSS, palette HSL dynamique et intégration Mermaid |
 | [SOLUTIONS.md](SOLUTIONS.md) | Réponses techniques aux 3 warnings et au caution (boucle watcher, CRDT, etc.) |
+| [COMMANDS.md](../COMMANDS.md) | Guide des commandes de développement, tests, linting et raccourcis |
 | [WIZARD.md](WIZARD.md) | Spécification et wireframes du Wizard d'initialisation (créer/rejoindre un coffre) |
 
 ---

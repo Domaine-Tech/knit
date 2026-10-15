@@ -102,6 +102,17 @@ graph TD
 
 **Règle d'or** : Si un agent IA modifie `task-042.md`, le changement apparaît dans l'interface Knit et chez tous les pairs en moins de 2 secondes.
 
+### 🛡️ Règle de Développement IA : Le Typage Strict (sauf si contre-productif)
+
+Pour garantir une collaboration fiable et sans régression entre développeurs humains et agents IA (Cursor, Claude Code, Antigravity) :
+
+- **Le typage fort comme contrat d'interface** :
+  - **TypeScript (`knit-app`)** : `strict: true`, interdiction des `any` paresseux, interfaces et types de données explicites. Les types stricts constituent le meilleur garde-fou empêchant les agents IA d'halluciner ou d'introduire des erreurs silencieuses.
+  - **Rust (`knit-core` & `src-tauri`)** : Typage fort et exhaustif avec `Result<T, KnitError>` et `Option<T>`, zéro `unwrap()` ou `expect()` non maîtrisé en production.
+- **La nuance pragmatique ("Sauf si contre-productif")** :
+  - Le typage fort doit accélérer et fiabiliser le projet, jamais le paralyser.
+  - Si un sur-typage théorique extrême (gymnastique de types génériques imbriqués, métaprogrammation complexe) complique inutilement la lecture du code ou bloque la productivité sans gain réel de robustesse, l'implémentation pragmatique et lisible l'emporte.
+
 ---
 
 ## Pilier 5 — ⚡ Zéro Conflit, Zéro Latence

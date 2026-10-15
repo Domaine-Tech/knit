@@ -1,0 +1,128 @@
+/* ==========================================================================
+   KNIT DESIGN TOKEN SYSTEM
+   Fichier de référence officiel du Design System Knit
+   Conforme aux spécifications de docs/UI_UX.md et .cursorrules
+   ========================================================================== */
+
+:root {
+  /* === COULEUR PRINCIPALE DYNAMIQUE (0 à 360) === */
+  --knit-hue: 260; /* Violet moderne sobre par défaut */
+
+  /* Palette calculée dynamiquement à partir du hue */
+  --knit-primary: hsl(var(--knit-hue), 55%, 55%);
+  --knit-primary-hover: hsl(var(--knit-hue), 55%, 48%);
+  --knit-primary-soft: hsl(var(--knit-hue), 40%, 94%);
+  --knit-primary-muted: hsl(var(--knit-hue), 20%, 70%);
+  --knit-primary-alpha: hsla(var(--knit-hue), 55%, 55%, 0.18);
+
+  /* === THEME CLAIR (Par défaut) === */
+  --knit-bg: #FAFAFA;
+  --knit-surface: #FFFFFF;
+  --knit-surface-hover: #F5F5F5;
+  --knit-surface-active: #EEEEEE;
+  --knit-border: #E5E5E5;
+  --knit-border-subtle: #F0F0F0;
+
+  /* Typographie */
+  --knit-text: #1A1A1A;
+  --knit-text-secondary: #6B6B6B;
+  --knit-text-muted: #A0A0A0;
+
+  /* Rayons d'arrondis harmonieux */
+  --knit-radius-xs: 4px;   /* Badges, tags, puces */
+  --knit-radius-sm: 6px;   /* Boutons, champs de saisie */
+  --knit-radius-md: 10px;  /* Cartes, onglets, panneaux */
+  --knit-radius-lg: 16px;  /* Modales, menus volants */
+  --knit-radius-xl: 24px;  /* Grands conteneurs */
+
+  /* Ombres douces (sans excès de flou) */
+  --knit-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --knit-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --knit-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.12);
+
+  /* Micro-interactions rapides (80ms - 150ms) */
+  --knit-transition-fast: 80ms ease;
+  --knit-transition: 150ms ease;
+  --knit-transition-slow: 300ms ease;
+
+  /* Polices de caractères */
+  --knit-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --knit-font-mono: 'JetBrains Mono', 'Fira Code', Menlo, Consolas, monospace;
+
+  /* Toasts */
+  --knit-toast-width: 340px;
+}
+
+/* === THEME SOMBRE (Vrais noirs mats style Obsidian) === */
+[data-theme="dark"] {
+  --knit-bg: #0F0F0F;
+  --knit-surface: #1A1A1A;
+  --knit-surface-hover: #252525;
+  --knit-surface-active: #2E2E2E;
+  --knit-border: #2A2A2A;
+  --knit-border-subtle: #202020;
+
+  --knit-text: #ECECEC;
+  --knit-text-secondary: #8A8A8A;
+  --knit-text-muted: #555555;
+
+  --knit-primary-soft: hsl(var(--knit-hue), 35%, 18%);
+  --knit-primary-alpha: hsla(var(--knit-hue), 55%, 55%, 0.22);
+
+  --knit-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --knit-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --knit-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.4);
+}
+
+/* === RESET GLOBAL ET FONDATIONS === */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--knit-font);
+  font-size: 14px;
+  line-height: 1.5;
+  background-color: var(--knit-bg);
+  color: var(--knit-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none;
+}
+
+input, button, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  outline: none;
+}
+
+/* Scrollbar sobre */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--knit-border);
+  border-radius: var(--knit-radius-xs);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--knit-text-muted);
+}

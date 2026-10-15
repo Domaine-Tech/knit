@@ -1,0 +1,20 @@
+[package]
+name = "knit-app"
+version = "0.1.0"
+description = "Knit Desktop Application"
+edition = "2021"
+
+[lib]
+name = "knit_app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.0", features = [] }
+
+[dependencies]
+knit-core = { path = "../../knit-core" }
+tauri = { version = "2.0", features = [] }
+tauri-plugin-dialog = "2.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1", features = ["full"] }

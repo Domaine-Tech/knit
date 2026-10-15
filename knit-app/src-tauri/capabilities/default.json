@@ -1,0 +1,16 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Default capability for Knit main window",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "dialog:default",
+    "allow-get-vault-tree",
+    "allow-read-vault-file",
+    "allow-write-vault-file",
+    "allow-create-vault-file",
+    "allow-create-vault-dir",
+    "allow-pick-vault-folder"
+  ]
+}

@@ -54,4 +54,5 @@ knit/
 3. **Respecter le format des sprints** défini dans `versions/VERSIONING.md`
 4. **Ne jamais altérer le formatage Markdown pur** lors de l'édition (compatibilité CodeMirror 6)
 5. **Utiliser des messages de commit clairs** en français
+6. **Typage strict (sauf si contre-productif)** : Coder en TypeScript strict et Rust idiomatique sans `any` pour sécuriser les modifications des agents IA, sans tomber dans un sur-typage théorique si cela nuit à la productivité réelle.
 

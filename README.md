@@ -45,10 +45,25 @@ Knit est un espace de travail collaboratif qui synchronise des fichiers Markdown
 
 ---
 
+## Démarrage rapide & Commandes
+
+Consultez le guide des commandes : **[COMMANDS.md](COMMANDS.md)**
+
+```powershell
+# Lancer l'application en mode watch (Tauri v2 + Vite HMR)
+.\dev.ps1
+
+# Ou en mode Web pur
+.\dev.ps1 -Mode web
+```
+
+---
+
 ## Documentation
 
 | Document | Description |
 |---|---|
+| [COMMANDS.md](COMMANDS.md) | Guide rapide des commandes de développement, tests et build |
 | [docs/VISION.md](docs/VISION.md) | Vision, problème résolu, architecture technique |
 | [docs/PILIERS.md](docs/PILIERS.md) | Les 9 piliers fondateurs détaillés |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture technique, flux de synchronisation |
@@ -62,7 +77,8 @@ Knit est un espace de travail collaboratif qui synchronise des fichiers Markdown
 |---|---|
 | [versions/VERSIONING.md](versions/VERSIONING.md) | Système de versioning et méthodologie sprints |
 | [versions/BACKLOG.md](versions/BACKLOG.md) | Backlog global (modifiable à tout moment) |
-| [versions/v0.1.0/](versions/v0.1.0/) | Version 0.1.0 — Éditeur Local |
+| [versions/v0.1.0/sprint-1/SPRINT.md](versions/v0.1.0/sprint-1/SPRINT.md) | Sprint 1 — Fondations de l'Éditeur (Terminé) |
+| [versions/v0.1.0/sprint-2/SPRINT.md](versions/v0.1.0/sprint-2/SPRINT.md) | Sprint 2 — CRDT & File Watcher (Planifié) |
 | [versions/v0.2.0/](versions/v0.2.0/) | Version 0.2.0 — Réseau P2P |
 | [versions/v0.3.0/](versions/v0.3.0/) | Version 0.3.0 — Vues Projet & Mermaid |
 | [versions/v1.0.0/](versions/v1.0.0/) | Version 1.0.0 — Production Release |
@@ -71,6 +87,5 @@ Knit est un espace de travail collaboratif qui synchronise des fichiers Markdown
 
 ## Statut actuel
 
-🟡 **Phase** : Conception & Documentation  
-📋 **Version cible** : v0.1.0  
+🔄 **Phase** : Développement v0.1.0 (Sprint 1 ✅ Terminé, Sprint 2 📋 Planifié)  
 📅 **Dernière mise à jour** : 2026-10-15

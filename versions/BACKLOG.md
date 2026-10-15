@@ -28,16 +28,16 @@
 
 | # | Tâche | Priorité | Statut | Sprint |
 |---|---|---|---|---|
-| B-001 | Scaffolder le projet Tauri v2 + React | 🔴 | 📋 | Sprint 1 |
-| B-002 | Intégrer CodeMirror 6 avec `@codemirror/lang-markdown` | 🔴 | 📋 | Sprint 1 |
-| B-002a | Recherche locale & remplacement (`Ctrl+F`, `Ctrl+H` via `@codemirror/search`) | 🔴 | 📋 | Sprint 1 |
-| B-003 | Créer le composant Sidebar (arbre de fichiers) | 🟠 | 📋 | Sprint 1 |
-| B-003b | Système d'onglets (Multi-tabs, clic molette open/close, drag & drop, Ctrl+W/Tab) | 🔴 | 📋 | Sprint 1 |
-| B-004 | Implémenter la lecture/écriture de fichiers via Tauri IPC | 🔴 | 📋 | Sprint 1 |
-| B-005 | Créer le Design Token System (CSS variables) | 🟠 | 📋 | Sprint 1 |
-| B-006 | Implémenter le thème clair/sombre + slider hue | 🟡 | 📋 | Sprint 1 |
-| B-006a | Intégrer les icônes Reicon (style Duotone) adaptées à `--knit-hue` | 🟠 | 📋 | Sprint 1 |
-| B-006b | Système de Toast centralisé (bottom-right, animations, store optimisé) | 🟠 | 📋 | Sprint 1 |
+| B-001 | Scaffolder le projet Tauri v2 + React | 🔴 | ✅ | Sprint 1 |
+| B-002 | Intégrer CodeMirror 6 avec `@codemirror/lang-markdown` | 🔴 | ✅ | Sprint 1 |
+| B-002a | Recherche locale & remplacement (`Ctrl+F`, `Ctrl+H` via `@codemirror/search`) | 🔴 | ✅ | Sprint 1 |
+| B-003 | Créer le composant Sidebar (arbre de fichiers) | 🟠 | ✅ | Sprint 1 |
+| B-003b | Système d'onglets (Multi-tabs, clic molette open/close, drag & drop, Ctrl+W/Tab) | 🔴 | ✅ | Sprint 1 |
+| B-004 | Implémenter la lecture/écriture de fichiers via Tauri IPC | 🔴 | ✅ | Sprint 1 |
+| B-005 | Créer le Design Token System (CSS variables) | 🟠 | ✅ | Sprint 1 |
+| B-006 | Implémenter le thème clair/sombre + slider hue | 🟡 | ✅ | Sprint 1 |
+| B-006a | Intégrer les icônes Reicon (style Duotone) adaptées à `--knit-hue` | 🟠 | ✅ | Sprint 1 |
+| B-006b | Système de Toast centralisé (bottom-right, animations, store optimisé) | 🟠 | ✅ | Sprint 1 |
 
 ### Sprint 2 — CRDT & File Watcher
 
@@ -107,6 +107,7 @@
 | B-030 | Mode code ↔ rendu (clic sur le diagramme pour éditer) | 🟠 | 📋 | Sprint 6 |
 | B-030a | Menu Slash Command (`/`) & Callouts GFM (`> [!NOTE]`) (Notion) | 🟠 | 📋 | Sprint 6 |
 | B-030b | Multi-onglets & Split View (`Ctrl+\`) (Obsidian) | 🟡 | 📋 | Sprint 6 |
+| B-030c | Mode Live Preview (style Obsidian : masquer balises Markdown hors curseur) | 🔴 | 📋 | Sprint 6 |
 | B-031 | Debounce 300ms sur le rendu Mermaid | 🟡 | 📋 | Sprint 6 |
 
 ---

@@ -1,0 +1,17 @@
+[package]
+name = "knit-core"
+version = "0.1.0"
+edition = "2021"
+description = "Core library for Knit: vault management, markdown processing, and CRDT synchronization"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "2.0"
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "sync", "fs", "io-util", "macros"] }
+xxhash-rust = { version = "0.8", features = ["xxh3"] }
+notify = "6.1"
+walkdir = "2.5"
+
+[dev-dependencies]
+tempfile = "3.10"

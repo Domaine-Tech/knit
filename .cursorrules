@@ -38,12 +38,15 @@ Pour toute modification du frontend React (`knit-app`) :
 ## 📦 Règles de Code & Méthodologie Agile
 
 1. **Rust (knit-core & src-tauri)** :
-   - Code idiomatique, `clippy` sans warning, gestion d'erreurs explicite (`Result<T, KnitError>`).
+   - Code idiomatique, `clippy` sans warning, gestion d'erreurs explicite (`Result<T, KnitError>`), zéro `unwrap()` sauvage.
    - I/O asynchrones (`tokio`) pour ne jamais bloquer le thread principal Tauri.
 2. **TypeScript / React (knit-app)** :
-   - Typage strict (`strict: true`), aucun `any`.
+   - Typage strict (`strict: true`), aucun `any` paresseux, types de retour et interfaces explicites.
    - Composants fonctionnels légers, séparation stricte entre composants d'UI purs et stores d'état (`toastStore`, `vaultStore`).
-3. **Gestion des Sprints & Backlog** :
+3. **Pilier IA : Typage Strict (sauf si contre-productif)** :
+   - Le typage strict est le contrat de sécurité principal régissant la collaboration entre agents IA et développeurs.
+   - *Exception pragmatique* : Ne pas bloquer la productivité avec des gymnastiques de types sur-complexes ou des types génériques imbriqués à outrance si le bénéfice réel est nul. La lisibilité et l'efficacité priment toujours.
+4. **Gestion des Sprints & Backlog** :
    - Consulter `versions/BACKLOG.md` avant toute implémentation.
    - Si une nouvelle tâche ou un bug est détecté en cours de travail, l'ajouter à `versions/BACKLOG.md` avec le statut `💡 nouveau` et le consigner dans la section *"Ajouts en cours de sprint"* du `SPRINT.md` actif.
    - Ne jamais supprimer de tâches ou de documentation sans consigne explicite.

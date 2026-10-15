@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "knit-core",
+    "knit-app/src-tauri",
+]
+resolver = "2"

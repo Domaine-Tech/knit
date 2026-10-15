@@ -1,0 +1,13 @@
+{
+  "name": "knit-workspace",
+  "private": true,
+  "description": "Knit — Local-first P2P Collaborative Markdown Wiki & Project Tracker",
+  "scripts": {
+    "dev": "npm --prefix knit-app run tauri dev",
+    "dev:web": "npm --prefix knit-app run dev",
+    "dev:desktop": "npm --prefix knit-app run tauri dev",
+    "build": "npm --prefix knit-app run build && cargo build --workspace",
+    "test": "cargo test --workspace",
+    "lint": "cargo clippy --workspace && npm --prefix knit-app run lint"
+  }
+}

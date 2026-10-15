@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-create-vault-dir"
+description = "Enables the create_vault_dir command without any pre-configured scope."
+commands.allow = ["create_vault_dir"]
+
+[[permission]]
+identifier = "deny-create-vault-dir"
+description = "Denies the create_vault_dir command without any pre-configured scope."
+commands.deny = ["create_vault_dir"]

@@ -20,3 +20,6 @@ Knit est une application collaborative local-first et peer-to-peer (P2P) pour la
 4. **Agilité & Traçabilité** :
    - Ne jamais altérer l'arborescence des versions sans mettre à jour `versions/BACKLOG.md`.
    - Utiliser des messages de commit en français.
+5. **Typage Strict (sauf si contre-productif)** :
+   - TypeScript rigoureux (`strict: true`, pas de `any`) et Rust idiomatique (`Result<T, KnitError>`) pour garantir des contrats d'interfaces fiables entre agents IA et développeurs. Ne déroger que si un sur-typage théorique bloque la productivité.
+
