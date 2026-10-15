@@ -7,6 +7,7 @@ fn main() {
             "create_vault_file",
             "create_vault_dir",
             "pick_vault_folder",
+            "reveal_in_explorer",
         ]),
     );
     tauri_build::try_build(attributes).expect("Erreur lors de la compilation de tauri-build");

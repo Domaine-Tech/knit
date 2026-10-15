@@ -207,6 +207,12 @@
           "markdownDescription": "Enables the read_vault_file command without any pre-configured scope."
         },
         {
+          "description": "Enables the reveal_in_explorer command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-reveal-in-explorer",
+          "markdownDescription": "Enables the reveal_in_explorer command without any pre-configured scope."
+        },
+        {
           "description": "Enables the write_vault_file command without any pre-configured scope.",
           "type": "string",
           "const": "allow-write-vault-file",
@@ -241,6 +247,12 @@
           "type": "string",
           "const": "deny-read-vault-file",
           "markdownDescription": "Denies the read_vault_file command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the reveal_in_explorer command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-reveal-in-explorer",
+          "markdownDescription": "Denies the reveal_in_explorer command without any pre-configured scope."
         },
         {
           "description": "Denies the write_vault_file command without any pre-configured scope.",

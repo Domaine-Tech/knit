@@ -56,5 +56,7 @@ knit/
 5. **Utiliser des messages de commit clairs** en français
 6. **Typage strict (sauf si contre-productif)** : Coder en TypeScript strict et Rust idiomatique sans `any` pour sécuriser les modifications des agents IA, sans tomber dans un sur-typage théorique si cela nuit à la productivité réelle.
 7. **Menus contextuels applicatifs centralisés** : Le clic droit webview natif est proscrit. Pour toute nouvelle interface ou modification d'écran dans `knit-app`, alimenter systématiquement le menu contextuel centralisé (`contextMenuStore.show`) avec les actions clés (copie de chemins relatifs et absolus, liens Markdown, manipulation de fichiers/onglets, révélation).
+8. **Formulaires centralisés & robustesse clic molette** : Styliser tous les composants via `src/theme/forms.css` et tokens Knit. Sur clic molette (`button === 1`), neutraliser la boussole de défilement dans `onMouseDown` (`e.preventDefault()`) et placer l'action métier exclusivement dans `onAuxClick`.
+9. **Tooltips modernes & lisibilité des icônes** : Proscrire les tooltips natifs de l'OS au profit du composant `<Tooltip>` ou des attributs `data-tooltip` et `data-shortcut` (interceptés par `TooltipContainer`). Garantir un tracé net (`strokeWidth >= 40`) pour les icônes `DuotoneIcon` à 14px.
 
 

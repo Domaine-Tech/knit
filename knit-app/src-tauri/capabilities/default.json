@@ -11,6 +11,7 @@
     "allow-write-vault-file",
     "allow-create-vault-file",
     "allow-create-vault-dir",
-    "allow-pick-vault-folder"
+    "allow-pick-vault-folder",
+    "allow-reveal-in-explorer"
   ]
 }
