@@ -17,9 +17,10 @@
 | B-023 | Vue Kanban : colonnes automatiques basées sur `statut:` du frontmatter | 🔴 | 📋 | — |
 | B-024 | Vue Tableau : liste filtrable, triable et exportable de toutes les tâches | 🟠 | 📋 | — |
 | B-025 | Drag & Drop Kanban (déplacer une carte met à jour le frontmatter YAML) | 🟠 | 📋 | — |
-| B-026 | Recherche full-text indexée sur l'ensemble des fichiers du vault | 🟡 | 📋 | — |
+| B-026 | Recherche globale dans tout le coffre (`Ctrl+Shift+F` avec snippets) | 🔴 | 📋 | — |
 | B-026a | Quick Switcher (`Ctrl+O`) & Palette de commandes (`Ctrl+P`) (Obsidian) | 🔴 | 📋 | — |
 | B-026b | WikiLinks bidirectionnels `[[Note]]` avec autocomplétion (Obsidian) | 🟠 | 📋 | — |
+| B-026c | Système de Tags (`#inline` et `tags: [...]` en frontmatter, volet de filtres) | 🟠 | 📋 | — |
 
 ---
 
@@ -28,6 +29,8 @@
 - [ ] Tout fichier Markdown comportant un frontmatter YAML avec un champ `statut:` apparaît comme une carte dans le Kanban.
 - [ ] Glisser une carte d'une colonne "En cours" à "Terminé" modifie la ligne `statut: termine` dans le fichier `.md` sur le disque.
 - [ ] `Ctrl+O` ouvre le Quick Switcher instantanément avec recherche floue sur tous les fichiers du coffre.
+- [ ] `Ctrl+Shift+F` ouvre le volet de recherche globale avec affichage des snippets et lignes en surbrillance.
+- [ ] Taper `#` suggère les tags existants du coffre ; cliquer sur un tag dans le volet filtre les notes associées.
 - [ ] Taper `[[` dans CodeMirror 6 suggère les notes du coffre et insère le lien cliquable.
 - [ ] La vue Tableau permet de filtrer par priorité (🔴, 🟠, 🟡, 🟢) et de rechercher par titre en temps réel (< 50ms).
 - [ ] Aucune altération du texte, des commentaires ou des métadonnées additionnelles lors du déplacement d'une carte.

@@ -133,6 +133,75 @@ Knit intègre un système multi-onglets ultra-rapide respectant **100% des conve
 - **Indicateur de modifications / Présence** :
   - Si un collaborateur ou un agent IA édite ce document en arrière-plan : petite pastille de couleur miniature discrète sur le bord de l'onglet.
 
+---
+
+## 🔍 Recherche & Système de Tags (Navigation & Découverte)
+
+Knit propose une suite de recherche complète, pensée pour être instantanée et utilisable à 100% au clavier.
+
+```
+┌────────────────────────────────────────────────────────┐
+│  🔍 RECHERCHE LOCALE (Ctrl+F) — DANS LE FICHIER ACTIF  │
+│  [ CRDT                 ]  [Aa] [.*] [1/14]  ▲  ▼  ×   │
+└────────────────────────────────────────────────────────┘
+```
+
+### 1. Recherche Locale dans le Fichier (`Ctrl + F` & `Ctrl + H`)
+Intégrée nativement à CodeMirror 6 via l'extension `@codemirror/search` :
+- **Barre de recherche flottante épurée** : s'affiche en haut à droite de l'éditeur sans décaler le texte.
+- **Raccourcis** :
+  - **`Ctrl + F`** : Ouvrir la recherche.
+  - **`Entrée`** / **`Shift + Entrée`** : Occurrence suivante / précédente.
+  - **`Ctrl + H`** : Ouvrir le mode **Rechercher & Remplacer** (remplacement unitaire ou *"Remplacer tout"*).
+  - **`Échap`** : Fermer la recherche et replacer le curseur sur le texte.
+- **Fonctionnalités avancées** :
+  - Compteur d'occurrences dynamique (*"3 sur 18"*).
+  - Options : Respecter la casse (`Aa`), Mot entier (`\b`), Expressions régulières (`.*`).
+  - Toutes les occurrences sont surlignées en jaune feutré doux (`rgba(245, 158, 11, 0.25)`).
+  - Marqueurs discrets le long de la barre de défilement (scrollbar) pour situer les résultats dans la page.
+
+---
+
+### 2. Recherche Globale dans tout le Coffre (`Ctrl + Shift + F`)
+Pour chercher une information éparpillée dans des centaines de notes Markdown :
+- **Raccourci** : **`Ctrl + Shift + F`** ouvre le volet de recherche globale dans la barre latérale gauche.
+- **Indexation ultra-rapide** : Moteur de recherche local en mémoire Rust, résultats affichés en < 15ms.
+- **Affichage des résultats** :
+  - Liste groupée par fichier avec nombre de correspondances (ex: `wiki/architecture.md (4)`).
+  - **Extraits de contexte (Snippets)** : affichage de la ligne avec les mots recherchés surlignés en gras.
+  - Cliquer sur un extrait ouvre immédiatement la note dans un onglet et fait défiler la vue sur la ligne exacte.
+- **Filtres de recherche avancés** :
+  - `tag:#p2p` : recherche uniquement les fichiers contenant ce tag.
+  - `path:wiki/` : restreint la recherche à un dossier spécifique.
+
+---
+
+### 3. Système de Tags de Fichiers (`#tags` & Frontmatter)
+Les tags permettent d'organiser ses pensées de manière transversale, sans être contraint par l'arborescence des dossiers.
+
+#### A. Les deux formats de tags supportés
+1. **Dans le Frontmatter YAML** (métadonnées formelles) :
+   ```yaml
+   ---
+   id: task-042
+   statut: en-cours
+   tags: [backend, p2p, rust]
+   ---
+   ```
+2. **Dans le corps du texte (Inline Tags)** :
+   - Taper `#projet` ou `#meeting` n'importe où dans le texte.
+   - **Tags hiérarchiques** supportés avec le slash : `#dev/rust`, `#dev/react`, `#projet/sprint-1`.
+
+#### B. Autocomplétion à la frappe
+- Dès que l'on tape `#` dans l'éditeur, une liste déroulante sobre propose immédiatement les tags déjà existants dans le coffre avec le nombre d'occurrences.
+
+#### C. Volet des Tags (Tag Explorer)
+Dans la barre latérale, un panneau dédié regroupe tous les tags du coffre :
+- Liste alphabétique ou triée par fréquence d'utilisation (ex: `#p2p (14)`, `#ui (8)`).
+- **Cliquer sur un tag** filtre instantanément la vue pour n'afficher que les notes associées.
+- **Sélection multiple (`Ctrl + Clic`)** : combiner plusieurs tags pour une recherche croisée (ex: `#p2p` ET `#bug`).
+
+
 
 
 ---

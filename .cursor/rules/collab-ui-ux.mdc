@@ -51,4 +51,10 @@ Toutes les interfaces collaboratives dans Knit doivent respecter les principes s
 - **Raccourcis essentiels** : `Ctrl+W` (fermer), `Ctrl+Shift+T` (rouvrir dernier fermé), `Ctrl+Tab` (suivant), `Ctrl+\` (split).
 - **Glisser-déposer d'onglets** : réordonnancement fluide et split view par glissement vers les bordures.
 
+## 8. Recherche & Système de Tags
+- **Recherche locale (`Ctrl+F` & `Ctrl+H`)** : barre CodeMirror 6 flottante en haut à droite avec surlignage doux et remplacement.
+- **Recherche globale (`Ctrl+Shift+F`)** : volet latéral dédié avec affichage des extraits de contexte et filtres (`tag:`, `path:`).
+- **Système de tags** : parsing des métadonnées frontmatter `tags: [...]` et détection des `#tags` inline avec autocomplétion.
+
+
 

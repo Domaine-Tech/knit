@@ -30,6 +30,7 @@
 |---|---|---|---|---|
 | B-001 | Scaffolder le projet Tauri v2 + React | 🔴 | 📋 | Sprint 1 |
 | B-002 | Intégrer CodeMirror 6 avec `@codemirror/lang-markdown` | 🔴 | 📋 | Sprint 1 |
+| B-002a | Recherche locale & remplacement (`Ctrl+F`, `Ctrl+H` via `@codemirror/search`) | 🔴 | 📋 | Sprint 1 |
 | B-003 | Créer le composant Sidebar (arbre de fichiers) | 🟠 | 📋 | Sprint 1 |
 | B-003b | Système d'onglets (Multi-tabs, clic molette open/close, drag & drop, Ctrl+W/Tab) | 🔴 | 📋 | Sprint 1 |
 | B-004 | Implémenter la lecture/écriture de fichiers via Tauri IPC | 🔴 | 📋 | Sprint 1 |
@@ -90,9 +91,10 @@
 | B-023 | Vue Kanban : colonnes basées sur `statut:` du frontmatter | 🔴 | 📋 | Sprint 5 |
 | B-024 | Vue Tableau : liste filtrable/triable de toutes les tâches | 🟠 | 📋 | Sprint 5 |
 | B-025 | Drag & Drop Kanban (glisser = modifier le frontmatter) | 🟠 | 📋 | Sprint 5 |
-| B-026 | Recherche full-text sur tous les fichiers du vault | 🟡 | 📋 | Sprint 5 |
+| B-026 | Recherche globale dans tout le coffre (`Ctrl+Shift+F` avec snippets) | 🔴 | 📋 | Sprint 5 |
 | B-026a | Quick Switcher (`Ctrl+O`) & Palette de commandes (`Ctrl+P`) (Obsidian) | 🔴 | 📋 | Sprint 5 |
 | B-026b | WikiLinks bidirectionnels `[[Note]]` avec autocomplétion (Obsidian) | 🟠 | 📋 | Sprint 5 |
+| B-026c | Système de Tags (`#inline` et `tags: [...]` en frontmatter, volet de filtres) | 🟠 | 📋 | Sprint 5 |
 
 ### Sprint 6 — Mermaid, Slash Command & Polish Éditeur
 

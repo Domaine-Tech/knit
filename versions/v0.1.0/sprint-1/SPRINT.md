@@ -16,6 +16,7 @@
 |---|---|---|---|---|
 | B-001 | Scaffolder le projet Tauri v2 + React + TypeScript | 🔴 | 📋 | — |
 | B-002 | Intégrer CodeMirror 6 avec `@codemirror/lang-markdown` | 🔴 | 📋 | — |
+| B-002a | Recherche locale & remplacement (`Ctrl+F`, `Ctrl+H` via `@codemirror/search`) | 🔴 | 📋 | — |
 | B-003 | Créer le composant Sidebar (arbre récursif de fichiers `.md`) | 🟠 | 📋 | — |
 | B-003b | Système d'onglets (Multi-tabs, clic molette open/close, drag & drop, Ctrl+W/Tab) | 🔴 | 📋 | — |
 | B-004 | Implémenter la lecture/écriture de fichiers via commandes Tauri IPC | 🔴 | 📋 | — |
@@ -32,6 +33,7 @@
 - [ ] On peut sélectionner un dossier local via une boîte de dialogue native.
 - [ ] L'arbre affiche l'ensemble des fichiers `.md` du dossier sélectionné.
 - [ ] Cliquer sur un fichier l'ouvre dans un onglet (mode aperçu ou permanent).
+- [ ] `Ctrl+F` ouvre la recherche dans le fichier avec compteur et surlignage instantané.
 - [ ] Le clic molette sur un fichier de la sidebar l'ouvre dans un nouvel onglet permanent.
 - [ ] Le clic molette sur un onglet ferme immédiatement l'onglet (`Ctrl+W`).
 - [ ] Sauvegarder (`Ctrl+S` ou auto-save) écrit le contenu exact sur le disque.
