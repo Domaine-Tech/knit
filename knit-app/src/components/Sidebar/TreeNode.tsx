@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { FileNode } from '../../stores/vaultStore';
 import { vaultStore } from '../../stores/vaultStore';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { contextMenu } from '../../stores/contextMenuStore';
 import { toast } from '../../stores/toastStore';
+import { networkStore } from '../../stores/networkStore';
 
 interface TreeNodeProps {
   node: FileNode;
@@ -78,6 +79,13 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
 
   const isSearchActive = Boolean(searchQuery && searchQuery.trim().length > 0);
   const [isManualOpen, setIsManualOpen] = useState<boolean | null>(null);
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    return networkStore.subscribe(() => {
+      setTick((t) => t + 1);
+    });
+  }, []);
 
   // Déplié si l'utilisateur a explicitement cliqué, sinon auto : recherche active, "Déplier tout" ou parent de la note active
   const isOpen = isManualOpen !== null
@@ -405,6 +413,54 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
               <HighlightedText text={node.name} query={searchQuery} />
             </span>
+            {(() => {
+              const collaborators = networkStore.getCollaboratorsForFile(node.path);
+              if (collaborators.length === 0) return null;
+              return (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginLeft: 'auto', flexShrink: 0 }}>
+                  {collaborators.slice(0, 2).map((collab) => (
+                    <div
+                      key={collab.peer_id}
+                      title={`${collab.display_name} — Cliquer pour rejoindre`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectFile(node.path, false);
+                      }}
+                      style={{
+                        width: 18,
+                        height: 18,
+                        borderRadius: '50%',
+                        backgroundColor: collab.color_hex,
+                        color: '#FFFFFF',
+                        fontSize: 9,
+                        fontWeight: 700,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {collab.initials}
+                    </div>
+                  ))}
+                  {collaborators.length > 2 && (
+                    <div
+                      style={{
+                        fontSize: 9,
+                        fontWeight: 600,
+                        color: 'var(--knit-text-muted)',
+                        backgroundColor: 'var(--knit-surface-hover)',
+                        borderRadius: 'var(--knit-radius-xs)',
+                        padding: '1px 4px',
+                      }}
+                    >
+                      +{collaborators.length - 2}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </>
         )}
       </div>

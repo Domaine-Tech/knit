@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-start-p2p-network"
+description = "Enables the start_p2p_network command without any pre-configured scope."
+commands.allow = ["start_p2p_network"]
+
+[[permission]]
+identifier = "deny-start-p2p-network"
+description = "Denies the start_p2p_network command without any pre-configured scope."
+commands.deny = ["start_p2p_network"]

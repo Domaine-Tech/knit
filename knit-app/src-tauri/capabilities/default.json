@@ -24,6 +24,15 @@
     "allow-parse-frontmatter",
     "allow-update-frontmatter",
     "allow-get-file-backlinks",
-    "allow-recover-vault-trash"
+    "allow-recover-vault-trash",
+    "allow-start-p2p-network",
+    "allow-stop-p2p-network",
+    "allow-get-p2p-invitation-code",
+    "allow-connect-p2p-peer",
+    "allow-get-connected-peers",
+    "allow-broadcast-yjs-update",
+    "allow-broadcast-awareness",
+    "allow-sync-asset-from-peers",
+    "allow-get-local-peer-identity"
   ]
 }

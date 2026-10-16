@@ -177,10 +177,28 @@
       "description": "Permission identifier",
       "oneOf": [
         {
+          "description": "Enables the broadcast_awareness command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-broadcast-awareness",
+          "markdownDescription": "Enables the broadcast_awareness command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the broadcast_yjs_update command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-broadcast-yjs-update",
+          "markdownDescription": "Enables the broadcast_yjs_update command without any pre-configured scope."
+        },
+        {
           "description": "Enables the commit_vault_trash command without any pre-configured scope.",
           "type": "string",
           "const": "allow-commit-vault-trash",
           "markdownDescription": "Enables the commit_vault_trash command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the connect_p2p_peer command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-connect-p2p-peer",
+          "markdownDescription": "Enables the connect_p2p_peer command without any pre-configured scope."
         },
         {
           "description": "Enables the create_vault_dir command without any pre-configured scope.",
@@ -201,10 +219,28 @@
           "markdownDescription": "Enables the delete_vault_path command without any pre-configured scope."
         },
         {
+          "description": "Enables the get_connected_peers command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-get-connected-peers",
+          "markdownDescription": "Enables the get_connected_peers command without any pre-configured scope."
+        },
+        {
           "description": "Enables the get_file_backlinks command without any pre-configured scope.",
           "type": "string",
           "const": "allow-get-file-backlinks",
           "markdownDescription": "Enables the get_file_backlinks command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the get_local_peer_identity command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-get-local-peer-identity",
+          "markdownDescription": "Enables the get_local_peer_identity command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the get_p2p_invitation_code command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-get-p2p-invitation-code",
+          "markdownDescription": "Enables the get_p2p_invitation_code command without any pre-configured scope."
         },
         {
           "description": "Enables the get_vault_tree command without any pre-configured scope.",
@@ -261,16 +297,34 @@
           "markdownDescription": "Enables the save_vault_asset command without any pre-configured scope."
         },
         {
+          "description": "Enables the start_p2p_network command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-start-p2p-network",
+          "markdownDescription": "Enables the start_p2p_network command without any pre-configured scope."
+        },
+        {
           "description": "Enables the start_vault_watcher command without any pre-configured scope.",
           "type": "string",
           "const": "allow-start-vault-watcher",
           "markdownDescription": "Enables the start_vault_watcher command without any pre-configured scope."
         },
         {
+          "description": "Enables the stop_p2p_network command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-stop-p2p-network",
+          "markdownDescription": "Enables the stop_p2p_network command without any pre-configured scope."
+        },
+        {
           "description": "Enables the stop_vault_watcher command without any pre-configured scope.",
           "type": "string",
           "const": "allow-stop-vault-watcher",
           "markdownDescription": "Enables the stop_vault_watcher command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the sync_asset_from_peers command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-sync-asset-from-peers",
+          "markdownDescription": "Enables the sync_asset_from_peers command without any pre-configured scope."
         },
         {
           "description": "Enables the trash_vault_path command without any pre-configured scope.",
@@ -291,10 +345,28 @@
           "markdownDescription": "Enables the write_vault_file command without any pre-configured scope."
         },
         {
+          "description": "Denies the broadcast_awareness command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-broadcast-awareness",
+          "markdownDescription": "Denies the broadcast_awareness command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the broadcast_yjs_update command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-broadcast-yjs-update",
+          "markdownDescription": "Denies the broadcast_yjs_update command without any pre-configured scope."
+        },
+        {
           "description": "Denies the commit_vault_trash command without any pre-configured scope.",
           "type": "string",
           "const": "deny-commit-vault-trash",
           "markdownDescription": "Denies the commit_vault_trash command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the connect_p2p_peer command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-connect-p2p-peer",
+          "markdownDescription": "Denies the connect_p2p_peer command without any pre-configured scope."
         },
         {
           "description": "Denies the create_vault_dir command without any pre-configured scope.",
@@ -315,10 +387,28 @@
           "markdownDescription": "Denies the delete_vault_path command without any pre-configured scope."
         },
         {
+          "description": "Denies the get_connected_peers command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-get-connected-peers",
+          "markdownDescription": "Denies the get_connected_peers command without any pre-configured scope."
+        },
+        {
           "description": "Denies the get_file_backlinks command without any pre-configured scope.",
           "type": "string",
           "const": "deny-get-file-backlinks",
           "markdownDescription": "Denies the get_file_backlinks command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_local_peer_identity command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-get-local-peer-identity",
+          "markdownDescription": "Denies the get_local_peer_identity command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_p2p_invitation_code command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-get-p2p-invitation-code",
+          "markdownDescription": "Denies the get_p2p_invitation_code command without any pre-configured scope."
         },
         {
           "description": "Denies the get_vault_tree command without any pre-configured scope.",
@@ -375,16 +465,34 @@
           "markdownDescription": "Denies the save_vault_asset command without any pre-configured scope."
         },
         {
+          "description": "Denies the start_p2p_network command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-start-p2p-network",
+          "markdownDescription": "Denies the start_p2p_network command without any pre-configured scope."
+        },
+        {
           "description": "Denies the start_vault_watcher command without any pre-configured scope.",
           "type": "string",
           "const": "deny-start-vault-watcher",
           "markdownDescription": "Denies the start_vault_watcher command without any pre-configured scope."
         },
         {
+          "description": "Denies the stop_p2p_network command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-stop-p2p-network",
+          "markdownDescription": "Denies the stop_p2p_network command without any pre-configured scope."
+        },
+        {
           "description": "Denies the stop_vault_watcher command without any pre-configured scope.",
           "type": "string",
           "const": "deny-stop-vault-watcher",
           "markdownDescription": "Denies the stop_vault_watcher command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the sync_asset_from_peers command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-sync-asset-from-peers",
+          "markdownDescription": "Denies the sync_asset_from_peers command without any pre-configured scope."
         },
         {
           "description": "Denies the trash_vault_path command without any pre-configured scope.",

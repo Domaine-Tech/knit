@@ -1,17 +1,82 @@
 import * as Y from 'yjs';
 import diff from 'fast-diff';
+import { Awareness, encodeAwarenessUpdate, applyAwarenessUpdate } from 'y-protocols/awareness';
+import { networkStore } from '../stores/networkStore';
 
 export class CRDTManager {
   private docs: Map<string, Y.Doc> = new Map();
+  private awarenessMap: Map<string, Awareness> = new Map();
   private fileObservers: Map<string, Set<(content: string) => void>> = new Map();
+  private initializedP2P: boolean = false;
+
+  constructor() {
+    this.setupP2PListeners();
+  }
+
+  private setupP2PListeners() {
+    if (this.initializedP2P) return;
+    this.initializedP2P = true;
+
+    // Réception des deltas Yjs depuis les pairs distants
+    networkStore.onRemoteYjsUpdate((docId, update, _fromPeer) => {
+      const doc = this.docs.get(docId);
+      if (doc) {
+        Y.applyUpdate(doc, update, 'p2p');
+      }
+    });
+
+    // Réception des positions de curseurs et sélections collaboratives
+    networkStore.onRemoteAwareness((docId, awarenessBytes, _fromPeer) => {
+      const awareness = this.awarenessMap.get(docId);
+      if (awareness) {
+        applyAwarenessUpdate(awareness, awarenessBytes, 'p2p');
+      }
+    });
+  }
 
   public getDoc(path: string): Y.Doc {
     let doc = this.docs.get(path);
     if (!doc) {
       doc = new Y.Doc();
       this.docs.set(path, doc);
+
+      // Brancher la diffusion automatique des modifications locales vers les pairs P2P
+      doc.on('update', (update: Uint8Array, origin: unknown) => {
+        if (origin !== 'p2p' && origin !== 'init') {
+          networkStore.broadcastYjsUpdate(path, update);
+        }
+      });
     }
     return doc;
+  }
+
+  public getAwareness(path: string): Awareness {
+    let awareness = this.awarenessMap.get(path);
+    if (!awareness) {
+      const doc = this.getDoc(path);
+      awareness = new Awareness(doc);
+      this.awarenessMap.set(path, awareness);
+
+      // Configurer l'utilisateur local dans l'awareness
+      if (networkStore.localIdentity) {
+        awareness.setLocalStateField('user', {
+          name: networkStore.localIdentity.display_name,
+          color: networkStore.localIdentity.color_hex,
+          initials: networkStore.localIdentity.initials,
+          colorIndex: networkStore.localIdentity.color_index,
+        });
+      }
+
+      // Diffuser les mouvements de curseur locaux aux pairs
+      awareness.on('update', ({ added, updated, removed }: { added: number[]; updated: number[]; removed: number[] }, origin: unknown) => {
+        if (origin !== 'p2p') {
+          const changedClients = added.concat(updated, removed);
+          const update = encodeAwarenessUpdate(awareness!, changedClients);
+          networkStore.broadcastAwareness(path, update);
+        }
+      });
+    }
+    return awareness;
   }
 
   public getYText(path: string): Y.Text {
@@ -95,6 +160,11 @@ export class CRDTManager {
     if (doc) {
       doc.destroy();
       this.docs.delete(path);
+    }
+    const awareness = this.awarenessMap.get(path);
+    if (awareness) {
+      awareness.destroy();
+      this.awarenessMap.delete(path);
     }
     this.fileObservers.delete(path);
   }

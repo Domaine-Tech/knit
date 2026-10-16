@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-broadcast-yjs-update"
+description = "Enables the broadcast_yjs_update command without any pre-configured scope."
+commands.allow = ["broadcast_yjs_update"]
+
+[[permission]]
+identifier = "deny-broadcast-yjs-update"
+description = "Denies the broadcast_yjs_update command without any pre-configured scope."
+commands.deny = ["broadcast_yjs_update"]

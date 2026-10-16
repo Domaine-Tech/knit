@@ -65,12 +65,12 @@
 
 | # | Tâche | Priorité | Statut | Sprint |
 |---|---|---|---|---|
-| B-013 | Intégrer Iroh dans le backend Rust de Tauri | 🔴 | 📋 | Sprint 3 |
-| B-014 | Implémenter le transport Yjs sur les streams QUIC d'Iroh | 🔴 | 📋 | Sprint 3 |
-| B-015 | Générer et gérer les keypairs Ed25519 (identité pair) | 🔴 | 📋 | Sprint 3 |
-| B-016 | Implémenter la découverte LAN via mDNS (`mdns-sd`) | 🟠 | 📋 | Sprint 3 |
-| B-017 | Implémenter le protocole d'invitation (code `knit://join/...`) | 🟠 | 📋 | Sprint 3 |
-| B-017a | Synchronisation P2P des médias (`assets/`) via Iroh Blobs | 🟠 | 📋 | Sprint 3 |
+| B-013 | Intégrer Iroh dans le backend Rust de Tauri | 🔴 | ✅ | Sprint 3 |
+| B-014 | Implémenter le transport Yjs sur les streams QUIC d'Iroh | 🔴 | ✅ | Sprint 3 |
+| B-015 | Générer et gérer les keypairs Ed25519 (identité pair) | 🔴 | ✅ | Sprint 3 |
+| B-016 | Implémenter la découverte LAN via mDNS (`mdns-sd`) | 🟠 | ✅ | Sprint 3 |
+| B-017 | Implémenter le protocole d'invitation (code `knit://join/...`) | 🟠 | ✅ | Sprint 3 |
+| B-017a | Synchronisation P2P des médias (`assets/`) via Iroh Blobs | 🟠 | ✅ | Sprint 3 |
 
 ### Sprint 4 — Résilience & Offline
 
@@ -79,6 +79,9 @@
 | B-018 | Gestion de la déconnexion/reconnexion (rejouer les ops manquées) | 🔴 | 📋 | Sprint 4 |
 | B-019 | Implémenter les snapshots/compaction Yjs (toutes les 200 ops) | 🟠 | 📋 | Sprint 4 |
 | B-020 | Stocker les snapshots dans `.knit/snapshots/` | 🟡 | 📋 | Sprint 4 |
+| B-020a | Profil utilisateur enrichi (Nom, Prénom, Email, Rôle & Statut) dans `.knit/identity/profile.json` & UI | 🟠 | 📋 | Sprint 4 |
+| B-020b | Synchronisation P2P d'avatars personnalisés via Iroh Blobs & fallback initiales | 🟠 | 📋 | Sprint 4 |
+| B-020c | Signatures cryptographiques Ed25519 des snapshots, Privacy Toggle & interfaçage Git auto | 🟡 | 📋 | Sprint 4 |
 | B-021 | Test : 2 PC en LAN synchronisent un coffre-fort en temps réel | 🔴 | 📋 | Sprint 4 |
 | B-022 | Test : un PC hors-ligne pendant 1h resynchronise correctement | 🟠 | 📋 | Sprint 4 |
 

@@ -13,6 +13,7 @@ import { vaultStore } from '../../stores/vaultStore';
 import type { FrontmatterDoc } from '../../stores/vaultStore';
 import { toast } from '../../stores/toastStore';
 import { tabStore } from '../../stores/tabStore';
+import { networkStore } from '../../stores/networkStore';
 
 interface EditorProps {
   content: string;
@@ -37,6 +38,13 @@ export const Editor: React.FC<EditorProps> = ({
 
   const [frontmatter, setFrontmatter] = useState<FrontmatterDoc | null>(null);
   const [backlinks, setBacklinks] = useState<string[]>([]);
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    return networkStore.subscribe(() => {
+      setTick((t) => t + 1);
+    });
+  }, []);
 
   useEffect(() => {
     onSaveRef.current = onSave;
@@ -60,8 +68,9 @@ export const Editor: React.FC<EditorProps> = ({
   useEffect(() => {
     if (!editorRef.current) return;
 
-    // Initialisation du document Yjs partagé pour ce fichier
+    // Initialisation du document Yjs partagé pour ce fichier et son awareness collaboratif
     const ytext = crdtManager.initDocument(path, initialContentRef.current);
+    const awareness = crdtManager.getAwareness(path);
 
     // Thème CodeMirror 6 stylé avec les tokens Knit
     const knitEditorTheme = EditorView.theme({
@@ -201,8 +210,8 @@ export const Editor: React.FC<EditorProps> = ({
         customKeymap,
         keymap.of([...searchKeymap, ...historyKeymap, ...defaultKeymap]),
         knitEditorTheme,
-        // Connexion CRDT Yjs avec yCollab
-        yCollab(ytext, null),
+        // Connexion CRDT Yjs avec yCollab et Awareness collaboratif
+        yCollab(ytext, awareness),
         EditorView.domEventHandlers({
           mousedown: (event, view) => {
             if (event.button === 2) {
@@ -696,6 +705,61 @@ export const Editor: React.FC<EditorProps> = ({
               {backlinks.length > 3 && <span>+{backlinks.length - 3}</span>}
             </div>
           )}
+
+          {/* Collaborateurs actifs sur ce document (max 4 avatars + badge +N) */}
+          {(() => {
+            const fileCollaborators = networkStore.getCollaboratorsForFile(path);
+            if (fileCollaborators.length === 0) return null;
+            return (
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  padding: '2px 8px',
+                  backgroundColor: 'var(--knit-surface-hover)',
+                  borderRadius: 'var(--knit-radius-sm)',
+                  fontSize: '11px',
+                  marginLeft: backlinks.length === 0 ? 'auto' : 8,
+                }}
+              >
+                <span style={{ color: 'var(--knit-text-muted)', fontSize: 10 }}>Présents :</span>
+                {fileCollaborators.slice(0, 4).map((c) => (
+                  <div
+                    key={c.peer_id}
+                    title={`${c.display_name} (${c.initials}) — Collaborateur actif`}
+                    style={{
+                      width: 18,
+                      height: 18,
+                      borderRadius: '50%',
+                      backgroundColor: c.color_hex,
+                      color: '#FFFFFF',
+                      fontSize: 9,
+                      fontWeight: 700,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                    }}
+                  >
+                    {c.initials}
+                  </div>
+                ))}
+                {fileCollaborators.length > 4 && (
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 600,
+                      color: 'var(--knit-text-muted)',
+                      padding: '0 3px',
+                    }}
+                  >
+                    +{fileCollaborators.length - 4}
+                  </span>
+                )}
+              </div>
+            );
+          })()}
         </div>
       )}
 

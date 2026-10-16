@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import type { ThemeMode } from '../../theme/theme';
 import { ColorPickerPopover } from './ColorPickerPopover';
 import { contextMenu } from '../../stores/contextMenuStore';
 import { vaultStore } from '../../stores/vaultStore';
+import { networkStore } from '../../stores/networkStore';
+import { NetworkModal } from '../Network/NetworkModal';
 
 interface HeaderProps {
   theme: ThemeMode;
@@ -25,6 +27,14 @@ export const Header: React.FC<HeaderProps> = ({
   onTriggerDemoSync,
 }) => {
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
+  const [isNetworkModalOpen, setIsNetworkModalOpen] = useState(false);
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    return networkStore.subscribe(() => {
+      setTick((t) => t + 1);
+    });
+  }, []);
 
   const handleHeaderContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -178,6 +188,46 @@ export const Header: React.FC<HeaderProps> = ({
           />
         </div>
 
+        <button
+          onClick={() => setIsNetworkModalOpen(true)}
+          title="Réseau P2P Iroh & Collaborateurs — Cliquez pour afficher les pairs et votre invitation"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '4px 10px',
+            borderRadius: 'var(--knit-radius-sm)',
+            backgroundColor: networkStore.connectedPeers.length > 0 ? 'var(--knit-surface)' : 'transparent',
+            border: '1px solid var(--knit-border)',
+            fontSize: 12,
+            fontWeight: 500,
+            color: 'var(--knit-text)',
+            cursor: 'pointer',
+            transition: 'all var(--knit-transition-fast)',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--knit-surface-hover)')}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = networkStore.connectedPeers.length > 0 ? 'var(--knit-surface)' : 'transparent';
+          }}
+        >
+          <div
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              backgroundColor: networkStore.isNetworkActive ? '#10B981' : 'var(--knit-text-muted)',
+              boxShadow: networkStore.isNetworkActive ? '0 0 6px #10B981' : 'none',
+              flexShrink: 0,
+            }}
+          />
+          <DuotoneIcon name="share" size={13} />
+          <span>
+            {networkStore.connectedPeers.length > 0
+              ? `${networkStore.connectedPeers.length} pair${networkStore.connectedPeers.length > 1 ? 's' : ''}`
+              : 'P2P Iroh'}
+          </span>
+        </button>
+
         {/* Toggle Theme sombre / clair */}
         <button
           onClick={onThemeToggle}
@@ -200,6 +250,8 @@ export const Header: React.FC<HeaderProps> = ({
           <DuotoneIcon name={theme === 'dark' ? 'sun' : 'moon'} size={15} />
         </button>
       </div>
+
+      <NetworkModal isOpen={isNetworkModalOpen} onClose={() => setIsNetworkModalOpen(false)} />
     </header>
   );
 };

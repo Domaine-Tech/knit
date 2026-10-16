@@ -1,5 +1,6 @@
 pub mod error;
 pub mod markdown;
+pub mod network;
 pub mod vault;
 pub mod watcher;
 
@@ -9,7 +10,16 @@ pub use markdown::{
     refactor_links_in_content, refactor_links_in_vault, update_frontmatter_field, FrontmatterDoc,
     LinkRefactorReport,
 };
+pub use network::{
+    compute_blake3_hash, create_invitation, handle_blob_request, store_verified_blob,
+    BlobMessage, ConnectedPeerInfo, DiscoveredLanPeer, InvitationTicket, KnitNetworkNode,
+    KnitSyncMessage, MdnsService, RemoteNetworkEvent, ALPN_BLOBS, ALPN_SYNC, INVITATION_PREFIX,
+};
 pub use vault::assets::save_asset;
+pub use vault::identity::{
+    compute_deterministic_color_index, compute_initials, load_or_generate_identity, PeerIdentity,
+    AI_AGENT_COLOR, COLLABORATIVE_PALETTE,
+};
 pub use vault::tree::{
     commit_trash_to_os, create_dir, create_file, delete_path, read_file_content, read_vault_tree,
     recover_orphaned_trash, rename_file_and_refactor, resolve_safe_path, restore_trash_path,

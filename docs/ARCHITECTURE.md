@@ -197,7 +197,9 @@ mon-coffre-fort/
 ├── .knit/                   # ❌ PAS synchronisé (local uniquement)
 │   ├── config.yaml          #    Préférences personnelles (thème, hue)
 │   ├── identity/
-│   │   └── keypair.bin      #    Clé privée de CE pair
+│   │   ├── keypair.bin      #    Clé privée Ed25519 de CE pair (chmod 0600)
+│   │   ├── profile.json     #    Profil local (nom, prénom, email, rôle, toggle privacy)
+│   │   └── avatar.png       #    Photo de profil personnalisée (optionnelle)
 │   ├── crdt-state/          #    État CRDT binaire
 │   ├── snapshots/           #    Snapshots compactés
 │   └── cache/               #    Cache local (mermaid SVGs, etc.)

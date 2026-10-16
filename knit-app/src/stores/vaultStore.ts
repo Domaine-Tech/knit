@@ -4,6 +4,7 @@ import type { UnlistenFn } from '@tauri-apps/api/event';
 import { toast } from './toastStore';
 import { crdtManager } from '../crdt/crdtManager';
 import { tabStore } from './tabStore';
+import { networkStore } from './networkStore';
 
 export interface FileNode {
   id: string;
@@ -251,6 +252,11 @@ class VaultStore {
     // Initialisation ou redémarrage du watcher FS natif
     await this.setupWatcher(path);
     await this.reloadTree();
+
+    // Démarrage du réseau P2P Iroh & mDNS
+    networkStore.startNetwork(path).catch((err) => {
+      console.warn('Erreur initialisation P2P sur coffre:', err);
+    });
 
     // Récupération des éléments orphelins de corbeille (restauration OS vers .knit/trash)
     const recovered = await this.recoverTrash();

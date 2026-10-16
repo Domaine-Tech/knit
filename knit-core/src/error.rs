@@ -23,6 +23,9 @@ pub enum KnitError {
     #[error("Erreur Refactoring de liens : {0}")]
     LinkRefactor(String),
 
+    #[error("Erreur Réseau P2P : {0}")]
+    Network(String),
+
     #[error("Erreur interne : {0}")]
     Custom(String),
 }

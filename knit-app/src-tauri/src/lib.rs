@@ -27,6 +27,15 @@ pub fn run() {
             update_frontmatter,
             get_file_backlinks,
             recover_vault_trash,
+            start_p2p_network,
+            stop_p2p_network,
+            get_p2p_invitation_code,
+            connect_p2p_peer,
+            get_connected_peers,
+            broadcast_yjs_update,
+            broadcast_awareness,
+            sync_asset_from_peers,
+            get_local_peer_identity,
         ])
         .run(tauri::generate_context!())
         .expect("Erreur lors de l'exécution de l'application Knit Tauri");

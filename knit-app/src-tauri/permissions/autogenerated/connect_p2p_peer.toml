@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-connect-p2p-peer"
+description = "Enables the connect_p2p_peer command without any pre-configured scope."
+commands.allow = ["connect_p2p_peer"]
+
+[[permission]]
+identifier = "deny-connect-p2p-peer"
+description = "Denies the connect_p2p_peer command without any pre-configured scope."
+commands.deny = ["connect_p2p_peer"]

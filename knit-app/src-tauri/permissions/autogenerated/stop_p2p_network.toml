@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-stop-p2p-network"
+description = "Enables the stop_p2p_network command without any pre-configured scope."
+commands.allow = ["stop_p2p_network"]
+
+[[permission]]
+identifier = "deny-stop-p2p-network"
+description = "Denies the stop_p2p_network command without any pre-configured scope."
+commands.deny = ["stop_p2p_network"]

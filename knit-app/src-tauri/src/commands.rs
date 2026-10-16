@@ -3,6 +3,10 @@ use knit_core::markdown::{
     find_backlinks_in_vault, parse_frontmatter as core_parse_fm,
     update_frontmatter_field as core_update_fm, FrontmatterDoc, LinkRefactorReport,
 };
+use knit_core::network::{
+    ConnectedPeerInfo, KnitNetworkNode, RemoteNetworkEvent,
+};
+use knit_core::vault::identity::PeerIdentity;
 use knit_core::vault::{self, FileNode};
 use knit_core::watcher::{VaultWatchEvent, VaultWatcher, WriteGuard};
 use std::path::Path;
@@ -13,6 +17,7 @@ use tauri_plugin_dialog::DialogExt;
 pub struct AppState {
     pub guard: WriteGuard,
     pub watcher: Arc<Mutex<Option<VaultWatcher>>>,
+    pub network_node: Arc<tokio::sync::RwLock<Option<Arc<KnitNetworkNode>>>>,
 }
 
 impl Default for AppState {
@@ -20,6 +25,7 @@ impl Default for AppState {
         Self {
             guard: WriteGuard::new(),
             watcher: Arc::new(Mutex::new(None)),
+            network_node: Arc::new(tokio::sync::RwLock::new(None)),
         }
     }
 }
@@ -277,3 +283,177 @@ pub async fn get_file_backlinks(
     let path = Path::new(&vault_path);
     find_backlinks_in_vault(path, &rel_path).map_err(|e| e.to_string())
 }
+
+#[tauri::command]
+pub async fn start_p2p_network(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, AppState>,
+    vault_path: String,
+    display_name: String,
+    vault_name: Option<String>,
+) -> Result<PeerIdentity, String> {
+    let path = Path::new(&vault_path);
+    let guard = state.guard.clone();
+
+    let node = KnitNetworkNode::start(
+        path,
+        &display_name,
+        vault_name.as_deref(),
+        guard,
+        true,
+    )
+    .await
+    .map_err(|e| e.to_string())?;
+
+    let mut events_rx = node.subscribe_events();
+    let app_handle = app.clone();
+
+    tokio::spawn(async move {
+        while let Ok(event) = events_rx.recv().await {
+            match event {
+                RemoteNetworkEvent::PeerConnected(info) => {
+                    let _ = app_handle.emit("p2p_peer_connected", info);
+                }
+                RemoteNetworkEvent::PeerDisconnected(peer_id) => {
+                    let _ = app_handle.emit("p2p_peer_disconnected", serde_json::json!({ "peer_id": peer_id }));
+                }
+                RemoteNetworkEvent::YjsUpdate { doc_id, update, from_peer } => {
+                    let b64 = base64::engine::general_purpose::STANDARD.encode(&update);
+                    let _ = app_handle.emit(
+                        "p2p_yjs_update",
+                        serde_json::json!({ "doc_id": doc_id, "update": b64, "from_peer": from_peer }),
+                    );
+                }
+                RemoteNetworkEvent::YjsAwareness { doc_id, awareness, from_peer } => {
+                    let b64 = base64::engine::general_purpose::STANDARD.encode(&awareness);
+                    let _ = app_handle.emit(
+                        "p2p_awareness_update",
+                        serde_json::json!({ "doc_id": doc_id, "awareness": b64, "from_peer": from_peer }),
+                    );
+                }
+                RemoteNetworkEvent::AssetReceived { rel_path, from_peer } => {
+                    let _ = app_handle.emit(
+                        "p2p_asset_received",
+                        serde_json::json!({ "rel_path": rel_path, "from_peer": from_peer }),
+                    );
+                }
+                RemoteNetworkEvent::LanPeerDiscovered(lan_peer) => {
+                    let _ = app_handle.emit("p2p_lan_peer_discovered", lan_peer);
+                }
+            }
+        }
+    });
+
+    let identity = node.identity.clone();
+    let mut lock = state.network_node.write().await;
+    *lock = Some(node);
+
+    Ok(identity)
+}
+
+#[tauri::command]
+pub async fn stop_p2p_network(state: tauri::State<'_, AppState>) -> Result<(), String> {
+    let mut lock = state.network_node.write().await;
+    if let Some(node) = lock.take() {
+        node.stop().await;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn get_p2p_invitation_code(state: tauri::State<'_, AppState>) -> Result<String, String> {
+    let lock = state.network_node.read().await;
+    if let Some(node) = lock.as_ref() {
+        node.get_invitation_code().map_err(|e| e.to_string())
+    } else {
+        Err("Le réseau P2P n'est pas actif pour ce coffre".to_string())
+    }
+}
+
+#[tauri::command]
+pub async fn connect_p2p_peer(
+    state: tauri::State<'_, AppState>,
+    invitation_code: String,
+) -> Result<ConnectedPeerInfo, String> {
+    let node_opt = {
+        let lock = state.network_node.read().await;
+        lock.clone()
+    };
+
+    if let Some(node) = node_opt {
+        node.connect_by_ticket(&invitation_code)
+            .await
+            .map_err(|e| e.to_string())
+    } else {
+        Err("Le réseau P2P n'est pas actif pour ce coffre".to_string())
+    }
+}
+
+#[tauri::command]
+pub async fn get_connected_peers(
+    state: tauri::State<'_, AppState>,
+) -> Result<Vec<ConnectedPeerInfo>, String> {
+    let lock = state.network_node.read().await;
+    if let Some(node) = lock.as_ref() {
+        Ok(node.get_connected_peers().await)
+    } else {
+        Ok(Vec::new())
+    }
+}
+
+#[tauri::command]
+pub async fn broadcast_yjs_update(
+    state: tauri::State<'_, AppState>,
+    doc_id: String,
+    update_base64: String,
+) -> Result<(), String> {
+    let lock = state.network_node.read().await;
+    if let Some(node) = lock.as_ref() {
+        let bytes = base64::engine::general_purpose::STANDARD
+            .decode(&update_base64)
+            .map_err(|e| format!("Erreur décodage base64 update: {}", e))?;
+        node.broadcast_yjs_update(&doc_id, &bytes).await;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn broadcast_awareness(
+    state: tauri::State<'_, AppState>,
+    doc_id: String,
+    awareness_base64: String,
+) -> Result<(), String> {
+    let lock = state.network_node.read().await;
+    if let Some(node) = lock.as_ref() {
+        let bytes = base64::engine::general_purpose::STANDARD
+            .decode(&awareness_base64)
+            .map_err(|e| format!("Erreur décodage base64 awareness: {}", e))?;
+        node.broadcast_awareness(&doc_id, &bytes).await;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn sync_asset_from_peers(
+    state: tauri::State<'_, AppState>,
+    rel_path: String,
+    blake3_hash: String,
+) -> Result<bool, String> {
+    let lock = state.network_node.read().await;
+    if let Some(node) = lock.as_ref() {
+        node.sync_asset_from_peers(&rel_path, &blake3_hash)
+            .await
+            .map_err(|e| e.to_string())
+    } else {
+        Ok(false)
+    }
+}
+
+#[tauri::command]
+pub async fn get_local_peer_identity(
+    state: tauri::State<'_, AppState>,
+) -> Result<Option<PeerIdentity>, String> {
+    let lock = state.network_node.read().await;
+    Ok(lock.as_ref().map(|node| node.identity.clone()))
+}
+
