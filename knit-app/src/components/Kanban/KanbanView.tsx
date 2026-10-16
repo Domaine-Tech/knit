@@ -1188,7 +1188,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                   Dossier de destination :
                 </label>
                 <select
-                  className="knit-input"
+                  className="knit-select"
                   value={newKanbanFolder}
                   onChange={(e) => setNewKanbanFolder(e.target.value)}
                   style={{ width: '100%', fontSize: 12 }}

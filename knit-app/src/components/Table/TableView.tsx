@@ -388,10 +388,10 @@ export const TableView: React.FC<TableViewProps> = ({
 
           {/* Filtre par Colonne */}
           <select
-            className="knit-input"
+            className="knit-select"
             value={columnFilter}
             onChange={(e) => setColumnFilter(e.target.value)}
-            style={{ padding: '3px 8px', fontSize: 11, minWidth: 120 }}
+            style={{ fontSize: 11, minWidth: 140 }}
           >
             <option value="all">Toutes les colonnes</option>
             {board.columns.map((col) => (
@@ -504,10 +504,10 @@ export const TableView: React.FC<TableViewProps> = ({
           }}
         >
           <select
-            className="knit-input"
+            className="knit-select"
             value={newTaskColumnId}
             onChange={(e) => setNewTaskColumnId(e.target.value)}
-            style={{ fontSize: 12, padding: '4px 8px' }}
+            style={{ fontSize: 12, minWidth: 140 }}
           >
             {board.columns.map((c) => (
               <option key={c.id} value={c.id}>
@@ -626,20 +626,12 @@ export const TableView: React.FC<TableViewProps> = ({
                   </td>
 
                   {/* Colonne / Statut avec sélecteur direct */}
-                  <td style={{ padding: '10px 12px', verticalAlign: 'middle' }}>
+                  <td style={{ padding: '8px 12px', verticalAlign: 'middle' }}>
                     <select
+                      className="knit-select"
                       value={row.columnId}
                       onChange={(e) => handleMoveTaskColumn(row.id, row.columnId, e.target.value)}
-                      style={{
-                        padding: '3px 8px',
-                        borderRadius: 'var(--knit-radius-xs)',
-                        border: '1px solid var(--knit-border)',
-                        backgroundColor: 'var(--knit-surface)',
-                        color: 'var(--knit-text)',
-                        fontSize: 11,
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                      }}
+                      style={{ height: 26, fontSize: 11, padding: '0 24px 0 8px' }}
                     >
                       {board.columns.map((col) => (
                         <option key={col.id} value={col.id}>

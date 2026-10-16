@@ -307,8 +307,33 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <DuotoneIcon name={isAllExpanded ? 'collapse-all' : 'expand-all'} size={14} />
           </button>
           <button
-            onClick={() => setIsCreatingFile(true)}
-            title="Nouveau fichier .md"
+            onClick={(e) => {
+              contextMenu.show(e, [
+                {
+                  id: 'new-md-note',
+                  label: 'Nouvelle note Markdown',
+                  icon: 'file-markdown' as const,
+                  shortcut: 'Ctrl+N',
+                  onClick: () => setIsCreatingFile(true),
+                },
+                {
+                  id: 'new-kb-note',
+                  label: 'Nouveau tableau Kanban...',
+                  icon: 'kanban' as const,
+                  onClick: () => {
+                    const kbName = window.prompt('Nom du nouveau tableau Kanban :', 'kanban.md');
+                    if (kbName && kbName.trim()) {
+                      const clean = kbName.trim().endsWith('.md') ? kbName.trim() : `${kbName.trim()}.md`;
+                      vaultStore.createKanbanFile(clean, clean.replace(/\.md$/, '')).then((path) => {
+                        onSelectFile(path, false);
+                        toast.success('Tableau Kanban créé', path);
+                      });
+                    }
+                  },
+                },
+              ]);
+            }}
+            title="Créer un nouveau document (Note, Kanban...)"
             style={{
               padding: 4,
               borderRadius: 'var(--knit-radius-xs)',

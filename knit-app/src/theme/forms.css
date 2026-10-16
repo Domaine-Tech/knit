@@ -81,6 +81,79 @@ input.knit-input-seamless:focus {
   box-shadow: 0 0 0 2px var(--knit-primary-alpha) !important;
 }
 
+/* === 1bis. SÉLECTEURS ET LISTES DÉROULANTES (SELECT & DROPDOWN) === */
+select,
+.knit-select,
+select.knit-input {
+  height: 28px;
+  padding: 0 28px 0 10px !important;
+  border-radius: var(--knit-radius-sm) !important;
+  border: 1px solid var(--knit-border) !important;
+  background-color: var(--knit-surface) !important;
+  color: var(--knit-text) !important;
+  font-size: 12px !important;
+  font-family: inherit !important;
+  font-weight: 500 !important;
+  outline: none !important;
+  cursor: pointer !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 8px center !important;
+  background-size: 13px !important;
+  transition: border-color var(--knit-transition-fast),
+              background-color var(--knit-transition-fast),
+              box-shadow var(--knit-transition-fast);
+}
+
+select:hover,
+.knit-select:hover,
+select.knit-input:hover {
+  border-color: var(--knit-text-muted) !important;
+  background-color: var(--knit-surface-hover) !important;
+}
+
+select:focus,
+.knit-select:focus,
+select.knit-input:focus {
+  border-color: var(--knit-primary) !important;
+  box-shadow: 0 0 0 2px var(--knit-primary-alpha) !important;
+  background-color: var(--knit-surface) !important;
+}
+
+select option,
+.knit-select option {
+  background-color: var(--knit-surface) !important;
+  color: var(--knit-text) !important;
+  padding: 6px 10px !important;
+}
+
+/* === 1ter. ZONES DE TEXTE MULTILIGNES (TEXTAREA) === */
+textarea,
+.knit-textarea,
+textarea.knit-input {
+  padding: 8px 10px !important;
+  border-radius: var(--knit-radius-sm) !important;
+  border: 1px solid var(--knit-border) !important;
+  background-color: var(--knit-bg) !important;
+  color: var(--knit-text) !important;
+  font-size: 12px !important;
+  font-family: inherit !important;
+  outline: none !important;
+  transition: border-color var(--knit-transition-fast),
+              box-shadow var(--knit-transition-fast);
+}
+
+textarea:focus,
+.knit-textarea:focus,
+textarea.knit-input:focus {
+  border-color: var(--knit-primary) !important;
+  box-shadow: 0 0 0 2px var(--knit-primary-alpha) !important;
+  background-color: var(--knit-surface) !important;
+}
+
 /* === 2. CASES À COCHER (CHECKBOXES SUR-MESURE) === */
 input[type="checkbox"],
 .knit-checkbox {
