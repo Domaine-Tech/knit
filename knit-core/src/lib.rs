@@ -275,12 +275,10 @@ mod tests {
         let mut detected_ai = false;
         let start = std::time::Instant::now();
         while start.elapsed() < std::time::Duration::from_millis(800) {
-            if let Ok(ev) = rx.try_recv() {
-                if let VaultWatchEvent::FileChanged { content, path } = ev {
-                    if path == "test.md" && content.contains("Modified by external AI agent") {
-                        detected_ai = true;
-                        break;
-                    }
+            if let Ok(VaultWatchEvent::FileChanged { content, path }) = rx.try_recv() {
+                if path == "test.md" && content.contains("Modified by external AI agent") {
+                    detected_ai = true;
+                    break;
                 }
             }
             tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
