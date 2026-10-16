@@ -394,12 +394,14 @@ class VaultStore {
 
     // Évite toute écriture FS redondante si le contenu est déjà identique
     if (this.localContents[relPath] === content) {
+      tabStore.markClean(relPath);
       return;
     }
 
     this.localContents[relPath] = content;
 
     if (!isTauriEnvironment()) {
+      tabStore.markClean(relPath);
       return;
     }
 
@@ -408,6 +410,8 @@ class VaultStore {
       relPath,
       content,
     });
+
+    tabStore.markClean(relPath);
   }
 
   public async createFile(relPath: string, initialContent: string = ''): Promise<void> {

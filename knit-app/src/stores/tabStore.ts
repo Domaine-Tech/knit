@@ -213,8 +213,8 @@ class TabStore {
     }
   }
 
-  public markClean(id: string) {
-    const tab = this.tabs.find((t) => t.id === id);
+  public markClean(idOrPath: string) {
+    const tab = this.tabs.find((t) => t.id === idOrPath || t.path === idOrPath);
     if (tab && tab.isDirty) {
       tab.isDirty = false;
       this.notify();

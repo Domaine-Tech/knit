@@ -315,13 +315,18 @@ export const Editor: React.FC<EditorProps> = ({
             const newText = update.state.doc.toString();
             onChangeRef.current(newText);
 
-            // Auto-sauvegarde debounced (< 150ms) protégée par le WriteGuard backend
+            // Auto-sauvegarde debounced (200ms) protégée par le WriteGuard backend
             if (saveTimerRef.current) {
               clearTimeout(saveTimerRef.current);
             }
-            saveTimerRef.current = setTimeout(() => {
-              vaultStore.writeFile(path, newText);
-            }, 120);
+            saveTimerRef.current = setTimeout(async () => {
+              try {
+                await vaultStore.writeFile(path, newText);
+                tabStore.markClean(path);
+              } catch (err) {
+                console.warn('Erreur auto-sauvegarde:', err);
+              }
+            }, 200);
           }
         }),
       ],
@@ -337,6 +342,9 @@ export const Editor: React.FC<EditorProps> = ({
     return () => {
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current);
+        const curDoc = view.state.doc.toString();
+        vaultStore.writeFile(path, curDoc).catch(() => {});
+        tabStore.markClean(path);
       }
       view.destroy();
       viewRef.current = null;
