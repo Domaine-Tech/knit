@@ -410,24 +410,40 @@ export const NetworkModal: React.FC<NetworkModalProps> = ({ isOpen, onClose }) =
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                      <div
-                        style={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: '50%',
-                          backgroundColor: peer.color_hex,
-                          color: '#FFFFFF',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: 12,
-                          fontWeight: 700,
-                          flexShrink: 0,
-                          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                        }}
-                      >
-                        {peer.initials}
-                      </div>
+                      {networkStore.peerAvatarDataUrls.get(peer.peer_id) ? (
+                        <img
+                          src={networkStore.peerAvatarDataUrls.get(peer.peer_id)}
+                          alt={peer.display_name}
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: '50%',
+                            objectFit: 'cover',
+                            border: '1px solid var(--knit-border)',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                            flexShrink: 0,
+                          }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: '50%',
+                            backgroundColor: peer.color_hex,
+                            color: '#FFFFFF',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: 12,
+                            fontWeight: 700,
+                            flexShrink: 0,
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                          }}
+                        >
+                          {peer.initials}
+                        </div>
+                      )}
                       <div style={{ minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--knit-text)' }}>

@@ -418,32 +418,55 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
               if (collaborators.length === 0) return null;
               return (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginLeft: 'auto', flexShrink: 0 }}>
-                  {collaborators.slice(0, 2).map((collab) => (
-                    <div
-                      key={collab.peer_id}
-                      title={`${collab.display_name} — Cliquer pour rejoindre`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onSelectFile(node.path, false);
-                      }}
-                      style={{
-                        width: 18,
-                        height: 18,
-                        borderRadius: '50%',
-                        backgroundColor: collab.color_hex,
-                        color: '#FFFFFF',
-                        fontSize: 9,
-                        fontWeight: 700,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {collab.initials}
-                    </div>
-                  ))}
+                  {collaborators.slice(0, 2).map((collab) => {
+                    const avatarUrl = networkStore.peerAvatarDataUrls.get(collab.peer_id);
+                    return avatarUrl ? (
+                      <img
+                        key={collab.peer_id}
+                        src={avatarUrl}
+                        alt={collab.display_name}
+                        title={`${collab.display_name} — Cliquer pour rejoindre`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectFile(node.path, false);
+                        }}
+                        style={{
+                          width: 18,
+                          height: 18,
+                          borderRadius: '50%',
+                          objectFit: 'cover',
+                          border: '1px solid var(--knit-border)',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                          cursor: 'pointer',
+                        }}
+                      />
+                    ) : (
+                      <div
+                        key={collab.peer_id}
+                        title={`${collab.display_name} — Cliquer pour rejoindre`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectFile(node.path, false);
+                        }}
+                        style={{
+                          width: 18,
+                          height: 18,
+                          borderRadius: '50%',
+                          backgroundColor: collab.color_hex,
+                          color: '#FFFFFF',
+                          fontSize: 9,
+                          fontWeight: 700,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {collab.initials}
+                      </div>
+                    );
+                  })}
                   {collaborators.length > 2 && (
                     <div
                       style={{

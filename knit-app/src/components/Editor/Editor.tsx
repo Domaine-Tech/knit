@@ -732,27 +732,45 @@ export const Editor: React.FC<EditorProps> = ({
                 }}
               >
                 <span style={{ color: 'var(--knit-text-muted)', fontSize: 10 }}>Présents :</span>
-                {fileCollaborators.slice(0, 4).map((c) => (
-                  <div
-                    key={c.peer_id}
-                    title={`${c.display_name} (${c.initials}) — Collaborateur actif`}
-                    style={{
-                      width: 18,
-                      height: 18,
-                      borderRadius: '50%',
-                      backgroundColor: c.color_hex,
-                      color: '#FFFFFF',
-                      fontSize: 9,
-                      fontWeight: 700,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-                    }}
-                  >
-                    {c.initials}
-                  </div>
-                ))}
+                {fileCollaborators.slice(0, 4).map((c) => {
+                  const avatarUrl = networkStore.peerAvatarDataUrls.get(c.peer_id);
+                  return avatarUrl ? (
+                    <img
+                      key={c.peer_id}
+                      src={avatarUrl}
+                      alt={c.display_name}
+                      title={`${c.display_name} (${c.initials}) — Collaborateur actif`}
+                      style={{
+                        width: 18,
+                        height: 18,
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        border: '1px solid var(--knit-border)',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                      }}
+                    />
+                  ) : (
+                    <div
+                      key={c.peer_id}
+                      title={`${c.display_name} (${c.initials}) — Collaborateur actif`}
+                      style={{
+                        width: 18,
+                        height: 18,
+                        borderRadius: '50%',
+                        backgroundColor: c.color_hex,
+                        color: '#FFFFFF',
+                        fontSize: 9,
+                        fontWeight: 700,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                      }}
+                    >
+                      {c.initials}
+                    </div>
+                  );
+                })}
                 {fileCollaborators.length > 4 && (
                   <span
                     style={{

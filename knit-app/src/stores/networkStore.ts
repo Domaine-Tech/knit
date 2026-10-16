@@ -165,6 +165,9 @@ class NetworkStore {
       const unlistenConnected = await listen<ConnectedPeerInfo>('p2p_peer_connected', (event) => {
         const peer = event.payload;
         this.connectedPeers = [...this.connectedPeers.filter((p) => p.peer_id !== peer.peer_id), peer];
+        if (peer.avatar?.type === 'custom' && peer.avatar.blake3_hash) {
+          this.loadPeerAvatar(vaultPath, peer.peer_id, peer.avatar.blake3_hash);
+        }
         this.notify();
         toast.info(`🌐 Pair connecté : ${peer.display_name} (${peer.initials})`);
       });
@@ -173,8 +176,9 @@ class NetworkStore {
       const unlistenDisconnected = await listen<{ peer_id: string }>('p2p_peer_disconnected', (event) => {
         const { peer_id } = event.payload;
         const disconnected = this.connectedPeers.find((p) => p.peer_id === peer_id);
-        this.connectedPeers = this.connectedPeers.filter((p) => p.peer_id !== peer_id);
+        this.connectedPeers = this.connectedPeers.filter((p) => p.peer_id === peer_id);
         this.activeFileByPeer.delete(peer_id);
+        this.peerAvatarDataUrls.delete(peer_id);
         this.notify();
         if (disconnected) {
           toast.info(`Pair déconnecté : ${disconnected.display_name}`);
@@ -208,7 +212,15 @@ class NetworkStore {
         'p2p_asset_received',
         (event) => {
           const { rel_path } = event.payload;
-          toast.success(`Média reçu via Iroh Blobs : ${rel_path}`);
+          if (rel_path.startsWith('.knit/cache/avatars/')) {
+            const hash = rel_path.replace('.knit/cache/avatars/', '').replace('.png', '').replace('.jpg', '');
+            const peer = this.connectedPeers.find((p) => p.avatar?.blake3_hash === hash);
+            if (peer) {
+              this.loadPeerAvatar(vaultPath, peer.peer_id, hash);
+            }
+          } else {
+            toast.success(`Média reçu via Iroh Blobs : ${rel_path}`);
+          }
         }
       );
       this.unlistenFns.push(unlistenAsset);
@@ -263,6 +275,11 @@ class NetworkStore {
             }
             return p;
           });
+          if (profile.avatar?.type === 'custom' && profile.avatar.blake3_hash) {
+            this.loadPeerAvatar(vaultPath, from_peer, profile.avatar.blake3_hash);
+          } else if (profile.avatar?.type === 'initials') {
+            this.peerAvatarDataUrls.delete(from_peer);
+          }
           this.notify();
         }
       );
@@ -274,6 +291,11 @@ class NetworkStore {
       // Charger les pairs déjà connectés
       const peers = await invoke<ConnectedPeerInfo[]>('get_connected_peers');
       this.connectedPeers = peers;
+      for (const p of peers) {
+        if (p.avatar?.type === 'custom' && p.avatar.blake3_hash) {
+          this.loadPeerAvatar(vaultPath, p.peer_id, p.avatar.blake3_hash);
+        }
+      }
       this.notify();
     } catch (e) {
       console.error('Erreur démarrage réseau P2P:', e);
@@ -457,6 +479,18 @@ class NetworkStore {
     } catch (err) {
       console.warn('Erreur chargement avatar base64:', err);
       return null;
+    }
+  }
+
+  /**
+   * Charge et met en cache l'avatar d'un pair distant pour affichage dans l'UI
+   */
+  public async loadPeerAvatar(vaultPath: string, peerId: string, hash?: string): Promise<void> {
+    if (!hash || !vaultPath) return;
+    const dataUrl = await this.loadAvatarBase64(vaultPath, hash);
+    if (dataUrl) {
+      this.peerAvatarDataUrls.set(peerId, dataUrl);
+      this.notify();
     }
   }
 
