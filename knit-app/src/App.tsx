@@ -181,9 +181,9 @@ export const App: React.FC = () => {
   // Synchronise le titre de la barre de fenêtre avec la note active et la version du projet
   useEffect(() => {
     if (activeTab) {
-      document.title = `${activeTab.title}${activeTab.isDirty ? ' •' : ''} — Knit v0.1.0 (Sprint 2)`;
+      document.title = `${activeTab.title}${activeTab.isDirty ? ' •' : ''} — Knit v0.2.0 (Sprint 4)`;
     } else {
-      document.title = 'Knit — v0.1.0 (Sprint 2)';
+      document.title = 'Knit — v0.2.0 (Sprint 4)';
     }
   }, [activeTab]);
 
@@ -214,9 +214,6 @@ export const App: React.FC = () => {
         }}
         onSave={handleSaveActiveNote}
         canSave={!!activeTab && activeTab.isDirty}
-        onTriggerDemoSync={() => {
-          toast.sync('Node-Alice (P2P)', 1);
-        }}
       />
 
       {/* Corps principal : Sidebar + Espace Éditeur */}

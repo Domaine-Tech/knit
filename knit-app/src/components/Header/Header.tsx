@@ -15,7 +15,6 @@ interface HeaderProps {
   onHueChange: (newHue: number) => void;
   onSave: () => void;
   canSave: boolean;
-  onTriggerDemoSync: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -25,7 +24,6 @@ export const Header: React.FC<HeaderProps> = ({
   onHueChange,
   onSave,
   canSave,
-  onTriggerDemoSync,
 }) => {
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
   const [isNetworkModalOpen, setIsNetworkModalOpen] = useState(false);
@@ -54,12 +52,6 @@ export const Header: React.FC<HeaderProps> = ({
             },
           ]
         : []),
-      {
-        id: 'header-sync',
-        label: 'Simuler un événement de sync P2P',
-        icon: 'sync',
-        onClick: onTriggerDemoSync,
-      },
       { id: 'div-header-1', divider: true },
       {
         id: 'header-theme',
@@ -104,52 +96,42 @@ export const Header: React.FC<HeaderProps> = ({
         flexShrink: 0,
       }}
     >
-      {/* Contrôles de gauche : actions principales */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <button
-          onClick={onSave}
-          disabled={!canSave}
-          title="Enregistrer (Ctrl+S)"
+      {/* Contrôles de gauche : Marque Knit & Coffre-fort */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div
           style={{
             display: 'flex',
             alignItems: 'center',
             gap: 6,
-            padding: '4px 10px',
-            borderRadius: 'var(--knit-radius-sm)',
-            backgroundColor: canSave ? 'var(--knit-primary)' : 'var(--knit-surface)',
-            color: canSave ? '#FFFFFF' : 'var(--knit-text-muted)',
-            border: '1px solid var(--knit-border)',
-            fontSize: 12,
-            fontWeight: 600,
-            cursor: canSave ? 'pointer' : 'default',
-            transition: 'all var(--knit-transition-fast)',
-          }}
-        >
-          <DuotoneIcon name="save" size={13} />
-          <span>Sauvegarder</span>
-        </button>
-
-        <button
-          onClick={onTriggerDemoSync}
-          title="Simuler un événement de synchronisation P2P / Agent IA"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            padding: '4px 10px',
-            borderRadius: 'var(--knit-radius-sm)',
-            backgroundColor: 'var(--knit-surface)',
+            fontWeight: 700,
+            fontSize: 13,
             color: 'var(--knit-text)',
-            border: '1px solid var(--knit-border)',
-            fontSize: 12,
-            transition: 'all var(--knit-transition-fast)',
+            cursor: 'default',
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--knit-surface-hover)')}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'var(--knit-surface)')}
+          title="Knit — Éditeur Markdown Local-First P2P"
         >
-          <DuotoneIcon name="sync" size={13} />
-          <span>Simuler Sync</span>
-        </button>
+          <span style={{ fontSize: 14 }}>🧶</span>
+          <span style={{ letterSpacing: '-0.01em' }}>Knit</span>
+        </div>
+        {vaultStore.vaultName && (
+          <span
+            style={{
+              fontSize: 11,
+              color: 'var(--knit-text-muted)',
+              backgroundColor: 'var(--knit-surface)',
+              border: '1px solid var(--knit-border)',
+              padding: '2px 8px',
+              borderRadius: 'var(--knit-radius-xs)',
+              maxWidth: 180,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+            title={`Coffre-fort actif : ${vaultStore.vaultPath || vaultStore.vaultName}`}
+          >
+            {vaultStore.vaultName}
+          </span>
+        )}
       </div>
 
       {/* Contrôles de droite : Thème et slider Hue */}

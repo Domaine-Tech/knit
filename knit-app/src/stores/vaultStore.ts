@@ -210,6 +210,12 @@ class VaultStore {
     return this.currentVaultPath;
   }
 
+  public get vaultName(): string | null {
+    if (!this.currentVaultPath) return null;
+    const parts = this.currentVaultPath.split(/[/\\]/).filter(Boolean);
+    return parts.length > 0 ? parts[parts.length - 1] : null;
+  }
+
   public subscribe(listener: VaultListener): () => void {
     this.listeners.add(listener);
     listener();
