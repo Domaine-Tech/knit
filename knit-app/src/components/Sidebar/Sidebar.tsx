@@ -177,6 +177,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
         onClick: () => setIsCreatingFile(true),
       },
       {
+        id: 'new-kanban',
+        label: 'Nouveau tableau Kanban...',
+        icon: 'kanban' as const,
+        onClick: () => {
+          const kbName = window.prompt('Nom du nouveau tableau Kanban :', 'kanban.md');
+          if (kbName && kbName.trim()) {
+            const clean = kbName.trim().endsWith('.md') ? kbName.trim() : `${kbName.trim()}.md`;
+            vaultStore.createKanbanFile(clean, clean.replace(/\.md$/, '')).then((path) => {
+              onSelectFile(path, false);
+              toast.success('Tableau Kanban créé', path);
+            });
+          }
+        },
+      },
+      {
         id: 'new-root-folder',
         label: 'Nouveau dossier...',
         icon: 'folder-plus',

@@ -1,121 +1,134 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { vaultStore } from '../../stores/vaultStore';
-import type { TaskCard } from '../../stores/vaultStore';
+import { vaultStore, type KanbanFileInfo } from '../../stores/vaultStore';
+import {
+  parseKanbanMarkdown,
+  serializeKanbanMarkdown,
+  parseCardMetadata,
+  type KanbanBoard,
+  type KanbanCard,
+} from '../../utils/kanbanParser';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { toast } from '../../stores/toastStore';
 import { contextMenu } from '../../stores/contextMenuStore';
 
 interface TableViewProps {
-  onOpenTask: (path: string) => void;
+  activeFilePath?: string | null;
+  activeFileContent?: string;
+  onUpdateContent: (path: string, content: string) => void;
+  onOpenFile: (path: string) => void;
+  onSwitchToEditor?: () => void;
 }
 
-type SortField = 'id' | 'titre' | 'statut' | 'priorite' | 'assigne' | 'echeance';
+interface TableRowItem {
+  id: string;
+  columnId: string;
+  columnTitle: string;
+  columnColor?: string;
+  title: string;
+  completed: boolean;
+  tags: string[];
+  wikiLinks: string[];
+}
+
+type SortField = 'column' | 'title' | 'completed';
 type SortOrder = 'asc' | 'desc';
 
-export const TableView: React.FC<TableViewProps> = ({ onOpenTask }) => {
-  const [tasks, setTasks] = useState<TaskCard[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [searchFilter, setSearchFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [priorityFilter, setPriorityFilter] = useState<string>('all');
-  const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
-  const [sortField, setSortField] = useState<SortField>('id');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+export const TableView: React.FC<TableViewProps> = ({
+  activeFilePath,
+  activeFileContent = '',
+  onUpdateContent,
+  onOpenFile,
+  onSwitchToEditor,
+}) => {
+  const [availableKanbans, setAvailableKanbans] = useState<KanbanFileInfo[]>([]);
+  const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
 
-  const loadTasks = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const items = await vaultStore.getVaultTasks();
-      setTasks(items);
-    } catch (err: unknown) {
-      toast.error('Erreur chargement tâches', String(err));
-    } finally {
-      setIsLoading(false);
-    }
+  const [searchFilter, setSearchFilter] = useState('');
+  const [columnFilter, setColumnFilter] = useState<string>('all');
+  const [sortField, setSortField] = useState<SortField>('column');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+
+  // Formulaire d'ajout rapide de tâche dans le tableau
+  const [isAddingTask, setIsAddingTask] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskColumnId, setNewTaskColumnId] = useState('');
+
+  // Chargement des fichiers kanbans du coffre
+  const loadKanbanFiles = useCallback(async () => {
+    const list = await vaultStore.getKanbanFiles();
+    setAvailableKanbans(list);
   }, []);
 
   useEffect(() => {
-    loadTasks();
-    const unsub = vaultStore.subscribe(() => {
-      loadTasks();
+    loadKanbanFiles();
+    return vaultStore.subscribe(() => {
+      loadKanbanFiles();
     });
-    return () => unsub();
-  }, [loadTasks]);
+  }, [loadKanbanFiles]);
 
-  // Assignés uniques
-  const assignees = useMemo(() => {
-    const set = new Set<string>();
-    tasks.forEach((t) => {
-      if (t.assigne) set.add(t.assigne.trim());
-    });
-    return Array.from(set).sort();
-  }, [tasks]);
+  const currentPath = activeFilePath || (availableKanbans.length > 0 ? availableKanbans[0].path : null);
 
-  // Statuts uniques
-  const statuses = useMemo(() => {
-    const set = new Set<string>(['a-faire', 'en-cours', 'termine']);
-    tasks.forEach((t) => {
-      if (t.statut) set.add(t.statut.toLowerCase().trim());
-    });
-    return Array.from(set).sort();
-  }, [tasks]);
+  const board: KanbanBoard = useMemo(() => {
+    const title = currentPath ? currentPath.split('/').pop()?.replace(/\.md$/, '') || 'Kanban' : 'Mon Tableau';
+    return parseKanbanMarkdown(activeFileContent, title);
+  }, [activeFileContent, currentPath]);
 
-  // Filtrage et Tri
-  const filteredAndSortedTasks = useMemo(() => {
-    const filtered = tasks.filter((t) => {
-      if (searchFilter.trim()) {
-        const q = searchFilter.toLowerCase();
-        const matches =
-          t.titre.toLowerCase().includes(q) ||
-          t.id.toLowerCase().includes(q) ||
-          t.tags.some((tag) => tag.toLowerCase().includes(q));
-        if (!matches) return false;
+  const persistBoard = useCallback(
+    (updatedBoard: KanbanBoard) => {
+      if (!currentPath) return;
+      const newMarkdown = serializeKanbanMarkdown(updatedBoard);
+      onUpdateContent(currentPath, newMarkdown);
+    },
+    [currentPath, onUpdateContent]
+  );
+
+  // Aplatissement des cartes en lignes de tableau
+  const allRows: TableRowItem[] = useMemo(() => {
+    const rows: TableRowItem[] = [];
+    for (const col of board.columns) {
+      for (const card of col.cards) {
+        const meta = parseCardMetadata(card.title);
+        rows.push({
+          id: card.id,
+          columnId: col.id,
+          columnTitle: col.title,
+          columnColor: col.color,
+          title: meta.cleanTitle,
+          completed: card.completed,
+          tags: meta.tags,
+          wikiLinks: meta.wikiLinks,
+        });
       }
+    }
+    return rows;
+  }, [board]);
 
-      if (statusFilter !== 'all') {
-        if ((t.statut || '').toLowerCase() !== statusFilter) return false;
-      }
+  // Filtrage et Tri en direct
+  const filteredAndSortedRows = useMemo(() => {
+    const q = searchFilter.toLowerCase().trim();
 
-      if (priorityFilter !== 'all') {
-        if ((t.priorite || '').toLowerCase() !== priorityFilter) return false;
-      }
-
-      if (assigneeFilter !== 'all') {
-        if ((t.assigne || '').trim() !== assigneeFilter) return false;
-      }
-
-      return true;
-    });
-
-    const priorityRank: Record<string, number> = {
-      critique: 4,
-      haute: 3,
-      moyenne: 2,
-      basse: 1,
-    };
-
-    return filtered.sort((a, b) => {
-      let cmp = 0;
-      if (sortField === 'id') {
-        cmp = a.id.localeCompare(b.id, undefined, { numeric: true });
-      } else if (sortField === 'titre') {
-        cmp = a.titre.localeCompare(b.titre);
-      } else if (sortField === 'statut') {
-        cmp = a.statut.localeCompare(b.statut);
-      } else if (sortField === 'priorite') {
-        const pA = priorityRank[a.priorite?.toLowerCase() || ''] || 0;
-        const pB = priorityRank[b.priorite?.toLowerCase() || ''] || 0;
-        cmp = pA - pB;
-      } else if (sortField === 'assigne') {
-        cmp = (a.assigne || '').localeCompare(b.assigne || '');
-      } else if (sortField === 'echeance') {
-        cmp = (a.echeance || '').localeCompare(b.echeance || '');
-      }
-
-      return sortOrder === 'asc' ? cmp : -cmp;
-    });
-  }, [tasks, searchFilter, statusFilter, priorityFilter, assigneeFilter, sortField, sortOrder]);
+    return allRows
+      .filter((row) => {
+        if (columnFilter !== 'all' && row.columnId !== columnFilter) {
+          return false;
+        }
+        if (q && !row.title.toLowerCase().includes(q) && !row.columnTitle.toLowerCase().includes(q)) {
+          return false;
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        let cmp = 0;
+        if (sortField === 'column') {
+          cmp = a.columnTitle.localeCompare(b.columnTitle);
+        } else if (sortField === 'title') {
+          cmp = a.title.localeCompare(b.title);
+        } else if (sortField === 'completed') {
+          cmp = Number(a.completed) - Number(b.completed);
+        }
+        return sortOrder === 'asc' ? cmp : -cmp;
+      });
+  }, [allRows, columnFilter, searchFilter, sortField, sortOrder]);
 
   const handleToggleSort = (field: SortField) => {
     if (sortField === field) {
@@ -126,153 +139,125 @@ export const TableView: React.FC<TableViewProps> = ({ onOpenTask }) => {
     }
   };
 
+  const handleToggleTaskCheckbox = (row: TableRowItem) => {
+    const updatedCols = board.columns.map((col) => {
+      if (col.id !== row.columnId) return col;
+      return {
+        ...col,
+        cards: col.cards.map((c) => (c.id === row.id ? { ...c, completed: !c.completed } : c)),
+      };
+    });
+    persistBoard({ ...board, columns: updatedCols });
+  };
+
+  const handleMoveTaskColumn = (cardId: string, currentColumnId: string, targetColumnId: string) => {
+    if (currentColumnId === targetColumnId) return;
+
+    const sourceCol = board.columns.find((c) => c.id === currentColumnId);
+    const card = sourceCol?.cards.find((c) => c.id === cardId);
+    if (!card) return;
+
+    const targetCol = board.columns.find((c) => c.id === targetColumnId);
+    const isTargetDone = targetCol ? /termin[eé]|fait|done/i.test(targetCol.title) : false;
+
+    const updatedCard: KanbanCard = {
+      ...card,
+      completed: isTargetDone ? true : card.completed,
+    };
+
+    const updatedCols = board.columns.map((col) => {
+      if (col.id === currentColumnId) {
+        return { ...col, cards: col.cards.filter((c) => c.id !== cardId) };
+      }
+      if (col.id === targetColumnId) {
+        return { ...col, cards: [...col.cards, updatedCard] };
+      }
+      return col;
+    });
+
+    persistBoard({ ...board, columns: updatedCols });
+    toast.success('Statut mis à jour', `Déplacé vers ${targetCol?.title || 'colonne'}`);
+  };
+
+  const handleDeleteTask = (row: TableRowItem) => {
+    const updatedCols = board.columns.map((col) => {
+      if (col.id !== row.columnId) return col;
+      return { ...col, cards: col.cards.filter((c) => c.id !== row.id) };
+    });
+    persistBoard({ ...board, columns: updatedCols });
+    toast.info('Tâche supprimée', row.title);
+  };
+
+  const handleAddTaskSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const title = newTaskTitle.trim();
+    if (!title) return;
+
+    const colId = newTaskColumnId || (board.columns.length > 0 ? board.columns[0].id : '');
+    if (!colId) return;
+
+    const newCard: KanbanCard = {
+      id: `card-${Date.now().toString().slice(-5)}`,
+      title,
+      completed: false,
+      rawText: `- [ ] ${title}`,
+    };
+
+    const updatedCols = board.columns.map((col) => {
+      if (col.id === colId) {
+        return { ...col, cards: [...col.cards, newCard] };
+      }
+      return col;
+    });
+
+    persistBoard({ ...board, columns: updatedCols });
+    setNewTaskTitle('');
+    setIsAddingTask(false);
+    toast.success('Tâche ajoutée', title);
+  };
+
   // Export CSV
   const handleExportCSV = () => {
-    const headers = ['ID', 'Titre', 'Statut', 'Priorité', 'Assigné', 'Sprint', 'Échéance', 'Tags', 'Chemin'];
-    const rows = filteredAndSortedTasks.map((t) => [
-      `"${t.id}"`,
-      `"${t.titre.replace(/"/g, '""')}"`,
-      `"${t.statut}"`,
-      `"${t.priorite || ''}"`,
-      `"${t.assigne || ''}"`,
-      `"${t.sprint || ''}"`,
-      `"${t.echeance || ''}"`,
-      `"${t.tags.join(', ')}"`,
-      `"${t.rel_path}"`,
-    ]);
+    if (allRows.length === 0) {
+      toast.warning('Tableau vide', 'Aucune tâche à exporter');
+      return;
+    }
 
-    const csvContent = [headers.join(';'), ...rows.map((r) => r.join(';'))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const headers = ['Statut/Colonne', 'Titre', 'Fait', 'Tags', 'WikiLinks'];
+    const csvLines = [headers.join(',')];
+
+    for (const r of allRows) {
+      const line = [
+        `"${r.columnTitle.replace(/"/g, '""')}"`,
+        `"${r.title.replace(/"/g, '""')}"`,
+        r.completed ? 'Oui' : 'Non',
+        `"${r.tags.join('; ')}"`,
+        `"${r.wikiLinks.join('; ')}"`,
+      ];
+      csvLines.push(line.join(','));
+    }
+
+    const blob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `taches-knit-${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast.success('Export CSV réussi', `${filteredAndSortedTasks.length} tâches exportées`);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${board.title || 'tableau'}-export.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Export CSV réussi', `${allRows.length} tâche(s) exportée(s)`);
   };
 
-  // Export Markdown
-  const handleExportMarkdown = async () => {
-    const mdLines = [
-      '| ID | Titre | Statut | Priorité | Assigné | Échéance |',
-      '|---|---|---|---|---|---|',
-      ...filteredAndSortedTasks.map(
-        (t) =>
-          `| ${t.id} | [${t.titre}](${t.rel_path}) | ${t.statut} | ${t.priorite || '—'} | ${t.assigne || '—'} | ${t.echeance || '—'} |`
-      ),
-    ];
-    const mdTable = mdLines.join('\n');
-    await navigator.clipboard.writeText(mdTable);
-    toast.success('Tableau Markdown copié', 'Le tableau a été copié dans le presse-papier');
-  };
+  // Export Markdown Table
+  const handleCopyMarkdownTable = () => {
+    if (allRows.length === 0) return;
 
-  const getPriorityBadge = (p?: string) => {
-    if (!p) return <span style={{ color: 'var(--knit-text-muted)' }}>—</span>;
-    const lower = p.toLowerCase();
-    let color = 'var(--knit-text-muted)';
-    let dot = '⚪';
-
-    if (lower === 'critique') {
-      color = '#EF4444';
-      dot = '🔴';
-    } else if (lower === 'haute') {
-      color = '#F59E0B';
-      dot = '🟠';
-    } else if (lower === 'moyenne') {
-      color = '#EAB308';
-      dot = '🟡';
-    } else if (lower === 'basse') {
-      color = '#10B981';
-      dot = '🟢';
+    let md = `| Statut | Tâche | Fait | Tags |\n|---|---|:---:|---|\n`;
+    for (const r of allRows) {
+      md += `| ${r.columnTitle} | ${r.title} | ${r.completed ? '✅' : '⬜'} | ${r.tags.map((t) => `#${t}`).join(' ')} |\n`;
     }
 
-    return (
-      <span style={{ color, fontSize: 11, fontWeight: 600 }}>
-        {dot} {p}
-      </span>
-    );
-  };
-
-  const getStatusBadge = (s?: string) => {
-    const lower = (s || '').toLowerCase();
-    let bg = 'var(--knit-surface-hover)';
-    let color = 'var(--knit-text-muted)';
-
-    if (lower === 'termine') {
-      bg = 'rgba(16, 185, 129, 0.15)';
-      color = '#10B981';
-    } else if (lower === 'en-cours') {
-      bg = 'var(--knit-primary-alpha)';
-      color = 'var(--knit-primary)';
-    }
-
-    return (
-      <span
-        style={{
-          display: 'inline-block',
-          padding: '2px 8px',
-          borderRadius: 'var(--knit-radius-xs)',
-          backgroundColor: bg,
-          color,
-          fontSize: 11,
-          fontWeight: 600,
-          textTransform: 'capitalize',
-        }}
-      >
-        {s || '—'}
-      </span>
-    );
-  };
-
-  const handleRowContextMenu = (e: React.MouseEvent, task: TaskCard) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    contextMenu.show(e, [
-      {
-        id: 'open-task',
-        label: 'Ouvrir la note',
-        icon: 'file-markdown' as const,
-        onClick: () => onOpenTask(task.rel_path),
-      },
-      { id: 'div-row-1', divider: true },
-      {
-        id: 'copy-link',
-        label: 'Copier le lien Markdown',
-        icon: 'link' as const,
-        onClick: () => {
-          const link = `[${task.titre}](${task.rel_path})`;
-          navigator.clipboard.writeText(link);
-          toast.info('Lien copié', link);
-        },
-      },
-      {
-        id: 'copy-id',
-        label: "Copier l'identifiant",
-        icon: 'copy' as const,
-        onClick: () => {
-          navigator.clipboard.writeText(task.id);
-          toast.info('ID copié', task.id);
-        },
-      },
-      { id: 'div-row-2', divider: true },
-      {
-        id: 'delete-task',
-        label: 'Déplacer dans la corbeille',
-        icon: 'trash' as const,
-        onClick: async () => {
-          try {
-            await vaultStore.trashPath(task.rel_path);
-            toast.success('Tâche supprimée', task.titre);
-            loadTasks();
-          } catch (err: unknown) {
-            toast.error('Erreur suppression', String(err));
-          }
-        },
-      },
-    ]);
+    navigator.clipboard.writeText(md);
+    toast.success('Tableau Markdown copié', 'Presse-papier mis à jour');
   };
 
   return (
@@ -286,10 +271,10 @@ export const TableView: React.FC<TableViewProps> = ({ onOpenTask }) => {
         overflow: 'hidden',
       }}
     >
-      {/* Barre d'outils Tableau */}
+      {/* Barre d'outils du Tableau */}
       <div
         style={{
-          padding: '12px 20px',
+          padding: '10px 18px',
           backgroundColor: 'var(--knit-surface)',
           borderBottom: '1px solid var(--knit-border)',
           display: 'flex',
@@ -299,13 +284,80 @@ export const TableView: React.FC<TableViewProps> = ({ onOpenTask }) => {
           gap: 12,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <DuotoneIcon name="table" size={20} />
+        {/* Titre & Sélecteur de fichier */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, position: 'relative' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+            <DuotoneIcon name="table" size={20} style={{ color: 'var(--knit-primary)' }} />
             <h2 style={{ fontSize: 15, fontWeight: 700, margin: 0, color: 'var(--knit-text)' }}>
-              Vue Tableau des Tâches
+              {board.title || 'Vue Tableau'}
             </h2>
           </div>
+
+          <button
+            onClick={() => setIsSwitcherOpen((prev) => !prev)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+              padding: '3px 8px',
+              borderRadius: 'var(--knit-radius-xs)',
+              backgroundColor: isSwitcherOpen ? 'var(--knit-surface-hover)' : 'transparent',
+              border: '1px solid var(--knit-border)',
+              fontSize: 11,
+              color: 'var(--knit-text-secondary)',
+              cursor: 'pointer',
+            }}
+          >
+            <span>{currentPath ? currentPath.split('/').pop() : 'Choisir...'}</span>
+            <DuotoneIcon name="chevron-down" size={11} />
+          </button>
+
+          {isSwitcherOpen && (
+            <div
+              style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                marginTop: 6,
+                width: 240,
+                backgroundColor: 'var(--knit-surface)',
+                border: '1px solid var(--knit-border)',
+                borderRadius: 'var(--knit-radius-sm)',
+                boxShadow: 'var(--knit-shadow-lg)',
+                zIndex: 100,
+                padding: '4px 0',
+              }}
+            >
+              {availableKanbans.map((kb) => (
+                <button
+                  key={kb.path}
+                  onClick={() => {
+                    setIsSwitcherOpen(false);
+                    onOpenFile(kb.path);
+                  }}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '8px 12px',
+                    border: 'none',
+                    backgroundColor: kb.path === currentPath ? 'var(--knit-primary-alpha)' : 'transparent',
+                    color: kb.path === currentPath ? 'var(--knit-primary)' : 'var(--knit-text)',
+                    fontSize: 12,
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <DuotoneIcon name="kanban" size={13} />
+                  <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {kb.title}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+
           <span
             style={{
               fontSize: 11,
@@ -315,304 +367,366 @@ export const TableView: React.FC<TableViewProps> = ({ onOpenTask }) => {
               borderRadius: 'var(--knit-radius-xs)',
             }}
           >
-            {isLoading ? 'Chargement...' : `${filteredAndSortedTasks.length} ligne${filteredAndSortedTasks.length > 1 ? 's' : ''}`}
+            {filteredAndSortedRows.length} ligne{filteredAndSortedRows.length > 1 ? 's' : ''}
           </span>
         </div>
 
-        {/* Contrôles de filtrage & Exports */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          <div className="knit-input-group" style={{ width: 220 }}>
-            <DuotoneIcon name="search" size={13} style={{ color: 'var(--knit-text-muted)' }} />
+        {/* Contrôles de filtrage, Recherche & Exports */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          {/* Recherche rapide */}
+          <div className="knit-input-group" style={{ width: 190 }}>
+            <DuotoneIcon name="search" size={12} style={{ color: 'var(--knit-text-muted)' }} />
             <input
               type="text"
               className="knit-input-seamless"
-              placeholder="Recherche en direct (<50ms)..."
+              placeholder="Rechercher..."
               value={searchFilter}
               onChange={(e) => setSearchFilter(e.target.value)}
-              style={{ fontSize: 12, width: '100%' }}
+              style={{ fontSize: 11, width: '100%' }}
             />
-            {searchFilter && (
-              <button
-                onClick={() => setSearchFilter('')}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--knit-text-muted)',
-                  cursor: 'pointer',
-                  padding: 2,
-                }}
-              >
-                <DuotoneIcon name="close" size={11} />
-              </button>
-            )}
           </div>
 
-          {/* Filtre Statut */}
+          {/* Filtre par Colonne */}
           <select
-            className="knit-select"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            style={{ fontSize: 12, padding: '4px 8px' }}
+            className="knit-input"
+            value={columnFilter}
+            onChange={(e) => setColumnFilter(e.target.value)}
+            style={{ padding: '3px 8px', fontSize: 11, minWidth: 120 }}
           >
-            <option value="all">Tous statuts</option>
-            {statuses.map((s) => (
-              <option key={s} value={s}>
-                {s}
+            <option value="all">Toutes les colonnes</option>
+            {board.columns.map((col) => (
+              <option key={col.id} value={col.id}>
+                {col.title} ({col.cards.length})
               </option>
             ))}
           </select>
 
-          {/* Filtre Priorité */}
-          <select
-            className="knit-select"
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
-            style={{ fontSize: 12, padding: '4px 8px' }}
-          >
-            <option value="all">Toutes priorités</option>
-            <option value="critique">🔴 Critique</option>
-            <option value="haute">🟠 Haute</option>
-            <option value="moyenne">🟡 Moyenne</option>
-            <option value="basse">🟢 Basse</option>
-          </select>
-
-          {/* Filtre Assigné */}
-          {assignees.length > 0 && (
-            <select
-              className="knit-select"
-              value={assigneeFilter}
-              onChange={(e) => setAssigneeFilter(e.target.value)}
-              style={{ fontSize: 12, padding: '4px 8px' }}
-            >
-              <option value="all">Tous assignés</option>
-              {assignees.map((a) => (
-                <option key={a} value={a}>
-                  👤 {a}
-                </option>
-              ))}
-            </select>
-          )}
-
-          {/* Boutons d'export */}
+          {/* Bouton Ajouter Tâche */}
           <button
-            className="knit-btn"
-            onClick={handleExportCSV}
-            title="Exporter les tâches filtrées au format CSV"
-            style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 5 }}
+            onClick={() => {
+              setIsAddingTask(true);
+              setNewTaskColumnId(board.columns[0]?.id || '');
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              padding: '4px 9px',
+              borderRadius: 'var(--knit-radius-sm)',
+              backgroundColor: 'var(--knit-surface)',
+              border: '1px solid var(--knit-border)',
+              color: 'var(--knit-text)',
+              fontSize: 11,
+              fontWeight: 500,
+              cursor: 'pointer',
+            }}
           >
-            <DuotoneIcon name="download" size={13} />
+            <DuotoneIcon name="plus" size={11} />
+            <span>Nouvelle tâche</span>
+          </button>
+
+          {/* Exports */}
+          <button
+            onClick={handleExportCSV}
+            title="Exporter la liste au format CSV"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              padding: '4px 8px',
+              borderRadius: 'var(--knit-radius-sm)',
+              backgroundColor: 'transparent',
+              border: '1px solid var(--knit-border)',
+              color: 'var(--knit-text-secondary)',
+              fontSize: 11,
+              cursor: 'pointer',
+            }}
+          >
+            <DuotoneIcon name="download" size={11} />
             <span>CSV</span>
           </button>
 
           <button
-            className="knit-btn"
-            onClick={handleExportMarkdown}
-            title="Copier le tableau Markdown dans le presse-papier"
-            style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 5 }}
+            onClick={handleCopyMarkdownTable}
+            title="Copier le tableau au format Markdown"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              padding: '4px 8px',
+              borderRadius: 'var(--knit-radius-sm)',
+              backgroundColor: 'transparent',
+              border: '1px solid var(--knit-border)',
+              color: 'var(--knit-text-secondary)',
+              fontSize: 11,
+              cursor: 'pointer',
+            }}
           >
-            <DuotoneIcon name="copy" size={13} />
-            <span>Markdown</span>
+            <DuotoneIcon name="copy" size={11} />
+            <span>Tableau MD</span>
           </button>
+
+          {onSwitchToEditor && (
+            <button
+              onClick={onSwitchToEditor}
+              title="Afficher et éditer le fichier Markdown source"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                padding: '4px 8px',
+                borderRadius: 'var(--knit-radius-sm)',
+                backgroundColor: 'transparent',
+                border: '1px solid var(--knit-border)',
+                color: 'var(--knit-text-secondary)',
+                fontSize: 11,
+                cursor: 'pointer',
+              }}
+            >
+              <DuotoneIcon name="file-markdown" size={11} />
+              <span>Markdown</span>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Contenu de la table */}
-      <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>
+      {/* Formulaire modal ou inline d'ajout de tâche */}
+      {isAddingTask && (
+        <form
+          onSubmit={handleAddTaskSubmit}
+          style={{
+            padding: '10px 18px',
+            backgroundColor: 'var(--knit-surface-hover)',
+            borderBottom: '1px solid var(--knit-border)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+          }}
+        >
+          <select
+            className="knit-input"
+            value={newTaskColumnId}
+            onChange={(e) => setNewTaskColumnId(e.target.value)}
+            style={{ fontSize: 12, padding: '4px 8px' }}
+          >
+            {board.columns.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.title}
+              </option>
+            ))}
+          </select>
+
+          <input
+            autoFocus
+            type="text"
+            className="knit-input"
+            placeholder="Titre de la tâche (ex: Spécifications [[Specs]] #projet)..."
+            value={newTaskTitle}
+            onChange={(e) => setNewTaskTitle(e.target.value)}
+            style={{ flex: 1, fontSize: 12 }}
+          />
+
+          <button type="submit" className="knit-btn knit-btn-primary" style={{ padding: '4px 12px', fontSize: 11 }}>
+            Ajouter
+          </button>
+          <button type="button" className="knit-btn" style={{ padding: '4px 10px', fontSize: 11 }} onClick={() => setIsAddingTask(false)}>
+            Annuler
+          </button>
+        </form>
+      )}
+
+      {/* Table principale */}
+      <div style={{ flex: 1, overflow: 'auto', padding: '12px 18px' }}>
         <table
           style={{
             width: '100%',
             borderCollapse: 'collapse',
-            backgroundColor: 'var(--knit-surface)',
-            borderRadius: 'var(--knit-radius-md)',
-            overflow: 'hidden',
-            border: '1px solid var(--knit-border)',
-            boxShadow: 'var(--knit-shadow-sm)',
-            fontSize: 13,
+            fontSize: 12,
+            textAlign: 'left',
           }}
         >
           <thead>
             <tr
               style={{
-                backgroundColor: 'var(--knit-surface-hover)',
-                borderBottom: '1px solid var(--knit-border)',
+                borderBottom: '2px solid var(--knit-border)',
+                color: 'var(--knit-text-muted)',
+                fontSize: 11,
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
                 userSelect: 'none',
               }}
             >
               <th
-                onClick={() => handleToggleSort('id')}
-                style={{
-                  padding: '10px 14px',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  width: 100,
-                  color: 'var(--knit-text-secondary)',
-                  fontWeight: 600,
-                }}
+                onClick={() => handleToggleSort('completed')}
+                style={{ padding: '8px 10px', width: 44, cursor: 'pointer' }}
               >
-                ID {sortField === 'id' && (sortOrder === 'asc' ? '▲' : '▼')}
+                Fait {sortField === 'completed' && (sortOrder === 'asc' ? '↑' : '↓')}
               </th>
               <th
-                onClick={() => handleToggleSort('titre')}
-                style={{
-                  padding: '10px 14px',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  color: 'var(--knit-text-secondary)',
-                  fontWeight: 600,
-                }}
+                onClick={() => handleToggleSort('column')}
+                style={{ padding: '8px 12px', width: 170, cursor: 'pointer' }}
               >
-                Titre {sortField === 'titre' && (sortOrder === 'asc' ? '▲' : '▼')}
+                Colonne / Statut {sortField === 'column' && (sortOrder === 'asc' ? '↑' : '↓')}
               </th>
               <th
-                onClick={() => handleToggleSort('statut')}
-                style={{
-                  padding: '10px 14px',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  width: 120,
-                  color: 'var(--knit-text-secondary)',
-                  fontWeight: 600,
-                }}
+                onClick={() => handleToggleSort('title')}
+                style={{ padding: '8px 12px', cursor: 'pointer' }}
               >
-                Statut {sortField === 'statut' && (sortOrder === 'asc' ? '▲' : '▼')}
+                Tâche {sortField === 'title' && (sortOrder === 'asc' ? '↑' : '↓')}
               </th>
-              <th
-                onClick={() => handleToggleSort('priorite')}
-                style={{
-                  padding: '10px 14px',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  width: 110,
-                  color: 'var(--knit-text-secondary)',
-                  fontWeight: 600,
-                }}
-              >
-                Priorité {sortField === 'priorite' && (sortOrder === 'asc' ? '▲' : '▼')}
-              </th>
-              <th
-                onClick={() => handleToggleSort('assigne')}
-                style={{
-                  padding: '10px 14px',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  width: 120,
-                  color: 'var(--knit-text-secondary)',
-                  fontWeight: 600,
-                }}
-              >
-                Assigné {sortField === 'assigne' && (sortOrder === 'asc' ? '▲' : '▼')}
-              </th>
-              <th
-                onClick={() => handleToggleSort('echeance')}
-                style={{
-                  padding: '10px 14px',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  width: 110,
-                  color: 'var(--knit-text-secondary)',
-                  fontWeight: 600,
-                }}
-              >
-                Échéance {sortField === 'echeance' && (sortOrder === 'asc' ? '▲' : '▼')}
-              </th>
-              <th
-                style={{
-                  padding: '10px 14px',
-                  textAlign: 'left',
-                  color: 'var(--knit-text-secondary)',
-                  fontWeight: 600,
-                }}
-              >
-                Tags
-              </th>
+              <th style={{ padding: '8px 12px', width: 180 }}>Tags</th>
+              <th style={{ padding: '8px 10px', width: 70, textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {filteredAndSortedTasks.length === 0 ? (
+            {filteredAndSortedRows.length === 0 ? (
               <tr>
-                <td
-                  colSpan={7}
-                  style={{
-                    padding: 32,
-                    textAlign: 'center',
-                    color: 'var(--knit-text-muted)',
-                  }}
-                >
+                <td colSpan={5} style={{ padding: 24, textAlign: 'center', color: 'var(--knit-text-muted)' }}>
                   Aucune tâche ne correspond aux critères
                 </td>
               </tr>
             ) : (
-              filteredAndSortedTasks.map((task) => {
-                const isSelected = selectedTaskId === task.id;
-                return (
-                  <tr
-                    key={task.id}
-                    onClick={() => onOpenTask(task.rel_path)}
-                    onContextMenu={(e) => handleRowContextMenu(e, task)}
-                    onMouseEnter={() => setSelectedTaskId(task.id)}
-                    onMouseLeave={() => setSelectedTaskId(null)}
-                    style={{
-                      borderBottom: '1px solid var(--knit-border)',
-                      cursor: 'pointer',
-                      backgroundColor: isSelected ? 'var(--knit-surface-hover)' : 'transparent',
-                      transition: 'background var(--knit-duration-fast)',
-                    }}
-                  >
-                    <td
+              filteredAndSortedRows.map((row) => (
+                <tr
+                  key={row.id}
+                  style={{
+                    borderBottom: '1px solid var(--knit-border)',
+                    transition: 'background var(--knit-duration-fast)',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--knit-surface)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    contextMenu.show(e, [
+                      ...board.columns.map((c) => ({
+                        id: `move-to-${c.id}`,
+                        label: `Déplacer vers "${c.title}"`,
+                        icon: 'arrow-right' as const,
+                        onClick: () => handleMoveTaskColumn(row.id, row.columnId, c.id),
+                      })),
+                      { id: 'div-t-1', divider: true },
+                      {
+                        id: 'delete-row',
+                        label: 'Supprimer la tâche',
+                        icon: 'trash' as const,
+                        danger: true,
+                        onClick: () => handleDeleteTask(row),
+                      },
+                    ]);
+                  }}
+                >
+                  {/* Case à cocher */}
+                  <td style={{ padding: '10px 10px', verticalAlign: 'middle' }}>
+                    <input
+                      type="checkbox"
+                      checked={row.completed}
+                      onChange={() => handleToggleTaskCheckbox(row)}
+                      style={{ cursor: 'pointer', accentColor: 'var(--knit-primary)' }}
+                    />
+                  </td>
+
+                  {/* Colonne / Statut avec sélecteur direct */}
+                  <td style={{ padding: '10px 12px', verticalAlign: 'middle' }}>
+                    <select
+                      value={row.columnId}
+                      onChange={(e) => handleMoveTaskColumn(row.id, row.columnId, e.target.value)}
                       style={{
-                        padding: '10px 14px',
-                        fontFamily: 'var(--knit-font-mono)',
-                        fontSize: 12,
-                        color: 'var(--knit-text-muted)',
-                      }}
-                    >
-                      #{task.id}
-                    </td>
-                    <td
-                      style={{
-                        padding: '10px 14px',
-                        fontWeight: 500,
+                        padding: '3px 8px',
+                        borderRadius: 'var(--knit-radius-xs)',
+                        border: '1px solid var(--knit-border)',
+                        backgroundColor: 'var(--knit-surface)',
                         color: 'var(--knit-text)',
+                        fontSize: 11,
+                        fontWeight: 600,
+                        cursor: 'pointer',
                       }}
                     >
-                      {task.titre}
-                    </td>
-                    <td style={{ padding: '10px 14px' }}>{getStatusBadge(task.statut)}</td>
-                    <td style={{ padding: '10px 14px' }}>{getPriorityBadge(task.priorite)}</td>
-                    <td style={{ padding: '10px 14px', color: 'var(--knit-text-secondary)' }}>
-                      {task.assigne ? `👤 ${task.assigne}` : '—'}
-                    </td>
-                    <td
+                      {board.columns.map((col) => (
+                        <option key={col.id} value={col.id}>
+                          {col.title}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+
+                  {/* Titre & WikiLinks */}
+                  <td style={{ padding: '10px 12px', verticalAlign: 'middle' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <span
+                        style={{
+                          color: row.completed ? 'var(--knit-text-muted)' : 'var(--knit-text)',
+                          textDecoration: row.completed ? 'line-through' : 'none',
+                          fontSize: 13,
+                        }}
+                      >
+                        {row.title}
+                      </span>
+
+                      {row.wikiLinks.length > 0 && (
+                        <div style={{ display: 'flex', gap: 4 }}>
+                          {row.wikiLinks.map((l) => (
+                            <button
+                              key={l}
+                              onClick={() => onOpenFile(`${l}.md`)}
+                              style={{
+                                padding: '1px 5px',
+                                borderRadius: 3,
+                                backgroundColor: 'var(--knit-primary-alpha)',
+                                border: '1px solid var(--knit-primary)',
+                                color: 'var(--knit-primary)',
+                                fontSize: 10,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              [[{l}]]
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </td>
+
+                  {/* Tags */}
+                  <td style={{ padding: '10px 12px', verticalAlign: 'middle' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                      {row.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          style={{
+                            fontSize: 10,
+                            padding: '1px 6px',
+                            borderRadius: 3,
+                            backgroundColor: 'var(--knit-surface-hover)',
+                            color: 'var(--knit-text-secondary)',
+                            border: '1px solid var(--knit-border)',
+                          }}
+                        >
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+
+                  {/* Actions */}
+                  <td style={{ padding: '10px 10px', textAlign: 'right', verticalAlign: 'middle' }}>
+                    <button
+                      onClick={() => handleDeleteTask(row)}
+                      title="Supprimer la tâche"
                       style={{
-                        padding: '10px 14px',
+                        background: 'none',
+                        border: 'none',
                         color: 'var(--knit-text-muted)',
-                        fontSize: 12,
+                        padding: 3,
+                        cursor: 'pointer',
                       }}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = '#EF4444')}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--knit-text-muted)')}
                     >
-                      {task.echeance || '—'}
-                    </td>
-                    <td style={{ padding: '10px 14px' }}>
-                      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                        {task.tags.map((t) => (
-                          <span
-                            key={t}
-                            style={{
-                              fontSize: 10,
-                              color: 'var(--knit-primary)',
-                              backgroundColor: 'var(--knit-bg)',
-                              border: '1px solid var(--knit-border)',
-                              padding: '1px 5px',
-                              borderRadius: 'var(--knit-radius-xs)',
-                            }}
-                          >
-                            #{t}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
+                      <DuotoneIcon name="trash" size={13} />
+                    </button>
+                  </td>
+                </tr>
+              ))
             )}
           </tbody>
         </table>

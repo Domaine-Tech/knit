@@ -1,309 +1,322 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { vaultStore } from '../../stores/vaultStore';
-import type { TaskCard } from '../../stores/vaultStore';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { vaultStore, type KanbanFileInfo } from '../../stores/vaultStore';
+import {
+  parseKanbanMarkdown,
+  serializeKanbanMarkdown,
+  parseCardMetadata,
+  COLUMN_ACCENT_COLORS,
+  type KanbanBoard,
+  type KanbanColumn,
+  type KanbanCard,
+} from '../../utils/kanbanParser';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { toast } from '../../stores/toastStore';
 import { contextMenu } from '../../stores/contextMenuStore';
 
 interface KanbanViewProps {
-  onOpenTask: (path: string) => void;
+  activeFilePath?: string | null;
+  activeFileContent?: string;
+  onUpdateContent: (path: string, content: string) => void;
+  onOpenFile: (path: string) => void;
+  onSwitchToEditor?: () => void;
 }
 
-interface ColumnDef {
-  id: string;
-  label: string;
-  color: string;
-  accentBg: string;
-}
+export const KanbanView: React.FC<KanbanViewProps> = ({
+  activeFilePath,
+  activeFileContent = '',
+  onUpdateContent,
+  onOpenFile,
+  onSwitchToEditor,
+}) => {
+  // Liste des fichiers Kanban disponibles dans le coffre
+  const [availableKanbans, setAvailableKanbans] = useState<KanbanFileInfo[]>([]);
+  const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
 
-const DEFAULT_COLUMNS: ColumnDef[] = [
-  { id: 'a-faire', label: 'À faire', color: 'var(--knit-text-secondary)', accentBg: 'var(--knit-surface-hover)' },
-  { id: 'en-cours', label: 'En cours', color: 'var(--knit-primary)', accentBg: 'var(--knit-primary-alpha)' },
-  { id: 'termine', label: 'Terminé', color: '#10B981', accentBg: 'rgba(16, 185, 129, 0.15)' },
-];
-
-export const KanbanView: React.FC<KanbanViewProps> = ({ onOpenTask }) => {
-  const [tasks, setTasks] = useState<TaskCard[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // Recherche / Filtre textuel dans les cartes
   const [searchFilter, setSearchFilter] = useState('');
-  const [priorityFilter, setPriorityFilter] = useState<string>('all');
-  const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
-  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
-  const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
-  const [isNewTaskModalOpen, setIsNewTaskModalOpen] = useState(false);
-  const [newTaskTitle, setNewTaskTitle] = useState('');
-  const [newTaskColumn, setNewTaskColumn] = useState('a-faire');
 
-  const loadTasks = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const items = await vaultStore.getVaultTasks();
-      setTasks(items);
-    } catch (err: unknown) {
-      toast.error('Erreur chargement tâches', String(err));
-    } finally {
-      setIsLoading(false);
-    }
+  // États pour l'ajout d'une nouvelle colonne
+  const [isAddingColumn, setIsAddingColumn] = useState(false);
+  const [newColumnTitle, setNewColumnTitle] = useState('');
+  const addColumnInputRef = useRef<HTMLInputElement>(null);
+
+  // États pour l'ajout d'une nouvelle carte (par colonne)
+  const [addingCardInColumnId, setAddingCardInColumnId] = useState<string | null>(null);
+  const [newCardTitle, setNewCardTitle] = useState('');
+  const addCardInputRef = useRef<HTMLInputElement>(null);
+
+  // États de renommage inline d'une colonne
+  const [renamingColumnId, setRenamingColumnId] = useState<string | null>(null);
+  const [renamingColumnTitle, setRenamingColumnTitle] = useState('');
+
+  // États de renommage inline d'une carte
+  const [editingCardId, setEditingCardId] = useState<string | null>(null);
+  const [editingCardText, setEditingCardText] = useState('');
+
+  // Modale de création d'un nouveau fichier Kanban
+  const [isNewKanbanModalOpen, setIsNewKanbanModalOpen] = useState(false);
+  const [newKanbanName, setNewKanbanName] = useState('');
+  const [newKanbanFolder, setNewKanbanFolder] = useState('projet');
+
+  // Drag and Drop
+  const [draggedCard, setDraggedCard] = useState<{ cardId: string; sourceColumnId: string } | null>(null);
+  const [dragOverColumnId, setDragOverColumnId] = useState<string | null>(null);
+
+  // Chargement des fichiers kanbans du coffre
+  const loadKanbanFiles = useCallback(async () => {
+    const list = await vaultStore.getKanbanFiles();
+    setAvailableKanbans(list);
   }, []);
 
   useEffect(() => {
-    loadTasks();
-    const unsub = vaultStore.subscribe(() => {
-      loadTasks();
+    loadKanbanFiles();
+    return vaultStore.subscribe(() => {
+      loadKanbanFiles();
     });
-    return () => unsub();
-  }, [loadTasks]);
+  }, [loadKanbanFiles]);
 
-  // Découverte dynamique de colonnes additionnelles si présentes dans les tâches
-  const columns = useMemo(() => {
-    const knownIds = new Set(DEFAULT_COLUMNS.map((c) => c.id));
-    const extraCols: ColumnDef[] = [];
+  // Détermination du fichier actuellement affiché
+  const currentPath = activeFilePath || (availableKanbans.length > 0 ? availableKanbans[0].path : null);
 
-    tasks.forEach((t) => {
-      const s = (t.statut || 'a-faire').toLowerCase().trim();
-      if (!knownIds.has(s) && s) {
-        knownIds.add(s);
-        extraCols.push({
-          id: s,
-          label: s.charAt(0).toUpperCase() + s.slice(1).replace(/-/g, ' '),
-          color: 'var(--knit-text)',
-          accentBg: 'var(--knit-surface-hover)',
-        });
-      }
-    });
+  // Parse de la structure Kanban depuis le Markdown actif
+  const board: KanbanBoard = useMemo(() => {
+    const title = currentPath ? currentPath.split('/').pop()?.replace(/\.md$/, '') || 'Kanban' : 'Mon Kanban';
+    return parseKanbanMarkdown(activeFileContent, title);
+  }, [activeFileContent, currentPath]);
 
-    return [...DEFAULT_COLUMNS, ...extraCols];
-  }, [tasks]);
+  // Sauvegarde des modifications du tableau dans le fichier Markdown
+  const persistBoard = useCallback(
+    (updatedBoard: KanbanBoard) => {
+      if (!currentPath) return;
+      const newMarkdown = serializeKanbanMarkdown(updatedBoard);
+      onUpdateContent(currentPath, newMarkdown);
+    },
+    [currentPath, onUpdateContent]
+  );
 
-  // Liste des assignés uniques pour le filtre
-  const assignees = useMemo(() => {
-    const set = new Set<string>();
-    tasks.forEach((t) => {
-      if (t.assigne) set.add(t.assigne.trim());
-    });
-    return Array.from(set).sort();
-  }, [tasks]);
-
-  // Tâches filtrées
-  const filteredTasks = useMemo(() => {
-    return tasks.filter((t) => {
-      if (searchFilter.trim()) {
-        const q = searchFilter.toLowerCase();
-        const matchesQuery =
-          t.titre.toLowerCase().includes(q) ||
-          t.id.toLowerCase().includes(q) ||
-          t.snippet.toLowerCase().includes(q) ||
-          t.tags.some((tag) => tag.toLowerCase().includes(q));
-        if (!matchesQuery) return false;
-      }
-
-      if (priorityFilter !== 'all') {
-        if ((t.priorite || '').toLowerCase() !== priorityFilter) return false;
-      }
-
-      if (assigneeFilter !== 'all') {
-        if ((t.assigne || '').trim() !== assigneeFilter) return false;
-      }
-
-      return true;
-    });
-  }, [tasks, searchFilter, priorityFilter, assigneeFilter]);
-
-  // Déplacement d'une carte vers un nouveau statut
-  const handleMoveTask = async (task: TaskCard, newStatus: string) => {
-    if (task.statut.toLowerCase() === newStatus.toLowerCase()) return;
-
-    // Mise à jour optimiste immédiate dans l'état local
-    setTasks((prev) =>
-      prev.map((t) => (t.id === task.id ? { ...t, statut: newStatus } : t))
-    );
-
-    try {
-      await vaultStore.updateTaskStatus(task.rel_path, newStatus);
-      toast.success(
-        'Statut mis à jour',
-        `"${task.titre}" déplacé vers ${newStatus}`
-      );
-    } catch (err: unknown) {
-      toast.error('Erreur mise à jour statut', String(err));
-      loadTasks();
+  // Gestion de l'ajout d'une nouvelle colonne personnalisée
+  const handleAddColumnSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const title = newColumnTitle.trim();
+    if (!title) {
+      setIsAddingColumn(false);
+      return;
     }
+
+    const newColId = `col-${board.columns.length}-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'col'}`;
+    const color = COLUMN_ACCENT_COLORS[board.columns.length % COLUMN_ACCENT_COLORS.length];
+    const newCol: KanbanColumn = {
+      id: newColId,
+      title,
+      color,
+      cards: [],
+    };
+
+    const updatedBoard: KanbanBoard = {
+      ...board,
+      columns: [...board.columns, newCol],
+    };
+
+    persistBoard(updatedBoard);
+    setNewColumnTitle('');
+    setIsAddingColumn(false);
+    toast.success('Colonne créée', `Colonne "${title}" ajoutée`);
   };
 
-  // Drag & Drop
-  const handleDragStart = (e: React.DragEvent, taskId: string) => {
-    e.dataTransfer.setData('text/plain', taskId);
+  // Renommage d'une colonne
+  const handleRenameColumnSubmit = (columnId: string) => {
+    const title = renamingColumnTitle.trim();
+    if (!title) {
+      setRenamingColumnId(null);
+      return;
+    }
+
+    const updatedCols = board.columns.map((c) => (c.id === columnId ? { ...c, title } : c));
+    persistBoard({ ...board, columns: updatedCols });
+    setRenamingColumnId(null);
+    toast.info('Colonne renommée', title);
+  };
+
+  // Suppression d'une colonne
+  const handleDeleteColumn = (columnId: string, columnTitle: string, cardCount: number) => {
+    if (cardCount > 0) {
+      if (!window.confirm(`Supprimer la colonne "${columnTitle}" et ses ${cardCount} tâche(s) ?`)) {
+        return;
+      }
+    }
+
+    const updatedCols = board.columns.filter((c) => c.id !== columnId);
+    persistBoard({ ...board, columns: updatedCols });
+    toast.success('Colonne supprimée', columnTitle);
+  };
+
+  // Déplacement d'une colonne (gauche / droite)
+  const handleMoveColumn = (index: number, direction: 'left' | 'right') => {
+    const newIndex = direction === 'left' ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= board.columns.length) return;
+
+    const newCols = [...board.columns];
+    const [moved] = newCols.splice(index, 1);
+    newCols.splice(newIndex, 0, moved);
+
+    persistBoard({ ...board, columns: newCols });
+  };
+
+  // Ajout d'une carte dans une colonne
+  const handleAddCardSubmit = (columnId: string, e: React.FormEvent) => {
+    e.preventDefault();
+    const title = newCardTitle.trim();
+    if (!title) {
+      setAddingCardInColumnId(null);
+      return;
+    }
+
+    const newCard: KanbanCard = {
+      id: `card-${Date.now().toString().slice(-5)}`,
+      title,
+      completed: false,
+      rawText: `- [ ] ${title}`,
+    };
+
+    const updatedCols = board.columns.map((col) => {
+      if (col.id === columnId) {
+        return { ...col, cards: [...col.cards, newCard] };
+      }
+      return col;
+    });
+
+    persistBoard({ ...board, columns: updatedCols });
+    setNewCardTitle('');
+    // On conserve le focus pour ajouter rapidement plusieurs cartes
+    setTimeout(() => addCardInputRef.current?.focus(), 20);
+    toast.success('Tâche ajoutée', title);
+  };
+
+  // Bascule de la case à cocher d'une carte
+  const handleToggleCardCheckbox = (columnId: string, cardId: string) => {
+    const updatedCols = board.columns.map((col) => {
+      if (col.id !== columnId) return col;
+      return {
+        ...col,
+        cards: col.cards.map((c) => (c.id === cardId ? { ...c, completed: !c.completed } : c)),
+      };
+    });
+
+    persistBoard({ ...board, columns: updatedCols });
+  };
+
+  // Modification du texte d'une carte
+  const handleSaveCardEdit = (columnId: string, cardId: string) => {
+    const title = editingCardText.trim();
+    if (!title) {
+      setEditingCardId(null);
+      return;
+    }
+
+    const updatedCols = board.columns.map((col) => {
+      if (col.id !== columnId) return col;
+      return {
+        ...col,
+        cards: col.cards.map((c) => (c.id === cardId ? { ...c, title } : c)),
+      };
+    });
+
+    persistBoard({ ...board, columns: updatedCols });
+    setEditingCardId(null);
+  };
+
+  // Suppression d'une carte
+  const handleDeleteCard = (columnId: string, cardId: string) => {
+    const updatedCols = board.columns.map((col) => {
+      if (col.id !== columnId) return col;
+      return {
+        ...col,
+        cards: col.cards.filter((c) => c.id !== cardId),
+      };
+    });
+
+    persistBoard({ ...board, columns: updatedCols });
+    toast.info('Tâche retirée', 'La tâche a été retirée du tableau');
+  };
+
+  // Drag and Drop de cartes entre colonnes
+  const handleDragStart = (e: React.DragEvent, columnId: string, cardId: string) => {
+    setDraggedCard({ cardId, sourceColumnId: columnId });
     e.dataTransfer.effectAllowed = 'move';
-    setDraggedTaskId(taskId);
+    e.dataTransfer.setData('text/plain', cardId);
   };
 
-  const handleDragOver = (e: React.DragEvent, colId: string) => {
+  const handleDragOverColumn = (e: React.DragEvent, columnId: string) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    if (dragOverColumn !== colId) {
-      setDragOverColumn(colId);
+    if (dragOverColumnId !== columnId) {
+      setDragOverColumnId(columnId);
     }
   };
 
-  const handleDragLeave = () => {
-    setDragOverColumn(null);
+  const handleDropOnColumn = (targetColumnId: string) => {
+    if (!draggedCard) return;
+    const { cardId, sourceColumnId } = draggedCard;
+    setDragOverColumnId(null);
+    setDraggedCard(null);
+
+    if (sourceColumnId === targetColumnId) return;
+
+    // Récupérer la carte source
+    const sourceCol = board.columns.find((c) => c.id === sourceColumnId);
+    const cardToMove = sourceCol?.cards.find((c) => c.id === cardId);
+    if (!cardToMove) return;
+
+    // Si la colonne cible s'appelle "Terminé", "Fait" ou "Done", on peut marquer la carte complétée
+    const targetCol = board.columns.find((c) => c.id === targetColumnId);
+    const isTargetDone = targetCol
+      ? /termin[eé]|fait|done/i.test(targetCol.title)
+      : false;
+
+    const updatedCard: KanbanCard = {
+      ...cardToMove,
+      completed: isTargetDone ? true : cardToMove.completed,
+    };
+
+    const updatedCols = board.columns.map((col) => {
+      if (col.id === sourceColumnId) {
+        return { ...col, cards: col.cards.filter((c) => c.id !== cardId) };
+      }
+      if (col.id === targetColumnId) {
+        return { ...col, cards: [...col.cards, updatedCard] };
+      }
+      return col;
+    });
+
+    persistBoard({ ...board, columns: updatedCols });
+    toast.success('Tâche déplacée', `Déplacée vers "${targetCol?.title || 'nouvelle colonne'}"`);
   };
 
-  const handleDrop = async (e: React.DragEvent, colId: string) => {
+  // Création d'un nouveau fichier Kanban
+  const handleCreateKanbanSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setDragOverColumn(null);
-    const taskId = e.dataTransfer.getData('text/plain') || draggedTaskId;
-    setDraggedTaskId(null);
+    const rawName = newKanbanName.trim();
+    if (!rawName) return;
 
-    if (!taskId) return;
-    const task = tasks.find((t) => t.id === taskId);
-    if (!task) return;
-
-    await handleMoveTask(task, colId);
-  };
-
-  // Menu contextuel sur une carte de tâche
-  const handleCardContextMenu = (e: React.MouseEvent, task: TaskCard) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    contextMenu.show(e, [
-      {
-        id: 'open-task',
-        label: 'Ouvrir la note',
-        icon: 'file-markdown' as const,
-        onClick: () => onOpenTask(task.rel_path),
-      },
-      { id: 'div-card-1', divider: true },
-      {
-        id: 'status-todo',
-        label: 'Marquer "À faire"',
-        icon: 'file-text' as const,
-        onClick: () => handleMoveTask(task, 'a-faire'),
-      },
-      {
-        id: 'status-progress',
-        label: 'Marquer "En cours"',
-        icon: 'sync' as const,
-        onClick: () => handleMoveTask(task, 'en-cours'),
-      },
-      {
-        id: 'status-done',
-        label: 'Marquer "Terminé"',
-        icon: 'check' as const,
-        onClick: () => handleMoveTask(task, 'termine'),
-      },
-      { id: 'div-card-2', divider: true },
-      {
-        id: 'copy-path',
-        label: 'Copier le chemin relatif',
-        icon: 'copy' as const,
-        onClick: () => {
-          navigator.clipboard.writeText(task.rel_path);
-          toast.info('Chemin copié', task.rel_path);
-        },
-      },
-      {
-        id: 'delete-task',
-        label: 'Déplacer dans la corbeille',
-        icon: 'trash' as const,
-        onClick: async () => {
-          try {
-            await vaultStore.trashPath(task.rel_path);
-            toast.success('Tâche supprimée', task.titre);
-            loadTasks();
-          } catch (err: unknown) {
-            toast.error('Erreur suppression', String(err));
-          }
-        },
-      },
-    ]);
-  };
-
-  const handleCreateNewTaskSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const title = newTaskTitle.trim();
-    if (!title) return;
-
-    const taskNum = Date.now().toString().slice(-4);
-    const id = `task-${taskNum}`;
-    const slug = title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-    const relPath = `projet/taches/${id}-${slug || 'tache'}.md`;
-
-    const initialContent = `---
-id: ${id}
-type: tache
-titre: ${title}
-statut: ${newTaskColumn}
-priorite: moyenne
-assigne: Moi
-tags: [projet]
----
-
-# ${title}
-
-## Description
-Nouvelle tâche créée depuis le Kanban.
-`;
+    const cleanBase = rawName.toLowerCase().replace(/[^a-z0-9_-]+/g, '-');
+    const fileName = cleanBase.endsWith('.md') ? cleanBase : `${cleanBase}.md`;
+    const folder = newKanbanFolder.trim() || 'projet';
+    const relPath = `${folder}/${fileName}`;
 
     try {
-      await vaultStore.createFile(relPath, initialContent);
-      setIsNewTaskModalOpen(false);
-      setNewTaskTitle('');
-      toast.success('Tâche créée', relPath);
-      await loadTasks();
+      await vaultStore.createKanbanFile(relPath, rawName);
+      setIsNewKanbanModalOpen(false);
+      setNewKanbanName('');
+      onOpenFile(relPath);
+      toast.success('Tableau Kanban créé', relPath);
     } catch (err: unknown) {
-      toast.error('Erreur création tâche', String(err));
+      toast.error('Erreur de création', String(err));
     }
   };
 
-  const getPriorityBadge = (p?: string) => {
-    if (!p) return null;
-    const lower = p.toLowerCase();
-    let bg = 'var(--knit-surface-hover)';
-    let color = 'var(--knit-text-muted)';
-    let dot = '⚪';
-
-    if (lower === 'critique') {
-      bg = 'rgba(239, 68, 68, 0.15)';
-      color = '#EF4444';
-      dot = '🔴';
-    } else if (lower === 'haute') {
-      bg = 'rgba(245, 158, 11, 0.15)';
-      color = '#F59E0B';
-      dot = '🟠';
-    } else if (lower === 'moyenne') {
-      bg = 'rgba(234, 179, 8, 0.15)';
-      color = '#EAB308';
-      dot = '🟡';
-    } else if (lower === 'basse') {
-      bg = 'rgba(16, 185, 129, 0.15)';
-      color = '#10B981';
-      dot = '🟢';
-    }
-
-    return (
-      <span
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 4,
-          padding: '2px 6px',
-          borderRadius: 'var(--knit-radius-xs)',
-          backgroundColor: bg,
-          color,
-          fontSize: 10,
-          fontWeight: 600,
-        }}
-      >
-        <span>{dot}</span>
-        <span>{p}</span>
-      </span>
-    );
-  };
+  // Cartes filtrées
+  const filterQuery = searchFilter.toLowerCase().trim();
+  const totalCards = board.columns.reduce((sum, c) => sum + c.cards.length, 0);
 
   return (
     <div
@@ -316,10 +329,10 @@ Nouvelle tâche créée depuis le Kanban.
         overflow: 'hidden',
       }}
     >
-      {/* Barre d'outils Kanban */}
+      {/* Barre d'outils supérieure du Kanban */}
       <div
         style={{
-          padding: '12px 20px',
+          padding: '10px 18px',
           backgroundColor: 'var(--knit-surface)',
           borderBottom: '1px solid var(--knit-border)',
           display: 'flex',
@@ -329,13 +342,145 @@ Nouvelle tâche créée depuis le Kanban.
           gap: 12,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <DuotoneIcon name="kanban" size={20} />
-            <h2 style={{ fontSize: 15, fontWeight: 700, margin: 0, color: 'var(--knit-text)' }}>
-              Tableau Kanban
+        {/* Titre du tableau & Sélecteur de fichiers Kanban */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, position: 'relative' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+            <DuotoneIcon name="kanban" size={20} style={{ color: 'var(--knit-primary)' }} />
+            <h2
+              style={{
+                fontSize: 15,
+                fontWeight: 700,
+                margin: 0,
+                color: 'var(--knit-text)',
+                letterSpacing: '-0.01em',
+              }}
+            >
+              {board.title || 'Tableau Kanban'}
             </h2>
           </div>
+
+          {/* Bouton sélecteur de fichier Kanban */}
+          <button
+            onClick={() => setIsSwitcherOpen((prev) => !prev)}
+            title="Changer de tableau Kanban ou en créer un nouveau"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+              padding: '3px 8px',
+              borderRadius: 'var(--knit-radius-xs)',
+              backgroundColor: isSwitcherOpen ? 'var(--knit-surface-hover)' : 'transparent',
+              border: '1px solid var(--knit-border)',
+              fontSize: 11,
+              color: 'var(--knit-text-secondary)',
+              cursor: 'pointer',
+            }}
+          >
+            <span>{currentPath ? currentPath.split('/').pop() : 'Choisir...'}</span>
+            <DuotoneIcon name="chevron-down" size={11} />
+          </button>
+
+          {/* Menu déroulant des Kanbans du coffre */}
+          {isSwitcherOpen && (
+            <div
+              style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                marginTop: 6,
+                width: 260,
+                backgroundColor: 'var(--knit-surface)',
+                border: '1px solid var(--knit-border)',
+                borderRadius: 'var(--knit-radius-sm)',
+                boxShadow: 'var(--knit-shadow-lg)',
+                zIndex: 100,
+                padding: '4px 0',
+              }}
+            >
+              <div
+                style={{
+                  padding: '6px 12px',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  color: 'var(--knit-text-muted)',
+                  borderBottom: '1px solid var(--knit-border)',
+                }}
+              >
+                Tableaux Kanban du coffre
+              </div>
+
+              <div style={{ maxHeight: 220, overflowY: 'auto' }}>
+                {availableKanbans.map((kb) => (
+                  <button
+                    key={kb.path}
+                    onClick={() => {
+                      setIsSwitcherOpen(false);
+                      onOpenFile(kb.path);
+                    }}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '8px 12px',
+                      border: 'none',
+                      backgroundColor: kb.path === currentPath ? 'var(--knit-primary-alpha)' : 'transparent',
+                      color: kb.path === currentPath ? 'var(--knit-primary)' : 'var(--knit-text)',
+                      fontSize: 12,
+                      fontWeight: kb.path === currentPath ? 600 : 400,
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (kb.path !== currentPath) e.currentTarget.style.backgroundColor = 'var(--knit-surface-hover)';
+                    }}
+                    onMouseLeave={(e) => {
+                      if (kb.path !== currentPath) e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
+                  >
+                    <DuotoneIcon name="kanban" size={13} />
+                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {kb.title}
+                    </span>
+                    <span style={{ fontSize: 10, color: 'var(--knit-text-muted)' }}>
+                      {kb.path.split('/')[0]}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ borderTop: '1px solid var(--knit-border)', padding: '4px' }}>
+                <button
+                  onClick={() => {
+                    setIsSwitcherOpen(false);
+                    setIsNewKanbanModalOpen(true);
+                  }}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '6px 10px',
+                    borderRadius: 'var(--knit-radius-xs)',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    color: 'var(--knit-primary)',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--knit-surface-hover)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                >
+                  <DuotoneIcon name="plus" size={12} />
+                  <span>Nouveau tableau Kanban...</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Badge décompte */}
           <span
             style={{
               fontSize: 11,
@@ -345,21 +490,22 @@ Nouvelle tâche créée depuis le Kanban.
               borderRadius: 'var(--knit-radius-xs)',
             }}
           >
-            {isLoading ? 'Chargement...' : `${filteredTasks.length} tâche${filteredTasks.length > 1 ? 's' : ''}`}
+            {board.columns.length} colonne{board.columns.length > 1 ? 's' : ''} • {totalCards} tâche{totalCards > 1 ? 's' : ''}
           </span>
         </div>
 
-        {/* Filtres & Recherche rapide */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          <div className="knit-input-group" style={{ width: 220 }}>
-            <DuotoneIcon name="search" size={13} style={{ color: 'var(--knit-text-muted)' }} />
+        {/* Contrôles de droite : Recherche, Ajout de colonne, Bascule Éditeur */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* Recherche rapide dans les cartes */}
+          <div className="knit-input-group" style={{ width: 200 }}>
+            <DuotoneIcon name="search" size={12} style={{ color: 'var(--knit-text-muted)' }} />
             <input
               type="text"
               className="knit-input-seamless"
               placeholder="Filtrer les tâches..."
               value={searchFilter}
               onChange={(e) => setSearchFilter(e.target.value)}
-              style={{ fontSize: 12, width: '100%' }}
+              style={{ fontSize: 11, width: '100%' }}
             />
             {searchFilter && (
               <button
@@ -369,93 +515,100 @@ Nouvelle tâche créée depuis le Kanban.
                   border: 'none',
                   color: 'var(--knit-text-muted)',
                   cursor: 'pointer',
-                  padding: 2,
+                  padding: 1,
                 }}
               >
-                <DuotoneIcon name="close" size={11} />
+                <DuotoneIcon name="close" size={10} />
               </button>
             )}
           </div>
 
-          {/* Filtre Priorité */}
-          <select
-            className="knit-select"
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
-            style={{ fontSize: 12, padding: '4px 8px' }}
-          >
-            <option value="all">Toutes priorités</option>
-            <option value="critique">🔴 Critique</option>
-            <option value="haute">🟠 Haute</option>
-            <option value="moyenne">🟡 Moyenne</option>
-            <option value="basse">🟢 Basse</option>
-          </select>
-
-          {/* Filtre Assigné */}
-          {assignees.length > 0 && (
-            <select
-              className="knit-select"
-              value={assigneeFilter}
-              onChange={(e) => setAssigneeFilter(e.target.value)}
-              style={{ fontSize: 12, padding: '4px 8px' }}
-            >
-              <option value="all">Tous assignés</option>
-              {assignees.map((a) => (
-                <option key={a} value={a}>
-                  👤 {a}
-                </option>
-              ))}
-            </select>
-          )}
-
+          {/* Bouton Ajouter une colonne */}
           <button
-            className="knit-btn knit-btn-primary"
             onClick={() => {
-              setNewTaskColumn('a-faire');
-              setIsNewTaskModalOpen(true);
+              setIsAddingColumn(true);
+              setTimeout(() => addColumnInputRef.current?.focus(), 30);
             }}
-            style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 5 }}
+            title="Ajouter une nouvelle colonne personnalisée au tableau"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+              padding: '4px 10px',
+              borderRadius: 'var(--knit-radius-sm)',
+              backgroundColor: 'var(--knit-surface)',
+              border: '1px solid var(--knit-border)',
+              color: 'var(--knit-text)',
+              fontSize: 12,
+              fontWeight: 500,
+              cursor: 'pointer',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--knit-surface-hover)')}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'var(--knit-surface)')}
           >
-            <DuotoneIcon name="plus" size={13} />
-            <span>Nouvelle tâche</span>
+            <DuotoneIcon name="plus" size={12} />
+            <span>Ajouter une colonne</span>
           </button>
+
+          {/* Bouton bascule vers le code Markdown brut */}
+          {onSwitchToEditor && (
+            <button
+              onClick={onSwitchToEditor}
+              title="Afficher et éditer le fichier Markdown source"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+                padding: '4px 10px',
+                borderRadius: 'var(--knit-radius-sm)',
+                backgroundColor: 'transparent',
+                border: '1px solid var(--knit-border)',
+                color: 'var(--knit-text-secondary)',
+                fontSize: 12,
+                cursor: 'pointer',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--knit-surface-hover)')}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+            >
+              <DuotoneIcon name="file-markdown" size={12} />
+              <span>Code Markdown</span>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Conteneur des colonnes Kanban */}
+      {/* Conteneur horizontal des colonnes Kanban */}
       <div
         style={{
           flex: 1,
           display: 'flex',
-          gap: 16,
-          padding: 20,
+          gap: 14,
+          padding: 18,
           overflowX: 'auto',
           overflowY: 'hidden',
           alignItems: 'flex-start',
         }}
       >
-        {columns.map((col) => {
-          const colTasks = filteredTasks.filter(
-            (t) => (t.statut || 'a-faire').toLowerCase().trim() === col.id
-          );
-          const isOver = dragOverColumn === col.id;
+        {board.columns.map((column, colIdx) => {
+          const isOver = dragOverColumnId === column.id;
+          const matchingCards = column.cards.filter((card) => {
+            if (!filterQuery) return true;
+            return card.title.toLowerCase().includes(filterQuery);
+          });
 
           return (
             <div
-              key={col.id}
-              onDragOver={(e) => handleDragOver(e, col.id)}
-              onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, col.id)}
+              key={column.id}
+              onDragOver={(e) => handleDragOverColumn(e, column.id)}
+              onDrop={() => handleDropOnColumn(column.id)}
               style={{
-                width: 310,
-                minWidth: 310,
+                width: 300,
+                minWidth: 300,
                 maxHeight: '100%',
                 display: 'flex',
                 flexDirection: 'column',
                 backgroundColor: isOver ? 'var(--knit-surface-hover)' : 'var(--knit-surface)',
-                border: isOver
-                  ? '1px dashed var(--knit-primary)'
-                  : '1px solid var(--knit-border)',
+                border: isOver ? '1px dashed var(--knit-primary)' : '1px solid var(--knit-border)',
                 borderRadius: 'var(--knit-radius-md)',
                 boxShadow: isOver ? '0 0 12px var(--knit-primary-alpha)' : 'var(--knit-shadow-sm)',
                 transition: 'all var(--knit-duration-fast)',
@@ -464,7 +617,7 @@ Nouvelle tâche créée depuis le Kanban.
               {/* En-tête de colonne */}
               <div
                 style={{
-                  padding: '12px 14px',
+                  padding: '10px 12px',
                   borderBottom: '1px solid var(--knit-border)',
                   display: 'flex',
                   alignItems: 'center',
@@ -472,307 +625,578 @@ Nouvelle tâche créée depuis le Kanban.
                   userSelect: 'none',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7, flex: 1, minWidth: 0 }}>
                   <span
                     style={{
                       width: 8,
                       height: 8,
                       borderRadius: '50%',
-                      backgroundColor: col.color,
+                      backgroundColor: column.color || 'var(--knit-primary)',
+                      flexShrink: 0,
                     }}
                   />
-                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--knit-text)' }}>
-                    {col.label}
-                  </span>
+
+                  {renamingColumnId === column.id ? (
+                    <input
+                      autoFocus
+                      type="text"
+                      className="knit-input"
+                      value={renamingColumnTitle}
+                      onChange={(e) => setRenamingColumnTitle(e.target.value)}
+                      onBlur={() => handleRenameColumnSubmit(column.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleRenameColumnSubmit(column.id);
+                        if (e.key === 'Escape') setRenamingColumnId(null);
+                      }}
+                      style={{ padding: '2px 6px', fontSize: 12, width: '100%' }}
+                    />
+                  ) : (
+                    <span
+                      onDoubleClick={() => {
+                        setRenamingColumnId(column.id);
+                        setRenamingColumnTitle(column.title);
+                      }}
+                      title="Double-cliquez pour renommer la colonne"
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: 'var(--knit-text)',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        cursor: 'text',
+                      }}
+                    >
+                      {column.title}
+                    </span>
+                  )}
+
                   <span
                     style={{
                       fontSize: 11,
                       fontWeight: 600,
                       color: 'var(--knit-text-muted)',
-                      backgroundColor: 'var(--knit-bg)',
+                      backgroundColor: 'var(--knit-surface-hover)',
                       padding: '1px 6px',
-                      borderRadius: 'var(--knit-radius-xs)',
+                      borderRadius: 10,
+                      flexShrink: 0,
                     }}
                   >
-                    {colTasks.length}
+                    {column.cards.length}
                   </span>
                 </div>
 
-                <button
-                  onClick={() => {
-                    setNewTaskColumn(col.id);
-                    setIsNewTaskModalOpen(true);
-                  }}
-                  title={`Ajouter une tâche dans ${col.label}`}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--knit-text-muted)',
-                    cursor: 'pointer',
-                    padding: '2px 4px',
-                    borderRadius: 'var(--knit-radius-xs)',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--knit-text)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--knit-text-muted)')}
-                >
-                  <DuotoneIcon name="plus" size={13} />
-                </button>
+                {/* Actions de colonne */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  {colIdx > 0 && (
+                    <button
+                      onClick={() => handleMoveColumn(colIdx, 'left')}
+                      title="Déplacer la colonne à gauche"
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--knit-text-muted)',
+                        padding: 3,
+                        cursor: 'pointer',
+                        borderRadius: 3,
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--knit-text)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--knit-text-muted)')}
+                    >
+                      <DuotoneIcon name="chevron-left" size={12} />
+                    </button>
+                  )}
+
+                  {colIdx < board.columns.length - 1 && (
+                    <button
+                      onClick={() => handleMoveColumn(colIdx, 'right')}
+                      title="Déplacer la colonne à droite"
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--knit-text-muted)',
+                        padding: 3,
+                        cursor: 'pointer',
+                        borderRadius: 3,
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--knit-text)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--knit-text-muted)')}
+                    >
+                      <DuotoneIcon name="chevron-right" size={12} />
+                    </button>
+                  )}
+
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      contextMenu.show(e, [
+                        {
+                          id: `rename-col-${column.id}`,
+                          label: 'Renommer la colonne...',
+                          icon: 'edit' as const,
+                          onClick: () => {
+                            setRenamingColumnId(column.id);
+                            setRenamingColumnTitle(column.title);
+                          },
+                        },
+                        {
+                          id: `add-card-${column.id}`,
+                          label: 'Ajouter une tâche ici...',
+                          icon: 'plus' as const,
+                          onClick: () => {
+                            setAddingCardInColumnId(column.id);
+                            setTimeout(() => addCardInputRef.current?.focus(), 20);
+                          },
+                        },
+                        { id: 'div-col-1', divider: true },
+                        {
+                          id: `del-col-${column.id}`,
+                          label: 'Supprimer la colonne',
+                          icon: 'trash' as const,
+                          danger: true,
+                          onClick: () => handleDeleteColumn(column.id, column.title, column.cards.length),
+                        },
+                      ]);
+                    }}
+                    title="Options de colonne"
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--knit-text-muted)',
+                      padding: 3,
+                      cursor: 'pointer',
+                      borderRadius: 3,
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--knit-text)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--knit-text-muted)')}
+                  >
+                    <DuotoneIcon name="slider" size={12} />
+                  </button>
+                </div>
               </div>
 
-              {/* Cartes de tâches */}
+              {/* Liste des cartes déplaçables */}
               <div
                 style={{
                   flex: 1,
-                  overflowY: 'auto',
-                  padding: 10,
+                  padding: '8px 10px',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: 10,
+                  gap: 8,
+                  overflowY: 'auto',
                   minHeight: 120,
                 }}
               >
-                {colTasks.length === 0 ? (
-                  <div
+                {matchingCards.map((card) => {
+                  const meta = parseCardMetadata(card.title);
+                  const isEditing = editingCardId === card.id;
+
+                  return (
+                    <div
+                      key={card.id}
+                      draggable={!isEditing}
+                      onDragStart={(e) => handleDragStart(e, column.id, card.id)}
+                      style={{
+                        padding: '9px 11px',
+                        backgroundColor: 'var(--knit-bg)',
+                        border: '1px solid var(--knit-border)',
+                        borderRadius: 'var(--knit-radius-sm)',
+                        boxShadow: 'var(--knit-shadow-xs)',
+                        cursor: isEditing ? 'default' : 'grab',
+                        transition: 'border-color var(--knit-duration-fast)',
+                        position: 'relative',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = 'var(--knit-border-hover)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = 'var(--knit-border)';
+                      }}
+                    >
+                      {isEditing ? (
+                        <div>
+                          <textarea
+                            autoFocus
+                            className="knit-input"
+                            value={editingCardText}
+                            onChange={(e) => setEditingCardText(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                handleSaveCardEdit(column.id, card.id);
+                              }
+                              if (e.key === 'Escape') setEditingCardId(null);
+                            }}
+                            style={{
+                              width: '100%',
+                              minHeight: 50,
+                              fontSize: 12,
+                              resize: 'vertical',
+                              marginBottom: 6,
+                            }}
+                          />
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
+                            <button
+                              type="button"
+                              className="knit-btn"
+                              style={{ padding: '2px 8px', fontSize: 11 }}
+                              onClick={() => setEditingCardId(null)}
+                            >
+                              Annuler
+                            </button>
+                            <button
+                              type="button"
+                              className="knit-btn knit-btn-primary"
+                              style={{ padding: '2px 8px', fontSize: 11 }}
+                              onClick={() => handleSaveCardEdit(column.id, card.id)}
+                            >
+                              Enregistrer
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                            {/* Case à cocher */}
+                            <input
+                              type="checkbox"
+                              checked={card.completed}
+                              onChange={() => handleToggleCardCheckbox(column.id, card.id)}
+                              style={{
+                                marginTop: 3,
+                                cursor: 'pointer',
+                                accentColor: 'var(--knit-primary)',
+                              }}
+                            />
+
+                            {/* Titre et contenu de la carte */}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <span
+                                onDoubleClick={() => {
+                                  setEditingCardId(card.id);
+                                  setEditingCardText(card.title);
+                                }}
+                                style={{
+                                  fontSize: 13,
+                                  lineHeight: 1.4,
+                                  color: card.completed ? 'var(--knit-text-muted)' : 'var(--knit-text)',
+                                  textDecoration: card.completed ? 'line-through' : 'none',
+                                  wordBreak: 'break-word',
+                                  cursor: 'text',
+                                }}
+                              >
+                                {meta.cleanTitle}
+                              </span>
+
+                              {/* WikiLinks cliquables */}
+                              {meta.wikiLinks.length > 0 && (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 5 }}>
+                                  {meta.wikiLinks.map((link) => (
+                                    <button
+                                      key={link}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onOpenFile(`${link}.md`);
+                                      }}
+                                      title={`Ouvrir la note [[${link}]]`}
+                                      style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 3,
+                                        padding: '1px 6px',
+                                        borderRadius: 4,
+                                        backgroundColor: 'var(--knit-primary-alpha)',
+                                        border: '1px solid var(--knit-primary)',
+                                        color: 'var(--knit-primary)',
+                                        fontSize: 11,
+                                        cursor: 'pointer',
+                                      }}
+                                    >
+                                      <span>[[{link}]]</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Tags pills */}
+                              {meta.tags.length > 0 && (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 5 }}>
+                                  {meta.tags.map((tag) => (
+                                    <span
+                                      key={tag}
+                                      style={{
+                                        fontSize: 10,
+                                        padding: '1px 5px',
+                                        borderRadius: 3,
+                                        backgroundColor: 'var(--knit-surface-hover)',
+                                        color: 'var(--knit-text-secondary)',
+                                        border: '1px solid var(--knit-border)',
+                                      }}
+                                    >
+                                      #{tag}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Bouton supprimer carte */}
+                            <button
+                              onClick={() => handleDeleteCard(column.id, card.id)}
+                              title="Retirer la tâche"
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: 'var(--knit-text-muted)',
+                                padding: 2,
+                                cursor: 'pointer',
+                                opacity: 0.6,
+                              }}
+                              onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+                              onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.6')}
+                            >
+                              <DuotoneIcon name="close" size={11} />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {/* Formulaire inline d'ajout de carte */}
+                {addingCardInColumnId === column.id ? (
+                  <form
+                    onSubmit={(e) => handleAddCardSubmit(column.id, e)}
                     style={{
-                      padding: '24px 12px',
-                      textAlign: 'center',
-                      fontSize: 12,
-                      color: 'var(--knit-text-muted)',
-                      border: '1px dashed var(--knit-border)',
+                      padding: 8,
+                      backgroundColor: 'var(--knit-bg)',
+                      border: '1px solid var(--knit-primary)',
                       borderRadius: 'var(--knit-radius-sm)',
                     }}
                   >
-                    Aucune tâche ici
-                  </div>
-                ) : (
-                  colTasks.map((task) => {
-                    const isDragging = draggedTaskId === task.id;
-
-                    return (
-                      <div
-                        key={task.id}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, task.id)}
-                        onClick={() => onOpenTask(task.rel_path)}
-                        onContextMenu={(e) => handleCardContextMenu(e, task)}
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            onOpenTask(task.rel_path);
-                          } else if (e.key === ' ') {
-                            e.preventDefault();
-                            // Cycle status on Space
-                            const next =
-                              task.statut === 'a-faire'
-                                ? 'en-cours'
-                                : task.statut === 'en-cours'
-                                ? 'termine'
-                                : 'a-faire';
-                            handleMoveTask(task, next);
-                          }
-                        }}
-                        style={{
-                          backgroundColor: 'var(--knit-bg)',
-                          border: '1px solid var(--knit-border)',
-                          borderRadius: 'var(--knit-radius-sm)',
-                          padding: '12px 14px',
-                          cursor: 'grab',
-                          opacity: isDragging ? 0.4 : 1,
-                          transform: isDragging ? 'scale(0.98)' : 'none',
-                          boxShadow: 'var(--knit-shadow-sm)',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: 8,
-                          transition: 'all var(--knit-duration-fast)',
-                          outline: 'none',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.borderColor = 'var(--knit-primary)';
-                          e.currentTarget.style.transform = 'translateY(-1px)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.borderColor = 'var(--knit-border)';
-                          e.currentTarget.style.transform = 'none';
-                        }}
+                    <input
+                      ref={addCardInputRef}
+                      type="text"
+                      className="knit-input"
+                      placeholder="Nom de la tâche (ex: Spécifications [[Specs]] #projet)..."
+                      value={newCardTitle}
+                      onChange={(e) => setNewCardTitle(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') setAddingCardInColumnId(null);
+                      }}
+                      style={{ width: '100%', fontSize: 12, marginBottom: 6 }}
+                    />
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
+                      <button
+                        type="button"
+                        className="knit-btn"
+                        style={{ padding: '2px 8px', fontSize: 11 }}
+                        onClick={() => setAddingCardInColumnId(null)}
                       >
-                        {/* Ligne ID et Priorité */}
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontFamily: 'var(--knit-font-mono)',
-                              fontSize: 11,
-                              color: 'var(--knit-text-muted)',
-                              fontWeight: 600,
-                            }}
-                          >
-                            #{task.id}
-                          </span>
-                          {getPriorityBadge(task.priorite)}
-                        </div>
-
-                        {/* Titre */}
-                        <div
-                          style={{
-                            fontSize: 13,
-                            fontWeight: 600,
-                            color: 'var(--knit-text)',
-                            lineHeight: 1.4,
-                          }}
-                        >
-                          {task.titre}
-                        </div>
-
-                        {/* Snippet descriptif si présent */}
-                        {task.snippet && (
-                          <div
-                            style={{
-                              fontSize: 11,
-                              color: 'var(--knit-text-secondary)',
-                              lineHeight: 1.4,
-                              overflow: 'hidden',
-                              display: '-webkit-box',
-                              WebkitLineClamp: 2,
-                              WebkitBoxOrient: 'vertical',
-                            }}
-                          >
-                            {task.snippet}
-                          </div>
-                        )}
-
-                        {/* Tags et Assigné */}
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            marginTop: 4,
-                            paddingTop: 8,
-                            borderTop: '1px solid var(--knit-border)',
-                          }}
-                        >
-                          <div
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 4,
-                              flexWrap: 'wrap',
-                            }}
-                          >
-                            {task.tags.map((t) => (
-                              <span
-                                key={t}
-                                style={{
-                                  fontSize: 10,
-                                  color: 'var(--knit-primary)',
-                                  backgroundColor: 'var(--knit-surface)',
-                                  border: '1px solid var(--knit-border)',
-                                  padding: '1px 5px',
-                                  borderRadius: 'var(--knit-radius-xs)',
-                                }}
-                              >
-                                #{t}
-                              </span>
-                            ))}
-                          </div>
-
-                          {task.assigne && (
-                            <div
-                              title={`Assigné à : ${task.assigne}`}
-                              style={{
-                                width: 20,
-                                height: 20,
-                                borderRadius: '50%',
-                                backgroundColor: 'var(--knit-primary)',
-                                color: '#FFFFFF',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: 9,
-                                fontWeight: 700,
-                                flexShrink: 0,
-                              }}
-                            >
-                              {task.assigne.slice(0, 2).toUpperCase()}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })
+                        Annuler
+                      </button>
+                      <button
+                        type="submit"
+                        className="knit-btn knit-btn-primary"
+                        style={{ padding: '2px 8px', fontSize: 11 }}
+                      >
+                        Ajouter
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setAddingCardInColumnId(column.id);
+                      setNewCardTitle('');
+                      setTimeout(() => addCardInputRef.current?.focus(), 20);
+                    }}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6,
+                      padding: '6px 8px',
+                      borderRadius: 'var(--knit-radius-xs)',
+                      border: '1px dashed var(--knit-border)',
+                      backgroundColor: 'transparent',
+                      color: 'var(--knit-text-muted)',
+                      fontSize: 12,
+                      cursor: 'pointer',
+                      marginTop: 4,
+                      transition: 'all var(--knit-duration-fast)',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = 'var(--knit-primary)';
+                      e.currentTarget.style.color = 'var(--knit-primary)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = 'var(--knit-border)';
+                      e.currentTarget.style.color = 'var(--knit-text-muted)';
+                    }}
+                  >
+                    <DuotoneIcon name="plus" size={12} />
+                    <span>Ajouter une tâche</span>
+                  </button>
                 )}
               </div>
             </div>
           );
         })}
+
+        {/* Colonne d'ajout "+ Ajouter une colonne" */}
+        <div
+          style={{
+            width: 280,
+            minWidth: 280,
+            backgroundColor: 'var(--knit-surface)',
+            border: '1px dashed var(--knit-border)',
+            borderRadius: 'var(--knit-radius-md)',
+            padding: 12,
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          {isAddingColumn ? (
+            <form onSubmit={handleAddColumnSubmit}>
+              <h4 style={{ margin: '0 0 8px', fontSize: 13, color: 'var(--knit-text)' }}>
+                Nouvelle colonne
+              </h4>
+              <input
+                ref={addColumnInputRef}
+                type="text"
+                className="knit-input"
+                placeholder="Ex: En attente, Revue de code, Bloqué..."
+                value={newColumnTitle}
+                onChange={(e) => setNewColumnTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') setIsAddingColumn(false);
+                }}
+                style={{ width: '100%', fontSize: 12, marginBottom: 8 }}
+              />
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
+                <button
+                  type="button"
+                  className="knit-btn"
+                  style={{ padding: '3px 8px', fontSize: 11 }}
+                  onClick={() => setIsAddingColumn(false)}
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="knit-btn knit-btn-primary"
+                  style={{ padding: '3px 8px', fontSize: 11 }}
+                >
+                  Créer la colonne
+                </button>
+              </div>
+            </form>
+          ) : (
+            <button
+              onClick={() => {
+                setIsAddingColumn(true);
+                setTimeout(() => addColumnInputRef.current?.focus(), 30);
+              }}
+              style={{
+                width: '100%',
+                height: 100,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                background: 'none',
+                border: 'none',
+                color: 'var(--knit-text-muted)',
+                cursor: 'pointer',
+                borderRadius: 'var(--knit-radius-sm)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = 'var(--knit-primary)';
+                e.currentTarget.style.backgroundColor = 'var(--knit-surface-hover)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = 'var(--knit-text-muted)';
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
+            >
+              <DuotoneIcon name="plus" size={18} />
+              <span style={{ fontSize: 13, fontWeight: 600 }}>Ajouter une colonne</span>
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Modale de création d'une nouvelle tâche */}
-      {isNewTaskModalOpen && (
+      {/* Modale de création d'un nouveau fichier Kanban */}
+      {isNewKanbanModalOpen && (
         <div
           style={{
             position: 'fixed',
-            inset: 0,
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
             backgroundColor: 'rgba(0, 0, 0, 0.65)',
-            backdropFilter: 'blur(3px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 9999,
+            backdropFilter: 'blur(2px)',
           }}
-          onClick={() => setIsNewTaskModalOpen(false)}
+          onClick={() => setIsNewKanbanModalOpen(false)}
         >
           <div
             style={{
               backgroundColor: 'var(--knit-surface)',
               border: '1px solid var(--knit-border)',
               borderRadius: 'var(--knit-radius-md)',
-              padding: '20px 24px',
+              padding: '22px 26px',
               width: 440,
               maxWidth: '90vw',
               boxShadow: 'var(--knit-shadow-lg)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ margin: '0 0 12px', fontSize: 16, color: 'var(--knit-text)' }}>
-              Nouvelle tâche
+            <h3 style={{ margin: '0 0 8px', fontSize: 16, color: 'var(--knit-text)' }}>
+              Nouveau tableau Kanban
             </h3>
-            <form onSubmit={handleCreateNewTaskSubmit}>
-              <div style={{ marginBottom: 14 }}>
-                <label className="knit-label" style={{ display: 'block', marginBottom: 6 }}>
-                  Titre de la tâche :
+            <p style={{ margin: '0 0 16px', fontSize: 12, color: 'var(--knit-text-muted)', lineHeight: 1.5 }}>
+              Créez un fichier Markdown dédié pour gérer un projet, vos tâches personnelles ou celles de votre équipe.
+            </p>
+
+            <form onSubmit={handleCreateKanbanSubmit}>
+              <div style={{ marginBottom: 12 }}>
+                <label className="knit-label" style={{ marginBottom: 4, display: 'block' }}>
+                  Titre du tableau :
                 </label>
                 <input
                   autoFocus
-                  type="text"
                   className="knit-input"
-                  placeholder="Ex: Implémenter l'export Markdown..."
-                  value={newTaskTitle}
-                  onChange={(e) => setNewTaskTitle(e.target.value)}
-                  style={{ width: '100%' }}
+                  type="text"
+                  placeholder="Ex: Kanban Projet Refonte, Kanban Perso..."
+                  value={newKanbanName}
+                  onChange={(e) => setNewKanbanName(e.target.value)}
+                  style={{ width: '100%', fontSize: 13 }}
                 />
               </div>
 
               <div style={{ marginBottom: 18 }}>
-                <label className="knit-label" style={{ display: 'block', marginBottom: 6 }}>
-                  Colonne initiale :
+                <label className="knit-label" style={{ marginBottom: 4, display: 'block' }}>
+                  Dossier de destination :
                 </label>
                 <select
-                  className="knit-select"
-                  value={newTaskColumn}
-                  onChange={(e) => setNewTaskColumn(e.target.value)}
-                  style={{ width: '100%' }}
+                  className="knit-input"
+                  value={newKanbanFolder}
+                  onChange={(e) => setNewKanbanFolder(e.target.value)}
+                  style={{ width: '100%', fontSize: 12 }}
                 >
-                  {columns.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.label}
-                    </option>
-                  ))}
+                  <option value="projet">projet/</option>
+                  <option value="perso">perso/</option>
+                  <option value="equipe">equipe/</option>
+                  <option value="">(Racine du coffre)</option>
                 </select>
               </div>
 
@@ -780,12 +1204,16 @@ Nouvelle tâche créée depuis le Kanban.
                 <button
                   type="button"
                   className="knit-btn"
-                  onClick={() => setIsNewTaskModalOpen(false)}
+                  onClick={() => setIsNewKanbanModalOpen(false)}
                 >
                   Annuler
                 </button>
-                <button type="submit" className="knit-btn knit-btn-primary">
-                  Créer la tâche
+                <button
+                  type="submit"
+                  className="knit-btn knit-btn-primary"
+                  disabled={!newKanbanName.trim()}
+                >
+                  Créer le tableau Kanban
                 </button>
               </div>
             </form>

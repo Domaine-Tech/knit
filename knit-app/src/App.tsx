@@ -24,6 +24,7 @@ import type { Tab } from './stores/tabStore';
 import { toast } from './stores/toastStore';
 import { historyStore } from './stores/historyStore';
 import { DuotoneIcon } from './components/Icons/DuotoneIcon';
+import { isKanbanContent } from './utils/kanbanParser';
 
 export const App: React.FC = () => {
   const [theme, setTheme] = useState<ThemeMode>(getStoredTheme);
@@ -82,6 +83,9 @@ export const App: React.FC = () => {
     try {
       const content = await vaultStore.readFile(path);
       tabStore.openTab(path, preview, content);
+      if (isKanbanContent(content, path)) {
+        setCurrentView('kanban');
+      }
     } catch (err: unknown) {
       toast.error('Erreur de lecture', String(err));
     }
@@ -258,6 +262,21 @@ export const App: React.FC = () => {
       action: () => setCurrentView('table'),
     },
     {
+      id: 'cmd-new-kanban',
+      title: 'Créer un nouveau tableau Kanban...',
+      category: 'Fichier',
+      icon: 'kanban',
+      action: async () => {
+        const name = window.prompt('Nom du nouveau tableau Kanban :', 'kanban.md');
+        if (name && name.trim()) {
+          const clean = name.trim().endsWith('.md') ? name.trim() : `${name.trim()}.md`;
+          const createdPath = await vaultStore.createKanbanFile(clean, clean.replace(/\.md$/, ''));
+          handleSelectFile(createdPath, false);
+          setCurrentView('kanban');
+        }
+      },
+    },
+    {
       id: 'cmd-quick-switcher',
       title: 'Recherche rapide de notes (Quick Switcher)',
       category: 'Navigation',
@@ -407,21 +426,33 @@ export const App: React.FC = () => {
         >
           {currentView === 'kanban' && (
             <KanbanView
-              onOpenTask={(taskPath) => {
-                setCurrentView('editor');
-                setTargetLine(undefined);
-                handleSelectFile(taskPath, false);
+              activeFilePath={activeTab?.path}
+              activeFileContent={activeTab?.content}
+              onUpdateContent={async (path, content) => {
+                const tab = tabStore.tabs.find((t) => t.path === path);
+                if (tab) {
+                  tabStore.updateContent(tab.id, content);
+                }
+                await vaultStore.writeFile(path, content);
               }}
+              onOpenFile={(path) => handleSelectFile(path, false)}
+              onSwitchToEditor={() => setCurrentView('editor')}
             />
           )}
 
           {currentView === 'table' && (
             <TableView
-              onOpenTask={(taskPath) => {
-                setCurrentView('editor');
-                setTargetLine(undefined);
-                handleSelectFile(taskPath, false);
+              activeFilePath={activeTab?.path}
+              activeFileContent={activeTab?.content}
+              onUpdateContent={async (path, content) => {
+                const tab = tabStore.tabs.find((t) => t.path === path);
+                if (tab) {
+                  tabStore.updateContent(tab.id, content);
+                }
+                await vaultStore.writeFile(path, content);
               }}
+              onOpenFile={(path) => handleSelectFile(path, false)}
+              onSwitchToEditor={() => setCurrentView('editor')}
             />
           )}
 

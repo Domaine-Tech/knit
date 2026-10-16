@@ -16,7 +16,9 @@ export type IconName =
   | 'info'
   | 'plus'
   | 'chevron-right'
+  | 'chevron-left'
   | 'chevron-down'
+  | 'edit'
   | 'split'
   | 'slider'
   | 'vault'
@@ -296,6 +298,33 @@ export const DuotoneIcon: React.FC<DuotoneIconProps> = ({
             strokeLinecap="round"
             strokeLinejoin="round"
           />
+        );
+
+      case 'chevron-left':
+        return (
+          <polyline
+            points="336,112 192,256 336,400"
+            fill="none"
+            stroke={primaryStroke}
+            strokeWidth="36"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        );
+
+      case 'edit':
+        return (
+          <>
+            <path
+              d="M384 128 L320 64 L96 288 L96 352 L160 352 Z"
+              fill={secondaryFill}
+              fillOpacity="0.2"
+              stroke={primaryStroke}
+              strokeWidth="28"
+              strokeLinejoin="round"
+            />
+            <line x1="288" y1="96" x2="352" y2="160" stroke={primaryStroke} strokeWidth="28" strokeLinecap="round" />
+          </>
         );
 
       case 'chevron-down':

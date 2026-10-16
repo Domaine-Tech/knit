@@ -5,6 +5,7 @@ import { toast } from './toastStore';
 import { crdtManager } from '../crdt/crdtManager';
 import { tabStore } from './tabStore';
 import { networkStore } from './networkStore';
+import { createDefaultKanbanMarkdown } from '../utils/kanbanParser';
 
 export interface FileNode {
   id: string;
@@ -71,6 +72,12 @@ export interface TagInfo {
   files: string[];
 }
 
+export interface KanbanFileInfo {
+  path: string;
+  name: string;
+  title: string;
+}
+
 type VaultListener = () => void;
 
 // Détection de l'environnement Tauri natif vs navigateur Web standard (dev)
@@ -127,6 +134,14 @@ const DEMO_FILES: FileNode[] = [
     is_dir: true,
     children: [
       {
+        id: 'projet/kanban-projet.md',
+        name: 'kanban-projet.md',
+        path: 'projet/kanban-projet.md',
+        is_dir: false,
+        extension: 'md',
+        children: [],
+      },
+      {
         id: 'projet/taches',
         name: 'taches',
         path: 'projet/taches',
@@ -165,6 +180,38 @@ const DEMO_FILES: FileNode[] = [
             children: [],
           },
         ],
+      },
+    ],
+  },
+  {
+    id: 'perso',
+    name: 'perso',
+    path: 'perso',
+    is_dir: true,
+    children: [
+      {
+        id: 'perso/kanban-perso.md',
+        name: 'kanban-perso.md',
+        path: 'perso/kanban-perso.md',
+        is_dir: false,
+        extension: 'md',
+        children: [],
+      },
+    ],
+  },
+  {
+    id: 'equipe',
+    name: 'equipe',
+    path: 'equipe',
+    is_dir: true,
+    children: [
+      {
+        id: 'equipe/kanban-equipe.md',
+        name: 'kanban-equipe.md',
+        path: 'equipe/kanban-equipe.md',
+        is_dir: false,
+        extension: 'md',
+        children: [],
       },
     ],
   },
@@ -293,6 +340,83 @@ tags: [editor, mermaid, css]
 ## Objectifs du Sprint 6
 - [ ] Rendu direct des blocs de code Mermaid
 - [ ] Thème synchronisé avec la teinte d'accent
+`,
+  'projet/kanban-projet.md': `---
+type: kanban
+title: "Kanban Projet Knit"
+---
+
+# 🚀 Kanban Projet Knit
+
+Suivi des fonctionnalités majeures du projet Knit.
+
+## Backlog
+- [ ] Rendu interactif Mermaid inline [[Mermaid]]
+- [ ] Palette de commandes Notion-style
+- [ ] Export PDF / HTML propre
+
+## À faire
+- [ ] Split View éditeur (Ctrl+\\)
+- [ ] Live preview sans balises Markdown #ui
+
+## En cours
+- [ ] Multi-kanbans par fichier Markdown #sprint-5
+- [ ] Colonnes personnalisées illimitées #sprint-5
+
+## Revue & Tests
+- [ ] Validation du drag and drop #qa
+
+## Terminé
+- [x] Quick Switcher (Ctrl+O)
+- [x] Recherche globale dans tout le coffre (Ctrl+Shift+F)
+- [x] Autocomplétion WikiLinks et Tags
+`,
+  'perso/kanban-perso.md': `---
+type: kanban
+title: "Mon Kanban Personnel"
+---
+
+# 💡 Mon Kanban Personnel
+
+Mes tâches quotidiennes, apprentissages et idées perso.
+
+## Idées
+- [ ] Lire la doc Iroh Gossipsub
+- [ ] Tester les nouvelles polices Google Fonts
+
+## Cette semaine
+- [ ] Ranger le dossier de cours Green IT
+- [ ] Préparer la présentation d'architecture
+
+## En cours
+- [ ] Finaliser le Sprint 5 de Knit #dev
+
+## Fait
+- [x] Mettre à jour Rust 1.84
+- [x] Configurer la clé SSH
+`,
+  'equipe/kanban-equipe.md': `---
+type: kanban
+title: "Kanban Équipe & Coordination"
+---
+
+# 👥 Kanban Équipe & Coordination
+
+Tableau collaboratif partagé avec les membres du projet en P2P.
+
+## À cadrer
+- [ ] Spécifications du protocole mobile
+- [ ] Chiffrement de bout en bout
+
+## Sprint actif
+- [ ] Revue des pull requests de sécurité
+- [ ] Benchmarks de latence réseau QUIC
+
+## En validation
+- [ ] Synchronisation des avatars P2P via Iroh Blobs
+
+## Déployé en prod
+- [x] Release Knit v0.2.0 P2P
 `,
 };
 
@@ -998,6 +1122,45 @@ class VaultStore {
       console.warn('Erreur récupération des tags :', err);
       return [];
     }
+  }
+
+  public async getKanbanFiles(): Promise<KanbanFileInfo[]> {
+    const list: KanbanFileInfo[] = [];
+
+    const traverse = (nodes: FileNode[]) => {
+      for (const node of nodes) {
+        if (node.is_dir) {
+          traverse(node.children);
+        } else if (node.path.endsWith('.md')) {
+          const lower = node.name.toLowerCase();
+          const cleanTitle = node.name.replace(/\.md$/, '').replace(/^kanban-?/, '').trim() || node.name;
+          const formattedTitle = cleanTitle.charAt(0).toUpperCase() + cleanTitle.slice(1);
+
+          if (lower.includes('kanban') || lower.includes('tableau') || lower.includes('board')) {
+            list.push({
+              path: node.path,
+              name: node.name,
+              title: formattedTitle,
+            });
+          }
+        }
+      }
+    };
+
+    traverse(this.files);
+    return list;
+  }
+
+  public async createKanbanFile(
+    relPath: string,
+    title?: string,
+    columns?: string[]
+  ): Promise<string> {
+    const cleanPath = relPath.endsWith('.md') ? relPath : `${relPath}.md`;
+    const defaultTitle = title || cleanPath.split('/').pop()?.replace(/\.md$/, '') || 'Kanban';
+    const content = createDefaultKanbanMarkdown(defaultTitle, columns);
+    await this.createFile(cleanPath, content);
+    return cleanPath;
   }
 }
 

@@ -191,6 +191,23 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
           },
         },
         {
+          id: 'new-kanban-in-dir',
+          label: 'Nouveau tableau Kanban...',
+          icon: 'kanban' as const,
+          onClick: () => {
+            const kbName = window.prompt(`Nom du nouveau tableau Kanban dans "${node.name}" :`, 'kanban.md');
+            if (kbName && kbName.trim()) {
+              const cleanName = kbName.trim().endsWith('.md') ? kbName.trim() : `${kbName.trim()}.md`;
+              const relPath = `${node.path}/${cleanName}`;
+              vaultStore.createKanbanFile(relPath, cleanName.replace(/\.md$/, '')).then(() => {
+                onSelectFile(relPath, false);
+                setIsManualOpen(true);
+                toast.success('Tableau Kanban créé', relPath);
+              });
+            }
+          },
+        },
+        {
           id: 'new-dir-in-dir',
           label: 'Nouveau dossier...',
           icon: 'folder-plus',
@@ -409,7 +426,11 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
         ) : (
           <>
             <span style={{ width: 12 }} />
-            <DuotoneIcon name="file-markdown" size={14} />
+            {node.name.toLowerCase().includes('kanban') || node.name.toLowerCase().includes('tableau') ? (
+              <DuotoneIcon name="kanban" size={14} style={{ color: 'var(--knit-primary)' }} />
+            ) : (
+              <DuotoneIcon name="file-markdown" size={14} />
+            )}
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
               <HighlightedText text={node.name} query={searchQuery} />
             </span>
