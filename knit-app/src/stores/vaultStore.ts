@@ -38,6 +38,39 @@ export interface TrashRecord {
   deleted_at: number;
 }
 
+export interface SearchSnippet {
+  line_number: number;
+  line_content: string;
+  match_start: number;
+  match_end: number;
+}
+
+export interface FileSearchResult {
+  rel_path: string;
+  file_name: string;
+  total_matches: number;
+  snippets: SearchSnippet[];
+}
+
+export interface TaskCard {
+  rel_path: string;
+  id: string;
+  titre: string;
+  statut: string;
+  priorite?: string;
+  assigne?: string;
+  sprint?: string;
+  echeance?: string;
+  tags: string[];
+  snippet: string;
+}
+
+export interface TagInfo {
+  tag: string;
+  count: number;
+  files: string[];
+}
+
 type VaultListener = () => void;
 
 // Détection de l'environnement Tauri natif vs navigateur Web standard (dev)
@@ -103,6 +136,30 @@ const DEMO_FILES: FileNode[] = [
             id: 'projet/taches/task-001.md',
             name: 'task-001.md',
             path: 'projet/taches/task-001.md',
+            is_dir: false,
+            extension: 'md',
+            children: [],
+          },
+          {
+            id: 'projet/taches/task-002.md',
+            name: 'task-002.md',
+            path: 'projet/taches/task-002.md',
+            is_dir: false,
+            extension: 'md',
+            children: [],
+          },
+          {
+            id: 'projet/taches/task-003.md',
+            name: 'task-003.md',
+            path: 'projet/taches/task-003.md',
+            is_dir: false,
+            extension: 'md',
+            children: [],
+          },
+          {
+            id: 'projet/taches/task-004.md',
+            name: 'task-004.md',
+            path: 'projet/taches/task-004.md',
             is_dir: false,
             extension: 'md',
             children: [],
@@ -183,6 +240,59 @@ sprint: sprint-1
 - [x] Système Multi-onglets avec clic molette
 - [x] Design tokens CSS HSL & Thème clair/sombre
 - [x] Système de Toasts centralisé
+`,
+  'projet/taches/task-002.md': `---
+id: task-002
+type: tache
+titre: Moteur Réseau P2P Iroh & Transport QUIC
+statut: termine
+priorite: haute
+assigne: Thomas
+sprint: sprint-3
+tags: [backend, p2p, rust]
+---
+
+# Moteur Réseau P2P Iroh & Transport QUIC
+
+## Objectifs du Sprint 3
+- [x] Connexion QUIC pair-à-pair directe
+- [x] Découverte LAN via mDNS
+- [x] Streaming d'updates Yjs
+`,
+  'projet/taches/task-003.md': `---
+id: task-003
+type: tache
+titre: Vues Kanban & Tableau Filtrable
+statut: en-cours
+priorite: critique
+assigne: Alice
+sprint: sprint-5
+tags: [ui, kanban, react]
+---
+
+# Vues Kanban & Tableau Filtrable
+
+## Objectifs du Sprint 5
+- [x] Colonnes basées sur le champ statut
+- [x] Drag & Drop dynamique mettant à jour le YAML frontmatter
+- [x] Tableau filtrable, triable et exportable
+`,
+  'projet/taches/task-004.md': `---
+id: task-004
+type: tache
+titre: Rendu Mermaid & Palette Dynamique
+statut: a-faire
+priorite: moyenne
+assigne: Bob
+sprint: sprint-6
+tags: [editor, mermaid, css]
+---
+
+# Rendu Mermaid & Palette Dynamique
+
+## Objectifs du Sprint 6
+- [ ] Rendu direct des blocs de code Mermaid
+- [ ] Thème synchronisé avec la teinte d'accent
 `,
 };
 
@@ -727,6 +837,166 @@ class VaultStore {
       });
     } catch (err: unknown) {
       toast.error('Impossible d’ouvrir l’explorateur', String(err));
+    }
+  }
+
+  public async searchVault(query: string): Promise<FileSearchResult[]> {
+    if (!this.currentVaultPath || !query.trim()) return [];
+
+    if (!isTauriEnvironment()) {
+      const q = query.toLowerCase();
+      const results: FileSearchResult[] = [];
+      for (const [relPath, content] of Object.entries(this.localContents)) {
+        const lines = content.split('\n');
+        const snippets: SearchSnippet[] = [];
+        let total = 0;
+        lines.forEach((line, idx) => {
+          const lower = line.toLowerCase();
+          const pos = lower.indexOf(q);
+          if (pos !== -1) {
+            total++;
+            if (snippets.length < 5) {
+              snippets.push({
+                line_number: idx + 1,
+                line_content: line,
+                match_start: pos,
+                match_end: pos + q.length,
+              });
+            }
+          }
+        });
+        if (total > 0) {
+          results.push({
+            rel_path: relPath,
+            file_name: relPath.split('/').pop() || relPath,
+            total_matches: total,
+            snippets,
+          });
+        }
+      }
+      return results.sort((a, b) => b.total_matches - a.total_matches);
+    }
+
+    try {
+      return await invoke<FileSearchResult[]>('search_vault', {
+        vaultPath: this.currentVaultPath,
+        query,
+      });
+    } catch (err: unknown) {
+      console.warn('Erreur recherche coffre-fort :', err);
+      return [];
+    }
+  }
+
+  public async getVaultTasks(): Promise<TaskCard[]> {
+    if (!this.currentVaultPath) return [];
+
+    if (!isTauriEnvironment()) {
+      const tasks: TaskCard[] = [];
+      for (const [relPath, content] of Object.entries(this.localContents)) {
+        if (!relPath.endsWith('.md')) continue;
+        const fm = await this.parseFrontmatter(content);
+        if (fm.fields['statut'] || relPath.includes('taches/')) {
+          const statut = (fm.fields['statut'] || 'a-faire').toLowerCase();
+          const id = fm.fields['id'] || relPath.split('/').pop()?.replace('.md', '') || 'task';
+          const titre = fm.fields['titre'] || fm.body.split('\n')[0].replace(/^#+\s*/, '') || id;
+          const tags = fm.fields['tags']
+            ? fm.fields['tags'].replace(/[\[\]]/g, '').split(',').map((t) => t.trim().replace(/^#/, '')).filter(Boolean)
+            : [];
+          tasks.push({
+            rel_path: relPath,
+            id,
+            titre,
+            statut,
+            priorite: fm.fields['priorite'],
+            assigne: fm.fields['assigne'],
+            sprint: fm.fields['sprint'],
+            echeance: fm.fields['echeance'],
+            tags,
+            snippet: fm.body.slice(0, 100),
+          });
+        }
+      }
+      return tasks.sort((a, b) => a.id.localeCompare(b.id));
+    }
+
+    try {
+      return await invoke<TaskCard[]>('get_vault_tasks', {
+        vaultPath: this.currentVaultPath,
+      });
+    } catch (err: unknown) {
+      console.warn('Erreur récupération des tâches :', err);
+      return [];
+    }
+  }
+
+  public async updateTaskStatus(relPath: string, newStatus: string): Promise<void> {
+    if (!this.currentVaultPath) return;
+
+    if (!isTauriEnvironment()) {
+      const content = this.localContents[relPath] || '';
+      const updated = await this.updateFrontmatter(content, 'statut', newStatus);
+      await this.writeFile(relPath, updated);
+      this.notify();
+      return;
+    }
+
+    await invoke('update_task_status', {
+      vaultPath: this.currentVaultPath,
+      relPath,
+      newStatus,
+    });
+
+    const updatedContent = await this.readFile(relPath);
+    const tab = tabStore.tabs.find((t) => t.path === relPath);
+    if (tab) {
+      tab.content = updatedContent;
+      tab.isDirty = false;
+    }
+    this.notify();
+  }
+
+  public async getVaultTags(): Promise<TagInfo[]> {
+    if (!this.currentVaultPath) return [];
+
+    if (!isTauriEnvironment()) {
+      const tagMap: Record<string, Set<string>> = {};
+      for (const [relPath, content] of Object.entries(this.localContents)) {
+        const fm = await this.parseFrontmatter(content);
+        if (fm.fields['tags']) {
+          const raw = fm.fields['tags'].replace(/[\[\]]/g, '');
+          raw.split(',').forEach((t) => {
+            const clean = t.trim().replace(/^#/, '').toLowerCase();
+            if (clean) {
+              if (!tagMap[clean]) tagMap[clean] = new Set();
+              tagMap[clean].add(relPath);
+            }
+          });
+        }
+        const inlineMatches = content.matchAll(/(?:^|[\s(])#([a-zA-Z0-9_\-\/]+)/g);
+        for (const m of inlineMatches) {
+          const tag = m[1].toLowerCase();
+          if (tag && isNaN(Number(tag))) {
+            if (!tagMap[tag]) tagMap[tag] = new Set();
+            tagMap[tag].add(relPath);
+          }
+        }
+      }
+      const list: TagInfo[] = Object.entries(tagMap).map(([tag, fileSet]) => ({
+        tag,
+        count: fileSet.size,
+        files: Array.from(fileSet).sort(),
+      }));
+      return list.sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
+    }
+
+    try {
+      return await invoke<TagInfo[]>('get_vault_tags', {
+        vaultPath: this.currentVaultPath,
+      });
+    } catch (err: unknown) {
+      console.warn('Erreur récupération des tags :', err);
+      return [];
     }
   }
 }

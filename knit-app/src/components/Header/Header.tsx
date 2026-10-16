@@ -8,9 +8,15 @@ import { networkStore, COLLABORATIVE_PALETTE } from '../../stores/networkStore';
 import { NetworkModal } from '../Network/NetworkModal';
 import { ProfileModal } from '../Profile/ProfileModal';
 
+export type AppViewMode = 'editor' | 'kanban' | 'table';
+
 interface HeaderProps {
   theme: ThemeMode;
   hue: number;
+  currentView: AppViewMode;
+  onViewChange: (view: AppViewMode) => void;
+  onOpenQuickSwitcher: () => void;
+  onOpenCommandPalette: () => void;
   onThemeToggle: () => void;
   onHueChange: (newHue: number) => void;
   onSave: () => void;
@@ -20,6 +26,10 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   theme,
   hue,
+  currentView,
+  onViewChange,
+  onOpenQuickSwitcher,
+  onOpenCommandPalette,
   onThemeToggle,
   onHueChange,
   onSave,
@@ -134,8 +144,135 @@ export const Header: React.FC<HeaderProps> = ({
         )}
       </div>
 
+      {/* Sélecteur de vue centralisé (Éditeur, Kanban, Tableau) */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          backgroundColor: 'var(--knit-surface)',
+          border: '1px solid var(--knit-border)',
+          borderRadius: 'var(--knit-radius-sm)',
+          padding: 2,
+          gap: 2,
+        }}
+      >
+        <button
+          onClick={() => onViewChange('editor')}
+          data-tooltip="Éditeur de note Markdown"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: '3px 10px',
+            borderRadius: 'var(--knit-radius-xs)',
+            backgroundColor: currentView === 'editor' ? 'var(--knit-surface-hover)' : 'transparent',
+            border: 'none',
+            color: currentView === 'editor' ? 'var(--knit-primary)' : 'var(--knit-text-secondary)',
+            fontSize: 11,
+            fontWeight: currentView === 'editor' ? 600 : 500,
+            cursor: 'pointer',
+            transition: 'all var(--knit-duration-fast)',
+          }}
+        >
+          <DuotoneIcon name="file-markdown" size={12} />
+          <span>Éditeur</span>
+        </button>
+
+        <button
+          onClick={() => onViewChange('kanban')}
+          data-tooltip="Tableau Kanban des tâches"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: '3px 10px',
+            borderRadius: 'var(--knit-radius-xs)',
+            backgroundColor: currentView === 'kanban' ? 'var(--knit-surface-hover)' : 'transparent',
+            border: 'none',
+            color: currentView === 'kanban' ? 'var(--knit-primary)' : 'var(--knit-text-secondary)',
+            fontSize: 11,
+            fontWeight: currentView === 'kanban' ? 600 : 500,
+            cursor: 'pointer',
+            transition: 'all var(--knit-duration-fast)',
+          }}
+        >
+          <DuotoneIcon name="kanban" size={12} />
+          <span>Kanban</span>
+        </button>
+
+        <button
+          onClick={() => onViewChange('table')}
+          data-tooltip="Vue Tableau filtrable et triable"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: '3px 10px',
+            borderRadius: 'var(--knit-radius-xs)',
+            backgroundColor: currentView === 'table' ? 'var(--knit-surface-hover)' : 'transparent',
+            border: 'none',
+            color: currentView === 'table' ? 'var(--knit-primary)' : 'var(--knit-text-secondary)',
+            fontSize: 11,
+            fontWeight: currentView === 'table' ? 600 : 500,
+            cursor: 'pointer',
+            transition: 'all var(--knit-duration-fast)',
+          }}
+        >
+          <DuotoneIcon name="table" size={12} />
+          <span>Tableau</span>
+        </button>
+      </div>
+
       {/* Contrôles de droite : Thème et slider Hue */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        {/* Quick Switcher & Palette de commandes */}
+        <button
+          onClick={onOpenQuickSwitcher}
+          data-tooltip="Recherche rapide de notes"
+          data-shortcut="Ctrl+O"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: '3px 8px',
+            borderRadius: 'var(--knit-radius-sm)',
+            backgroundColor: 'transparent',
+            border: '1px solid var(--knit-border)',
+            color: 'var(--knit-text-secondary)',
+            fontSize: 11,
+            cursor: 'pointer',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--knit-surface-hover)')}
+          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+        >
+          <DuotoneIcon name="search" size={12} />
+          <span>Sauter à...</span>
+          <kbd style={{ fontSize: 9, padding: '1px 3px', border: '1px solid var(--knit-border)', borderRadius: 2 }}>Ctrl+O</kbd>
+        </button>
+
+        <button
+          onClick={onOpenCommandPalette}
+          data-tooltip="Palette de commandes"
+          data-shortcut="Ctrl+P"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: '3px 8px',
+            borderRadius: 'var(--knit-radius-sm)',
+            backgroundColor: 'transparent',
+            border: '1px solid var(--knit-border)',
+            color: 'var(--knit-text-secondary)',
+            fontSize: 11,
+            cursor: 'pointer',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--knit-surface-hover)')}
+          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+        >
+          <DuotoneIcon name="command" size={12} />
+          <kbd style={{ fontSize: 9, padding: '1px 3px', border: '1px solid var(--knit-border)', borderRadius: 2 }}>Ctrl+P</kbd>
+        </button>
+
         {/* Sélecteur de couleur d'accent (dot cliquable avec popover 3x3 + slider) */}
         <div style={{ position: 'relative' }}>
           <button

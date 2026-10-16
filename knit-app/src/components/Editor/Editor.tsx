@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { EditorState } from '@codemirror/state';
 import { EditorView, keymap, lineNumbers, highlightActiveLineGutter, highlightSpecialChars, drawSelection } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
@@ -14,18 +14,38 @@ import type { FrontmatterDoc } from '../../stores/vaultStore';
 import { toast } from '../../stores/toastStore';
 import { tabStore } from '../../stores/tabStore';
 import { networkStore } from '../../stores/networkStore';
+import { createKnitAutocompletion } from './autocomplete';
+import type { FileNode } from '../../stores/vaultStore';
 
 interface EditorProps {
   content: string;
   path: string;
   isDirty?: boolean;
+  initialLine?: number;
   onChange: (newContent: string) => void;
   onSave: () => void;
+  onNavigateFile?: (targetPath: string) => void;
+}
+
+function getFlatFiles(nodes: FileNode[]): string[] {
+  const res: string[] = [];
+  const traverse = (items: FileNode[]) => {
+    for (const item of items) {
+      if (item.is_dir) {
+        traverse(item.children);
+      } else if (item.path.endsWith('.md') || item.name === 'KNIT.md') {
+        res.push(item.path);
+      }
+    }
+  };
+  traverse(nodes);
+  return res;
 }
 
 export const Editor: React.FC<EditorProps> = ({
   content,
   path,
+  initialLine,
   onChange,
   onSave,
 }) => {
@@ -38,7 +58,47 @@ export const Editor: React.FC<EditorProps> = ({
 
   const [frontmatter, setFrontmatter] = useState<FrontmatterDoc | null>(null);
   const [backlinks, setBacklinks] = useState<string[]>([]);
+  const [knownTags, setKnownTags] = useState<string[]>([]);
   const [, setTick] = useState(0);
+
+  useEffect(() => {
+    vaultStore.getVaultTags().then((tags) => {
+      setKnownTags(tags.map((t) => t.tag));
+    });
+  }, [content]);
+
+  const handleOpenWikiLink = useCallback(async (targetStem: string) => {
+    const cleanTarget = targetStem.replace(/\\/g, '/').trim();
+    const allMd = getFlatFiles(vaultStore.files);
+    const found = allMd.find(
+      (f) =>
+        f === cleanTarget ||
+        f === `${cleanTarget}.md` ||
+        f.endsWith(`/${cleanTarget}`) ||
+        f.endsWith(`/${cleanTarget}.md`) ||
+        f.split('/').pop()?.replace(/\.md$/, '') === cleanTarget
+    );
+
+    if (found) {
+      try {
+        const c = await vaultStore.readFile(found);
+        tabStore.openTab(found, false, c);
+        toast.info('Navigation WikiLink', `Ouverture de ${found}`);
+      } catch (err: unknown) {
+        toast.error('Erreur ouverture note', String(err));
+      }
+    } else {
+      const newPath = cleanTarget.endsWith('.md') ? cleanTarget : `wiki/${cleanTarget}.md`;
+      try {
+        await vaultStore.createFile(newPath, `# ${cleanTarget}\n\nNote créée via WikiLink.\n`);
+        const c = await vaultStore.readFile(newPath);
+        tabStore.openTab(newPath, false, c);
+        toast.success('Note créée via WikiLink', newPath);
+      } catch (err: unknown) {
+        toast.error('Erreur création note', String(err));
+      }
+    }
+  }, []);
 
   useEffect(() => {
     return networkStore.subscribe(() => {
@@ -210,9 +270,35 @@ export const Editor: React.FC<EditorProps> = ({
         customKeymap,
         keymap.of([...searchKeymap, ...historyKeymap, ...defaultKeymap]),
         knitEditorTheme,
+        // Autocomplétion intelligente WikiLinks [[Note]] et Tags #tag
+        createKnitAutocompletion({
+          getFiles: () => getFlatFiles(vaultStore.files),
+          getTags: () => knownTags,
+        }),
         // Connexion CRDT Yjs avec yCollab et Awareness collaboratif
         yCollab(ytext, awareness),
         EditorView.domEventHandlers({
+          click: (event, view) => {
+            const pos = view.posAtCoords({ x: event.clientX, y: event.clientY });
+            if (pos !== null) {
+              const line = view.state.doc.lineAt(pos);
+              const lineText = line.text;
+              const col = pos - line.from;
+              const wikiRegex = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
+              let match;
+              while ((match = wikiRegex.exec(lineText)) !== null) {
+                const start = match.index;
+                const end = start + match[0].length;
+                if (col >= start && col <= end) {
+                  event.preventDefault();
+                  const target = match[1].trim();
+                  handleOpenWikiLink(target);
+                  return true;
+                }
+              }
+            }
+            return false;
+          },
           mousedown: (event, view) => {
             if (event.button === 2) {
               const sel = view.state.selection.main;
@@ -338,6 +424,23 @@ export const Editor: React.FC<EditorProps> = ({
     });
 
     viewRef.current = view;
+
+    if (initialLine && initialLine > 0) {
+      setTimeout(() => {
+        try {
+          const totalLines = view.state.doc.lines;
+          const targetLineNum = Math.min(Math.max(1, initialLine), totalLines);
+          const lineInfo = view.state.doc.line(targetLineNum);
+          view.dispatch({
+            selection: { anchor: lineInfo.from },
+            scrollIntoView: true,
+          });
+          view.focus();
+        } catch {
+          // ignore
+        }
+      }, 50);
+    }
 
     return () => {
       if (saveTimerRef.current) {

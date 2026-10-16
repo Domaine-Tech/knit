@@ -1,8 +1,12 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { Header } from './components/Header/Header';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { Header, type AppViewMode } from './components/Header/Header';
 import { Sidebar } from './components/Sidebar/Sidebar';
 import { TabBar } from './components/Tabs/TabBar';
 import { Editor } from './components/Editor/Editor';
+import { KanbanView } from './components/Kanban/KanbanView';
+import { TableView } from './components/Table/TableView';
+import { QuickSwitcherModal } from './components/Modal/QuickSwitcherModal';
+import { CommandPaletteModal, type CommandItem } from './components/Modal/CommandPaletteModal';
 import { ToastContainer } from './components/Toast/ToastContainer';
 import { ContextMenuContainer } from './components/ContextMenu/ContextMenuContainer';
 import { TooltipContainer } from './components/Tooltip/TooltipContainer';
@@ -27,6 +31,19 @@ export const App: React.FC = () => {
   const [files, setFiles] = useState<FileNode[]>(vaultStore.files);
   const [tabs, setTabs] = useState<Tab[]>(tabStore.tabs);
   const [activeTabId, setActiveTabId] = useState<string | null>(tabStore.activeTabId);
+
+  // Vue active : Éditeur, Kanban ou Tableau (Sprint 5)
+  const [currentView, setCurrentView] = useState<AppViewMode>('editor');
+
+  // Modales Sprint 5
+  const [isQuickSwitcherOpen, setIsQuickSwitcherOpen] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+
+  // Onglet Sidebar (Notes, Recherche, Tags)
+  const [sidebarTab, setSidebarTab] = useState<'files' | 'search' | 'tags'>('files');
+
+  // Ligne cible pour le saut de ligne depuis la recherche globale
+  const [targetLine, setTargetLine] = useState<number | undefined>(undefined);
 
   // Initialisation du thème au montage
   useEffect(() => {
@@ -99,6 +116,7 @@ export const App: React.FC = () => {
     try {
       await vaultStore.createFile(name, `# Nouvelle note\n\n`);
       const content = await vaultStore.readFile(name);
+      setCurrentView('editor');
       tabStore.openTab(name, false, content);
       toast.success('Note créée', name);
     } catch (err: unknown) {
@@ -111,10 +129,38 @@ export const App: React.FC = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const isMod = e.ctrlKey || e.metaKey;
 
-      if (isMod && e.key.toLowerCase() === 's') {
+      // Quick Switcher (Ctrl+O)
+      if (isMod && !e.shiftKey && e.key.toLowerCase() === 'o') {
+        e.preventDefault();
+        setIsQuickSwitcherOpen(true);
+        return;
+      }
+
+      // Command Palette (Ctrl+P)
+      if (isMod && !e.shiftKey && e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        setIsCommandPaletteOpen(true);
+        return;
+      }
+
+      // Recherche globale dans tout le coffre (Ctrl+Shift+F)
+      if (isMod && e.shiftKey && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        setSidebarTab('search');
+        return;
+      }
+
+      // Vue Kanban directe (Ctrl+Shift+K)
+      if (isMod && e.shiftKey && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setCurrentView((prev) => (prev === 'kanban' ? 'editor' : 'kanban'));
+        return;
+      }
+
+      if (isMod && !e.shiftKey && e.key.toLowerCase() === 's') {
         e.preventDefault();
         handleSaveActiveNote();
-      } else if (isMod && e.key.toLowerCase() === 'w') {
+      } else if (isMod && !e.shiftKey && e.key.toLowerCase() === 'w') {
         e.preventDefault();
         if (tabStore.activeTabId) {
           tabStore.closeTab(tabStore.activeTabId);
@@ -129,7 +175,7 @@ export const App: React.FC = () => {
         } else {
           tabStore.nextTab();
         }
-      } else if (isMod && e.key.toLowerCase() === 'n') {
+      } else if (isMod && !e.shiftKey && e.key.toLowerCase() === 'n') {
         e.preventDefault();
         handleNewNote();
       } else if (isMod && !e.shiftKey && e.key.toLowerCase() === 'z') {
@@ -143,13 +189,13 @@ export const App: React.FC = () => {
           e.preventDefault();
           historyStore.undo();
         }
-      } else if (isMod && e.key.toLowerCase() === 'f') {
+      } else if (isMod && !e.shiftKey && e.key.toLowerCase() === 'f') {
         // Si le focus n'est pas dans l'éditeur, on donne le focus à l'éditeur CodeMirror
         const editorDom = document.querySelector('.cm-content') as HTMLElement | null;
         if (editorDom && document.activeElement !== editorDom) {
           editorDom.focus();
         }
-      } else if (isMod && e.key.toLowerCase() === 'h') {
+      } else if (isMod && !e.shiftKey && e.key.toLowerCase() === 'h') {
         // Si le focus n'est pas dans l'éditeur, on donne le focus à l'éditeur CodeMirror
         const editorDom = document.querySelector('.cm-content') as HTMLElement | null;
         if (editorDom && document.activeElement !== editorDom) {
@@ -181,11 +227,121 @@ export const App: React.FC = () => {
   // Synchronise le titre de la barre de fenêtre avec la note active et la version du projet
   useEffect(() => {
     if (activeTab) {
-      document.title = `${activeTab.title}${activeTab.isDirty ? ' •' : ''} — Knit v0.2.0 (Sprint 4)`;
+      document.title = `${activeTab.title}${activeTab.isDirty ? ' •' : ''} — Knit v0.3.0 (Sprint 5)`;
     } else {
-      document.title = 'Knit — v0.2.0 (Sprint 4)';
+      document.title = 'Knit — v0.3.0 (Sprint 5)';
     }
   }, [activeTab]);
+
+  // Commandes pour la palette de commandes (Ctrl+P)
+  const commands: CommandItem[] = useMemo(() => [
+    {
+      id: 'cmd-editor-view',
+      title: "Basculer vers l'Éditeur de note",
+      category: 'Vues',
+      icon: 'file-markdown',
+      action: () => setCurrentView('editor'),
+    },
+    {
+      id: 'cmd-kanban-view',
+      title: 'Afficher la vue Kanban des tâches',
+      category: 'Vues',
+      shortcut: 'Ctrl+Shift+K',
+      icon: 'kanban',
+      action: () => setCurrentView('kanban'),
+    },
+    {
+      id: 'cmd-table-view',
+      title: 'Afficher la vue Tableau récapitulatif',
+      category: 'Vues',
+      icon: 'table',
+      action: () => setCurrentView('table'),
+    },
+    {
+      id: 'cmd-quick-switcher',
+      title: 'Recherche rapide de notes (Quick Switcher)',
+      category: 'Navigation',
+      shortcut: 'Ctrl+O',
+      icon: 'search',
+      action: () => setIsQuickSwitcherOpen(true),
+    },
+    {
+      id: 'cmd-global-search',
+      title: 'Recherche globale dans tout le coffre',
+      category: 'Navigation',
+      shortcut: 'Ctrl+Shift+F',
+      icon: 'search',
+      action: () => {
+        setSidebarTab('search');
+      },
+    },
+    {
+      id: 'cmd-sidebar-notes',
+      title: 'Afficher les notes dans la barre latérale',
+      category: 'Navigation',
+      icon: 'folder',
+      action: () => setSidebarTab('files'),
+    },
+    {
+      id: 'cmd-sidebar-tags',
+      title: 'Afficher l’explorateur de tags',
+      category: 'Navigation',
+      icon: 'tag',
+      action: () => setSidebarTab('tags'),
+    },
+    {
+      id: 'cmd-new-note',
+      title: 'Créer une nouvelle note',
+      category: 'Fichier',
+      shortcut: 'Ctrl+N',
+      icon: 'plus',
+      action: handleNewNote,
+    },
+    {
+      id: 'cmd-save-note',
+      title: 'Sauvegarder la note active',
+      category: 'Fichier',
+      shortcut: 'Ctrl+S',
+      icon: 'save',
+      action: handleSaveActiveNote,
+    },
+    {
+      id: 'cmd-close-tab',
+      title: "Fermer l'onglet actif",
+      category: 'Onglets',
+      shortcut: 'Ctrl+W',
+      icon: 'close',
+      action: () => {
+        if (tabStore.activeTabId) tabStore.closeTab(tabStore.activeTabId);
+      },
+    },
+    {
+      id: 'cmd-reopen-tab',
+      title: 'Rouvrir le dernier onglet fermé',
+      category: 'Onglets',
+      shortcut: 'Ctrl+Shift+T',
+      icon: 'sync',
+      action: () => tabStore.reopenLastClosed((p) => vaultStore.readFile(p)),
+    },
+    {
+      id: 'cmd-toggle-theme',
+      title: theme === 'dark' ? 'Basculer en thème clair' : 'Basculer en thème sombre',
+      category: 'Affichage',
+      icon: theme === 'dark' ? 'sun' : 'moon',
+      action: () => {
+        const next = theme === 'dark' ? 'light' : 'dark';
+        setTheme(next);
+        applyTheme(next);
+      },
+    },
+    {
+      id: 'cmd-open-vault',
+      title: 'Ouvrir un coffre-fort local...',
+      category: 'Coffre-fort',
+      icon: 'folder-open',
+      action: () => vaultStore.pickAndOpenVault(),
+    },
+  ], [theme, handleNewNote, handleSaveActiveNote]);
 
   return (
     <div
@@ -199,10 +355,14 @@ export const App: React.FC = () => {
         overflow: 'hidden',
       }}
     >
-      {/* En-tête de l'application */}
+      {/* En-tête de l'application avec sélecteur de vues et palette */}
       <Header
         theme={theme}
         hue={hue}
+        currentView={currentView}
+        onViewChange={setCurrentView}
+        onOpenQuickSwitcher={() => setIsQuickSwitcherOpen(true)}
+        onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
         onThemeToggle={() => {
           const next = theme === 'dark' ? 'light' : 'dark';
           setTheme(next);
@@ -216,13 +376,23 @@ export const App: React.FC = () => {
         canSave={!!activeTab && activeTab.isDirty}
       />
 
-      {/* Corps principal : Sidebar + Espace Éditeur */}
+      {/* Corps principal : Sidebar + Zone de travail (Éditeur, Kanban, ou Tableau) */}
       <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
         <Sidebar
           files={files}
           activePath={activeTabId}
-          onSelectFile={handleSelectFile}
+          sidebarTab={sidebarTab}
+          onSidebarTabChange={setSidebarTab}
+          onSelectFile={(p, preview) => {
+            setTargetLine(undefined);
+            handleSelectFile(p, preview);
+          }}
           onMiddleClickFile={handleMiddleClickFile}
+          onOpenFileAtLine={(p, line) => {
+            setCurrentView('editor');
+            setTargetLine(line);
+            handleSelectFile(p, false);
+          }}
         />
 
         <main
@@ -232,80 +402,131 @@ export const App: React.FC = () => {
             flexDirection: 'column',
             minWidth: 0,
             backgroundColor: 'var(--knit-surface)',
+            position: 'relative',
           }}
         >
-          <TabBar
-            tabs={tabs}
-            activeTabId={activeTabId}
-            onNewNote={handleNewNote}
-          />
-
-          {activeTab ? (
-            <Editor
-              key={activeTab.id}
-              path={activeTab.path}
-              content={activeTab.content}
-              isDirty={activeTab.isDirty}
-              onChange={(newContent) => {
-                tabStore.updateContent(activeTab.id, newContent);
+          {currentView === 'kanban' && (
+            <KanbanView
+              onOpenTask={(taskPath) => {
+                setCurrentView('editor');
+                setTargetLine(undefined);
+                handleSelectFile(taskPath, false);
               }}
-              onSave={handleSaveActiveNote}
             />
-          ) : (
-            <div
-              style={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--knit-text-muted)',
-                gap: 16,
-                padding: 32,
+          )}
+
+          {currentView === 'table' && (
+            <TableView
+              onOpenTask={(taskPath) => {
+                setCurrentView('editor');
+                setTargetLine(undefined);
+                handleSelectFile(taskPath, false);
               }}
-            >
-              <div
-                style={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: '50%',
-                  backgroundColor: 'var(--knit-surface-hover)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <DuotoneIcon name="file-markdown" size={28} />
-              </div>
+            />
+          )}
 
-              <div style={{ textAlign: 'center' }}>
-                <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--knit-text)', marginBottom: 6 }}>
-                  Aucun document ouvert
-                </h3>
-                <p style={{ fontSize: 13, maxWidth: 360, lineHeight: 1.5 }}>
-                  Sélectionnez un fichier dans la barre latérale ou créez une nouvelle note avec <kbd style={{ padding: '2px 6px', background: 'var(--knit-surface-hover)', border: '1px solid var(--knit-border)', borderRadius: 4, fontFamily: 'var(--knit-font-mono)' }}>Ctrl+N</kbd>.
-                </p>
-              </div>
+          {currentView === 'editor' && (
+            <>
+              <TabBar
+                tabs={tabs}
+                activeTabId={activeTabId}
+                onNewNote={handleNewNote}
+              />
 
-              <div
-                style={{
-                  display: 'flex',
-                  gap: 12,
-                  marginTop: 10,
-                  fontSize: 12,
-                  color: 'var(--knit-text-secondary)',
-                }}
-              >
-                <div><kbd>Ctrl+F</kbd> Rechercher</div>
-                <div>•</div>
-                <div><kbd>Ctrl+S</kbd> Sauvegarder</div>
-                <div>•</div>
-                <div><kbd>Clic molette</kbd> Nouvel onglet / Fermer</div>
-              </div>
-            </div>
+              {activeTab ? (
+                <Editor
+                  key={activeTab.id}
+                  path={activeTab.path}
+                  content={activeTab.content}
+                  isDirty={activeTab.isDirty}
+                  initialLine={targetLine}
+                  onChange={(newContent) => {
+                    tabStore.updateContent(activeTab.id, newContent);
+                  }}
+                  onSave={handleSaveActiveNote}
+                />
+              ) : (
+                <div
+                  style={{
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--knit-text-muted)',
+                    gap: 16,
+                    padding: 32,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 56,
+                      height: 56,
+                      borderRadius: '50%',
+                      backgroundColor: 'var(--knit-surface-hover)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <DuotoneIcon name="file-markdown" size={28} />
+                  </div>
+
+                  <div style={{ textAlign: 'center' }}>
+                    <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--knit-text)', marginBottom: 6 }}>
+                      Aucun document ouvert
+                    </h3>
+                    <p style={{ fontSize: 13, maxWidth: 360, lineHeight: 1.5 }}>
+                      Sélectionnez un fichier dans la barre latérale ou créez une nouvelle note avec <kbd style={{ padding: '2px 6px', background: 'var(--knit-surface-hover)', border: '1px solid var(--knit-border)', borderRadius: 4, fontFamily: 'var(--knit-font-mono)' }}>Ctrl+N</kbd>.
+                    </p>
+                  </div>
+
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: 12,
+                      marginTop: 10,
+                      fontSize: 12,
+                      color: 'var(--knit-text-secondary)',
+                    }}
+                  >
+                    <div><kbd>Ctrl+O</kbd> Sauter à...</div>
+                    <div>•</div>
+                    <div><kbd>Ctrl+P</kbd> Commandes</div>
+                    <div>•</div>
+                    <div><kbd>Ctrl+Shift+K</kbd> Kanban</div>
+                    <div>•</div>
+                    <div><kbd>Ctrl+Shift+F</kbd> Recherche</div>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </main>
       </div>
+
+      {/* Modale Quick Switcher (Ctrl+O) */}
+      <QuickSwitcherModal
+        isOpen={isQuickSwitcherOpen}
+        onClose={() => setIsQuickSwitcherOpen(false)}
+        onSelectFile={(path, inNewTab) => {
+          setIsQuickSwitcherOpen(false);
+          setCurrentView('editor');
+          setTargetLine(undefined);
+          if (inNewTab) {
+            handleMiddleClickFile(path);
+          } else {
+            handleSelectFile(path, false);
+          }
+        }}
+      />
+
+      {/* Palette de commandes (Ctrl+P) */}
+      <CommandPaletteModal
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        commands={commands}
+      />
 
       {/* Notifications Toast */}
       <ToastContainer />

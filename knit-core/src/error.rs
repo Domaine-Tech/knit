@@ -14,6 +14,9 @@ pub enum KnitError {
     #[error("Coffre-fort introuvable : {0}")]
     VaultNotFound(String),
 
+    #[error("Fichier introuvable : {0}")]
+    FileNotFound(String),
+
     #[error("Erreur Watcher : {0}")]
     Watcher(String),
 

@@ -95,13 +95,13 @@
 
 | # | Tâche | Priorité | Statut | Sprint |
 |---|---|---|---|---|
-| B-023 | Vue Kanban : colonnes basées sur `statut:` du frontmatter | 🔴 | 📋 | Sprint 5 |
-| B-024 | Vue Tableau : liste filtrable/triable de toutes les tâches | 🟠 | 📋 | Sprint 5 |
-| B-025 | Drag & Drop Kanban (glisser = modifier le frontmatter) | 🟠 | 📋 | Sprint 5 |
-| B-026 | Recherche globale dans tout le coffre (`Ctrl+Shift+F` avec snippets) | 🔴 | 📋 | Sprint 5 |
-| B-026a | Quick Switcher (`Ctrl+O`) & Palette de commandes (`Ctrl+P`) (Obsidian) | 🔴 | 📋 | Sprint 5 |
-| B-026b | WikiLinks bidirectionnels `[[Note]]` avec autocomplétion (Obsidian) | 🟠 | 📋 | Sprint 5 |
-| B-026c | Système de Tags (`#inline` et `tags: [...]` en frontmatter, volet de filtres) | 🟠 | 📋 | Sprint 5 |
+| B-023 | Vue Kanban : colonnes basées sur `statut:` du frontmatter | 🔴 | ✅ | Sprint 5 |
+| B-024 | Vue Tableau : liste filtrable/triable de toutes les tâches | 🟠 | ✅ | Sprint 5 |
+| B-025 | Drag & Drop Kanban (glisser = modifier le frontmatter) | 🟠 | ✅ | Sprint 5 |
+| B-026 | Recherche globale dans tout le coffre (`Ctrl+Shift+F` avec snippets) | 🔴 | ✅ | Sprint 5 |
+| B-026a | Quick Switcher (`Ctrl+O`) & Palette de commandes (`Ctrl+P`) (Obsidian) | 🔴 | ✅ | Sprint 5 |
+| B-026b | WikiLinks bidirectionnels `[[Note]]` avec autocomplétion (Obsidian) | 🟠 | ✅ | Sprint 5 |
+| B-026c | Système de Tags (`#inline` et `tags: [...]` en frontmatter, volet de filtres) | 🟠 | ✅ | Sprint 5 |
 
 ### Sprint 6 — Mermaid, Slash Command & Polish Éditeur
 

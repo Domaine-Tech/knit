@@ -34,7 +34,14 @@ export type IconName =
   | 'x'
   | 'user'
   | 'upload'
-  | 'shield';
+  | 'shield'
+  | 'kanban'
+  | 'table'
+  | 'tag'
+  | 'command'
+  | 'download'
+  | 'filter'
+  | 'sort';
 
 interface DuotoneIconProps {
   name: IconName;
@@ -591,6 +598,167 @@ export const DuotoneIcon: React.FC<DuotoneIconProps> = ({
               fillOpacity="0.22"
               stroke={primaryStroke}
               strokeWidth="32"
+              strokeLinejoin="round"
+            />
+          </>
+        );
+
+      case 'kanban':
+        return (
+          <>
+            <rect
+              x="56"
+              y="72"
+              width="104"
+              height="368"
+              rx="16"
+              fill={secondaryFill}
+              fillOpacity="0.2"
+              stroke={primaryStroke}
+              strokeWidth="28"
+            />
+            <rect
+              x="204"
+              y="72"
+              width="104"
+              height="264"
+              rx="16"
+              fill={secondaryFill}
+              fillOpacity="0.2"
+              stroke={primaryStroke}
+              strokeWidth="28"
+            />
+            <rect
+              x="352"
+              y="72"
+              width="104"
+              height="320"
+              rx="16"
+              fill={secondaryFill}
+              fillOpacity="0.2"
+              stroke={primaryStroke}
+              strokeWidth="28"
+            />
+          </>
+        );
+
+      case 'table':
+        return (
+          <>
+            <rect
+              x="56"
+              y="80"
+              width="400"
+              height="352"
+              rx="16"
+              fill={secondaryFill}
+              fillOpacity="0.15"
+              stroke={primaryStroke}
+              strokeWidth="28"
+            />
+            <line
+              x1="56"
+              y1="184"
+              x2="456"
+              y2="184"
+              stroke={primaryStroke}
+              strokeWidth="28"
+            />
+            <line
+              x1="220"
+              y1="80"
+              x2="220"
+              y2="432"
+              stroke={primaryStroke}
+              strokeWidth="24"
+            />
+          </>
+        );
+
+      case 'tag':
+        return (
+          <>
+            <path
+              d="M264 64 L432 64 C440.8 64 448 71.2 448 80 L448 248 L244 452 C236 460 224 464 212 464 C200 464 188 460 180 452 L60 332 C52 324 48 312 48 300 C48 288 52 276 60 268 Z"
+              fill={secondaryFill}
+              fillOpacity="0.22"
+              stroke={primaryStroke}
+              strokeWidth="28"
+              strokeLinejoin="round"
+            />
+            <circle cx="376" cy="136" r="28" fill={primaryStroke} />
+          </>
+        );
+
+      case 'command':
+        return (
+          <>
+            <path
+              d="M176 176 C176 131.8 140.2 96 96 96 C51.8 96 16 131.8 16 176 C16 220.2 51.8 256 96 256 L176 256 L176 336 L96 336 C51.8 336 16 371.8 16 416 C16 460.2 51.8 496 96 496 C140.2 496 176 460.2 176 416 L176 336 L336 336 L336 416 C336 460.2 371.8 496 416 496 C460.2 496 496 460.2 496 416 C496 371.8 460.2 336 416 336 L336 336 L336 256 L416 256 C460.2 256 496 220.2 496 176 C496 131.8 460.2 96 416 96 C371.8 96 336 131.8 336 176 L336 256 L176 256 Z"
+              transform="scale(0.85) translate(46, 10)"
+              fill={secondaryFill}
+              fillOpacity="0.18"
+              stroke={primaryStroke}
+              strokeWidth="28"
+              strokeLinejoin="round"
+            />
+          </>
+        );
+
+      case 'download':
+        return (
+          <>
+            <path
+              d="M256 80 L256 336 M160 240 L256 336 L352 240"
+              fill="none"
+              stroke={primaryStroke}
+              strokeWidth="32"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M80 368 L80 432 L432 432 L432 368"
+              fill={secondaryFill}
+              fillOpacity="0.2"
+              stroke={primaryStroke}
+              strokeWidth="32"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </>
+        );
+
+      case 'filter':
+        return (
+          <>
+            <path
+              d="M64 96 L448 96 L296 272 L296 416 L216 368 L216 272 Z"
+              fill={secondaryFill}
+              fillOpacity="0.22"
+              stroke={primaryStroke}
+              strokeWidth="28"
+              strokeLinejoin="round"
+            />
+          </>
+        );
+
+      case 'sort':
+        return (
+          <>
+            <path
+              d="M176 112 L176 400 M112 176 L176 112 L240 176"
+              fill="none"
+              stroke={primaryStroke}
+              strokeWidth="32"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M336 400 L336 112 M272 336 L336 400 L400 336"
+              fill="none"
+              stroke={secondaryFill}
+              strokeWidth="32"
+              strokeLinecap="round"
               strokeLinejoin="round"
             />
           </>

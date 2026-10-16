@@ -8,19 +8,35 @@ import { contextMenu } from '../../stores/contextMenuStore';
 import { tabStore } from '../../stores/tabStore';
 import { historyStore } from '../../stores/historyStore';
 
+import { GlobalSearchPane } from './GlobalSearchPane';
+import { TagExplorerPane } from './TagExplorerPane';
+
 interface SidebarProps {
   files: FileNode[];
   activePath: string | null;
+  sidebarTab?: 'files' | 'search' | 'tags';
+  onSidebarTabChange?: (tab: 'files' | 'search' | 'tags') => void;
   onSelectFile: (path: string, preview: boolean) => void;
   onMiddleClickFile: (path: string) => void;
+  onOpenFileAtLine?: (path: string, line: number) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   files,
   activePath,
+  sidebarTab: controlledSidebarTab,
+  onSidebarTabChange,
   onSelectFile,
   onMiddleClickFile,
+  onOpenFileAtLine,
 }) => {
+  const [internalSidebarTab, setInternalSidebarTab] = useState<'files' | 'search' | 'tags'>('files');
+  const activeTab = controlledSidebarTab || internalSidebarTab;
+
+  const handleSetSidebarTab = (tab: 'files' | 'search' | 'tags') => {
+    setInternalSidebarTab(tab);
+    if (onSidebarTabChange) onSidebarTabChange(tab);
+  };
   const [filterText, setFilterText] = useState('');
   const [isCreatingFile, setIsCreatingFile] = useState(false);
   const [newFileName, setNewFileName] = useState('');
@@ -304,126 +320,230 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
 
-      {/* Barre de filtre rapide */}
-      <div style={{ padding: '0 12px 8px 12px' }}>
-        <div className="knit-input-group">
-          <DuotoneIcon name="search" size={13} style={{ color: 'var(--knit-text-muted)', flexShrink: 0 }} />
-          <input
-            type="text"
-            className="knit-input-seamless"
-            placeholder="Filtrer les notes..."
-            value={filterText}
-            onChange={(e) => setFilterText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') setFilterText('');
-            }}
-            spellCheck={false}
-            autoComplete="off"
-            autoCorrect="off"
-            style={{
-              flex: 1,
-              width: '100%',
-              minWidth: 0,
-              fontSize: 12,
-              color: 'var(--knit-text)',
-            }}
-          />
-          {filterText && (
-            <button
-              onClick={() => setFilterText('')}
-              title="Effacer la recherche (Échap)"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 16,
-                height: 16,
-                padding: 0,
-                color: 'var(--knit-text-muted)',
-                flexShrink: 0,
-                borderRadius: 'var(--knit-radius-xs)',
-              }}
-            >
-              <DuotoneIcon name="close" size={10} />
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Formulaire de création rapide */}
-      {isCreatingFile && (
-        <form onSubmit={handleCreateFileSubmit} style={{ padding: '0 12px 8px 12px' }}>
-          <input
-            autoFocus
-            type="text"
-            className="knit-input"
-            placeholder="nom-note.md..."
-            value={newFileName}
-            onChange={(e) => setNewFileName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') setIsCreatingFile(false);
-            }}
-            style={{
-              width: '100%',
-            }}
-          />
-        </form>
-      )}
-
-      {/* Liste de l'arborescence */}
+      {/* Sélecteur d'onglets Sidebar (Notes, Recherche Globale, Tags) */}
       <div
-        tabIndex={-1}
-        onKeyDown={(e) => {
-          if (e.key === 'Delete' || ((e.metaKey || e.ctrlKey) && e.key === 'Backspace')) {
-            const activeEl = document.activeElement;
-            const isInput = ['INPUT', 'TEXTAREA'].includes(activeEl?.tagName || '') || activeEl?.closest('.cm-editor');
-            if (isInput) return;
-
-            const target = selectedNode || (activePath ? { path: activePath, isDir: false, name: activePath.split('/').pop() || activePath } : null);
-            if (target) {
-              e.preventDefault();
-              e.stopPropagation();
-              handleDelete(target.path, target.isDir, target.name);
-            }
-          }
-        }}
         style={{
-          flex: 1,
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          padding: '4px 6px',
-          outline: 'none',
+          display: 'flex',
+          borderBottom: '1px solid var(--knit-border)',
+          backgroundColor: 'var(--knit-bg)',
+          padding: '0 8px',
+          gap: 4,
+          marginBottom: 6,
         }}
       >
-        {filtered.length === 0 ? (
+        <button
+          onClick={() => handleSetSidebarTab('files')}
+          title="Explorateur de notes"
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 5,
+            padding: '7px 0',
+            border: 'none',
+            borderBottom: activeTab === 'files' ? '2px solid var(--knit-primary)' : '2px solid transparent',
+            backgroundColor: 'transparent',
+            color: activeTab === 'files' ? 'var(--knit-primary)' : 'var(--knit-text-secondary)',
+            fontSize: 11,
+            fontWeight: activeTab === 'files' ? 600 : 500,
+            cursor: 'pointer',
+            transition: 'all var(--knit-duration-fast)',
+          }}
+        >
+          <DuotoneIcon name="folder" size={13} />
+          <span>Notes</span>
+        </button>
+
+        <button
+          onClick={() => handleSetSidebarTab('search')}
+          title="Recherche globale dans tout le coffre (Ctrl+Shift+F)"
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 5,
+            padding: '7px 0',
+            border: 'none',
+            borderBottom: activeTab === 'search' ? '2px solid var(--knit-primary)' : '2px solid transparent',
+            backgroundColor: 'transparent',
+            color: activeTab === 'search' ? 'var(--knit-primary)' : 'var(--knit-text-secondary)',
+            fontSize: 11,
+            fontWeight: activeTab === 'search' ? 600 : 500,
+            cursor: 'pointer',
+            transition: 'all var(--knit-duration-fast)',
+          }}
+        >
+          <DuotoneIcon name="search" size={13} />
+          <span>Recherche</span>
+        </button>
+
+        <button
+          onClick={() => handleSetSidebarTab('tags')}
+          title="Explorateur de tags"
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 5,
+            padding: '7px 0',
+            border: 'none',
+            borderBottom: activeTab === 'tags' ? '2px solid var(--knit-primary)' : '2px solid transparent',
+            backgroundColor: 'transparent',
+            color: activeTab === 'tags' ? 'var(--knit-primary)' : 'var(--knit-text-secondary)',
+            fontSize: 11,
+            fontWeight: activeTab === 'tags' ? 600 : 500,
+            cursor: 'pointer',
+            transition: 'all var(--knit-duration-fast)',
+          }}
+        >
+          <DuotoneIcon name="tag" size={13} />
+          <span>Tags</span>
+        </button>
+      </div>
+
+      {activeTab === 'files' && (
+        <>
+          {/* Barre de filtre rapide */}
+          <div style={{ padding: '0 12px 8px 12px' }}>
+            <div className="knit-input-group">
+              <DuotoneIcon name="search" size={13} style={{ color: 'var(--knit-text-muted)', flexShrink: 0 }} />
+              <input
+                type="text"
+                className="knit-input-seamless"
+                placeholder="Filtrer les notes..."
+                value={filterText}
+                onChange={(e) => setFilterText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') setFilterText('');
+                }}
+                spellCheck={false}
+                autoComplete="off"
+                autoCorrect="off"
+                style={{
+                  flex: 1,
+                  width: '100%',
+                  minWidth: 0,
+                  fontSize: 12,
+                  color: 'var(--knit-text)',
+                }}
+              />
+              {filterText && (
+                <button
+                  onClick={() => setFilterText('')}
+                  title="Effacer la recherche (Échap)"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 16,
+                    height: 16,
+                    padding: 0,
+                    color: 'var(--knit-text-muted)',
+                    flexShrink: 0,
+                    borderRadius: 'var(--knit-radius-xs)',
+                  }}
+                >
+                  <DuotoneIcon name="close" size={10} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Formulaire de création rapide */}
+          {isCreatingFile && (
+            <form onSubmit={handleCreateFileSubmit} style={{ padding: '0 12px 8px 12px' }}>
+              <input
+                autoFocus
+                type="text"
+                className="knit-input"
+                placeholder="nom-note.md..."
+                value={newFileName}
+                onChange={(e) => setNewFileName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') setIsCreatingFile(false);
+                }}
+                style={{
+                  width: '100%',
+                }}
+              />
+            </form>
+          )}
+
+          {/* Liste de l'arborescence */}
           <div
+            tabIndex={-1}
+            onKeyDown={(e) => {
+              if (e.key === 'Delete' || ((e.metaKey || e.ctrlKey) && e.key === 'Backspace')) {
+                const activeEl = document.activeElement;
+                const isInput = ['INPUT', 'TEXTAREA'].includes(activeEl?.tagName || '') || activeEl?.closest('.cm-editor');
+                if (isInput) return;
+
+                const target = selectedNode || (activePath ? { path: activePath, isDir: false, name: activePath.split('/').pop() || activePath } : null);
+                if (target) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleDelete(target.path, target.isDir, target.name);
+                }
+              }
+            }}
             style={{
-              padding: 16,
-              textAlign: 'center',
-              fontSize: 12,
-              color: 'var(--knit-text-muted)',
+              flex: 1,
+              overflowY: 'auto',
+              overflowX: 'hidden',
+              padding: '4px 6px',
+              outline: 'none',
             }}
           >
-            {filterText ? `Aucun résultat pour "${filterText}"` : 'Coffre vide'}
+            {filtered.length === 0 ? (
+              <div
+                style={{
+                  padding: 16,
+                  textAlign: 'center',
+                  fontSize: 12,
+                  color: 'var(--knit-text-muted)',
+                }}
+              >
+                {filterText ? `Aucun résultat pour "${filterText}"` : 'Coffre vide'}
+              </div>
+            ) : (
+              filtered.map((node) => (
+                <TreeNode
+                  key={`${node.id}-${treeKey}-${Boolean(filterText.trim())}`}
+                  node={node}
+                  activePath={activePath}
+                  selectedPath={selectedNode?.path ?? activePath}
+                  onSelectTreeNode={(path, isDir, name) => setSelectedNode({ path, isDir, name })}
+                  onSelectFile={onSelectFile}
+                  onMiddleClickFile={onMiddleClickFile}
+                  onRenameFile={(path) => setRenameTarget({ oldPath: path, newPath: path })}
+                  onDeletePath={(path, isDir, name) => handleDelete(path, isDir, name)}
+                  defaultExpanded={isAllExpanded || Boolean(filterText.trim())}
+                  searchQuery={filterText.trim()}
+                />
+              ))
+            )}
           </div>
-        ) : (
-          filtered.map((node) => (
-            <TreeNode
-              key={`${node.id}-${treeKey}-${Boolean(filterText.trim())}`}
-              node={node}
-              activePath={activePath}
-              selectedPath={selectedNode?.path ?? activePath}
-              onSelectTreeNode={(path, isDir, name) => setSelectedNode({ path, isDir, name })}
-              onSelectFile={onSelectFile}
-              onMiddleClickFile={onMiddleClickFile}
-              onRenameFile={(path) => setRenameTarget({ oldPath: path, newPath: path })}
-              onDeletePath={(path, isDir, name) => handleDelete(path, isDir, name)}
-              defaultExpanded={isAllExpanded || Boolean(filterText.trim())}
-              searchQuery={filterText.trim()}
-            />
-          ))
-        )}
-      </div>
+        </>
+      )}
+
+      {activeTab === 'search' && (
+        <GlobalSearchPane
+          onOpenFileAtLine={(p, line) => {
+            if (onOpenFileAtLine) {
+              onOpenFileAtLine(p, line);
+            } else {
+              onSelectFile(p, false);
+            }
+          }}
+        />
+      )}
+
+      {activeTab === 'tags' && (
+        <TagExplorerPane onSelectFile={(p) => onSelectFile(p, false)} />
+      )}
 
       {/* Pied de sidebar : bouton ouvrir dossier */}
       <div

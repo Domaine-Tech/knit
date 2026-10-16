@@ -47,6 +47,10 @@ pub fn run() {
             send_p2p_sync_step1,
             send_p2p_sync_step2,
             load_avatar_base64,
+            search_vault,
+            get_vault_tasks,
+            update_task_status,
+            get_vault_tags,
         ])
         .run(tauri::generate_context!())
         .expect("Erreur lors de l'exécution de l'application Knit Tauri");

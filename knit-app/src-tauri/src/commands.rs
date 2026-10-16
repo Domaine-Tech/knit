@@ -1,7 +1,10 @@
 use base64::Engine;
 use knit_core::markdown::{
+    collect_vault_tags as core_collect_tags, collect_vault_tasks as core_collect_tasks,
     find_backlinks_in_vault, parse_frontmatter as core_parse_fm,
-    update_frontmatter_field as core_update_fm, FrontmatterDoc, LinkRefactorReport,
+    search_vault as core_search_vault, update_frontmatter_field as core_update_fm,
+    update_task_status as core_update_task_status, FileSearchResult, FrontmatterDoc,
+    LinkRefactorReport, TagInfo, TaskCard,
 };
 use knit_core::network::{ConnectedPeerInfo, KnitNetworkNode, RemoteNetworkEvent};
 use knit_core::vault::identity::{
@@ -679,5 +682,35 @@ pub async fn load_avatar_base64(
     };
     Ok(Some(format!("data:{};base64,{}", mime, b64)))
 }
+
+#[tauri::command]
+pub async fn search_vault(vault_path: String, query: String) -> Result<Vec<FileSearchResult>, String> {
+    let p = Path::new(&vault_path);
+    core_search_vault(p, &query).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_vault_tasks(vault_path: String) -> Result<Vec<TaskCard>, String> {
+    let p = Path::new(&vault_path);
+    core_collect_tasks(p).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn update_task_status(
+    state: tauri::State<'_, AppState>,
+    vault_path: String,
+    rel_path: String,
+    new_status: String,
+) -> Result<(), String> {
+    let p = Path::new(&vault_path);
+    core_update_task_status(p, &rel_path, &new_status, &state.guard).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_vault_tags(vault_path: String) -> Result<Vec<TagInfo>, String> {
+    let p = Path::new(&vault_path);
+    core_collect_tags(p).map_err(|e| e.to_string())
+}
+
 
 
