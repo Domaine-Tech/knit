@@ -126,6 +126,7 @@
 | B-032 | Wizard d'initialisation : flux "Créer un coffre-fort" | 🔴 | 📋 | Sprint 7 |
 | B-033 | Wizard d'initialisation : flux "Rejoindre un coffre-fort" | 🔴 | 📋 | Sprint 7 |
 | B-034 | Page de paramètres (thème, hue, réseau) | 🟠 | 📋 | Sprint 7 |
+| B-034a | Corbeille 100% intégrée (.knit/trash/) : réglage dans les paramètres (OS vs Knit), volet dédié avec prévisualisation, restauration ciblée et vidage | 🟠 | 📋 | Sprint 7 |
 | B-035 | Présence collaborative (avatars sidebar, infobulle, téléportation, curseurs sobres) | 🟡 | 📋 | Sprint 7 |
 | B-035b | Volet Historique de versions & Time Travel (Diff visuel + Restauration) | 🟠 | 📋 | Sprint 7 |
 | B-036 | Créer le fichier `.knitshare` et la structure par défaut | 🟠 | 📋 | Sprint 7 |

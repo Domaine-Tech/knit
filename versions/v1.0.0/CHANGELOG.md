@@ -20,6 +20,8 @@
   - Comparateur de Diff bicolore instantané et restauration en 1 clic sans perte d'historique.
 - **Panneau de préférences unifié** :
   - Réglage du thème clair/sombre, curseur HSL, diagnostics réseau P2P et gestion des pairs connectés.
+  - Sélecteur de mode de suppression : Corbeille système de l'OS vs Corbeille 100% intégrée au coffre (`.knit/trash/`).
+  - Volet dédié Corbeille avec prévisualisation des fichiers supprimés, restauration ciblée et vidage définitif.
 - **Intégration OS native & packaging** :
   - Installateurs Windows officiels (`.msi`, `.exe`).
   - Packages Linux (`.AppImage`, `.deb`).
