@@ -94,7 +94,7 @@ mod tests {
         assert_eq!(content, "# A supprimer");
 
         // 3. Déplacer à nouveau et tester la récupération automatique des orphelins
-        let record2 = vault::tree::trash_path(vault_root, "temporaire.md").expect("trash_path again");
+        let _record2 = vault::tree::trash_path(vault_root, "temporaire.md").expect("trash_path again");
         assert!(!vault_root.join("temporaire.md").exists());
         let recovered = vault::tree::recover_orphaned_trash(vault_root).expect("recover_orphaned");
         assert_eq!(recovered, vec!["temporaire.md".to_string()]);

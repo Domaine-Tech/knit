@@ -5,6 +5,9 @@ set -e
 # 🧶 Knit — Script de lancement en mode développement (Watch)
 # ==========================================================
 
+[ -f "$HOME/.cargo/env" ] && source "$HOME/.cargo/env"
+export PATH="$HOME/.cargo/bin:$HOME/.local/bin:$PATH"
+
 MODE="${1:-desktop}"
 
 echo -e "\033[1;35m==========================================================\033[0m"
