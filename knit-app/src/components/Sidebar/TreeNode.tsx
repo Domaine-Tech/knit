@@ -199,6 +199,15 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
         },
         { id: 'div-dir-2', divider: true },
         {
+          id: 'rename-dir',
+          label: 'Renommer / Déplacer le dossier...',
+          icon: 'clipboard' as const,
+          shortcut: 'F2',
+          onClick: () => {
+            if (onRenameFile) onRenameFile(node.path);
+          },
+        },
+        {
           id: 'reveal-dir',
           label: "Révéler dans l'explorateur",
           icon: 'external-link',
@@ -265,6 +274,7 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
           id: 'rename-file',
           label: 'Renommer / Déplacer...',
           icon: 'clipboard' as const,
+          shortcut: 'F2',
           onClick: () => {
             if (onRenameFile) onRenameFile(node.path);
           },

@@ -19,6 +19,7 @@ fn main() {
             "parse_frontmatter",
             "update_frontmatter",
             "get_file_backlinks",
+            "recover_vault_trash",
         ]),
     );
     tauri_build::try_build(attributes).expect("Erreur lors de la compilation de tauri-build");

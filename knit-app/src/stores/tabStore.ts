@@ -236,14 +236,29 @@ class TabStore {
   }
 
   public renameTab(oldPath: string, newPath: string) {
-    const tab = this.tabs.find((t) => t.id === oldPath || t.path === oldPath);
-    if (tab) {
-      tab.id = newPath;
-      tab.path = newPath;
-      tab.title = newPath.split('/').pop() || newPath;
-      if (this.activeTabId === oldPath) {
-        this.activeTabId = newPath;
+    let changed = false;
+    for (const tab of this.tabs) {
+      if (tab.id === oldPath || tab.path === oldPath) {
+        tab.id = newPath;
+        tab.path = newPath;
+        tab.title = newPath.split('/').pop() || newPath;
+        if (this.activeTabId === oldPath) {
+          this.activeTabId = newPath;
+        }
+        changed = true;
+      } else if (tab.path.startsWith(`${oldPath}/`)) {
+        const sub = tab.path.slice(oldPath.length + 1);
+        const updatedPath = `${newPath}/${sub}`;
+        if (this.activeTabId === tab.id) {
+          this.activeTabId = updatedPath;
+        }
+        tab.id = updatedPath;
+        tab.path = updatedPath;
+        tab.title = updatedPath.split('/').pop() || updatedPath;
+        changed = true;
       }
+    }
+    if (changed) {
       this.notify();
     }
   }

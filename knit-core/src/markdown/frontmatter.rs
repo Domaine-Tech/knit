@@ -14,8 +14,9 @@ pub struct FrontmatterDoc {
 /// Préserve rigoureusement le Markdown pur et l'intégrité des données sans reformater arbitrairement.
 pub fn parse_frontmatter(content: &str) -> FrontmatterDoc {
     let clean = content.strip_prefix('\u{feff}').unwrap_or(content);
+    let normalized = clean.replace("\r\n", "\n");
 
-    let trimmed_start = clean.trim_start();
+    let trimmed_start = normalized.trim_start();
     if !trimmed_start.starts_with("---") {
         return FrontmatterDoc {
             has_frontmatter: false,
@@ -27,7 +28,7 @@ pub fn parse_frontmatter(content: &str) -> FrontmatterDoc {
     }
 
     // On cherche la ligne de début `---` et la ligne de fin `---`
-    let mut lines = clean.split('\n');
+    let mut lines = normalized.split('\n');
     let first_line = lines.next();
     if first_line.map(|l| l.trim()) != Some("---") {
         return FrontmatterDoc {
@@ -110,18 +111,22 @@ pub fn parse_frontmatter(content: &str) -> FrontmatterDoc {
 /// et sans altérer le reste du corps Markdown.
 pub fn update_frontmatter_field(content: &str, target_key: &str, new_value: &str) -> String {
     let clean = content.strip_prefix('\u{feff}').unwrap_or(content);
+    let has_crlf = clean.contains("\r\n");
+    let line_delim = if has_crlf { "\r\n" } else { "\n" };
+    let normalized = clean.replace("\r\n", "\n");
 
-    let doc = parse_frontmatter(clean);
+    let doc = parse_frontmatter(&normalized);
     let target_key = target_key.trim();
 
     if !doc.has_frontmatter {
         // Si aucun frontmatter n'existe, on le crée en tête
-        let body = clean.strip_prefix('\n').unwrap_or(clean);
-        return format!("---\n{}: {}\n---\n\n{}", target_key, new_value, body);
+        let body = normalized.strip_prefix('\n').unwrap_or(&normalized);
+        let joined = format!("---\n{}: {}\n---\n\n{}", target_key, new_value, body);
+        return if has_crlf { joined.replace('\n', "\r\n") } else { joined };
     }
 
     // On parcourt les lignes originales jusqu'à la fermeture `---`
-    let lines: Vec<&str> = clean.split('\n').collect();
+    let lines: Vec<&str> = normalized.split('\n').collect();
     let mut end_fm_index = 0;
     let mut found_key_line = None;
 
@@ -147,7 +152,7 @@ pub fn update_frontmatter_field(content: &str, target_key: &str, new_value: &str
 
     let replacement_line = format!("{}: {}", target_key, new_value);
 
-    if let Some(key_idx) = found_key_line {
+    let updated_lines: Vec<String> = if let Some(key_idx) = found_key_line {
         // Remplacement en place en préservant l'indentation d'origine
         let original_line = lines[key_idx];
         let indent = original_line
@@ -157,13 +162,15 @@ pub fn update_frontmatter_field(content: &str, target_key: &str, new_value: &str
         let new_line = format!("{}{}: {}", indent, target_key, new_value);
         let mut new_lines: Vec<String> = lines.iter().map(|s| s.to_string()).collect();
         new_lines[key_idx] = new_line;
-        new_lines.join("\n")
+        new_lines
     } else {
         // Insertion juste avant le `---` fermant
         let mut new_lines: Vec<String> = lines.iter().map(|s| s.to_string()).collect();
         new_lines.insert(end_fm_index, replacement_line);
-        new_lines.join("\n")
-    }
+        new_lines
+    };
+
+    updated_lines.join(line_delim)
 }
 
 /// Récupère la valeur d'un champ du frontmatter si présent
@@ -247,5 +254,19 @@ Corps
         assert!(doc.has_frontmatter);
         assert_eq!(doc.fields.get("statut").unwrap(), "a-faire");
         assert!(doc.body.contains("# Sans frontmatter"));
+    }
+
+    #[test]
+    fn test_crlf_frontmatter_preservation() {
+        let content = "---\r\nid: task-crlf\r\nstatut: a-faire\r\n---\r\n\r\n# Titre CRLF\r\nContenu";
+        let doc = parse_frontmatter(content);
+        assert!(doc.has_frontmatter);
+        assert_eq!(doc.fields.get("statut").unwrap(), "a-faire");
+
+        let updated = update_frontmatter_field(content, "statut", "termine");
+        assert!(updated.contains("\r\n"));
+        let doc2 = parse_frontmatter(&updated);
+        assert_eq!(doc2.fields.get("statut").unwrap(), "termine");
+        assert!(updated.contains("# Titre CRLF"));
     }
 }

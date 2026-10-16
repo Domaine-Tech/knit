@@ -12,6 +12,7 @@ import { contextMenu } from '../../stores/contextMenuStore';
 import { vaultStore } from '../../stores/vaultStore';
 import type { FrontmatterDoc } from '../../stores/vaultStore';
 import { toast } from '../../stores/toastStore';
+import { tabStore } from '../../stores/tabStore';
 
 interface EditorProps {
   content: string;
@@ -35,6 +36,7 @@ export const Editor: React.FC<EditorProps> = ({
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [frontmatter, setFrontmatter] = useState<FrontmatterDoc | null>(null);
+  const [backlinks, setBacklinks] = useState<string[]>([]);
 
   useEffect(() => {
     onSaveRef.current = onSave;
@@ -47,6 +49,13 @@ export const Editor: React.FC<EditorProps> = ({
       setFrontmatter(fm);
     });
   }, [content]);
+
+  // Détection des backlinks (références entrantes vers cette note)
+  useEffect(() => {
+    vaultStore.getBacklinks(path).then((bl) => {
+      setBacklinks(bl);
+    });
+  }, [path, content]);
 
   useEffect(() => {
     if (!editorRef.current) return;
@@ -529,8 +538,8 @@ export const Editor: React.FC<EditorProps> = ({
         position: 'relative',
       }}
     >
-      {/* Barre d'en-tête Frontmatter YAML dynamique & interactive */}
-      {frontmatter?.has_frontmatter && (
+      {/* Barre d'en-tête Frontmatter YAML & Backlinks dynamique et interactive */}
+      {(frontmatter?.has_frontmatter || backlinks.length > 0) && (
         <div
           style={{
             padding: '6px 24px',
@@ -544,7 +553,7 @@ export const Editor: React.FC<EditorProps> = ({
             flexWrap: 'wrap',
           }}
         >
-          {frontmatter.fields['id'] && (
+          {frontmatter?.fields['id'] && (
             <span
               style={{
                 fontFamily: 'var(--knit-font-mono)',
@@ -558,7 +567,7 @@ export const Editor: React.FC<EditorProps> = ({
             </span>
           )}
 
-          {frontmatter.fields['statut'] && (
+          {frontmatter?.fields['statut'] && (
             <button
               onClick={handleCycleStatus}
               data-tooltip="Cliquer pour changer l'état"
@@ -589,7 +598,7 @@ export const Editor: React.FC<EditorProps> = ({
             </button>
           )}
 
-          {frontmatter.fields['priorite'] && (
+          {frontmatter?.fields['priorite'] && (
             <span
               style={{
                 padding: '2px 6px',
@@ -603,7 +612,7 @@ export const Editor: React.FC<EditorProps> = ({
             </span>
           )}
 
-          {frontmatter.fields['assigne'] && (
+          {frontmatter?.fields['assigne'] && (
             <span
               style={{
                 display: 'inline-flex',
@@ -633,7 +642,7 @@ export const Editor: React.FC<EditorProps> = ({
             </span>
           )}
 
-          {frontmatter.fields['tags'] && (
+          {frontmatter?.fields['tags'] && (
             <span
               style={{
                 color: 'var(--knit-text-muted)',
@@ -642,6 +651,50 @@ export const Editor: React.FC<EditorProps> = ({
             >
               🏷️ {frontmatter.fields['tags']}
             </span>
+          )}
+
+          {backlinks.length > 0 && (
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                marginLeft: 'auto',
+                fontSize: '11px',
+                color: 'var(--knit-text-muted)',
+              }}
+            >
+              <span>🔗 {backlinks.length} référence{backlinks.length > 1 ? 's' : ''} :</span>
+              {backlinks.slice(0, 3).map((bl) => {
+                const name = bl.split('/').pop()?.replace(/\.md$/, '') || bl;
+                return (
+                  <button
+                    key={bl}
+                    onClick={() => {
+                      vaultStore.readFile(bl).then((c) => {
+                        tabStore.openTab(bl, false, c);
+                      });
+                    }}
+                    data-tooltip={`Ouvrir "${bl}"`}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: '1px 6px',
+                      borderRadius: 'var(--knit-radius-xs)',
+                      backgroundColor: 'var(--knit-surface-hover)',
+                      color: 'var(--knit-primary)',
+                      cursor: 'pointer',
+                      fontSize: '11px',
+                      fontFamily: 'var(--knit-font-mono)',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {name}
+                  </button>
+                );
+              })}
+              {backlinks.length > 3 && <span>+{backlinks.length - 3}</span>}
+            </div>
           )}
         </div>
       )}

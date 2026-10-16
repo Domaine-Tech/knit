@@ -181,9 +181,9 @@ export const App: React.FC = () => {
   // Synchronise le titre de la barre de fenêtre avec la note active et la version du projet
   useEffect(() => {
     if (activeTab) {
-      document.title = `${activeTab.title}${activeTab.isDirty ? ' •' : ''} — Knit v0.1.0 (Sprint 1)`;
+      document.title = `${activeTab.title}${activeTab.isDirty ? ' •' : ''} — Knit v0.1.0 (Sprint 2)`;
     } else {
-      document.title = 'Knit — v0.1.0 (Sprint 1)';
+      document.title = 'Knit — v0.1.0 (Sprint 2)';
     }
   }, [activeTab]);
 

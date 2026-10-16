@@ -122,13 +122,21 @@ pub fn refactor_links_in_content(
             .map(|s| s.to_string_lossy().to_string())
             .unwrap_or_else(|| target_clean.clone());
 
-        let is_match = target_clean == norm_old
-            || target_clean == norm_old.strip_suffix(".md").unwrap_or(&norm_old)
-            || target_stem == old_stem;
+        let is_folder_rename = !norm_old.ends_with(".md") && !norm_old.contains('.');
+        let is_match = if is_folder_rename {
+            target_clean.starts_with(&format!("{}/", norm_old))
+        } else if target_clean.contains('/') {
+            target_clean == norm_old || target_clean == norm_old.strip_suffix(".md").unwrap_or(&norm_old)
+        } else {
+            target_stem == old_stem
+        };
 
         if is_match {
             links_count += 1;
-            let replacement_target = if target_clean.contains('/') {
+            let replacement_target = if is_folder_rename {
+                let suffix = &target_clean[norm_old.len() + 1..];
+                format!("{}/{}", norm_new, suffix)
+            } else if target_clean.contains('/') {
                 norm_new.strip_suffix(".md").unwrap_or(&norm_new).to_string()
             } else {
                 new_stem.clone()
@@ -143,11 +151,12 @@ pub fn refactor_links_in_content(
         }
     });
 
-    // 2. Détection & remplacement des liens Markdown : [Label](cible) ou ![Alt](cible)
-    let mdlink_re = regex::Regex::new(r"(!?\[[^\]]*\])\(([^)\s]+)\)").unwrap();
+    // 2. Détection & remplacement des liens Markdown : [Label](cible) ou ![Alt](cible) avec titre optionnel
+    let mdlink_re = regex::Regex::new(r#"(!?\[[^\]]*\])\(([^)\s]+)(?:\s+("[^"]*"|'[^']*'))?\)"#).unwrap();
     let final_content = mdlink_re.replace_all(&intermediate, |caps: &regex::Captures| {
         let label_part = caps.get(1).unwrap().as_str();
         let raw_target = caps.get(2).unwrap().as_str().trim();
+        let title_part = caps.get(3).map(|m| m.as_str());
 
         if raw_target.starts_with("http://")
             || raw_target.starts_with("https://")
@@ -164,14 +173,27 @@ pub fn refactor_links_in_content(
 
         let resolved = resolve_relative_target(current_file_rel, path_part);
 
-        if resolved == norm_old {
+        let is_folder_rename = !norm_old.ends_with(".md") && !norm_old.contains('.');
+        let is_direct_match = resolved == norm_old;
+        let is_subpath_match = is_folder_rename && resolved.starts_with(&format!("{}/", norm_old));
+
+        if is_direct_match || is_subpath_match {
             links_count += 1;
-            let new_rel = compute_relative_path(current_file_rel, &norm_new);
+            let target_for_rel = if is_subpath_match {
+                let suffix = &resolved[norm_old.len() + 1..];
+                format!("{}/{}", norm_new, suffix)
+            } else {
+                norm_new.clone()
+            };
+
+            let new_rel = compute_relative_path(current_file_rel, &target_for_rel);
             let final_link = match anchor_part {
                 Some(anchor) => format!("{new_rel}#{anchor}"),
                 None => new_rel,
             };
-            format!("{label_part}({final_link})")
+
+            let title_str = title_part.map(|t| format!(" {}", t)).unwrap_or_default();
+            format!("{label_part}({final_link}{title_str})")
         } else {
             caps.get(0).unwrap().as_str().to_string()
         }
@@ -357,5 +379,20 @@ WikiLink : [[archi]] et [[archi|Mon Archi]].
         assert!(updated.contains("[[architecture]]"));
         assert!(updated.contains("[[architecture|Mon Archi]]"));
         assert!(updated.contains("![Logo](assets/logo.png)")); // Inchangé
+    }
+
+    #[test]
+    fn test_refactor_folder_rename_and_titles() {
+        let content = r#"# Dossier
+Lien vers [Doc](wiki/guide.md "Guide officiel") et [[wiki/guide]].
+Lien vers [Autre](autre/note.md).
+"#;
+        let (updated, count) =
+            refactor_links_in_content(content, "accueil.md", "wiki", "documentation");
+
+        assert_eq!(count, 2);
+        assert!(updated.contains("[Doc](documentation/guide.md \"Guide officiel\")"));
+        assert!(updated.contains("[[documentation/guide]]"));
+        assert!(updated.contains("[Autre](autre/note.md)")); // Inchangé
     }
 }

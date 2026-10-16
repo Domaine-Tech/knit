@@ -23,6 +23,7 @@
     "allow-rename-vault-file",
     "allow-parse-frontmatter",
     "allow-update-frontmatter",
-    "allow-get-file-backlinks"
+    "allow-get-file-backlinks",
+    "allow-recover-vault-trash"
   ]
 }

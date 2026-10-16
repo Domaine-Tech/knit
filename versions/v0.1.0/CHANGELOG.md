@@ -22,21 +22,26 @@
   - Intégration de Yjs (`y-codemirror.next`).
   - File watcher Rust ultra-rapide basé sur `notify`.
   - Triple garde anti-boucle infinie (flag `isWriting`, hash XXH3, debounce 100ms).
-- **Frontmatter YAML** : Détection, parsing et préservation transparente des métadonnées.
-- **Refactoring Automatique des Liens (Auto-Link Update)** : Déplacer ou renommer une note ou une image met à jour instantanément tous les liens relatifs et WikiLinks du coffre pour bannir les liens brisés.
-- **Suppression Réversible & Sécurisée (Corbeille OS & Undo)** : Suppression directe et fluide depuis le menu contextuel de la sidebar, envoi dans la Corbeille native de l'OS (Windows, macOS, Linux via crate `trash`), toast avec bouton « Annuler » (8s) et annulation globale instantanée avec `Ctrl+Z` (`historyStore`).
+- **Frontmatter YAML** : Détection, parsing et préservation transparente des métadonnées (LF et CRLF préservés).
+- **Refactoring Automatique des Liens (Auto-Link Update)** : Déplacer ou renommer une note, un dossier ou une image met à jour instantanément tous les liens relatifs et WikiLinks du coffre pour bannir les liens brisés, tout en conservant les titres de liens (`"titre"`).
+- **Suppression Réversible & Sécurisée (Corbeille OS & Undo)** : Suppression directe et fluide depuis le menu contextuel de la sidebar, envoi vers la Corbeille native de l'OS (Windows, macOS, Linux via crate `trash`), toast avec bouton « Annuler » (8s) et annulation globale instantanée avec `Ctrl+Z` (`historyStore`).
+- **Restauration Native & Auto-Recovery (B-012b)** : Le commit différé vers la Corbeille OS s'effectue depuis l'emplacement d'origine dans le coffre, assurant qu'une restauration native depuis la Corbeille du système restitue le fichier à sa place originale. Détection et restauration automatique des éléments orphelins au chargement du coffre.
+- **Détection des Backlinks** : Exploration des références entrantes dans le coffre et affichage dynamique de badges cliquables dans l'en-tête de l'éditeur.
 
 ---
 
 ## 🐛 Corrections
 
-- *(Prévues au fil des tests d'intégration du Sprint 2)*
+- Résolution de la restauration native depuis la Corbeille de l'OS vers le dossier temporaire `.knit/trash/`.
+- Prise en charge du renommage récursif des sous-dossiers dans le recalcul des liens et la mise à jour des onglets ouverts.
+- Élimination des réécritures disque redondantes lors de la réception des événements de synchronisation externe.
+- Prise en charge des sauts de ligne Windows (`\r\n`) sans altération du formattage dans le parseur de frontmatter YAML.
 
 ---
 
 ## ⚠️ Points d'attention / Limitations connues
 
-- **Restauration Corbeille OS** : La mise en staging dans `.knit/trash/` permet une annulation réactive fluide (`Ctrl+Z`, toast Undo), mais une restauration déclenchée directement depuis la corbeille native de l'OS (Recycle Bin) replace l'élément dans `.knit/trash/...` au lieu de son chemin d'origine. Système de staging et restauration à revoir/affiner.
+- Aucune limitation bloquante restante sur le périmètre de l'Éditeur Local et du File Watcher (Sprint 1 & Sprint 2 achevés à 100%).
 
 ---
 

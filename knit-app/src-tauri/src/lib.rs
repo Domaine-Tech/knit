@@ -26,6 +26,7 @@ pub fn run() {
             parse_frontmatter,
             update_frontmatter,
             get_file_backlinks,
+            recover_vault_trash,
         ])
         .run(tauri::generate_context!())
         .expect("Erreur lors de l'exécution de l'application Knit Tauri");

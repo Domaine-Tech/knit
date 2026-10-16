@@ -3,6 +3,7 @@ import { listen } from '@tauri-apps/api/event';
 import type { UnlistenFn } from '@tauri-apps/api/event';
 import { toast } from './toastStore';
 import { crdtManager } from '../crdt/crdtManager';
+import { tabStore } from './tabStore';
 
 export interface FileNode {
   id: string;
@@ -250,6 +251,15 @@ class VaultStore {
     // Initialisation ou redémarrage du watcher FS natif
     await this.setupWatcher(path);
     await this.reloadTree();
+
+    // Récupération des éléments orphelins de corbeille (restauration OS vers .knit/trash)
+    const recovered = await this.recoverTrash();
+    if (recovered.length > 0) {
+      toast.success(
+        'Corbeille synchronisée',
+        `${recovered.length} note(s) restaurée(s) : ${recovered.join(', ')}`
+      );
+    }
   }
 
   private async setupWatcher(path: string) {
@@ -262,6 +272,8 @@ class VaultStore {
     if (!isTauriEnvironment()) return;
 
     try {
+      // Arrêt préventif de tout watcher précédent
+      await invoke('stop_vault_watcher').catch(() => {});
       await invoke('start_vault_watcher', { vaultPath: path });
 
       const u1 = await listen<{ path: string; content: string }>(
@@ -278,6 +290,13 @@ class VaultStore {
               'Synchronisation externe',
               `Fichier "${fileName}" mis à jour par un agent externe`
             );
+
+            // Mettre à jour l'onglet correspondant et le marquer comme propre
+            const tab = tabStore.tabs.find((t) => t.path === relPath);
+            if (tab) {
+              tab.content = content;
+              tab.isDirty = false;
+            }
           }
           this.notify();
         }
@@ -287,6 +306,13 @@ class VaultStore {
         const { path: relPath } = event.payload;
         delete this.localContents[relPath];
         crdtManager.removeDoc(relPath);
+
+        const fileName = relPath.split('/').pop() || relPath;
+        const tab = tabStore.tabs.find((t) => t.path === relPath);
+        if (tab) {
+          toast.info('Fichier supprimé', `Le fichier "${fileName}" a été supprimé du disque`);
+        }
+
         this.reloadTree();
       });
 
@@ -348,6 +374,11 @@ class VaultStore {
   public async writeFile(relPath: string, content: string): Promise<void> {
     if (!this.currentVaultPath) {
       throw new Error('Aucun coffre-fort ouvert');
+    }
+
+    // Évite toute écriture FS redondante si le contenu est déjà identique
+    if (this.localContents[relPath] === content) {
+      return;
     }
 
     this.localContents[relPath] = content;
@@ -521,6 +552,21 @@ class VaultStore {
     }
   }
 
+  public async recoverTrash(): Promise<string[]> {
+    if (!this.currentVaultPath || !isTauriEnvironment()) return [];
+    try {
+      const recovered = await invoke<string[]>('recover_vault_trash', {
+        vaultPath: this.currentVaultPath,
+      });
+      if (recovered && recovered.length > 0) {
+        await this.reloadTree();
+      }
+      return recovered || [];
+    } catch {
+      return [];
+    }
+  }
+
   public async deletePath(relPath: string): Promise<void> {
     if (!this.currentVaultPath) {
       throw new Error('Aucun coffre-fort ouvert');
@@ -581,12 +627,59 @@ class VaultStore {
   public async updateFrontmatter(content: string, key: string, value: string): Promise<string> {
     if (!isTauriEnvironment()) {
       if (content.startsWith('---')) {
-        return content.replace(new RegExp(`(${key}\\s*:\\s*)([^\\n]+)`), `$1${value}`);
+        const regex = new RegExp(`(${key}\\s*:\\s*)([^\\n]+)`);
+        if (regex.test(content)) {
+          return content.replace(regex, `$1${value}`);
+        }
+        // Clé non existante dans le frontmatter : insérer avant le --- fermant
+        const parts = content.split('\n');
+        let secondDashIdx = -1;
+        for (let i = 1; i < parts.length; i++) {
+          if (parts[i].trim() === '---') {
+            secondDashIdx = i;
+            break;
+          }
+        }
+        if (secondDashIdx !== -1) {
+          parts.splice(secondDashIdx, 0, `${key}: ${value}`);
+          return parts.join('\n');
+        }
       }
       return `---\n${key}: ${value}\n---\n\n${content}`;
     }
 
     return await invoke<string>('update_frontmatter', { content, key, value });
+  }
+
+  public async getBacklinks(relPath: string): Promise<string[]> {
+    if (!this.currentVaultPath) return [];
+
+    if (!isTauriEnvironment()) {
+      const targetStem = relPath.split('/').pop()?.replace(/\.md$/, '') || '';
+      const backlinks: string[] = [];
+      for (const [p, c] of Object.entries(this.localContents)) {
+        if (p === relPath) continue;
+        if (
+          c.includes(`(${relPath})`) ||
+          c.includes(`[[${targetStem}]]`) ||
+          c.includes(`[[${relPath}]]`) ||
+          c.includes(`[[${targetStem}|`)
+        ) {
+          backlinks.push(p);
+        }
+      }
+      return backlinks;
+    }
+
+    try {
+      return await invoke<string[]>('get_file_backlinks', {
+        vaultPath: this.currentVaultPath,
+        relPath,
+      });
+    } catch (err: unknown) {
+      console.warn('Erreur récupération backlinks :', err);
+      return [];
+    }
   }
 
   public getAbsolutePath(relPath: string = ''): string {

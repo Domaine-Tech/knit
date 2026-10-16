@@ -324,6 +324,9 @@ pub fn restore_trash_path(vault_root: &Path, trash_id: &str) -> Result<String> {
 }
 
 /// Envoie un élément de la corbeille locale vers la corbeille du système d'exploitation
+/// Déplace d'abord l'élément à son emplacement d'origine dans le coffre avant d'appeler
+/// `trash::delete`, garantissant ainsi qu'une restauration native depuis la Corbeille de l'OS
+/// (Windows Recycle Bin, Corbeille macOS / Linux) réintègre le fichier à son chemin d'origine exact.
 pub fn commit_trash_to_os(vault_root: &Path, trash_id: &str) -> Result<()> {
     let trash_container = vault_root.join(".knit").join("trash").join(trash_id);
     if !trash_container.exists() {
@@ -336,16 +339,43 @@ pub fn commit_trash_to_os(vault_root: &Path, trash_id: &str) -> Result<()> {
             if let Ok(record) = serde_json::from_str::<TrashRecord>(&meta_content) {
                 let staged_item = trash_container.join(&record.item_name);
                 if staged_item.exists() {
-                    // Envoi vers la corbeille de l'OS via la crate `trash`
+                    let original_target = resolve_safe_path(vault_root, &record.original_rel_path);
+
+                    if let Ok(target) = original_target {
+                        if !target.exists() {
+                            if let Some(parent) = target.parent() {
+                                let _ = fs::create_dir_all(parent);
+                            }
+
+                            // Déplacement atomique vers son chemin d'origine avant suppression OS
+                            if fs::rename(&staged_item, &target).is_ok() {
+                                match trash::delete(&target) {
+                                    Ok(()) => {
+                                        let _ = fs::remove_dir_all(&trash_container);
+                                        return Ok(());
+                                    }
+                                    Err(e) => {
+                                        // En cas d'échec de la corbeille OS (volume réseau / amovible),
+                                        // on sécurise à nouveau le fichier dans .knit/trash/
+                                        let _ = fs::rename(&target, &staged_item);
+                                        eprintln!(
+                                            "trash::delete impossible sur ce volume ({}), fichier conservé dans .knit/trash/",
+                                            e
+                                        );
+                                        return Ok(());
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Si l'emplacement d'origine est déjà occupé ou si le renommage échoue,
+                    // suppression directe depuis la corbeille locale
                     match trash::delete(&staged_item) {
                         Ok(()) => {
-                            // Déplacement vers la corbeille OS réussi : on nettoie le dossier conteneur
                             let _ = fs::remove_dir_all(&trash_container);
                         }
                         Err(e) => {
-                            // Si la corbeille de l'OS n'est pas disponible sur ce volume (ex: lecteur
-                            // réseau, dossier Nextcloud synchronisé, clé USB), on CONSERVE le fichier
-                            // dans .knit/trash/ pour ne JAMAIS détruire les données par mégarde.
                             eprintln!(
                                 "trash::delete impossible sur ce volume ({}), fichier conservé dans .knit/trash/",
                                 e
@@ -360,6 +390,58 @@ pub fn commit_trash_to_os(vault_root: &Path, trash_id: &str) -> Result<()> {
 
     let _ = fs::remove_dir_all(&trash_container);
     Ok(())
+}
+
+/// Analyse le dossier `.knit/trash/` pour récupérer d'éventuels éléments orphelins
+/// (par exemple suite à une restauration manuelle depuis la corbeille de l'OS ayant replacé
+/// le fichier dans `.knit/trash/`, ou une coupure de l'application pendant le délai d'annulation).
+pub fn recover_orphaned_trash(vault_root: &Path) -> Result<Vec<String>> {
+    let mut recovered = Vec::new();
+    let trash_dir = vault_root.join(".knit").join("trash");
+    if !trash_dir.exists() || !trash_dir.is_dir() {
+        return Ok(recovered);
+    }
+
+    let entries = match fs::read_dir(&trash_dir) {
+        Ok(rd) => rd,
+        Err(_) => return Ok(recovered),
+    };
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if !path.is_dir() {
+            continue;
+        }
+
+        let meta_path = path.join("meta.json");
+        if !meta_path.exists() {
+            continue;
+        }
+
+        if let Ok(meta_content) = fs::read_to_string(&meta_path) {
+            if let Ok(record) = serde_json::from_str::<TrashRecord>(&meta_content) {
+                let staged_item = path.join(&record.item_name);
+                if staged_item.exists() {
+                    if let Ok(target) = resolve_safe_path(vault_root, &record.original_rel_path) {
+                        if !target.exists() {
+                            if let Some(parent) = target.parent() {
+                                let _ = fs::create_dir_all(parent);
+                            }
+                            if fs::rename(&staged_item, &target).is_ok() {
+                                recovered.push(record.original_rel_path);
+                                let _ = fs::remove_dir_all(&path);
+                            }
+                        }
+                    }
+                } else {
+                    // Staged item absent : conteneur vide à nettoyer
+                    let _ = fs::remove_dir_all(&path);
+                }
+            }
+        }
+    }
+
+    Ok(recovered)
 }
 
 fn copy_dir_all(src: &Path, dst: &Path) -> Result<()> {

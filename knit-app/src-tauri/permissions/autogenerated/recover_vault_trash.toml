@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-recover-vault-trash"
+description = "Enables the recover_vault_trash command without any pre-configured scope."
+commands.allow = ["recover_vault_trash"]
+
+[[permission]]
+identifier = "deny-recover-vault-trash"
+description = "Denies the recover_vault_trash command without any pre-configured scope."
+commands.deny = ["recover_vault_trash"]

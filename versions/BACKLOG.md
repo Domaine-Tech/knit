@@ -3,7 +3,7 @@
 > Ce fichier est la source de vérité pour toutes les tâches du projet.
 > Il peut être modifié **à tout moment**, y compris en milieu de sprint.
 >
-> Dernière mise à jour : 2026-10-15
+> Dernière mise à jour : 2026-10-16
 
 ---
 
@@ -53,7 +53,7 @@
 | B-011b | Refactoring automatique des liens (mise à jour auto lors du déplacement/renommage) | 🔴 | ✅ | Sprint 2 |
 | B-012 | Test d'intégration : modifier un `.md` dans Cursor → mise à jour dans Knit | 🟠 | ✅ | Sprint 2 |
 | B-012a | Suppression réversible dans la Corbeille de l'OS (Win/Mac/Linux) & Undo | 🟠 | ✅ | Sprint 2 |
-| B-012b | Revoir le staging `.knit/trash` & Ctrl+Z (restauration OS native vers `.knit/trash` au lieu du chemin d'origine) | 🟠 | 📋 | Sprint 2 (À revoir) |
+| B-012b | Résoudre le staging `.knit/trash` & restauration OS native préservant le chemin d'origine | 🟠 | ✅ | Sprint 2 |
 
 ---
 

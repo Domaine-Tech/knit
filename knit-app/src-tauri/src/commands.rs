@@ -98,6 +98,12 @@ pub async fn commit_vault_trash(
 }
 
 #[tauri::command]
+pub async fn recover_vault_trash(vault_path: String) -> Result<Vec<String>, String> {
+    let path = Path::new(&vault_path);
+    vault::recover_orphaned_trash(path).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub async fn pick_vault_folder(app: tauri::AppHandle) -> Result<Option<String>, String> {
     let folder = app.dialog().file().blocking_pick_folder();
     match folder {

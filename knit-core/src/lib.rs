@@ -12,8 +12,8 @@ pub use markdown::{
 pub use vault::assets::save_asset;
 pub use vault::tree::{
     commit_trash_to_os, create_dir, create_file, delete_path, read_file_content, read_vault_tree,
-    rename_file_and_refactor, resolve_safe_path, restore_trash_path, trash_path, FileNode,
-    TrashRecord, write_file_content, write_file_content_with_guard,
+    recover_orphaned_trash, rename_file_and_refactor, resolve_safe_path, restore_trash_path,
+    trash_path, FileNode, TrashRecord, write_file_content, write_file_content_with_guard,
 };
 pub use watcher::guard::WriteGuard;
 pub use watcher::service::{VaultWatchEvent, VaultWatcher};
@@ -93,9 +93,16 @@ mod tests {
         let content = vault::tree::read_file_content(vault_root, "temporaire.md").expect("read after restore");
         assert_eq!(content, "# A supprimer");
 
-        // 3. Déplacer à nouveau et commit vers l'OS
+        // 3. Déplacer à nouveau et tester la récupération automatique des orphelins
         let record2 = vault::tree::trash_path(vault_root, "temporaire.md").expect("trash_path again");
-        vault::tree::commit_trash_to_os(vault_root, &record2.trash_id).expect("commit_trash");
+        assert!(!vault_root.join("temporaire.md").exists());
+        let recovered = vault::tree::recover_orphaned_trash(vault_root).expect("recover_orphaned");
+        assert_eq!(recovered, vec!["temporaire.md".to_string()]);
+        assert!(vault_root.join("temporaire.md").exists());
+
+        // 4. Déplacer et commit vers l'OS
+        let record3 = vault::tree::trash_path(vault_root, "temporaire.md").expect("trash_path 3");
+        vault::tree::commit_trash_to_os(vault_root, &record3.trash_id).expect("commit_trash");
         assert!(!vault_root.join("temporaire.md").exists());
     }
 
