@@ -133,6 +133,23 @@ Knit intègre un système multi-onglets ultra-rapide respectant **100% des conve
 - **Indicateur de modifications / Présence** :
   - Si un collaborateur ou un agent IA édite ce document en arrière-plan : petite pastille de couleur miniature discrète sur le bord de l'onglet.
 
+### 4. Doc-Driven Views & TabBar Universelle Permanente
+Knit rompt avec l'ergonomie rigide où l'utilisateur doit changer manuellement de vue :
+- **TabBar Permanente** : La barre d'onglets reste visible et active en permanence, que le document actif soit une Note Markdown, un Tableau Kanban ou une Vue Table.
+- **Icônes Dynamiques par Document** : Chaque onglet affiche un pictogramme Reicon correspondant au type de document (`file-markdown`, `kanban`, ou `table`).
+- **Navigation Zéro Clic** : Cliquer sur un fichier dans l'explorateur ou changer d'onglet résout instantanément la vue configurée dans le Frontmatter YAML (`type: kanban`, `type: table`, `type: note`).
+- **Bouton Universel Source `</>` ↔ Rendu** : Dans l'en-tête de chaque onglet, un bouton sobre `[Code Source </>]` (raccourci `Ctrl+E` ou `Ctrl+/`) permet de basculer instantanément entre la représentation visuelle (Kanban interactif, Tableau filtrable, Live Preview) et l'éditeur de texte brut CodeMirror 6.
+
+### 5. Menus Contextuels de Conversion de Document
+Accessible par clic droit sur un fichier (arbre `TreeNode`) ou sur un onglet (`TabBar`) :
+```
+Changer le type de vue ▸
+  📝 Note Markdown classique
+  📋 Tableau Kanban
+  📊 Vue Tableau récapitulatif
+```
+La sélection réécrit le Frontmatter YAML sans altérer le contenu ni le texte libre, avec historique annulable (`Ctrl+Z`).
+
 ---
 
 ## 🔍 Recherche & Système de Tags (Navigation & Découverte)

@@ -15,6 +15,11 @@
 - **Ergonomie de saisie fluide (Inspiration Notion)** :
   - **Menu Slash Command (`/`)** : Insertion rapide de blocs sans lever les mains du clavier (`/titre`, `/tache`, `/mermaid`, `/callout`).
   - **Callouts GFM stylisés** : Rendu sobre et élégant des alertes (`> [!NOTE]`, `> [!TIP]`, etc.).
+- **Architecture "Doc-Driven Views" (Vues pilotées par le document)** :
+  - **Résolution automatique de la vue** : chaque document déclare son type via son Frontmatter YAML (`type: kanban`, `type: table`, `type: note`). Ouvrir un document ou changer d'onglet affiche instantanément la vue correspondante sans manipulation manuelle.
+  - **TabBar universelle permanente** : la barre d'onglets reste accessible et interactive sur toutes les vues (Kanban, Tableau, Note), avec icône dynamique par type de document (`kanban`, `table`, `file-markdown`).
+  - **Menu contextuel de conversion de type** : clic droit sur un fichier (arbre) ou sur un onglet pour convertir sans perte de données entre Note Markdown, Tableau Kanban et Vue Tableau.
+  - **Bouton universel Source `</>` ↔ Rendu** : bascule instantanée entre la vue visuelle riche et le code source Markdown brut dans CodeMirror 6 sur chaque onglet.
 - **Tableaux Kanban 100% Fichiers Markdown (`type: kanban`)** :
   - Chaque fichier Markdown peut devenir son propre tableau Kanban dédié (un Kanban par projet, un Kanban perso, un Kanban d'équipe).
   - Nombre de colonnes illimité et personnalisable (`+ Ajouter une colonne`), chaque colonne correspondant à un titre `##`.

@@ -104,7 +104,11 @@ Testez l'application en respectant les standards universels intégrés au Sprint
 | Raccourci | Action |
 |---|---|
 | `Ctrl + S` | Sauvegarder la note active sur le disque. |
-| `Ctrl + F` | Ouvrir la barre de recherche dans l'éditeur CodeMirror 6. |
+| `Ctrl + O` | **Quick Switcher** : Sauter instantanément à n'importe quelle note (< 10ms). |
+| `Ctrl + P` | **Palette de commandes** : Exécuter toutes les actions sans la souris. |
+| `Ctrl + Shift + F` | **Recherche globale** : Recherche plein-texte dans tout le coffre avec snippets. |
+| `Ctrl + Shift + K` | **Bascule Kanban** : Ouvrir la vue Kanban du projet. |
+| `Ctrl + F` | Ouvrir la barre de recherche locale dans l'éditeur CodeMirror 6. |
 | `Ctrl + H` | Ouvrir la boîte de remplacement dans l'éditeur. |
 | `Ctrl + W` | Fermer l'onglet actif. |
 | `Ctrl + Shift + T` | Rouvrir le dernier onglet fermé (historique). |
@@ -113,6 +117,9 @@ Testez l'application en respectant les standards universels intégrés au Sprint
 | `Ctrl + 1` à `Ctrl + 8` | Sauter directement à l'onglet 1 à 8. |
 | `Ctrl + 9` | Sauter au dernier onglet de la barre. |
 | `Ctrl + N` | Créer une nouvelle note Markdown. |
+| `Ctrl + Z` | Annuler la dernière action (suppression de note, déplacement, édition). |
+| `[[` | Autocomplétion intelligente des **WikiLinks**. |
+| `#` | Autocomplétion intelligente des **Tags** du coffre. |
 
 ---
 

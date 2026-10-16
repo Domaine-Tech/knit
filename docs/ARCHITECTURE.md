@@ -143,6 +143,39 @@ knit/
 
 ---
 
+## 📑 Architecture "Doc-Driven Views" (Vues Déclarées dans le Document)
+
+Plutôt que d'imposer un mode d'affichage global déconnecté des fichiers, Knit utilise un modèle de **résolution de vue piloté par le document** (*Doc-Driven Views*) :
+
+```mermaid
+graph TD
+    DOC["📄 Document Markdown<br/>(frontmatter YAML)"] --> RESOLVE{"🔍 Résolveur de Vue<br/>(type: ...)"}
+    RESOLVE -->|"type: kanban"| KB["📋 Vue Kanban<br/>(Colonnes ##, Cartes - [ ])"]
+    RESOLVE -->|"type: table"| TB["📊 Vue Tableau<br/>(Filtres, Tri, Colonnes)"]
+    RESOLVE -->|"type: note / défaut"| ED["📝 Éditeur CodeMirror 6<br/>(Live Preview, Mermaid)"]
+
+    KB <-->|"Bouton Universel [</>]"| RAW["💻 Source Markdown brute"]
+    TB <-->|"Bouton Universel [</>]"| RAW
+    ED <-->|"Bouton Universel [</>]"| RAW
+```
+
+### 1. Résolution & Cycle de vie par Onglet (`Tab`)
+- Chaque onglet (`Tab`) dans `tabStore` possède son type de vue résolu (`viewMode: 'editor' | 'kanban' | 'table'`) et son flag d'affichage brut `isRawSource`.
+- La barre d'onglets (`TabBar`) est **universelle et permanente** : elle reste affichée en haut de l'espace de travail quel que soit le type de vue active.
+- L'icône de l'onglet et de l'arbre s'adapte dynamiquement au type déclaré (`file-markdown`, `kanban`, `table`).
+
+### 2. Conversions Non-Destructives
+- La modification du type de vue via le menu contextuel (clic droit explorateur, onglet ou toolbar) met à jour la clé `type:` dans le Frontmatter YAML via la commande `update_frontmatter_field`.
+- La conversion d'une note en Kanban préserve les sections `##` comme colonnes ou initialise 3 colonnes standards (`À faire`, `En cours`, `Terminé`) sans aucune perte de texte libre.
+
+### 3. Architecture d'Interception Inline (CodeMirror 6 WidgetType)
+Le moteur d'interception de blocs de code dans l'éditeur CodeMirror 6 utilise des décorations `WidgetType` réactives :
+- **Blocs Mermaid** (Sprint 6) : ```` ```mermaid ```` → rendu en SVG vectoriel interactif inline avec debounce 300ms.
+- **Blocs Dynamiques & Requêtes** (Sprint 6bis) : ```` ```knit-files ````, ```` ```knit-query ````, ```` ```knit-toc ````, ```` ```knit-tasks ```` → interrogent l'index en mémoire de `vaultStore` et projettent une table, une liste ou un sommaire en temps réel sans altérer le disque.
+- En mode Source `</>`, le bloc de code brut redevient directement modifiable en texte simple.
+
+---
+
 ## 🔗 Refactoring Automatique des Liens (Auto-Link Refactoring)
 
 Lorsqu'un fichier ou un sous-dossier est déplacé ou renommé (par exemple `wiki/archi.md` déplacé vers `wiki/core/architecture.md`), **aucun lien ne doit être cassé**.

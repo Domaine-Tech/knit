@@ -45,7 +45,7 @@ knit/
 - **`.knit/`** : Dossier local technique (clés privées, cache, snapshots CRDT). Ne JAMAIS le versionner ou le modifier sans précaution.
 - **`.knitshare`** : Fichier partagé du coffre (conventions d'équipe, nom du coffre). Doit être versionné et synchronisé.
 - **`assets/`** : Répertoire dédié aux images et pièces jointes binaires (synchronisées via Iroh Blobs).
-- **Frontmatters YAML** : Préserver scrupuleusement la structure des métadonnées `---` en tête de fichier `.md` (champs `statut:`, `priorite:`, etc.).
+- **Frontmatters YAML & Doc-Driven Views** : Préserver scrupuleusement la structure des métadonnées `---` en tête de fichier `.md` (champs `type:`, `statut:`, `priorite:`, etc.) selon la spécification [docs/MARKDOWN_SPEC.md](file:///home/sublix/Workspace/04_Perso_OpenSource/knit/docs/MARKDOWN_SPEC.md). La vue est toujours pilotée par le document et résolue par onglet.
 
 ## Règles pour les agents IA
 
@@ -58,5 +58,6 @@ knit/
 7. **Menus contextuels applicatifs centralisés** : Le clic droit webview natif est proscrit. Pour toute nouvelle interface ou modification d'écran dans `knit-app`, alimenter systématiquement le menu contextuel centralisé (`contextMenuStore.show`) avec les actions clés (copie de chemins relatifs et absolus, liens Markdown, manipulation de fichiers/onglets, révélation).
 8. **Formulaires centralisés & robustesse clic molette** : Styliser tous les composants via `src/theme/forms.css` et tokens Knit. Sur clic molette (`button === 1`), neutraliser la boussole de défilement dans `onMouseDown` (`e.preventDefault()`) et placer l'action métier exclusivement dans `onAuxClick`.
 9. **Tooltips modernes & lisibilité des icônes** : Proscrire les tooltips natifs de l'OS au profit du composant `<Tooltip>` ou des attributs `data-tooltip` et `data-shortcut` (interceptés par `TooltipContainer`). Garantir un tracé net (`strokeWidth >= 40`) pour les icônes `DuotoneIcon` à 14px.
+10. **Architecture Doc-Driven Views & TabBar permanente** : Ne jamais forcer un changement de vue global à l'application. La vue (`editor`, `kanban`, `table`) doit être résolue par onglet selon le `type:` du document ou la bascule Source `</>`. La TabBar doit rester visible sur toutes les vues.
 
 

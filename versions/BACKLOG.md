@@ -103,34 +103,48 @@
 | B-026b | WikiLinks bidirectionnels `[[Note]]` avec autocomplétion (Obsidian) | 🟠 | ✅ | Sprint 5 |
 | B-026c | Système de Tags (`#inline` et `tags: [...]` en frontmatter, volet de filtres) | 🟠 | ✅ | Sprint 5 |
 
-### Sprint 6 — Mermaid, Slash Command & Polish Éditeur
+### Sprint 6 — Doc-Driven Views, Mermaid Inline & Polish Éditeur
 
 | # | Tâche | Priorité | Statut | Sprint |
 |---|---|---|---|---|
+| B-026d | Architecture "Doc-Driven Views" (résolution auto par onglet via `type: ...`, élimination vue globale rigide) | 🔴 | 📋 | Sprint 6 |
+| B-026e | TabBar universelle persistante (visible sur toutes les vues, icônes dynamiques par type de doc) | 🔴 | 📋 | Sprint 6 |
+| B-026f | Menus contextuels de conversion de type de document (TreeNode, TabBar, Toolbar avec mise à jour YAML) | 🟠 | 📋 | Sprint 6 |
+| B-030d | Bouton Source universel (`</>` ↔ Rendu) & Déclencheurs de création (TabBar `+`, Slash `/kanban`) | 🟠 | 📋 | Sprint 6 |
 | B-027 | Rendu Mermaid inline dans n'importe quel fichier `.md` classique (WidgetType CodeMirror 6) | 🔴 | 📋 | Sprint 6 |
 | B-028 | Coloration syntaxique Mermaid (`codemirror-lang-mermaid`) | 🟠 | 📋 | Sprint 6 |
-| B-029 | Thème Mermaid synchronisé avec `--knit-hue` | 🟡 | 📋 | Sprint 6 |
-| B-030 | Mode code ↔ rendu (clic sur le diagramme pour éditer) | 🟠 | 📋 | Sprint 6 |
+| B-029 | Thème Mermaid synchronisé avec `--knit-hue` et mode sombre | 🟡 | 📋 | Sprint 6 |
+| B-030 | Mode interactif code ↔ rendu (clic sur le diagramme pour éditer la source) | 🟠 | 📋 | Sprint 6 |
+| B-031 | Optimisation de rendu : debounce 300ms et cache SVG pour éviter les saccades | 🟡 | 📋 | Sprint 6 |
 | B-030a | Menu Slash Command (`/`) & Callouts GFM (`> [!NOTE]`) (Notion) | 🟠 | 📋 | Sprint 6 |
-| B-030b | Multi-onglets & Split View (`Ctrl+\`) (Obsidian) | 🟡 | 📋 | Sprint 6 |
+| B-030b | Multi-onglets & Split View (`Ctrl+\`) avec synchronisation d'état indépendante (Obsidian) | 🟡 | 📋 | Sprint 6 |
 | B-030c | Mode Live Preview (style Obsidian : masquer balises Markdown hors curseur) | 🔴 | 📋 | Sprint 6 |
-| B-030d | Bouton Source universel (`</>` ↔ Rendu) & Déclencheurs de création (TabBar `+`, Slash `/kanban`) | 🟠 | 📋 | Sprint 6 |
-| B-031 | Debounce 300ms sur le rendu Mermaid | 🟡 | 📋 | Sprint 6 |
 
 ---
 
-## v0.4.0 — Vues Visuelles Avancées
+## v0.4.0 — Requêtes Dynamiques & Vues Visuelles Avancées
 
-> Enrichir le coffre de formats visuels immersifs basés sur les fichiers Markdown déclarés (`type: ...`).
+> Enrichir le coffre de blocs dynamiques interactifs (style Dataview/Notion Rollup) et de formats visuels immersifs déclarés (`type: ...`).
 
-### Sprint 6bis — Canvas, Calendrier & Diaporama
+### Sprint 6bis — Moteur Dataview & Blocs Dynamiques
 
 | # | Tâche | Priorité | Statut | Sprint |
 |---|---|---|---|---|
-| B-031a | Vue Calendrier / Journal (`type: calendar` ou `type: journal`, vue mensuelle/hebdomadaire) | 🟠 | 📋 | Sprint 6bis |
-| B-031b | Vue Canvas / Tableau Blanc infini (`type: canvas`, cartes déplaçables & connecteurs fléchés) | 🔴 | 📋 | Sprint 6bis |
-| B-031c | Vue Diaporama / Présentation (`type: slides`, séparateur `---`, mode plein écran) | 🟡 | 📋 | Sprint 6bis |
-| B-031d | Vue Galerie / Database (`type: gallery`, cartes visuelles avec bannière et métadonnées) | 🟡 | 📋 | Sprint 6bis |
+| B-031e | Moteur de requêtes Frontmatter & Indexation locale en mémoire (`vaultStore.queryFiles()`) | 🔴 | 📋 | Sprint 6bis |
+| B-031f | Bloc dynamique `knit-files` : index automatique d'un dossier (fichiers, icônes, date de mise à jour) | 🟠 | 📋 | Sprint 6bis |
+| B-031g | Bloc dynamique `knit-query` : tableaux et listes filtrables style Dataview (`from`, `where`, `columns`) | 🔴 | 📋 | Sprint 6bis |
+| B-031h | Bloc dynamique `knit-toc` : sommaire automatique cliquable de la note courante basé sur les titres | 🟠 | 📋 | Sprint 6bis |
+| B-031i | Bloc dynamique `knit-tasks` : agrégateur transversal de cases à cocher `- [ ]` synchronisé via CRDT | 🟠 | 📋 | Sprint 6bis |
+| B-031j | Déclencheurs Slash command (`/sommaire`, `/fichiers`, `/requete`, `/taches-globales`) | 🟡 | 📋 | Sprint 6bis |
+
+### Sprint 6ter — Vues Immersives (Canvas, Calendrier & Diaporama)
+
+| # | Tâche | Priorité | Statut | Sprint |
+|---|---|---|---|---|
+| B-031a | Vue Calendrier / Journal (`type: calendar` ou `type: journal`, vue mensuelle/hebdomadaire) | 🟠 | 📋 | Sprint 6ter |
+| B-031b | Vue Canvas / Tableau Blanc infini (`type: canvas`, cartes déplaçables & connecteurs fléchés) | 🔴 | 📋 | Sprint 6ter |
+| B-031c | Vue Diaporama / Présentation (`type: slides`, séparateur `---`, mode plein écran) | 🟡 | 📋 | Sprint 6ter |
+| B-031d | Vue Galerie / Database (`type: gallery`, cartes visuelles avec bannière et métadonnées) | 🟡 | 📋 | Sprint 6ter |
 
 ---
 

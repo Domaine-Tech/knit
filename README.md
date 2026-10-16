@@ -49,12 +49,14 @@ Knit est un espace de travail collaboratif qui synchronise des fichiers Markdown
 
 Consultez le guide des commandes : **[COMMANDS.md](COMMANDS.md)**
 
-```powershell
-# Lancer l'application en mode watch (Tauri v2 + Vite HMR)
-.\dev.ps1
+```bash
+# Sous Windows PowerShell :
+.\dev.ps1               # Mode watch complet (Tauri v2 + Vite HMR)
+.\dev.ps1 -Mode web     # Mode Web pur (navigateur)
 
-# Ou en mode Web pur
-.\dev.ps1 -Mode web
+# Sous Linux / macOS :
+./dev.sh                # Mode watch complet (Tauri v2 + Vite HMR)
+./dev.sh web            # Mode Web pur (navigateur)
 ```
 
 ---
@@ -64,10 +66,11 @@ Consultez le guide des commandes : **[COMMANDS.md](COMMANDS.md)**
 | Document | Description |
 |---|---|
 | [COMMANDS.md](COMMANDS.md) | Guide rapide des commandes de développement, tests et build |
+| [docs/MARKDOWN_SPEC.md](docs/MARKDOWN_SPEC.md) | Spécification officielle du Markdown Knit, YAML Frontmatter & Doc-Driven Views |
 | [docs/VISION.md](docs/VISION.md) | Vision, problème résolu, architecture technique |
 | [docs/PILIERS.md](docs/PILIERS.md) | Les 9 piliers fondateurs détaillés |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture technique, flux de synchronisation |
-| [docs/UI_UX.md](docs/UI_UX.md) | Design system, thème, Mermaid rendering |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture technique, modules Tauri/Rust, protocole de synchronisation |
+| [docs/UI_UX.md](docs/UI_UX.md) | Design system, tokens CSS, palette HSL dynamique et intégration Mermaid |
 | [docs/SOLUTIONS.md](docs/SOLUTIONS.md) | Solutions aux défis techniques |
 | [docs/WIZARD.md](docs/WIZARD.md) | Wizard d'initialisation (créer/rejoindre un coffre) |
 
@@ -77,15 +80,14 @@ Consultez le guide des commandes : **[COMMANDS.md](COMMANDS.md)**
 |---|---|
 | [versions/VERSIONING.md](versions/VERSIONING.md) | Système de versioning et méthodologie sprints |
 | [versions/BACKLOG.md](versions/BACKLOG.md) | Backlog global (modifiable à tout moment) |
-| [versions/v0.1.0/sprint-1/SPRINT.md](versions/v0.1.0/sprint-1/SPRINT.md) | Sprint 1 — Fondations de l'Éditeur (Terminé) |
-| [versions/v0.1.0/sprint-2/SPRINT.md](versions/v0.1.0/sprint-2/SPRINT.md) | Sprint 2 — CRDT & File Watcher (Planifié) |
-| [versions/v0.2.0/](versions/v0.2.0/) | Version 0.2.0 — Réseau P2P |
-| [versions/v0.3.0/](versions/v0.3.0/) | Version 0.3.0 — Vues Projet & Mermaid |
-| [versions/v1.0.0/](versions/v1.0.0/) | Version 1.0.0 — Production Release |
+| [versions/v0.1.0/](versions/v0.1.0/) | Version 0.1.0 — Éditeur Local (✅ Livrée - Sprints 1 & 2) |
+| [versions/v0.2.0/](versions/v0.2.0/) | Version 0.2.0 — Réseau P2P & Résilience (✅ Livrée - Sprints 3 & 4) |
+| [versions/v0.3.0/](versions/v0.3.0/) | Version 0.3.0 — Vues Projet, Kanban & Mermaid (🔄 En cours - Sprint 6) |
+| [versions/v1.0.0/](versions/v1.0.0/) | Version 1.0.0 — Production Release (📋 Planifiée - Sprints 7 & 8) |
 
 ---
 
 ## Statut actuel
 
-🔄 **Phase** : Développement v0.1.0 (Sprint 1 ✅ Terminé, Sprint 2 📋 Planifié)  
-📅 **Dernière mise à jour** : 2026-10-15
+🔄 **Phase** : Développement v0.3.0 (Sprint 5 ✅ Terminé, Sprint 6 📋 Planifié)  
+📅 **Dernière mise à jour** : 2026-10-16
