@@ -1,6 +1,6 @@
-# Sprint 6 — Intégration Mermaid & Rendu Visuel
+# Sprint 6 — Intégration Mermaid, Slash Command & Polish Éditeur
 
-> Objectif : Rendre les diagrammes Mermaid vivants et intégrés dans le flux de lecture/écriture avec adaptation dynamique au thème et à la couleur d'accent.
+> Objectif : Rendre les diagrammes Mermaid vivants dans l'éditeur, intégrer les commandes Slash `/` style Notion, la Split View `Ctrl+\`, le mode Live Preview Obsidian et le bouton universel de bascule Source `</>` ↔ Rendu sur chaque vue.
 
 | Info | Détail |
 |---|---|
@@ -17,10 +17,11 @@
 | B-027 | Rendu Mermaid inline dans CodeMirror 6 via l'API `WidgetType` | 🔴 | 📋 | — |
 | B-028 | Coloration syntaxique du code Mermaid (`codemirror-lang-mermaid`) | 🟠 | 📋 | — |
 | B-029 | Thème Mermaid synchronisé dynamiquement avec `--knit-hue` et mode sombre | 🟡 | 📋 | — |
-| B-030 | Mode interactif code ↔ rendu (clic pour basculer en édition textuelle) | 🟠 | 📋 | — |
+| B-030 | Mode interactif code ↔ rendu (clic sur le diagramme pour éditer la source) | 🟠 | 📋 | — |
 | B-030a | Menu Slash Command (`/`) & Callouts GFM (`> [!NOTE]`) (Notion) | 🟠 | 📋 | — |
 | B-030b | Multi-onglets & Split View (`Ctrl+\`) (Obsidian) | 🟡 | 📋 | — |
 | B-030c | Mode Live Preview (style Obsidian : masquer balises Markdown hors curseur) | 🔴 | 📋 | — |
+| B-030d | Bouton Source universel (`</>` ↔ Rendu) & Déclencheurs de création multi-types (TabBar `+` & Slash `/kanban`) | 🟠 | 📋 | — |
 | B-031 | Optimisation de rendu : debounce 300ms et cache SVG pour éviter les saccades | 🟡 | 📋 | — |
 
 ---
@@ -30,7 +31,9 @@
 - [ ] Les blocs de code ```` ```mermaid ```` s'affichent par défaut sous forme de diagrammes SVG élégants aux angles arrondis.
 - [ ] Cliquer sur le diagramme ou placer le curseur dessus affiche le code source éditable.
 - [ ] Les éléments Markdown (titres `#`, gras `**`, listes à cocher `- [ ]`) sont rendus visuellement et révèlent leur syntaxe brute au survol/clic de la ligne (Live Preview Obsidian).
-- [ ] Taper `/` sur une ligne vide ouvre le menu de sélection rapide Notion-like sans latence.
+- [ ] Le bouton `[Code Source </>]` est présent et accessible dans l'en-tête de chaque onglet pour basculer instantanément entre la vue visuelle (Live Preview, Kanban, Tableau) et le code Markdown brut.
+- [ ] Taper `/` sur une ligne vide ouvre le menu de sélection rapide Notion-like sans latence (`/kanban`, `/tableau`, `/mermaid`, `/callout`, `/titre`).
+- [ ] Le bouton `+` dans la barre d'onglets (`TabBar`) propose un menu pour créer directement une Note Markdown ou un Tableau Kanban.
 - [ ] Les callouts (`> [!NOTE]`, `> [!TIP]`) s'affichent avec une bordure fine et un fond feutré.
 - [ ] `Ctrl+\` divise la vue pour afficher 2 notes côte à côte en mode split view.
 - [ ] Modifier la teinte de couleur dans les paramètres recolore instantanément les nœuds et arêtes du diagramme.
@@ -43,7 +46,7 @@
 
 | Date | Tâche ajoutée | Raison | Intégré au sprint ? |
 |---|---|---|---|
-| — | — | — | — |
+| 2026-10-16 | B-030d : Bouton Source universel `</>` & Sélecteur TabBar `+` / Slash `/kanban` | Unification de l'ergonomie visuelle ↔ source sur tous les types de fichiers | Oui |
 
 ---
 

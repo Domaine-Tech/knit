@@ -114,7 +114,23 @@
 | B-030a | Menu Slash Command (`/`) & Callouts GFM (`> [!NOTE]`) (Notion) | 🟠 | 📋 | Sprint 6 |
 | B-030b | Multi-onglets & Split View (`Ctrl+\`) (Obsidian) | 🟡 | 📋 | Sprint 6 |
 | B-030c | Mode Live Preview (style Obsidian : masquer balises Markdown hors curseur) | 🔴 | 📋 | Sprint 6 |
+| B-030d | Bouton Source universel (`</>` ↔ Rendu) & Déclencheurs de création (TabBar `+`, Slash `/kanban`) | 🟠 | 📋 | Sprint 6 |
 | B-031 | Debounce 300ms sur le rendu Mermaid | 🟡 | 📋 | Sprint 6 |
+
+---
+
+## v0.4.0 — Vues Visuelles Avancées
+
+> Enrichir le coffre de formats visuels immersifs basés sur les fichiers Markdown déclarés (`type: ...`).
+
+### Sprint 6bis — Canvas, Calendrier & Diaporama
+
+| # | Tâche | Priorité | Statut | Sprint |
+|---|---|---|---|---|
+| B-031a | Vue Calendrier / Journal (`type: calendar` ou `type: journal`, vue mensuelle/hebdomadaire) | 🟠 | 📋 | Sprint 6bis |
+| B-031b | Vue Canvas / Tableau Blanc infini (`type: canvas`, cartes déplaçables & connecteurs fléchés) | 🔴 | 📋 | Sprint 6bis |
+| B-031c | Vue Diaporama / Présentation (`type: slides`, séparateur `---`, mode plein écran) | 🟡 | 📋 | Sprint 6bis |
+| B-031d | Vue Galerie / Database (`type: gallery`, cartes visuelles avec bannière et métadonnées) | 🟡 | 📋 | Sprint 6bis |
 
 ---
 

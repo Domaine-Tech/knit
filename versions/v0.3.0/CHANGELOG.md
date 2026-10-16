@@ -15,11 +15,13 @@
 - **Ergonomie de saisie fluide (Inspiration Notion)** :
   - **Menu Slash Command (`/`)** : Insertion rapide de blocs sans lever les mains du clavier (`/titre`, `/tache`, `/mermaid`, `/callout`).
   - **Callouts GFM stylisés** : Rendu sobre et élégant des alertes (`> [!NOTE]`, `> [!TIP]`, etc.).
-- **Tableau Kanban dynamique** :
-  - Colonnes générées automatiquement à partir du champ `statut:` des frontmatters YAML.
-  - Glisser-déposer (Drag & Drop) fluide modifiant directement le frontmatter sans altérer le reste du corps Markdown.
-- **Vue Tableau structurée** :
-  - Vue tabulaire récapitulative de toutes les tâches avec filtres (priorité, sprint, statut) et tri multi-colonnes.
+- **Tableaux Kanban 100% Fichiers Markdown (`type: kanban`)** :
+  - Chaque fichier Markdown peut devenir son propre tableau Kanban dédié (un Kanban par projet, un Kanban perso, un Kanban d'équipe).
+  - Nombre de colonnes illimité et personnalisable (`+ Ajouter une colonne`), chaque colonne correspondant à un titre `##`.
+  - Glisser-déposer (Drag & Drop) fluide déplaçant directement les items `- [ ]` entre les sections sans base propriétaire.
+  - Bascule instantanée entre Vue Kanban, Vue Tableau et Code Markdown brut.
+- **Vue Tableau structurée par fichier** :
+  - Vue tabulaire synchronisée avec filtres de colonne, tri en direct, cases à cocher et exports (CSV, Markdown table).
 - **Moteur de recherche plein-texte** :
   - Indexation locale rapide de l'ensemble des notes et tâches du vault.
 - **Rendu Mermaid inline immersif** :
