@@ -21,6 +21,8 @@
 | B-035 | Présence collaborative (avatars sidebar, infobulle, téléportation, curseurs sobres) | 🟡 | 📋 | — |
 | B-035b | Volet Historique de versions & Time Travel (Diff visuel + Restauration) | 🟠 | 📋 | — |
 | B-036 | Créer le fichier `.knitshare` et la structure par défaut d'un vault | 🟠 | 📋 | — |
+| B-043 | Kit Universel de Règles & Skills Multi-Agents IA (Cursor `.cursor/rules/`, Claude `CLAUDE.md`, Antigravity `.agents/skills/`, Copilot `.github/`, Windsurf, Cline) | 🔴 | 📋 | — |
+| B-051 | Mode "Réseau Local Strict / Air-Gapped" (LAN-Only Toggle coupant tout trafic Internet) | 🟡 | 📋 | — |
 
 ---
 
@@ -33,6 +35,16 @@
 - [ ] Les curseurs des autres utilisateurs s'affichent avec leur couleur, leurs initiales et un badge intelligent.
 - [ ] Le volet d'historique permet de comparer les diffs et de restaurer n'importe quelle version passée en 1 clic.
 - [ ] Le fichier `.knitshare` est lisible et modifiable à la main par un humain ou une IA.
+- [ ] **Kit Universel IA Agentiques (B-043)** : Le Wizard et `init_vault` génèrent un kit exhaustif pour TOUTES les IA agentiques :
+  - `KNIT.md` (guide racine universel pour tout LLM)
+  - `.cursor/rules/knit.mdc` & `.cursorrules` (Cursor IDE)
+  - `CLAUDE.md` (Claude Code CLI & Anthropic agents)
+  - `.agents/skills/knit/SKILL.md` & `AGENTS.md` (Antigravity & Gemini CLI)
+  - `.github/copilot-instructions.md` (GitHub Copilot)
+  - `.windsurfrules` (Windsurf IDE)
+  - `.clinerules` & `.aider.conf.yml` (Cline, Roo Code & Aider)
+  - Chaque fichier enseigne le respect strict du frontmatter YAML, la protection du `.knit/`, l'utilisation de `assets/` et la non-régression Markdown pur.
+- [ ] **Mode Réseau Local Strict / Air-Gapped (B-051)** : Switch dans les paramètres désactivant les relays WAN Iroh et bornant le trafic aux échanges LAN directs (mDNS pur, 0 paquet sortant sur Internet).
 
 ---
 

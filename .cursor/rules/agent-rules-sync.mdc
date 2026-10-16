@@ -1,0 +1,82 @@
+---
+description: Règle de synchronisation continue des templates et règles d'agents IA (B-043)
+globs: **/*.rs, **/*.tsx, **/*.ts, **/*.md, docs/**, versions/**
+---
+
+# Règle B-043 : Synchronisation Continue des Règles d'Agents IA
+
+> **Principe d'Alignement Absolu** : Knit est conçu pour que les agents IA soient des citoyens de première classe (Pilier 4). Par conséquent, **toute nouvelle fonctionnalité introduite dans Knit qui affecte la structure du coffre, les métadonnées ou la syntaxe Markdown DOIT être immédiatement reflétée dans les fichiers de règles générés pour les IA**.
+
+---
+
+## 1. Déclencheurs de Mise à Jour Obligatoire
+
+Dès qu'une modification touche l'un des domaines suivants :
+1. **Nouveau type de document / Vue** (ex: `type: canvas`, `type: calendar`, `type: slides`, etc.)
+2. **Nouvelle propriété YAML Frontmatter** (ex: `echeance:`, `icon:`, `assigne:`, etc.)
+3. **Nouveau bloc dynamique** (ex: `knit-toc`, `knit-files`, `knit-query`, `knit-tasks`)
+4. **Nouveau déclencheur ou syntaxe d'autocomplétion** (ex: `[[Note#Titre]]`, `@date`, `@collaborateur`, `:emoji:`)
+5. **Nouveau sous-dossier ou convention de coffre** (ex: `assets/`, `wiki/`, `projet/taches/`, etc.)
+6. **Mise à jour des formats d'ID de tâche ou statuts autorisés** (les 7 statuts Markdown reconnus `- [ ]`, `- [/]`, `- [x]`, `- [-]`, `- [?]`, `- [>]`, `- [!]`, priorités `!p1`..`!p3`, dates `@YYYY-MM-DD`, assignations `@collaborateur`/`@vault`)
+7. **Commit Git, `git push`, Cadrage ou Livraison d'un Sprint** : vérification et alignement obligatoire du numéro de version dans les 6 sources de vérité de l'application et les dossiers de sprint.
+
+
+---
+
+## 2. Fichiers à Maintenir Rigoureusement Synchronisés
+
+L'agent ou développeur doit mettre à jour les fichiers de directives et les templates du kit d'initialisation du vault :
+
+| Fichier | Cible / Agent | Éléments à maintenir |
+|---|---|---|
+| `KNIT.md` | Tout agent / LLM | Guide racine universel : syntaxe Markdown, règles YAML, conventions de dossiers |
+| `.cursorrules` & `.cursor/rules/*.mdc` | Cursor IDE | Règles d'édition, intégrité frontmatter, raccourcis et triggers d'autocomplétion |
+| `CLAUDE.md` | Claude Code CLI | Commandes de validation, structure du projet et règles de non-régression |
+| `.agents/skills/knit/SKILL.md` & `AGENTS.md` | Antigravity / Gemini CLI | Instructions outillées et directives de workflow agentique |
+| `.github/copilot-instructions.md` | GitHub Copilot | Directives pour les suggestions de code et complétions de texte |
+| `docs/MARKDOWN_SPEC.md` | Humains & IA | Spécification officielle et source de vérité des syntaxes supportées |
+| `.knit/AI_MEMORY.md` | Tous agents (inter-sessions) | Registre de mémoire compacte (~400 tokens) : décisions, historique et prochaines étapes |
+| `Cargo.toml`, `tauri.conf.json`, `package.json`, `version.ts` | Système de build & Runtime | Sources de vérité du numéro de version à aligner rigoureusement |
+
+---
+
+## 3. Registre de Mémoire Persistante (`.knit/AI_MEMORY.md`)
+
+Pour éviter l'amnésie entre conversations et préserver la consommation de tokens :
+1. **Lecture au démarrage** : Tout agent démarrant une tâche ou une session sur le projet doit lire `.knit/AI_MEMORY.md` en priorité pour connaître instantanément l'état du projet sans recharger des historiques lourds.
+2. **Mise à jour à chaque jalon (Session Handoff)** : À la fin d'une tâche d'envergure ou d'une session, l'agent met à jour `.knit/AI_MEMORY.md` (sections *Historique Récent des Sessions* et *Tâches Actives*).
+3. **Budget tokens strict** : `.knit/AI_MEMORY.md` ne doit **jamais dépasser 50 à 70 lignes** (~350-450 tokens) afin de rester ultra-léger et efficient quel que soit le modèle ou la taille du coffre.
+
+---
+
+## 4. Protocole d'Alignement des Versions (Commit, Push, Cadrage & Livraison de Sprint)
+
+Tout agent IA intervenant sur le dépôt doit appliquer ce protocole de vérification :
+
+1. **Avant tout commit Git ou `git push`** :
+   - Vérifier que la version n'a pas été modifiée unilatéralement dans un seul fichier.
+   - S'assurer que le runtime web/dev et le runtime natif pointent sur la même version.
+2. **Lors de la construction / cadrage d'un sprint** (`versions/vX.Y.Z/sprint-N/SPRINT.md`) :
+   - Vérifier que la version cible du sprint correspond bien à la version du workspace ou préparer le bump SemVer.
+3. **À la livraison d'un sprint ou d'une version** (`Statut: ✅ Terminé` ou bump de version) :
+   - Exécuter la checklist d'alignement complet sur les 6 fichiers de code :
+     1. `Cargo.toml` racine : `[workspace.package] version = "X.Y.Z"`
+     2. `knit-core/Cargo.toml` : `version.workspace = true`
+     3. `knit-app/src-tauri/Cargo.toml` : `version.workspace = true`
+     4. `knit-app/src-tauri/tauri.conf.json` : `"version": "X.Y.Z"`
+     5. `knit-app/package.json` et racine `package.json` : `"version": "X.Y.Z"`
+     6. `knit-app/src/utils/version.ts` : `export const APP_VERSION = 'X.Y.Z'`
+   - Et mettre à jour les fichiers de documentation :
+     7. `versions/vX.Y.Z/CHANGELOG.md`
+     8. `versions/vX.Y.Z/sprint-N/SPRINT.md`
+     9. `versions/VERSIONING.md`
+     10. `.knit/AI_MEMORY.md`
+
+---
+
+## 5. Règle d'Or de Non-Régression pour Agents
+
+- Ne **jamais** laisser une fonctionnalité de coffre non documentée dans les règles IA.
+- Ne **jamais** committer ou livrer un sprint avec des versions désalignées.
+- Un agent IA qui arrive dans un coffre Knit doit être capable, en lisant ces règles, d'utiliser la fonctionnalité sans erreur de syntaxe ni hallucination.
+

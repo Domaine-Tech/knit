@@ -58,6 +58,7 @@ Pour concevoir une expérience immédiatement familière et ultra-productive, Kn
 | **Les Propriétés en en-tête de page** | Les métadonnées du frontmatter YAML (`statut:`, `priorite:`, `assigne:`, `echeance:`) s'affichent sous forme de pastilles épurées en haut de la note. Cliquer sur un statut ouvre un dropdown sobre qui réécrit le YAML sans casser le document. |
 | **Les Vues de données (Kanban & Table)** | Le dossier `projet/taches/` peut être visualisé en document simple, en colonnes Kanban déplaçables, ou en Tableau récapitulatif avec filtres. |
 | **Le confort de lecture centré** | Le texte est limité par défaut à 760px de largeur pour un confort de lecture optimal (comme Notion), avec un interrupteur discret *"Pleine largeur"* pour les grands tableaux ou schémas. |
+| **L'assistant de tableaux Markdown** | Mini barre d'outils au survol d'un tableau GFM pour ajouter/supprimer colonnes et lignes, avec navigation fluide par `Tab` et `Shift+Tab`. |
 
 ### 2. Ce que Knit emprunte à Obsidian (Puissance Markdown & Vitesse)
 
@@ -67,7 +68,10 @@ Pour concevoir une expérience immédiatement familière et ultra-productive, Kn
 | **Le Quick Switcher (`Ctrl+O`)** | Boîte de recherche floue (*fuzzy search*) instantanée pour sauter à n'importe quel fichier du coffre en tapant 3 lettres au clavier. Vitesse < 10ms. |
 | **La Palette de Commandes (`Ctrl+P`)** | Exécuter n'importe quelle action sans lever les mains du clavier : changer de thème, créer un fichier, insérer un schéma Mermaid, ouvrir l'historique. |
 | **L'Arbre de fichiers pur et sans mensonge** | La barre latérale reflète exactement les dossiers et fichiers sur le disque dur. Aucun dossier virtuel caché. |
+| **Section Favoris / Épinglés** | Épingler en un clic (`⭐ Épingler`) ses notes centrales pour les garder accessibles en haut de la Sidebar. |
 | **Multi-onglets & Split View (`Ctrl+\`)** | Travailler sur deux notes côte à côte ou scinder verticalement/horizontalement l'espace de travail. |
+| **Pliage hiérarchique de titres** | Chevrons discrets dans la marge CodeMirror 6 pour plier/déplier les sections `##`, `###` (`Ctrl+Alt+[` / `]`). |
+| **Vue Graphe Local 2D** | Exploration interactive des liens de la note courante sous forme de réseau de force dynamique. |
 
 ---
 
@@ -218,12 +222,128 @@ Dans la barre latérale, un panneau dédié regroupe tous les tags du coffre :
 - **Cliquer sur un tag** filtre instantanément la vue pour n'afficher que les notes associées.
 - **Sélection multiple (`Ctrl + Clic`)** : combiner plusieurs tags pour une recherche croisée (ex: `#p2p` ET `#bug`).
 
+---
 
+## ✨ Moteur d'Autocomplétion Universel (Omni-Trigger Autocomplete — B-052)
 
+Knit intègre un moteur d'autocomplétion contextuel instantané (< 2ms) inspiré des meilleures ergonomies d'Obsidian et de Notion, **actif sur l'ensemble des vues de l'application**.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  [[Architecture#Moteur C                                        │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │ 📑 Architecture > ## Moteur CRDT (Ligne 42)                 │ │
+│  │ 📑 Architecture > ### Moteur de Rendu Mermaid (Ligne 114)  │ │
+│  └────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 1. Les 6 Déclencheurs Magiques (Triggers)
+
+| Déclencheur | Syntaxe | Ce qu'il propose | Résultat inséré |
+|---|---|---|---|
+| **`[[`** | `[[Recherche...` | Toutes les notes du coffre (titre + chemin) | `[[wiki/architecture]]` |
+| **`[[#`** | `[[#Section...` | Titres (`#`, `##`, `###`) de la **note active** | `[[#Moteur CRDT]]` |
+| **`[[Note#`** | `[[Note#Sous-titre` | Titres et ancres de la **note ciblée** | `[[architecture#Moteur CRDT]]` |
+| **`[[Note\|`** | `[[Note\|Alias` | Texte alternatif de lien personnalisé | `[[architecture\|Architecture Système]]` |
+| **`[[Note^`** | `[[Note^block` | Référencement de blocs ou paragraphes spécifiques | `[[architecture^crdt-intro]]` |
+| **`@`** | `@collaborateur` | Profils locaux, pairs connectés (Iroh) et agents IA | `@Thomas H.` (avec badge avatar interactif) |
+| **`@@`** ou **`@date`** | `@@today`, `@@demain` | Raccourcis temporels et sélecteur de calendrier | `@2026-10-20` (badge d'échéance coloré) |
+| **`#`** | `#tag/sous-tag` | Tags hiérarchiques du coffre avec compteur | `#projet/sprint-6 (12)` |
+| **`:`** | `:emoji:` | Shortcodes d'emojis rapides | `:sparkles:` → ✨, `:check:` → ✅ |
+| **`/`** | `/commande` | Commandes de blocs (titre, callout, kanban, tableau) | Bloc préformaté inséré en 1 seconde |
+
+---
+
+### 2. Disponibilité Universelle Multi-Vues (Cross-View Ubiquity)
+
+L'autocomplétion ne se limite pas à l'éditeur Markdown principal :
+- **Dans l'Éditeur CodeMirror 6** : surgit à l'emplacement exact du curseur de frappe.
+- **Dans le Tableau Kanban** : disponible lors de l'édition ou de la création d'une carte (titre et description Markdown). Taper `[[` lie une note, `@` assigne un collaborateur, `#` ajoute un tag.
+- **Dans la Vue Tableau** : disponible lors de la modification directe d'une cellule de tableau.
+- **Dans les Modales et Dialogues** : accessible lors de la création rapide de note ou de tâche.
+
+---
+
+### 3. Architecture d'Indexation Incrémentale en Rust (`KnitSuggestIndex`)
+
+Pour garantir un temps de réponse imperceptible (< 2ms) même dans un coffre contenant **50 000 notes** :
+- Le backend Rust `knit-core` maintient en mémoire un graphe d'indexation pré-calculé :
+  - **Index des Titres** : dictionnaire en mémoire associant chaque chemin de fichier à son arborescence de sections (`#`, `##`, `###`).
+  - **Index des Tags** : arbre préfixe (Trie) trié par fréquence d'utilisation.
+  - **Index des Pairs** : cache dynamique des collaborateurs LAN (mDNS) et WAN (Iroh).
+- **Mises à jour incrémentales micro-secondes** : lorsqu'un fichier est modifié, seul son nœud d'index est recalculé sans réanalyser tout le coffre.
+
+---
+
+## 📅 Moteur d'Agenda & Échéancier Global du Coffre (B-031a & KnitCalendarIndex)
+
+Knit intègre un système d'agenda natif qui analyse en direct l'ensemble des fichiers Markdown du coffre sans aucune base de données propriétaire tierce.
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│ 📅 AGENDA DU COFFRE          [ Vue Mois ] [ Vue Semaine ] [ Vue Jour ] [ Liste ]       │
+│ Filtres : [🔘 Tout le coffre] [👤 Mes tâches & Vault] [👥 Collaborateur: Thomas H. ▼]   │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│ Lundi 20 Octobre 2026                                                                  │
+│ ┌────────────────────────────────────────────────────────────────────────────────────┐ │
+│ │ 10:00 - 11:30  Point Hebdo Sprint 6               👥 @vault        (notes/sprint.md)│ │
+│ │ 14:00 - 15:30  Démo client P2P CRDT               👤 @Thomas H.    (clients/demo.md)│ │
+│ │ 17:00          Finaliser relecture doc            👤 @Sarah        (docs/spec.md)   │ │
+│ └────────────────────────────────────────────────────────────────────────────────────┘ │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 1. Attribution Personnelle vs Attribution Collective (`@vault`)
+- **Attribution nominative (`@collaborateur`)** : la tâche ou réunion est affectée à un membre de l'équipe (avatar dynamique affiché).
+- **Attribution collective (`@vault`)** : si `@vault` est spécifié (ou par défaut si aucune personne n'est nommée), la tâche est considérée comme partagée avec l'ensemble des pairs du coffre.
+- **Filtre "Mes Tâches & Vault"** : permet en un clic à l'utilisateur d'afficher uniquement les tâches qui lui sont attribuées et celles communes à tout le coffre, masquant les tâches attribuées à d'autres pairs.
+
+### 2. Heures, Durées et Glisser-Déposer Réversible
+- **Heures et plages** : support complet des syntaxes `@2026-10-20 14:00` et `@2026-10-20 14:00-15:30`.
+- **Drag-and-Drop bijectif** : déplacer un événement d'un jour à un autre ou modifier son heure réécrit directement la mention Markdown dans le document source, sans corruption de données.
+- **Mini-Widget Calendrier dans la barre latérale** : vue mensuelle compacte avec pastilles colorées `--knit-primary` sous les dates actives et saut direct vers la note de journal.
+- **Notifications d'échéances discrètes (Tauri)** : rappels locaux paramétrables (ex: 15 min avant) pour les réunions et échéances critiques.
+
+---
+
+## ✍️ Smart UX de Rédaction & Navigation Humaine (B-053)
+
+Pour offrir un confort de rédaction sans précédent, Knit intègre un ensemble d'automatismes d'écriture avancés dans CodeMirror 6 :
+
+### 1. Smart Paste (Lien ou Image sur sélection)
+- **Collage d'URL** : Sélectionner un mot ou une phrase et presser `Ctrl+V` avec une URL dans le presse-papier convertit automatiquement le texte en `[Mon Texte Sélectionné](https://exemple.com)` au lieu d'écraser la sélection.
+- **Collage d'Image** : Coller une image (ou capture d'écran) avec du texte sélectionné enregistre le binaire dans `assets/` et insère `![Mon Texte Sélectionné](assets/screenshot-2026.png)`.
+
+### 2. Auto-Wrap par Déclencheurs Symboliques
+- Sélectionner du texte et presser :
+  - `[` : entoure en `[[...]]` (WikiLink instantané).
+  - `*` : entoure en `*...*` (ou `**...**` si double frappe).
+  - `` ` `` : entoure en bloc de code en ligne `` `...` ``.
+  - `~` : entoure en texte barré `~~...~~`.
+  - `"` ou `'` : entoure de guillemets sans effacer la sélection.
+
+### 3. Formatage Dynamique de Tableaux Markdown (`Tab` / `Entrée`)
+- Dans un tableau Markdown brut :
+  - Presser `Tab` saute à la cellule suivante et réaligne verticalement les barres `|`.
+  - Presser `Shift+Tab` revient à la cellule précédente.
+  - Presser `Entrée` crée automatiquement la ligne suivante pré-remplie avec le bon nombre de colonnes et aligne les bordures.
+
+### 4. Prévisualisation Flottante au Survol (Hover Preview Tooltip)
+- Survoler un `[[Lien]]`, un `@collaborateur` ou un `#tag` avec maintien de `Ctrl` (ou au hover simple paramétrable) affiche une infobulle en lévitation avec le rendu HTML de la cible, permettant de consulter une note ou un profil sans abandonner le document en cours de rédaction.
+
+### 5. Raccourci Note Quotidienne (`Ctrl+Shift+J` ou `Alt+D`)
+- Crée ou ouvre instantanément la note du jour `journal/YYYY-MM-DD.md` avec horodatage automatique et modèle d'habitudes ou de log de sprint.
+
+### 6. Panneau latéral de Rétroliens (Backlinks Panel)
+- Affichage dans l'inspecteur latéral de :
+  - **Mentions liées** : toutes les notes contenant un lien formel `[[Note Active]]`.
+  - **Mentions non liées** : détection de texte mentionnant le titre de la note sans crochet pour transformation en WikiLink en 1 clic.
 
 ---
 
 ## Design Token System
+
 
 Tout le design repose sur un fichier unique de variables CSS :
 
@@ -564,6 +684,13 @@ Le CRDT|garantit une fusion sans conflit...
      Curseur coloré
 ```
 
+### 2bis. Curseur Fantôme IA (Ghost Cursor — B-044) & Packager Contexte (B-045)
+- **Le Curseur Fantôme IA (`🤖 Agent IA`)** :
+  - Lorsqu'un agent IA (Cursor, Claude Code, Antigravity) édite directement un fichier sur le disque, l'action est rejouée dans CodeMirror 6 avec un curseur violet `#8B5CF6` exclusif.
+  - Les lignes modifiées s'illuminent d'un surlignage doux pendant 1.5s avant de s'estomper délicatement. L'utilisateur sait exactement où l'IA est intervenue.
+- **Packager de Contexte IA (`Ctrl+Shift+C`)** :
+  - Un bouton rapide ou raccourci clavier emballe la note, ses métadonnées frontmatter et les extraits des notes liées via `[[WikiLinks]]` dans un format balisé `<document>` optimisé pour copier-coller dans ChatGPT, Claude ou un LLM local.
+
 ### 3. Palette de Couleurs Sobre & Attribution Déterministe
 
 Pour que l'interface reste **élégante, sobre et lisible**, on évite formellement les couleurs fluo / néon criardes.
@@ -670,5 +797,42 @@ En cliquant sur une version antérieure dans la timeline :
 - Bouton clair et arrondi : **`Restaurer cette version`**.
 - La restauration applique une nouvelle opération CRDT sans détruire l'historique antérieur (aucun risque de perte de données irréversible).
 - Le fichier `.md` sur le disque est mis à jour instantanément, et la modification est propagée aux autres pairs P2P.
+
+---
+
+## 🧘 Mode Zen & Focus Absolu (Zen Mode — Ctrl+Shift+F)
+
+Pour les sessions de réflexion profonde ou de rédaction immersive :
+- **Raccourci instantané `Ctrl+Shift+F`** :
+  - Masque la barre latérale (Sidebar).
+  - Épure la barre d'onglets (fondue dans le fond jusqu'au survol).
+  - Masque la barre d'état inférieure.
+  - Centre le texte dans une largeur de lecture ergonomique de 760px avec marge généreuse.
+- **Sortie instantanée** : Presser `Échap` ou `Ctrl+Shift+F` restaure l'interface complète sans transition brutale.
+
+---
+
+## ⚡ Appairage P2P LAN Simplifié (Code PIN 6 Chiffres & QR Code)
+
+Rejoindre un coffre d'équipe sur le même réseau local ne doit pas nécessiter de copier-coller des clés cryptographiques Ed25519 de 64 caractères :
+- **Génération instantanée en 1 clic** :
+  - Dans la barre latérale ou la page d'accueil, cliquer sur `👥 Inviter sur le réseau local`.
+  - Une modale épurée affiche un **Code PIN éphémère à 6 chiffres** (ex: `482-901`) et un **QR Code dynamique**.
+- **Connexion Zero-Config** :
+  - Le collègue ouvre Knit sur son poste (ou tablette), clique sur `Rejoindre`, saisit le code à 6 chiffres ou scanne le QR Code.
+  - La découverte mDNS locale identifie automatiquement la machine cible et établit le canal chiffré P2P Iroh en moins d'une seconde.
+
+---
+
+## 🚀 Principes d'Optimisation & Légèreté Extrême (Zéro Saccade)
+
+Pour maintenir une fluidité à 60 FPS sur toute machine :
+1. **Lazy-Rendering des Diagrammes Mermaid & Blocs Dynamiques (`IntersectionObserver`)** :
+   - Les blocs de code lourds (diagrammes Mermaid, requêtes Dataview `knit-query`) ne sont calculés et rendus sous forme de SVG/HTML réactif **que lorsqu'ils entrent dans le champ de vision (viewport)** lors du défilement.
+   - Les documents de 5 000 lignes contenant 20 diagrammes se chargent instantanément en 0ms.
+2. **Flush Disque Atomique avec Micro-Debounce (250ms)** :
+   - Toute frappe dans CodeMirror 6 met à jour immédiatement le document CRDT Yjs en mémoire vive (< 1ms).
+   - L'écriture sur le disque dur est temporisée par un micro-debounce de 250ms avec hachage XXH3 (WriteGuard), évitant des millions d'écritures I/O inutiles et préservant la longévité des disques SSD.
+
 
 

@@ -1,7 +1,7 @@
 # Changelog — v0.3.0
 
 > Version 0.3.0 — Vues Projets Dynamiques & Rendu Mermaid Vivant.
-> Statut : 📋 Planifié
+> Statut : 🟡 En cours (Sprint 5 livré ✅, Sprint 6 planifié)
 
 ---
 
@@ -35,6 +35,32 @@
   - Coloration syntaxique du code Mermaid (`codemirror-lang-mermaid`).
   - Palette du diagramme synchronisée dynamiquement avec la teinte de l'application (`--knit-hue`).
   - Moteur de rendu optimisé avec debounce de 300ms.
+- **Symbiose IA & Ergonomie Éditeur avancée** :
+  - **Moteur d'Autocomplétion Universel & Index Rust `KnitSuggestIndex` (B-052)** :
+    - Déclencheurs contextuels unifiés : `[[` (notes, notes#titres, alias, blocs), `[[#` (titres de la note courante), `@` (collaborateurs LAN et entité `@vault` pour assignation collective), `@@` (raccourcis date et heures `@@demain 14:30`), `#` (tags hiérarchiques du vault), `:` (émojis GitHub/Unicode), `/` (commandes slash).
+    - Disponibilité universelle sans rupture de contexte : éditeur principal CodeMirror 6, création et édition rapide de cartes Kanban, et saisie inline dans les cellules de vue Tableau.
+    - Deep-linking de précision absolue : `[[Note#Titre]]`, `[[#Titre-Interne]]`, `[[Note|Alias]]`, `[[Note^block-id]]`.
+    - Index en mémoire incrémental côté Rust (`KnitSuggestIndex`) mis à jour en tâche de fond via le Notify-watcher de vault, garantissant un temps de filtrage < 5ms même sur 10 000 notes.
+  - **Smart UX de Rédaction & Navigation Humaine (B-053)** :
+    - Smart Paste d'URL et d'images sur texte sélectionné (`[Texte](url)` sans écraser la sélection).
+    - Auto-Wrap instantané par sélection et frappe de délimiteurs (`[[...]]`, `*...*`, `` `...` ``, `~~...~~`).
+    - Navigation et formatage dynamique de tableaux Markdown (`Tab` / `Entrée` avec réalignement automatique des barres `|`).
+    - Prévisualisation flottante au survol (Hover Preview) de liens, mentions et tags sans quitter le document actif.
+    - Raccourci Note Quotidienne (`Ctrl+Shift+J` ou `Alt+D`) et panneau latéral de Rétroliens (Backlinks).
+  - **Norme Tâches Étendues Markdown & Indicateurs de Progrès (B-054)** :
+    - Prise en charge des 7 statuts de tâches Markdown : `- [ ]` (à faire), `- [/]` (en cours), `- [x]` (terminé), `- [-]` (annulé), `- [?]` (question), `- [>]` (reporté), `- [!]` (urgent).
+    - Priorités inline épurées : `!p1` (rouge feutré), `!p2` (ambre feutré), `!p3` (gris discret).
+    - Mini-barre de progression calculée dynamiquement (2px) sous le premier titre `#` sans polluer le fichier sur disque.
+    - Synchronisation bijective immédiate avec les cartes du tableau Kanban.
+  - **Mode Zen & Performances Extrêmes (B-055)** :
+    - Mode Zen (`Ctrl+Shift+F`) : masquage de l'interface pour une concentration absolue à 760px centré.
+    - Lazy-rendering (`IntersectionObserver`) des diagrammes Mermaid et blocs dynamiques Dataview.
+    - Flush disque atomique temporisé à 250ms avec hachage XXH3 (WriteGuard) pour préserver les SSD.
+  - **Curseur Fantôme IA (Ghost Cursor)** : matérialisation des modifications effectuées par Cursor/Claude avec curseur violet `#8B5CF6` et surlignage doux temporaire.
+  - **Packager de Contexte IA (`Ctrl+Shift+C`)** : copie en 1 clic de la note avec métadonnées YAML et extraits des WikiLinks pour les LLMs.
+  - **Pliage hiérarchique de titres (`Ctrl+Alt+[` / `]`)** : masquage/dépliage de sections entières `##` et `###`.
+  - **Section Favoris / Notes Épinglées** : accès direct en tête de Sidebar via clic droit `⭐ Épingler`.
+  - **Confort de lecture centré 760px** : interrupteur instantané entre largeur de lecture saine et mode pleine largeur.
 
 ---
 

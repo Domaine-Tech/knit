@@ -43,7 +43,9 @@ export type IconName =
   | 'command'
   | 'download'
   | 'filter'
-  | 'sort';
+  | 'sort'
+  | 'knit'
+  | 'logo';
 
 interface DuotoneIconProps {
   name: IconName;
@@ -632,6 +634,60 @@ export const DuotoneIcon: React.FC<DuotoneIconProps> = ({
           </>
         );
 
+      case 'vault':
+        return (
+          <>
+            {/* Corps blindé du coffre-fort */}
+            <rect
+              x="72"
+              y="72"
+              width="368"
+              height="368"
+              rx="40"
+              fill={secondaryFill}
+              fillOpacity="0.18"
+              stroke={primaryStroke}
+              strokeWidth="32"
+              strokeLinejoin="round"
+            />
+            {/* Charnières gauche renforcées */}
+            <rect x="52" y="136" width="20" height="52" rx="8" fill={primaryStroke} />
+            <rect x="52" y="324" width="20" height="52" rx="8" fill={primaryStroke} />
+            {/* Cadre intérieur de la porte */}
+            <rect
+              x="120"
+              y="120"
+              width="272"
+              height="272"
+              rx="24"
+              fill="none"
+              stroke={primaryStroke}
+              strokeWidth="18"
+              strokeOpacity="0.4"
+              strokeLinejoin="round"
+            />
+            {/* Cadran central à combinaison rotatif */}
+            <circle
+              cx="256"
+              cy="256"
+              r="68"
+              fill={secondaryFill}
+              fillOpacity="0.3"
+              stroke={primaryStroke}
+              strokeWidth="28"
+            />
+            {/* Rayons / poignée du cadran */}
+            <line x1="256" y1="148" x2="256" y2="188" stroke={primaryStroke} strokeWidth="26" strokeLinecap="round" />
+            <line x1="256" y1="324" x2="256" y2="364" stroke={primaryStroke} strokeWidth="26" strokeLinecap="round" />
+            <line x1="148" y1="256" x2="188" y2="256" stroke={primaryStroke} strokeWidth="26" strokeLinecap="round" />
+            <line x1="324" y1="256" x2="364" y2="256" stroke={primaryStroke} strokeWidth="26" strokeLinecap="round" />
+            {/* Moyeu central */}
+            <circle cx="256" cy="256" r="22" fill={primaryStroke} />
+            {/* Voyant / point de verrouillage */}
+            <circle cx="348" cy="168" r="12" fill={primaryStroke} />
+          </>
+        );
+
       case 'kanban':
         return (
           <>
@@ -791,6 +847,27 @@ export const DuotoneIcon: React.FC<DuotoneIconProps> = ({
               strokeLinejoin="round"
             />
           </>
+        );
+
+      case 'knit':
+      case 'logo':
+        return (
+          <g transform="translate(64, 64) scale(16)">
+            <path
+              d="M4 12a8 8 0 1 0 16 0 8 8 0 1 0 -16 0"
+              fill={secondaryFill}
+              fillOpacity="0.22"
+              stroke="none"
+            />
+            <path
+              d="M4 12a8 8 0 1 0 16 0 8 8 0 1 0 -16 0 M5 9c4 2 8 6 10 10 M9.5 4.85C13 7 17 11 19 15 M11.5 20c2.5 0 4.5 0.5 6 1.3"
+              fill="none"
+              stroke={primaryStroke}
+              strokeWidth="2.3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </g>
         );
 
       default:

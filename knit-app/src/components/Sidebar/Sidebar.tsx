@@ -275,7 +275,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, overflow: 'hidden' }}>
-          <DuotoneIcon name="vault" size={16} />
+          <DuotoneIcon name="vault" size={17} style={{ color: 'var(--knit-primary)' }} />
           <span
             style={{
               fontSize: 12,

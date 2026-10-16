@@ -474,6 +474,9 @@ graph TD
 │  ☐ Créer la structure par défaut                 │
 │    (dossiers wiki/, projet/taches/, KNIT.md)     │
 │                                                  │
+│  ☑ Configurer les règles pour agents IA          │
+│    (Cursor, Claude Code, Antigravity, Copilot)   │
+│                                                  │
 │  ☐ Initialiser un dépôt Git                     │
 │    (ajoute .knit/ au .gitignore)                 │
 │                                                  │

@@ -1,6 +1,8 @@
 {
   "name": "knit-workspace",
+  "version": "0.3.0",
   "private": true,
+  "type": "module",
   "description": "Knit — Local-first P2P Collaborative Markdown Wiki & Project Tracker",
   "scripts": {
     "dev": "npm --prefix knit-app run tauri dev",
@@ -8,6 +10,7 @@
     "dev:desktop": "npm --prefix knit-app run tauri dev",
     "build": "npm --prefix knit-app run build && cargo build --workspace",
     "test": "cargo test --workspace",
-    "lint": "cargo clippy --workspace && npm --prefix knit-app run lint"
+    "lint": "cargo clippy --workspace && npm --prefix knit-app run lint",
+    "check:version": "node scripts/check-version.js"
   }
 }

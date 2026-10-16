@@ -3,7 +3,7 @@ export type ThemeMode = 'light' | 'dark';
 const THEME_STORAGE_KEY = 'knit-theme-mode';
 const HUE_STORAGE_KEY = 'knit-theme-hue';
 
-export const DEFAULT_HUE = 260; // Violet sobre
+export const DEFAULT_HUE = 35; // Ambre Artisanal & Cuivre Doré (évite toute ressemblance avec Obsidian)
 
 export function getStoredTheme(): ThemeMode {
   const saved = localStorage.getItem(THEME_STORAGE_KEY);
@@ -14,13 +14,18 @@ export function getStoredTheme(): ThemeMode {
   if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
     return 'dark';
   }
-  return 'dark'; // Mode sombre par défaut pour un look artisanal sobre Obsidian
+  return 'dark'; // Mode sombre par défaut pour un look artisanal sobre
 }
 
 export function getStoredHue(): number {
   const saved = localStorage.getItem(HUE_STORAGE_KEY);
   if (saved) {
     const parsed = parseInt(saved, 10);
+    // Si l'utilisateur avait l'ancien violet Obsidian par défaut (260), on migre vers l'Ambre Knit
+    if (parsed === 260) {
+      localStorage.setItem(HUE_STORAGE_KEY, DEFAULT_HUE.toString());
+      return DEFAULT_HUE;
+    }
     if (!isNaN(parsed) && parsed >= 0 && parsed <= 360) {
       return parsed;
     }

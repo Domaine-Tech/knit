@@ -102,6 +102,26 @@ graph TD
 
 **Règle d'or** : Si un agent IA modifie `task-042.md`, le changement apparaît dans l'interface Knit et chez tous les pairs en moins de 2 secondes.
 
+### 🤖 Kit Universel d'Instructions pour IA Agentiques (B-043)
+
+Knit ne se contente pas d'être "lisible" par une IA : **le coffre-fort enseigne automatiquement son fonctionnement à n'importe quel agent du marché dès son initialisation**.
+
+Knit génère automatiquement les fichiers de règles et compétences natifs :
+
+| Outil / Agent IA | Fichier généré dans le vault | Rôle |
+|---|---|---|
+| **Tous les LLMs / Agents** | `KNIT.md` | Guide universel racine (structure, conventions frontmatter, interdiction d'altérer `.knit/`) |
+| **Cursor IDE** | `.cursor/rules/knit.mdc` & `.cursorrules` | Règles contextuelles d'édition, templates de tâches et respect du Markdown pur |
+| **Claude Code CLI** | `CLAUDE.md` | Commandes de build, structure du vault et directives spécifiques Anthropic |
+| **Antigravity / Gemini CLI** | `.agents/skills/knit/SKILL.md` & `AGENTS.md` | Skill outillé et instructions pour l'écosystème d'agents Antigravity |
+| **GitHub Copilot** | `.github/copilot-instructions.md` | Instructions personnalisées d'autocomplétion pour VS Code |
+| **Windsurf IDE** | `.windsurfrules` | Règles de comportement Cascade / Windsurf |
+| **Cline / Roo Code / Aider** | `.clinerules` & `.aider.conf.yml` | Directives strictes pour les agents de terminal et extensions d'IDE |
+
+### 👻 Visibilité en Direct : Le Curseur Fantôme IA (Ghost Cursor — B-044) & Contexte (B-045)
+- **Curseur Fantôme (`#8B5CF6`)** : Lorsque l'agent IA modifie un fichier sur disque, Knit affiche un curseur violet avec badge `🤖 Agent IA` et surligne temporairement les lignes modifiées (fondu de 1.5s). L'humain voit littéralement l'IA travailler à ses côtés.
+- **Packager de Contexte IA (`Ctrl+Shift+C`)** : Copie en 1 seconde la note active, ses métadonnées frontmatter et les extraits des notes reliées via `[[WikiLinks]]` dans un format balisé `<document>` optimisé pour l'injection dans les prompts LLM.
+
 ### 🛡️ Règle de Développement IA : Le Typage Strict (sauf si contre-productif)
 
 Pour garantir une collaboration fiable et sans régression entre développeurs humains et agents IA (Cursor, Claude Code, Antigravity) :

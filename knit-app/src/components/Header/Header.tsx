@@ -7,6 +7,8 @@ import { vaultStore } from '../../stores/vaultStore';
 import { networkStore, COLLABORATIVE_PALETTE } from '../../stores/networkStore';
 import { NetworkModal } from '../Network/NetworkModal';
 import { ProfileModal } from '../Profile/ProfileModal';
+import { WindowControls } from './WindowControls';
+import { getAppVersion, APP_VERSION } from '../../utils/version';
 
 export type AppViewMode = 'editor' | 'kanban' | 'table';
 
@@ -38,7 +40,12 @@ export const Header: React.FC<HeaderProps> = ({
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
   const [isNetworkModalOpen, setIsNetworkModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [appVersion, setAppVersion] = useState(APP_VERSION);
   const [, setTick] = useState(0);
+
+  useEffect(() => {
+    getAppVersion().then(setAppVersion);
+  }, []);
 
   useEffect(() => {
     return networkStore.subscribe(() => {
@@ -71,9 +78,9 @@ export const Header: React.FC<HeaderProps> = ({
       },
       {
         id: 'header-reset-color',
-        label: 'Réinitialiser la couleur d’accent (28°)',
+        label: 'Réinitialiser l’Ambre Knit par défaut (35°)',
         icon: 'slider',
-        onClick: () => onHueChange(28),
+        onClick: () => onHueChange(35),
       },
       { id: 'div-header-2', divider: true },
       {
@@ -93,6 +100,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header
+      data-tauri-drag-region
       onContextMenu={handleHeaderContextMenu}
       style={{
         height: 40,
@@ -101,7 +109,7 @@ export const Header: React.FC<HeaderProps> = ({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '0 14px',
+        padding: '0 0 0 14px',
         userSelect: 'none',
         flexShrink: 0,
       }}
@@ -118,30 +126,29 @@ export const Header: React.FC<HeaderProps> = ({
             color: 'var(--knit-text)',
             cursor: 'default',
           }}
-          title="Knit — Éditeur Markdown Local-First P2P"
+          title={`Knit — Éditeur Markdown Local-First P2P${vaultStore.vaultPath ? ` (${vaultStore.vaultPath})` : ''}`}
         >
-          <span style={{ fontSize: 14 }}>🧶</span>
+          <DuotoneIcon name="knit" size={18} style={{ color: 'var(--knit-primary)' }} />
           <span style={{ letterSpacing: '-0.01em' }}>Knit</span>
-        </div>
-        {vaultStore.vaultName && (
           <span
             style={{
-              fontSize: 11,
+              fontSize: 10,
+              fontWeight: 600,
               color: 'var(--knit-text-muted)',
               backgroundColor: 'var(--knit-surface)',
               border: '1px solid var(--knit-border)',
-              padding: '2px 8px',
+              padding: '1px 5px',
               borderRadius: 'var(--knit-radius-xs)',
-              maxWidth: 180,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
+              letterSpacing: '0.02em',
+              lineHeight: 1.2,
+              userSelect: 'none',
+              marginLeft: 2,
             }}
-            title={`Coffre-fort actif : ${vaultStore.vaultPath || vaultStore.vaultName}`}
+            title={`Knit v${appVersion} — Sprint 1 & Sprint 2`}
           >
-            {vaultStore.vaultName}
+            v{appVersion}
           </span>
-        )}
+        </div>
       </div>
 
       {/* Sélecteur de vue centralisé (Éditeur, Kanban, Tableau) */}
@@ -223,8 +230,9 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
       </div>
 
-      {/* Contrôles de droite : Thème et slider Hue */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      {/* Contrôles de droite : Outils et boutons de fenêtre */}
+      <div style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingRight: 8 }}>
         {/* Quick Switcher & Palette de commandes */}
         <button
           onClick={onOpenQuickSwitcher}
@@ -444,6 +452,10 @@ export const Header: React.FC<HeaderProps> = ({
           <DuotoneIcon name={theme === 'dark' ? 'sun' : 'moon'} size={15} />
         </button>
       </div>
+
+      {/* Boutons de contrôle de fenêtre natifs intégrés (façon VS Code) */}
+      <WindowControls />
+    </div>
 
       <NetworkModal isOpen={isNetworkModalOpen} onClose={() => setIsNetworkModalOpen(false)} />
       <ProfileModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} />

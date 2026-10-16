@@ -1,0 +1,33 @@
+# Mémoire Agentique — Coffre Knit
+
+> Registre de mémoire partagée inter-sessions pour agents IA (Cursor, Claude Code, Antigravity, Copilot, Windsurf, Cline, Aider).
+> Format ultra-compact (~400 tokens) conçu pour être lu au démarrage de chaque nouvelle session et mis à jour à chaque jalon.
+
+## 1. Principes Absolus & Stack Technique
+- **Zéro base de données propriétaire** : le Markdown pur sur disque est la source unique de vérité.
+- **Frontend** : React 19, TypeScript (`strict: true`), Vite, Tailwind CSS / Vanilla CSS (`--knit-hue`), CodeMirror 6 (Live Preview).
+- **Backend & Core** : Rust 2021, Tauri v2 (`knit-core` pour la logique métier et les index, `src-tauri` pour l'IPC).
+- **Temps Réel & Sync** : CRDT Yjs P2P (LAN / Libp2p mdns) sans serveur cloud obligatoire.
+- **Vues Doc-Driven** : le type de vue découle du Frontmatter YAML (`type: note | kanban | table | calendar | canvas | slides | gallery`).
+- **IHM** : Menu contextuel centralisé (`contextMenuStore`), jamais de menu natif du navigateur.
+
+## 2. Décisions d'Architecture Validées (ADR Synthétiques)
+- **ADR-01** : Règle continue : Tout ajout de type/syntaxe met immédiatement à jour les règles IA du coffre (`B-043`).
+- **ADR-02 (B-052)** : Moteur d'autocomplétion universel (6 déclencheurs `[[`, `[[#`, `@`, `@@`, `#`, `:`, `/`) + index mémoire Rust `KnitSuggestIndex` (< 5ms).
+- **ADR-03 (B-053)** : Smart UX d'écriture : Smart Paste (lien/image sur sélection), Auto-Wrap, formatage de tableaux (`Tab`/`Entrée`), Hover Preview au survol, raccourci Note Quotidienne (`Ctrl+Shift+J`), panneau Backlinks.
+- **ADR-04 (B-031a)** : Agenda & Échéancier global : scanne `@YYYY-MM-DD[ HH:mm[-HH:mm]]` et `due:`, attribution `@nom-collaborateur` ou `@vault` (partagé), vues Jour/Semaine/Mois/Liste avec filtres personnalisés.
+- **ADR-05** : Protocole Handoff IA : lecture au démarrage (1x) et mise à jour de ce fichier à chaque clôture ou jalon.
+- **ADR-06** : Tâches étendues (`- [/]` en cours, `- [x]` fait, `- [-]` annulé, `- [?]` question), priorités `!p1`/`!p2`/`!p3`, barre de progression 2px projetée sous `#` et Mode Zen (`Ctrl+Shift+F`).
+- **ADR-07** : Alignement strict de version : Cargo workspace, Tauri, frontend & Sprints 100% synchronisés à chaque commit, push, cadrage et livraison.
+
+## 3. Historique Récent des Sessions (Changelog Compact)
+- **[2026-10-16]** : Passage à la v0.3.0 (Sprint 5 livré : Kanban Markdown pur, Tableaux, WindowControls frameless, identité Ambre), alignement multi-fichiers 100% vérifié.
+- **[2026-10-16]** : Règle absolue d'alignement des versions (6 sources de vérité) intégrée dans .cursorrules, CLAUDE.md, KNIT.md, agent-rules-sync.mdc et VERSIONING.md.
+- **[2026-10-16]** : Fix dépendance Vite `y-protocols`, vérification complète docs vs versions, création v0.4.0 (Sprint 6bis Dataview & 6ter Vues Immersives).
+- **[2026-10-16]** : US B-052 (Autocomplétion Universelle & `KnitSuggestIndex` Rust), intégrée au Sprint 6.
+- **[2026-10-16]** : US B-043 Kit IA Universel (Cursor, Claude, Antigravity, Copilot, Windsurf, Cline) & règle stricte de synchronisation continue (`agent-rules-sync.mdc`).
+
+## 4. Tâches Actives & Prochaines Priorités
+- [x] **Sprint 5** (v0.3.0) : Livré ✅ — Kanban Markdown, Quick Switcher, Formulaires sombres, Logo ambre.
+- [ ] **Sprint 6** (v0.3.0) : B-052 (Autocomplétion transversale), B-053 (Smart UX écriture & navigation), B-027 (Recherche plein-texte).
+- [ ] **Sprint 6ter** (v0.4.0) : B-031a (Agenda & Calendrier Global, attribution `@nom`/`@vault`, filtres et rappels).

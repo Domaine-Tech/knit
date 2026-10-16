@@ -15,7 +15,8 @@ build/
 src-tauri/target/
 
 # === Knit Vault Local State (NEVER commit local keys & CRDT cache) ===
-.knit/
+.knit/*
+!.knit/AI_MEMORY.md
 !.knitshare
 
 # === OS & IDE ===

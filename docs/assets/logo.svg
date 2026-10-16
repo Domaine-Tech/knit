@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 24 24" fill="none">
+  <defs>
+    <!-- Dégradé Knit Ambre Artisanal & Cuivre Doré (chaleur du tissage, identité propre) -->
+    <linearGradient id="knit-grad" x1="4" y1="3" x2="20" y2="21" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FBBF24" />
+      <stop offset="50%" stop-color="#F59E0B" />
+      <stop offset="100%" stop-color="#D97706" />
+    </linearGradient>
+  </defs>
+
+  <!-- Fond duotone ambre doux transparent -->
+  <path
+    d="M4 12a8 8 0 1 0 16 0 8 8 0 1 0 -16 0"
+    fill="url(#knit-grad)"
+    fill-opacity="0.16"
+  />
+
+  <!-- Tracé vectoriel unifié Knit : courbure continue, jonctions parfaites sans débordement -->
+  <path
+    d="M4 12a8 8 0 1 0 16 0 8 8 0 1 0 -16 0 M5 9c4 2 8 6 10 10 M9.5 4.85C13 7 17 11 19 15 M11.5 20c2.5 0 4.5 0.5 6 1.3"
+    fill="none"
+    stroke="url(#knit-grad)"
+    stroke-width="2.3"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>

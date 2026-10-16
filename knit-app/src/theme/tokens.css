@@ -6,7 +6,7 @@
 
 :root {
   /* === COULEUR PRINCIPALE DYNAMIQUE (0 à 360) === */
-  --knit-hue: 260; /* Violet moderne sobre par défaut */
+  --knit-hue: 35; /* Ambre Artisanal & Cuivre Doré par défaut (identité propre Knit) */
 
   /* Palette calculée dynamiquement à partir du hue */
   --knit-primary: hsl(var(--knit-hue), 55%, 55%);

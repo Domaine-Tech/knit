@@ -4,3 +4,9 @@ members = [
     "knit-app/src-tauri",
 ]
 resolver = "2"
+
+[workspace.package]
+version = "0.3.0"
+edition = "2021"
+authors = ["Domaine Tech"]
+license = "MIT OR Apache-2.0"

@@ -119,6 +119,16 @@
 | B-030a | Menu Slash Command (`/`) & Callouts GFM (`> [!NOTE]`) (Notion) | 🟠 | 📋 | Sprint 6 |
 | B-030b | Multi-onglets & Split View (`Ctrl+\`) avec synchronisation d'état indépendante (Obsidian) | 🟡 | 📋 | Sprint 6 |
 | B-030c | Mode Live Preview (style Obsidian : masquer balises Markdown hors curseur) | 🔴 | 📋 | Sprint 6 |
+| B-030e | Confort de lecture centré (760px) & Bascule "Pleine Largeur" (style Notion) | 🟡 | 📋 | Sprint 6 |
+| B-044 | Curseur Fantôme & Présence Visuelle des Agents IA (Ghost Cursor) | 🟠 | 📋 | Sprint 6 |
+| B-045 | Générateur de Contexte IA en 1 Clic (Context Packager `Ctrl+Shift+C`) | 🟡 | 📋 | Sprint 6 |
+| B-046 | Pliage Hiérarchique de Sections (Heading Fold / Collapse `Ctrl+Alt+[` / `]`) | 🟡 | 📋 | Sprint 6 |
+| B-048 | Section "Favoris / Épinglés" en Tête de Sidebar (Pinned Notes) | 🟠 | 📋 | Sprint 6 |
+| B-052 | Moteur d'Autocomplétion Universel & Indexation Incrémentale Multi-Vues (Deep-links `[[Note#Titre]]`, ancres `[[#Titre]]`, `@date`, `@collaborateur`, `:emoji:`, `#tag`, actif Éditeur/Kanban/Table) | 🔴 | 📋 | Sprint 6 |
+| B-053 | Smart UX d'Écriture & Navigation (Smart Paste URL/image sur sélection, Auto-wrap, Tableaux `Tab`/`Entrée`, Hover preview flottant, raccourci Note Quotidienne `Ctrl+Shift+J`, panneau Backlinks) | 🟠 | 📋 | Sprint 6 |
+| B-054 | Norme Tâches Étendues Markdown & Indicateurs de Progrès (États `- [ ]`, `- [/]`, `- [x]`, `- [-]`, `- [?]`, `- [>]`, `- [!]`, priorités `!p1`..`!p3`, barre 2px projetée sous `#`, synchro Kanban) | 🟠 | 📋 | Sprint 6 |
+| B-055 | Mode Zen & Focus Absolu (`Ctrl+Shift+F`) et Optimisation Performance (Lazy-rendering `IntersectionObserver`, WriteGuard 250ms debounce) | 🟡 | 📋 | Sprint 6 |
+
 
 ---
 
@@ -136,15 +146,17 @@
 | B-031h | Bloc dynamique `knit-toc` : sommaire automatique cliquable de la note courante basé sur les titres | 🟠 | 📋 | Sprint 6bis |
 | B-031i | Bloc dynamique `knit-tasks` : agrégateur transversal de cases à cocher `- [ ]` synchronisé via CRDT | 🟠 | 📋 | Sprint 6bis |
 | B-031j | Déclencheurs Slash command (`/sommaire`, `/fichiers`, `/requete`, `/taches-globales`) | 🟡 | 📋 | Sprint 6bis |
+| B-047 | Assistant Visuel de Tableaux Markdown (Interactive Table Helper avec navigation `Tab`) | 🟠 | 📋 | Sprint 6bis |
 
 ### Sprint 6ter — Vues Immersives (Canvas, Calendrier & Diaporama)
 
 | # | Tâche | Priorité | Statut | Sprint |
 |---|---|---|---|---|
-| B-031a | Vue Calendrier / Journal (`type: calendar` ou `type: journal`, vue mensuelle/hebdomadaire) | 🟠 | 📋 | Sprint 6ter |
+| B-031a | Agenda & Échéancier Global du Coffre (`type: calendar` / vue globale, extraction `@dates` et `@heures`, attribution `@collaborateur` ou coffre `@vault`, filtrage 'Mes tâches & Vault', drag-and-drop bidirectionnel) | 🔴 | 📋 | Sprint 6ter |
 | B-031b | Vue Canvas / Tableau Blanc infini (`type: canvas`, cartes déplaçables & connecteurs fléchés) | 🔴 | 📋 | Sprint 6ter |
 | B-031c | Vue Diaporama / Présentation (`type: slides`, séparateur `---`, mode plein écran) | 🟡 | 📋 | Sprint 6ter |
 | B-031d | Vue Galerie / Database (`type: gallery`, cartes visuelles avec bannière et métadonnées) | 🟡 | 📋 | Sprint 6ter |
+| B-049 | Vue Graphe Local Interactive (Local Graph View 2D basé sur WikiLinks & Backlinks) | 🟠 | 📋 | Sprint 6ter |
 
 ---
 
@@ -163,6 +175,9 @@
 | B-035 | Présence collaborative (avatars sidebar, infobulle, téléportation, curseurs sobres) | 🟡 | 📋 | Sprint 7 |
 | B-035b | Volet Historique de versions & Time Travel (Diff visuel + Restauration) | 🟠 | 📋 | Sprint 7 |
 | B-036 | Créer le fichier `.knitshare` et la structure par défaut | 🟠 | 📋 | Sprint 7 |
+| B-017b | Appairage P2P LAN Simplifié (Code PIN éphémère à 6 chiffres & QR Code dynamique pour inviter sans clé 64 chars) | 🟠 | 📋 | Sprint 7 |
+| B-043 | Kit Universel Multi-Agents IA & Registre de Mémoire Persistante (`.knit/AI_MEMORY.md`, Cursor `.cursor/rules/`, Claude `CLAUDE.md`, Antigravity `.agents/skills/`, Copilot, etc.) | 🔴 | 📋 | Sprint 7 |
+| B-051 | Mode "Réseau Local Strict / Air-Gapped" (LAN-Only Toggle désactivant les relays WAN) | 🟡 | 📋 | Sprint 7 |
 
 ### Sprint 8 — Distribution & Polish
 
@@ -173,6 +188,8 @@
 | B-039 | Notifications système (nouveau pair connecté, sync terminée) | 🟡 | 📋 | Sprint 8 |
 | B-040 | Tray icon avec menu contextuel | 🟡 | 📋 | Sprint 8 |
 | B-041 | Tests end-to-end (Tauri + 2 pairs P2P) | 🟠 | 📋 | Sprint 8 |
+| B-041a | Virtualisation de l'arborescence (Windowing Sidebar pour 50 000+ notes sans lag) | 🟠 | 📋 | Sprint 8 |
+| B-050 | Cache LRU des Documents CRDT & Libération Mémoire (LRU Doc Cache max 20 Y.Docs) | 🟠 | 📋 | Sprint 8 |
 | B-042 | README final + screenshots + documentation utilisateur | 🟠 | 📋 | Sprint 8 |
 
 ---
@@ -183,8 +200,6 @@
 
 | # | Tâche | Priorité | Statut |
 |---|---|---|---|
-| B-100 | Vue Calendrier (basée sur `echeance:` et `sprint:`) | 🟡 | 💡 |
-| B-101 | Historique / Time Travel (exploiter l'OpLog Yjs) | 🟡 | 💡 |
 | B-102 | Système de permissions par fichier/dossier | 🟡 | 💡 |
 | B-103 | Journal d'activité (activity feed) | 🟢 | 💡 |
 | B-104 | Templates de tâches et pages wiki (`.knit/templates/`) | 🟢 | 💡 |
@@ -192,8 +207,7 @@
 | B-106 | CLI `knit new tache "Nom"` (création rapide) | 🟢 | 💡 |
 | B-107 | Export/Import Git (commit & push intégré) | 🟡 | 💡 |
 | B-108 | Système de plugins pour vues custom | 🟢 | 💡 |
-| B-109 | Mode Présentation (Markdown → slides) | 🟢 | 💡 |
-| B-110 | Diagrammes Mermaid : `gantt`, `classDiagram` | 🟡 | 💡 |
-| B-111 | Diagrammes Mermaid : `pie`, `mindmap`, `timeline`, `gitGraph` | 🟢 | 💡 |
+| B-110 | Diagrammes Mermaid avancés : `gantt`, `classDiagram` | 🟡 | 💡 |
+| B-111 | Diagrammes Mermaid complexes : `pie`, `mindmap`, `timeline`, `gitGraph` | 🟢 | 💡 |
 | B-112 | Support macOS | 🟡 | 💡 |
 | B-113 | Application mobile (Tauri mobile) | 🟢 | 💡 |

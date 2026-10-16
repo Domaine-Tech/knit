@@ -1,8 +1,8 @@
 [package]
 name = "knit-app"
-version = "0.1.0"
+version.workspace = true
 description = "Knit Desktop Application"
-edition = "2021"
+edition.workspace = true
 
 [lib]
 name = "knit_app_lib"

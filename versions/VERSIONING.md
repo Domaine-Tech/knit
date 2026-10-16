@@ -46,6 +46,13 @@ versions/
 │   └── sprint-6/
 │       └── SPRINT.md
 │
+├── v0.4.0/                 # Version 0.4.0 — Requêtes & Vues Immersives
+│   ├── CHANGELOG.md
+│   ├── sprint-6bis/
+│   │   └── SPRINT.md
+│   └── sprint-6ter/
+│       └── SPRINT.md
+│
 └── v1.0.0/                 # Version 1.0.0 — Production Release
     ├── CHANGELOG.md
     ├── sprint-7/
@@ -55,6 +62,51 @@ versions/
 ```
 
 ---
+
+## 🏛️ Architecture Centralisée & Protocole d'Alignement des Versions
+
+Knit est un projet hybride combinant un cœur Rust multi-crates (`knit-core`, `knit-desktop`), un orchestrateur de bureau Tauri v2, et une interface React / TypeScript (`knit-app`).
+
+Pour éviter toute désynchronisation, **la gestion des versions est strictement centralisée**.
+
+### Matrice des 6 Sources de Vérité
+
+| Fichier | Type | Rôle & Mécanisme de Synchronisation |
+|---|---|---|
+| **`Cargo.toml` (racine)** | Rust Workspace | **Source unique de vérité** via `[workspace.package] version = "X.Y.Z"` |
+| **`knit-core/Cargo.toml`** | Rust Crate | Hérite automatiquement via `version.workspace = true` |
+| **`knit-app/src-tauri/Cargo.toml`** | Rust Crate | Hérite automatiquement via `version.workspace = true` |
+| **`knit-app/src-tauri/tauri.conf.json`** | Tauri Desktop | Configuration native : `"version": "X.Y.Z"` (Windows/macOS/Linux) |
+| **`knit-app/package.json`** (+ racine) | Node/Vite | Package frontend : `"version": "X.Y.Z"` |
+| **`knit-app/src/utils/version.ts`** | TypeScript UI | Constante de secours web `APP_VERSION = 'X.Y.Z'` + `getAppVersion()` Tauri |
+
+### Règles IA & Développeurs pour les 3 Jalons Clés
+
+> [!IMPORTANT]
+> **Règle absolue pour tout agent IA et contributeur** : Zéro écart de version toléré.
+
+1. **Lors d'un Commit Git ou `git push`** :
+   - Vérifier que la version est parfaitement alignée sur l'ensemble des 6 fichiers.
+   - Ne jamais committer une mise à jour de version partielle (ex: modifier `package.json` sans `Cargo.toml` et `tauri.conf.json`).
+
+2. **Lors de la Construction / Cadrage d'un Sprint** (`SPRINT.md`) :
+   - Vérifier que le numéro de version cible (`| **Version** | vX.Y.Z |`) correspond bien au jalon planifié dans `versions/VERSIONING.md`.
+   - Si le sprint démarre une nouvelle version SemVer (ex: passage de `v0.1.0` à `v0.2.0`), exécuter le bump de version simultanément sur les 6 fichiers dès l'initialisation du sprint.
+
+3. **À la Livraison d'un Sprint ou Clôture de Version** (`Statut: ✅ Terminé`) :
+   - **Checklist de livraison obligatoire** :
+     - [ ] `Cargo.toml` racine à jour
+     - [ ] `knit-app/src-tauri/tauri.conf.json` à jour
+     - [ ] `knit-app/package.json` et `package.json` racine à jour
+     - [ ] `knit-app/src/utils/version.ts` (`APP_VERSION`) à jour
+     - [ ] `versions/vX.Y.Z/CHANGELOG.md` rédigé avec les nouveautés et corrections
+     - [ ] `versions/vX.Y.Z/sprint-N/SPRINT.md` passé en `✅ Terminé`
+     - [ ] `versions/VERSIONING.md` roadmap mise à jour
+     - [ ] `.knit/AI_MEMORY.md` actualisé
+     - [ ] Compilation validée : `cargo check --workspace` et `npm run build`
+
+---
+
 
 ## Règles du backlog
 
@@ -174,7 +226,11 @@ gantt
     Sprint 5 : s5, after s4, 14d
     Sprint 6 : s6, after s5, 14d
 
+    section v0.4.0 — Requêtes & Vues Immersives
+    Sprint 6bis : s6b, after s6, 14d
+    Sprint 6ter : s6t, after s6b, 14d
+
     section v1.0.0 — Production
-    Sprint 7 : s7, after s6, 14d
+    Sprint 7 : s7, after s6t, 14d
     Sprint 8 : s8, after s7, 14d
 ```

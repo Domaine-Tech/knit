@@ -80,6 +80,9 @@ graph TD
 │  ☐ Créer la structure par défaut                 │
 │    (wiki/, projet/taches/, KNIT.md)              │
 │                                                  │
+│  ☑ Configurer les règles pour agents IA          │
+│    (Cursor, Claude Code, Antigravity, Copilot)   │
+│                                                  │
 │  ☐ Initialiser un dépôt Git                     │
 │    (ajoute .knit/ au .gitignore)                 │
 │                                                  │
@@ -215,7 +218,12 @@ mon-projet/
 │   ├── snapshots/           # (vide au départ)
 │   └── cache/               # (vide au départ)
 ├── .knitshare               # Config partagée (nom, conventions)
-├── KNIT.md                  # Instructions pour les IA
+├── KNIT.md                  # Instructions universelles pour les IA
+├── .cursor/rules/knit.mdc   # Règles d'édition pour Cursor IDE
+├── CLAUDE.md                # Directives pour Claude Code CLI
+├── .agents/skills/knit/     # Skill outillé pour Antigravity / Gemini
+├── .github/copilot-instructions.md # Règles GitHub Copilot
+├── .windsurfrules           # Règles pour Windsurf IDE
 ├── assets/                  # Pièces jointes et images (vide au départ)
 ├── wiki/
 │   └── accueil.md           # Page d'accueil du wiki

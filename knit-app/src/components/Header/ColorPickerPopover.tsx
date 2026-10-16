@@ -7,15 +7,15 @@ interface PresetColor {
 }
 
 const PRESET_COLORS: PresetColor[] = [
-  { name: 'Violet Knit', hue: 260 },
-  { name: 'Indigo', hue: 235 },
-  { name: 'Bleu Océan', hue: 210 },
-  { name: 'Cyan / Menthe', hue: 175 },
-  { name: 'Émeraude', hue: 142 },
-  { name: 'Ambre Doré', hue: 45 },
-  { name: 'Corail / Pêche', hue: 22 },
-  { name: 'Rouge Passion', hue: 350 },
-  { name: 'Rose / Magenta', hue: 305 },
+  { name: 'Ambre Knit (Défaut)', hue: 35 },
+  { name: 'Cuivre / Terracotta', hue: 20 },
+  { name: 'Rouge Carmin', hue: 350 },
+  { name: 'Rose / Magenta', hue: 310 },
+  { name: 'Violet Nuit', hue: 270 },
+  { name: 'Bleu Cobalt', hue: 220 },
+  { name: 'Cyan Électrique', hue: 190 },
+  { name: 'Émeraude / Menthe', hue: 155 },
+  { name: 'Vert Sauge', hue: 125 },
 ];
 
 interface ColorPickerPopoverProps {

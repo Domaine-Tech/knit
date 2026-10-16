@@ -82,6 +82,12 @@ knit/
 │   │   │   ├── assets.rs   # Sauvegarde des images et pièces jointes
 │   │   │   ├── config.rs   # .knit/config.yaml
 │   │   │   └── identity.rs # Keypair Ed25519
+│   │   ├── index/          # Moteur d'indexation incrémentale (Autocomplétion & Agenda < 2ms)
+│   │   │   ├── mod.rs
+│   │   │   ├── headings.rs # Index hiérarchique des titres (#, ##, ###)
+│   │   │   ├── tags.rs     # Trie préfixe des tags et compteurs
+│   │   │   ├── calendar.rs # Index temporel des dates/heures et assignations (@nom / @vault)
+│   │   │   └── matcher.rs  # Algorithme de recherche floue (Fuzzy matcher)
 │   │   └── markdown/       # Parseur Markdown
 │   │       ├── mod.rs
 │   │       ├── frontmatter.rs # YAML frontmatter
@@ -238,7 +244,11 @@ mon-coffre-fort/
 │   └── cache/               #    Cache local (mermaid SVGs, etc.)
 │
 ├── .knitshare               # ✅ Synchronisé — config partagée du coffre
-├── KNIT.md                  # ✅ Synchronisé — instructions pour les IA
+├── KNIT.md                  # ✅ Synchronisé — guide universel pour IA
+├── .cursor/rules/knit.mdc   # ✅ Synchronisé — règles pour Cursor IDE
+├── CLAUDE.md                # ✅ Synchronisé — instructions Claude Code
+├── .agents/skills/knit/     # ✅ Synchronisé — skill Antigravity & Gemini
+├── .github/copilot-instructions.md # ✅ Synchronisé — instructions GitHub Copilot
 ├── assets/                  # ✅ Synchronisé (via Iroh Blobs) — images & pièces jointes
 ├── wiki/                    # ✅ Synchronisé
 ├── projet/                  # ✅ Synchronisé
@@ -324,4 +334,6 @@ Knit a été pensé dès sa conception pour éviter tous les pièges de performa
 | **Rendu Diagrammes** | Saccades lors de la frappe dans un bloc Mermaid | **Debounce 300ms + Cache SVG vectoriel** | Fluidité à 60 fps maintenue pendant la saisie |
 | **Notifications UI** | Spam de popups si l'IA modifie 50 fichiers | **Toast Event Debounce & Compteur dynamique** | Un seul toast groupé : *"X fichiers synchronisés"* |
 | **Arbre de fichiers** | Ralentissement au-delà de 5 000 fichiers | **Virtualisation de l'arborescence (Windowing)** | Scalable jusqu'à **50 000+ notes** sans lag |
+| **Gestion mémoire CRDT** | Inflation de la RAM lors de l'ouverture de 100+ notes | **Pool LRU (max 20 Y.Docs en RAM)** | Empreinte RAM contenue à **< 60 Mo** en session prolongée |
+| **Souveraineté Réseau** | Fuite involontaire de paquets vers des relays WAN | **Mode Réseau Local Strict (Air-Gapped Toggle)** | **0 paquet émis sur Internet**, P2P 100% LAN/mDNS |
 

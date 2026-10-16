@@ -128,15 +128,75 @@ Chaque vue dispose dans son en-tête d'un bouton d'action universel :
 
 ## 6. Syntaxes Markdown Riches Supportées
 
-### 1. WikiLinks Bidirectionnels
+### 1. WikiLinks Bidirectionnels & Deep-Linking (B-026b & B-052)
 ```markdown
-[[Nom de la note]]
-[[dossier/nom-note|Texte alternatif du lien]]
+[[Nom de la note]]                       # Lien simple vers une note
+[[dossier/nom-note|Texte alternatif]]    # Lien avec alias d'affichage
+[[architecture#Moteur CRDT]]             # Deep-link vers une section/titre d'une autre note
+[[#Installation]]                        # Ancre interne vers un titre de la note active
+[[note^crdt-block]]                      # Référence de bloc/paragraphe spécifique
 ```
-- Autocomplétion instantanée à la frappe de `[[`.
-- Renommage automatique des liens lors du déplacement d'une cible.
+- **Autocomplétion déclenchée par `[[`** : liste les fichiers du coffre, propose les titres dès la saisie de `#` et les blocs sur `^`.
+- **Refactoring automatique** : le déplacement ou renommage d'un document met à jour automatiquement tous ses liens référents.
+- **Navigation au clic / `Ctrl+Clic`** : ouvre instantanément la cible dans l'onglet actif ou dans un nouvel onglet, avec scroll vers l'ancre ciblée.
 
-### 2. Blocs Diagrammes Mermaid Inline (Sprint 6)
+### 2. Mentions de Collaborateurs, Dates Échéances & Attribution Vault (B-052 & B-031a)
+```markdown
+# Tâche assignée à un collaborateur précis avec date et plage horaire
+- [ ] Préparer la démo client @Thomas H. @2026-10-20 14:00-15:30
+
+# Tâche assignée collectivement à l'ensemble du coffre / équipe
+- [ ] Sauvegarder les assets du vault @vault @2026-10-21
+
+# Tâche avec échéance stricte sans heure
+- [ ] Finaliser la relecture due: 2026-10-25
+```
+- **Déclencheurs** :
+  - `@` : Autocomplète les collaborateurs locaux et l'entité spéciale `@vault` (assignation générale au coffre).
+  - `@@` : Raccourcis de date (`@@aujourd'hui`, `@@demain`, `@@lundi`, `@@YYYY-MM-DD`).
+- **Formats d'heures et durées supportés** :
+  - Date simple : `@2026-10-20`
+  - Date avec heure de début : `@2026-10-20 14:30` ou `@2026-10-20T14:30`
+  - Date avec plage horaire : `@2026-10-20 14:00-15:30`
+- **Frontmatter de document** (assignation globale au niveau de la note) :
+  ```yaml
+  ---
+  title: Réunion Stratégie
+  date: 2026-10-20T14:00:00
+  assignee: @Thomas H.      # ou assignee: vault (partagée avec tous les pairs)
+  participants: [@Sarah, @Alex]
+  ---
+  ```
+- **Filtrage d'Agenda** : permet d'isoler en 1 clic « Mon Agenda » (tâches qui me sont attribuées + tâches `@vault` collectives) ou « Agenda Collaborateur X » ou « Agenda Coffre Complet ».
+
+### 3. Smart UX de Rédaction & Navigation Humaine (B-053)
+- **Smart Paste (Lien/Image sur sélection)** :
+  - Sélectionner du texte et presser `Ctrl+V` avec une URL transforme le texte en `[Texte](url)` sans écraser la sélection.
+  - Coller une image sur une sélection génère `![Texte](assets/image.png)`.
+- **Auto-Wrap par symboles** :
+  - Sélectionner un mot et taper `[` l'entoure de `[[...]]`.
+  - Taper `*` l'entoure de `*...*` (ou `**...**`).
+  - Taper `` ` `` l'entoure de `` `...` ``.
+  - Taper `~` l'entoure de `~~...~~`.
+- **Formatage dynamique des tableaux (`Tab` / `Entrée`)** :
+  - `Tab` navigue vers la cellule suivante en alignant automatiquement les séparateurs `|`.
+  - `Entrée` crée immédiatement la ligne suivante avec les barres verticales alignées.
+- **Hover Preview (Prévisualisation flottante au survol)** :
+  - Survoler un `[[Lien]]`, un `@collaborateur` ou un `#tag` (avec maintien optionnel de `Ctrl`) ouvre une infobulle translucide avec le contenu de la cible sans quitter l'écran de travail.
+- **Raccourci Note Quotidienne (`Ctrl+Shift+J` ou `Alt+D`)** :
+  - Ouvre ou initialise instantanément la note du jour `journal/YYYY-MM-DD.md` avec le modèle par défaut.
+- **Panneau latéral de Rétroliens (Backlinks Panel)** :
+  - Volet dédié listant toutes les notes pointant vers le document actif (liens explicites `[[...]]` et mentions non liées).
+
+### 4. Tags Hiérarchiques
+```markdown
+#projet
+#projet/sprint-6
+#dev/rust/p2p
+```
+- Déclenché à la frappe de `#` : suggestions instantanées avec compteur d'occurrences.
+
+### 5. Blocs Diagrammes Mermaid Inline (Sprint 6)
 ````markdown
 ```mermaid
 graph TD
@@ -149,7 +209,7 @@ graph TD
 - Rendu SVG inline vivant avec coloration syntaxique et thème synchronisé `--knit-hue`.
 - Clic direct sur le diagramme pour en modifier le code à la volée.
 
-### 3. Callouts GFM (Alertes Épurées)
+### 6. Callouts GFM (Alertes Épurées)
 ```markdown
 > [!NOTE]
 > Information contextuelle sobre avec bordure fine et fond neutre feutré.
@@ -161,12 +221,35 @@ graph TD
 > Avertissement de compatibilité ou précaution d'usage.
 ```
 
-### 4. Cases à cocher et Tâches
+### 7. Cases à cocher, Tâches Étendues & Indicateurs de Progrès (Sprint 6 — B-054)
 ```markdown
-- [ ] Tâche à réaliser
-- [x] Tâche terminée
+- [ ] Tâche à réaliser (statut: à faire)
+- [/] Tâche en cours d'exécution (statut: en cours, icône sablier / demi-jauge)
+- [x] Tâche validée et terminée (statut: fait, texte feutré barré)
+- [-] Tâche annulée ou abandonnée (statut: annulé)
+- [?] Tâche en attente d'arbitrage ou de retour (statut: question)
+- [>] Tâche reportée ou déléguée (statut: reporté, flèche droite)
+- [!] Tâche urgente / critique (statut: urgent, point d'exclamation)
 ```
-- Interactives au clic dans l'éditeur, dans la vue Kanban et dans la vue Tableau.
+
+#### Priorités Inline Ultra-Légères
+```markdown
+- [ ] Corriger le bug critique de fusion Yjs !p1 @Thomas H. @2026-10-20
+- [ ] Améliorer la lisibilité du contraste !p2
+- [ ] Nettoyer les dépendances non utilisées !p3
+```
+- **`!p1`** : Priorité urgente / critique (badge rouge doux feutré).
+- **`!p2`** : Priorité haute (badge ambre feutré).
+- **`!p3`** : Priorité basse / secondaire (badge gris feutré).
+
+#### Mini-Barre de Progression Automatique (Inline Note Progress)
+Lorsque Knit détecte des tâches `- [ ]` dans une note :
+- Un indicateur discret de 2px de haut s'affiche sous le premier titre `#` :
+  ```
+  [████████████░░░░░░] 12 / 18 tâches complétées (67%)
+  ```
+- **Zéro surcharge** : Aucun code ou balise n'est écrit sur le disque ; l'indicateur est projeté en temps réel par le Live Preview de CodeMirror 6.
+- **Bijectivité Kanban** : Déplacer une carte vers la colonne « En cours » met à jour la case en `- [/]`. La glisser dans « Terminé » la transforme en `- [x]`.
 
 ---
 

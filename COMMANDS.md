@@ -38,6 +38,9 @@ npm run lint
 # ou manuellement :
 cargo clippy --workspace && npm --prefix knit-app run lint
 
+# Vérifier l'alignement strict des versions (Cargo, Tauri, package.json, runtime)
+npm run check:version
+
 # Compiler l'ensemble du projet en production
 npm run build
 ```

@@ -28,4 +28,5 @@ Pour suivre la planification, les sprints et le backlog vivant du projet, consul
 - [Version 0.1.0](../versions/v0.1.0/CHANGELOG.md)
 - [Version 0.2.0](../versions/v0.2.0/CHANGELOG.md)
 - [Version 0.3.0](../versions/v0.3.0/CHANGELOG.md)
+- [Version 0.4.0](../versions/v0.4.0/CHANGELOG.md)
 - [Version 1.0.0](../versions/v1.0.0/CHANGELOG.md)

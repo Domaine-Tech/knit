@@ -19,6 +19,8 @@
 | B-039 | Notifications système (connexion nouveau pair, fin de sync initiale) | 🟡 | 📋 | — |
 | B-040 | Tray icon avec menu contextuel et indicateur d'état | 🟡 | 📋 | — |
 | B-041 | Tests end-to-end automatisés (Tauri + 2 pairs virtuels en simultané) | 🟠 | 📋 | — |
+| B-041a | Virtualisation de l'arborescence (Windowing Sidebar pour 50 000+ notes sans lag) | 🟠 | 📋 | — |
+| B-050 | Cache LRU des Documents CRDT & Libération Mémoire (LRU Doc Cache max 20 Y.Docs) | 🟠 | 📋 | — |
 | B-042 | README final + guide utilisateur + captures d'écran de référence | 🟠 | 📋 | — |
 
 ---
@@ -30,6 +32,7 @@
 - [ ] L'icône de la barre des tâches indique si le nœud est connecté en LAN, WAN ou hors-ligne.
 - [ ] Les tests E2E passent à 100% dans la CI.
 - [ ] La documentation utilisateur est complète, claire et accompagnée d'exemples concrets.
+- [ ] **Cache LRU & Performance Mémoire (B-050)** : Le gestionnaire CRDT borne à 20 le nombre de `Y.Doc` instanciés simultanément ; les documents inactifs sont compactés sur disque et déchargés de la RAM pour garantir une consommation < 60 Mo.
 
 ---
 

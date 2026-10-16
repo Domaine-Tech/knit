@@ -66,3 +66,23 @@ Pour toute modification du frontend React (`knit-app`) :
    - Si une nouvelle tâche ou un bug est détecté en cours de travail, l'ajouter à `versions/BACKLOG.md` avec le statut `💡 nouveau` et le consigner dans la section *"Ajouts en cours de sprint"* du `SPRINT.md` actif.
    - Ne jamais supprimer de tâches ou de documentation sans consigne explicite.
    - Rédiger les messages de commits en français clair et concis (ex: `feat(editor): ajout du collage d'images depuis le presse-papier`).
+5. **Synchronisation Continue des Règles IA (Règle B-043)** :
+   - Toute nouvelle fonctionnalité touchant au format de coffre (syntaxe Markdown, types de documents YAML `type: ...`, nouveaux blocs dynamiques, triggers d'autocomplétion `[[#...]]`, `@...`, dossiers de coffre) **DOIT être immédiatement répercutée** dans l'ensemble des fichiers de règles générés pour les IA (`KNIT.md`, `.cursor/rules/knit.mdc`, `CLAUDE.md`, `.agents/skills/knit/SKILL.md`, etc.). Aucun écart entre l'application et les instructions des agents n'est toléré.
+6. **Mémoire Agentique Persistante (`.knit/AI_MEMORY.md`) & Protocole Handoff** :
+   - Au démarrage d'une session ou tâche, tout agent lit en priorité `.knit/AI_MEMORY.md` (~400 tokens) pour s'imprégner de l'état immédiat et des décisions validées sans recharger d'historiques volumineux.
+   - À l'achèvement d'une tâche d'envergure ou d'une session, l'agent met à jour `.knit/AI_MEMORY.md` (sections *Historique Récent* et *Tâches Actives*) pour garantir une passation de témoin parfaite.
+7. **Norme de Tâches Étendues & Markdown Pur (B-054)** :
+   - Respecter les 7 statuts reconnus par Knit (`- [ ]`, `- [/]`, `- [x]`, `- [-]`, `- [?]`, `- [>]`, `- [!]`), les priorités inline (`!p1`, `!p2`, `!p3`), les dates/heures (`@YYYY-MM-DD[ HH:mm[-HH:mm]]`) et assignations (`@collaborateur` ou `@vault`). Ne jamais introduire de balise HTML propriétaire pour les tâches.
+8. **Alignement Strict des Numéros de Version (Commit, Push, Cadrage & Livraison de Sprint)** :
+   - **Règle absolue** : À chaque **commit Git**, **`git push`**, **construction/planification d'un sprint**, ou **livraison d'un sprint/version**, l'agent IA DOIT impérativement vérifier et garantir que le numéro de version est 100% aligné sur l'ensemble des sources de vérité du projet.
+   - **Périmètre des 6 fichiers de code sources de vérité** :
+     1. `Cargo.toml` (racine) : `[workspace.package] version = "X.Y.Z"` (source unique Cargo).
+     2. `knit-core/Cargo.toml` : `version.workspace = true` (héritage garanti).
+     3. `knit-app/src-tauri/Cargo.toml` : `version.workspace = true` (héritage garanti).
+     4. `knit-app/src-tauri/tauri.conf.json` : `"version": "X.Y.Z"` (exécutable natif multiplateforme).
+     5. `knit-app/package.json` & `package.json` (racine) : `"version": "X.Y.Z"`.
+     6. `knit-app/src/utils/version.ts` : `export const APP_VERSION = 'X.Y.Z'` (fallback Web/Dev & affichage runtime).
+   - **Documentation & Sprints** : Le dossier `versions/vX.Y.Z/` (`CHANGELOG.md`, `sprint-N/SPRINT.md`), `versions/VERSIONING.md` et `.knit/AI_MEMORY.md` doivent refléter le même numéro de version. Zéro désynchronisation tolérée.
+
+
+

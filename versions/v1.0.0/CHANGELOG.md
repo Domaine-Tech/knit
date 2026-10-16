@@ -21,7 +21,14 @@
 - **Panneau de préférences unifié** :
   - Réglage du thème clair/sombre, curseur HSL, diagnostics réseau P2P et gestion des pairs connectés.
   - Sélecteur de mode de suppression : Corbeille système de l'OS vs Corbeille 100% intégrée au coffre (`.knit/trash/`).
-  - Volet dédié Corbeille avec prévisualisation des fichiers supprimés, restauration ciblée et vidage définitif.
+- **Kit Universel pour IA Agentiques (B-043)** :
+  - Génération automatique des règles et compétences pour toutes les IA agentiques du marché : `KNIT.md`, `.cursor/rules/knit.mdc`, `CLAUDE.md`, `.agents/skills/knit/SKILL.md`, `.github/copilot-instructions.md`, `.windsurfrules`, `.clinerules`, `.aider.conf.yml`.
+  - Intégration transparente enseignant le respect du frontmatter YAML, la protection du moteur `.knit/` et le classement dans `assets/`.
+- **Mode Réseau Local Strict / Air-Gapped (B-051)** :
+  - Interrupteur de coupure totale du trafic Internet WAN dans les préférences, forçant le protocole P2P en mDNS direct sans contact relay.
+- **Cache LRU & Performances Mémoire (B-050 & B-041a)** :
+  - Gestionnaire de pool LRU bornant à 20 le nombre de documents CRDT en RAM, compactant et libérant les notes inactives.
+  - Virtualisation de l'arborescence (Windowing) garantissant un défilement fluide à 60 fps jusqu'à 50 000+ notes.
 - **Intégration OS native & packaging** :
   - Installateurs Windows officiels (`.msi`, `.exe`).
   - Packages Linux (`.AppImage`, `.deb`).

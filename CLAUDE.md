@@ -33,5 +33,19 @@ Knit est une application collaborative local-first et peer-to-peer (P2P) pour la
 9. **Architecture Doc-Driven Views & TabBar Permanente** :
    - Toute vue doit être résolue par onglet selon le type déclaré dans le Frontmatter YAML (`type: kanban`, `type: table`, `type: note`) selon [docs/MARKDOWN_SPEC.md](docs/MARKDOWN_SPEC.md).
    - La barre d'onglets (`TabBar`) doit rester visible sur toutes les vues, avec icône dynamique par type de document.
-
-
+10. **Synchronisation Continue des Règles d'Agents IA (Règle B-043)** :
+   - Toute nouvelle fonctionnalité touchant au format de coffre (syntaxe Markdown, types de documents YAML `type: ...`, nouveaux blocs dynamiques, triggers d'autocomplétion `[[#...]]`, `@...`, dossiers de coffre) doit être immédiatement répercutée dans l'ensemble des fichiers de règles générés pour les IA (`KNIT.md`, `.cursor/rules/knit.mdc`, `CLAUDE.md`, `.agents/skills/knit/SKILL.md`).
+11. **Mémoire Agentique Persistante (`.knit/AI_MEMORY.md`) & Protocole Handoff** :
+   - Au démarrage d'une session ou tâche, tout agent lit en priorité `.knit/AI_MEMORY.md` (~400 tokens) pour réactiver l'état d'avancement et les décisions clés sans gonfler son contexte.
+   - À l'achèvement d'une tâche d'envergure ou avant de clore, mettre à jour `.knit/AI_MEMORY.md` (sections *Historique Récent* et *Tâches Actives*).
+12. **Norme de Tâches Étendues & Markdown Pur (B-054)** :
+   - Respecter les 7 statuts reconnus par Knit (`- [ ]`, `- [/]`, `- [x]`, `- [-]`, `- [?]`, `- [>]`, `- [!]`), les priorités inline (`!p1`, `!p2`, `!p3`), les dates/heures (`@YYYY-MM-DD[ HH:mm[-HH:mm]]`) et assignations (`@collaborateur` ou `@vault`). Ne jamais introduire de balise HTML propriétaire pour les tâches.
+13. **Alignement Systématique des Versions (Commit, Push, Cadrage & Livraison de Sprint)** :
+   - À chaque **commit Git**, **`git push`**, **construction/planification d'un sprint**, et **à la livraison d'un sprint/version**, vérifier impérativement la cohérence stricte de la version à travers les 6 sources de vérité du code :
+     1. `Cargo.toml` (racine) : `[workspace.package] version = "X.Y.Z"`
+     2. `knit-core/Cargo.toml` : `version.workspace = true`
+     3. `knit-app/src-tauri/Cargo.toml` : `version.workspace = true`
+     4. `knit-app/src-tauri/tauri.conf.json` : `"version": "X.Y.Z"`
+     5. `knit-app/package.json` et racine `package.json` : `"version": "X.Y.Z"`
+     6. `knit-app/src/utils/version.ts` : `export const APP_VERSION = 'X.Y.Z'`
+   - Vérifier également la concordance documentaire : `versions/vX.Y.Z/CHANGELOG.md`, `versions/vX.Y.Z/sprint-N/SPRINT.md`, `versions/VERSIONING.md` et `.knit/AI_MEMORY.md`.
