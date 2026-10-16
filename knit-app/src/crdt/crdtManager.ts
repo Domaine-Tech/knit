@@ -2,11 +2,22 @@ import * as Y from 'yjs';
 import diff from 'fast-diff';
 import { Awareness, encodeAwarenessUpdate, applyAwarenessUpdate } from 'y-protocols/awareness';
 import { networkStore } from '../stores/networkStore';
+import { vaultStore, isTauriEnvironment } from '../stores/vaultStore';
+import { invoke } from '@tauri-apps/api/core';
+
+export interface DocSnapshot {
+  snapshot_id: string;
+  doc_id: string;
+  state_vector_base64: string;
+  yjs_snapshot_base64: string;
+  created_at_sec: number;
+}
 
 export class CRDTManager {
   private docs: Map<string, Y.Doc> = new Map();
   private awarenessMap: Map<string, Awareness> = new Map();
   private fileObservers: Map<string, Set<(content: string) => void>> = new Map();
+  private opCounts: Map<string, number> = new Map();
   private initializedP2P: boolean = false;
 
   constructor() {
@@ -17,8 +28,28 @@ export class CRDTManager {
     if (this.initializedP2P) return;
     this.initializedP2P = true;
 
-    // Réception des deltas Yjs depuis les pairs distants
+    // Réception des deltas Yjs standards depuis les pairs distants
     networkStore.onRemoteYjsUpdate((docId, update, _fromPeer) => {
+      const doc = this.docs.get(docId);
+      if (doc) {
+        Y.applyUpdate(doc, update, 'p2p');
+      }
+    });
+
+    // Réception des requêtes de synchronisation (SyncStep1) après reconnexion ou déconnexion prolongée
+    networkStore.onRemoteSyncRequest((docId, stateVector, fromPeer) => {
+      const doc = this.docs.get(docId);
+      if (doc) {
+        // Calcul du delta différentiel exact pour combler les opérations manquées
+        const diffUpdate = Y.encodeStateAsUpdate(doc, stateVector);
+        if (diffUpdate.length > 0) {
+          networkStore.sendSyncResponse(fromPeer, docId, diffUpdate);
+        }
+      }
+    });
+
+    // Réception de la réponse de synchronisation (SyncStep2) pour convergence sans conflit
+    networkStore.onRemoteSyncResponse((docId, update, _fromPeer) => {
       const doc = this.docs.get(docId);
       if (doc) {
         Y.applyUpdate(doc, update, 'p2p');
@@ -42,12 +73,59 @@ export class CRDTManager {
 
       // Brancher la diffusion automatique des modifications locales vers les pairs P2P
       doc.on('update', (update: Uint8Array, origin: unknown) => {
-        if (origin !== 'p2p' && origin !== 'init') {
+        if (origin !== 'p2p' && origin !== 'init' && origin !== 'snapshot-load') {
           networkStore.broadcastYjsUpdate(path, update);
+
+          // Compteur d'opérations pour déclencher un snapshot compacté toutes les 200 opérations
+          const currentOps = (this.opCounts.get(path) || 0) + 1;
+          this.opCounts.set(path, currentOps);
+          if (currentOps % 200 === 0) {
+            this.createSnapshot(path, doc!);
+          }
         }
       });
+
+      // Si le réseau P2P est actif, demander un rattrapage de deltas auprès des pairs connectés
+      if (networkStore.isNetworkActive) {
+        const stateVector = Y.encodeStateVector(doc);
+        networkStore.sendSyncRequest(path, stateVector);
+      }
     }
     return doc;
+  }
+
+  /**
+   * Crée et persiste un snapshot compacté et signé cryptographiquement dans `.knit/snapshots/`
+   */
+  public async createSnapshot(path: string, doc: Y.Doc): Promise<void> {
+    try {
+      const stateVector = Y.encodeStateVector(doc);
+      const snapshotBytes = Y.encodeStateAsUpdate(doc);
+
+      let svBinary = '';
+      for (let i = 0; i < stateVector.length; i++) {
+        svBinary += String.fromCharCode(stateVector[i]);
+      }
+      const stateVectorBase64 = btoa(svBinary);
+
+      let snapBinary = '';
+      for (let i = 0; i < snapshotBytes.length; i++) {
+        snapBinary += String.fromCharCode(snapshotBytes[i]);
+      }
+      const yjsSnapshotBase64 = btoa(snapBinary);
+
+      const vaultPath = vaultStore.vaultPath;
+      if (vaultPath && isTauriEnvironment()) {
+        await invoke('save_doc_snapshot', {
+          vaultPath,
+          docId: path,
+          stateVectorBase64,
+          yjsSnapshotBase64,
+        });
+      }
+    } catch (err) {
+      console.warn('Erreur lors de la compaction du snapshot Yjs:', err);
+    }
   }
 
   public getAwareness(path: string): Awareness {
@@ -87,6 +165,26 @@ export class CRDTManager {
   public initDocument(path: string, initialContent: string): Y.Text {
     const doc = this.getDoc(path);
     const ytext = doc.getText('codemirror');
+
+    // Tenter de charger un snapshot compacté récent s'il existe dans .knit/snapshots/
+    if (isTauriEnvironment() && vaultStore.vaultPath && ytext.length === 0) {
+      invoke<DocSnapshot | null>('load_latest_doc_snapshot', {
+        vaultPath: vaultStore.vaultPath,
+        docId: path,
+      })
+        .then((snapshot) => {
+          if (snapshot && snapshot.yjs_snapshot_base64 && ytext.length === 0) {
+            try {
+              const bytes = Uint8Array.from(atob(snapshot.yjs_snapshot_base64), (c) => c.charCodeAt(0));
+              Y.applyUpdate(doc, bytes, 'snapshot-load');
+            } catch (err) {
+              console.warn('Erreur chargement snapshot compacté:', err);
+            }
+          }
+        })
+        .catch(() => {});
+    }
+
     if (ytext.length === 0 && initialContent.length > 0) {
       doc.transact(() => {
         ytext.insert(0, initialContent);

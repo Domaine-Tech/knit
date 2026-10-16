@@ -4,8 +4,9 @@ import type { ThemeMode } from '../../theme/theme';
 import { ColorPickerPopover } from './ColorPickerPopover';
 import { contextMenu } from '../../stores/contextMenuStore';
 import { vaultStore } from '../../stores/vaultStore';
-import { networkStore } from '../../stores/networkStore';
+import { networkStore, COLLABORATIVE_PALETTE } from '../../stores/networkStore';
 import { NetworkModal } from '../Network/NetworkModal';
+import { ProfileModal } from '../Profile/ProfileModal';
 
 interface HeaderProps {
   theme: ThemeMode;
@@ -28,6 +29,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
   const [isNetworkModalOpen, setIsNetworkModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [, setTick] = useState(0);
 
   useEffect(() => {
@@ -72,6 +74,12 @@ export const Header: React.FC<HeaderProps> = ({
         onClick: () => onHueChange(28),
       },
       { id: 'div-header-2', divider: true },
+      {
+        id: 'header-profile',
+        label: 'Modifier mon profil collaborateur...',
+        icon: 'user' as const,
+        onClick: () => setIsProfileModalOpen(true),
+      },
       {
         id: 'header-open-vault',
         label: 'Ouvrir un coffre-fort...',
@@ -228,6 +236,73 @@ export const Header: React.FC<HeaderProps> = ({
           </span>
         </button>
 
+        {/* Badge Profil Utilisateur */}
+        <button
+          onClick={() => setIsProfileModalOpen(true)}
+          title={`Mon profil : ${networkStore.currentProfile?.display_name || 'Moi'} — Cliquez pour éditer`}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '2px 8px 2px 3px',
+            borderRadius: 'var(--knit-radius-sm)',
+            backgroundColor: 'transparent',
+            border: '1px solid var(--knit-border)',
+            color: 'var(--knit-text)',
+            cursor: 'pointer',
+            transition: 'all var(--knit-transition-fast)',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--knit-surface-hover)')}
+          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+        >
+          {networkStore.avatarDataUrl ? (
+            <img
+              src={networkStore.avatarDataUrl}
+              alt="Avatar"
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: '50%',
+                objectFit: 'cover',
+                border: '1px solid var(--knit-border)',
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: '50%',
+                backgroundColor:
+                  COLLABORATIVE_PALETTE[
+                    (networkStore.localIdentity?.color_index ?? 0) % COLLABORATIVE_PALETTE.length
+                  ],
+                color: '#FFFFFF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 10,
+                fontWeight: 700,
+                flexShrink: 0,
+              }}
+            >
+              {networkStore.localIdentity?.initials || 'MO'}
+            </div>
+          )}
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 500,
+              maxWidth: 90,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {networkStore.currentProfile?.display_name || 'Profil'}
+          </span>
+        </button>
+
         {/* Toggle Theme sombre / clair */}
         <button
           onClick={onThemeToggle}
@@ -252,6 +327,7 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       <NetworkModal isOpen={isNetworkModalOpen} onClose={() => setIsNetworkModalOpen(false)} />
+      <ProfileModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} />
     </header>
   );
 };

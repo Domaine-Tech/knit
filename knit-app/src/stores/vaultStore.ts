@@ -206,6 +206,10 @@ class VaultStore {
     }
   }
 
+  public get vaultPath(): string | null {
+    return this.currentVaultPath;
+  }
+
   public subscribe(listener: VaultListener): () => void {
     this.listeners.add(listener);
     listener();

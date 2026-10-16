@@ -76,14 +76,14 @@
 
 | # | Tâche | Priorité | Statut | Sprint |
 |---|---|---|---|---|
-| B-018 | Gestion de la déconnexion/reconnexion (rejouer les ops manquées) | 🔴 | 📋 | Sprint 4 |
-| B-019 | Implémenter les snapshots/compaction Yjs (toutes les 200 ops) | 🟠 | 📋 | Sprint 4 |
-| B-020 | Stocker les snapshots dans `.knit/snapshots/` | 🟡 | 📋 | Sprint 4 |
-| B-020a | Profil utilisateur enrichi (Nom, Prénom, Email, Rôle & Statut) dans `.knit/identity/profile.json` & UI | 🟠 | 📋 | Sprint 4 |
-| B-020b | Synchronisation P2P d'avatars personnalisés via Iroh Blobs & fallback initiales | 🟠 | 📋 | Sprint 4 |
-| B-020c | Signatures cryptographiques Ed25519 des snapshots, Privacy Toggle & interfaçage Git auto | 🟡 | 📋 | Sprint 4 |
-| B-021 | Test : 2 PC en LAN synchronisent un coffre-fort en temps réel | 🔴 | 📋 | Sprint 4 |
-| B-022 | Test : un PC hors-ligne pendant 1h resynchronise correctement | 🟠 | 📋 | Sprint 4 |
+| B-018 | Gestion de la déconnexion/reconnexion (rejouer les ops manquées) | 🔴 | ✅ | Sprint 4 |
+| B-019 | Implémenter les snapshots/compaction Yjs (toutes les 200 ops) | 🟠 | ✅ | Sprint 4 |
+| B-020 | Stocker les snapshots dans `.knit/snapshots/` | 🟡 | ✅ | Sprint 4 |
+| B-020a | Profil utilisateur enrichi (Nom, Prénom, Email, Rôle & Statut) dans `.knit/identity/profile.json` & UI | 🟠 | ✅ | Sprint 4 |
+| B-020b | Synchronisation P2P d'avatars personnalisés via Iroh Blobs & fallback initiales | 🟠 | ✅ | Sprint 4 |
+| B-020c | Signatures cryptographiques Ed25519 des snapshots, Privacy Toggle & interfaçage Git auto | 🟡 | ✅ | Sprint 4 |
+| B-021 | Test : 2 PC en LAN synchronisent un coffre-fort en temps réel | 🔴 | ✅ | Sprint 4 |
+| B-022 | Test : un PC hors-ligne pendant 1h resynchronise correctement | 🟠 | ✅ | Sprint 4 |
 
 ---
 

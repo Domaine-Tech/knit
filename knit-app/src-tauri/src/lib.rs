@@ -36,6 +36,17 @@ pub fn run() {
             broadcast_awareness,
             sync_asset_from_peers,
             get_local_peer_identity,
+            get_user_profile,
+            save_user_profile,
+            upload_user_avatar,
+            reset_user_avatar,
+            apply_profile_to_git,
+            save_doc_snapshot,
+            list_doc_snapshots,
+            load_latest_doc_snapshot,
+            send_p2p_sync_step1,
+            send_p2p_sync_step2,
+            load_avatar_base64,
         ])
         .run(tauri::generate_context!())
         .expect("Erreur lors de l'exécution de l'application Knit Tauri");

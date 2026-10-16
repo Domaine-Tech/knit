@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-list-doc-snapshots"
+description = "Enables the list_doc_snapshots command without any pre-configured scope."
+commands.allow = ["list_doc_snapshots"]
+
+[[permission]]
+identifier = "deny-list-doc-snapshots"
+description = "Denies the list_doc_snapshots command without any pre-configured scope."
+commands.deny = ["list_doc_snapshots"]

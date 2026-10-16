@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { networkStore } from '../../stores/networkStore';
 import { toast } from '../../stores/toastStore';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
+import { ProfileModal } from '../Profile/ProfileModal';
 
 interface NetworkModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface NetworkModalProps {
 export const NetworkModal: React.FC<NetworkModalProps> = ({ isOpen, onClose }) => {
   const [invitationInput, setInvitationInput] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [, setTick] = useState(0);
 
   useEffect(() => {
@@ -134,42 +136,107 @@ export const NetworkModal: React.FC<NetworkModalProps> = ({ isOpen, onClose }) =
                 border: '1px solid var(--knit-border)',
               }}
             >
-              <div
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: '50%',
-                  backgroundColor: localId.color_hex,
-                  color: '#FFFFFF',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 12,
-                  fontWeight: 700,
-                  flexShrink: 0,
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-                }}
-              >
-                {localId.initials}
-              </div>
+              {networkStore.avatarDataUrl ? (
+                <img
+                  src={networkStore.avatarDataUrl}
+                  alt={localId.display_name}
+                  style={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: '50%',
+                    objectFit: 'cover',
+                    border: '1.5px solid var(--knit-primary)',
+                    flexShrink: 0,
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: '50%',
+                    backgroundColor: localId.color_hex,
+                    color: '#FFFFFF',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    flexShrink: 0,
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                  }}
+                >
+                  {localId.initials}
+                </div>
+              )}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--knit-text)' }}>
-                  {localId.display_name} <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--knit-text-muted)' }}>(Vous)</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--knit-text)' }}>
+                    {networkStore.currentProfile?.display_name || localId.display_name}
+                  </span>
+                  <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--knit-text-muted)' }}>(Vous)</span>
+                  {networkStore.currentProfile?.role && (
+                    <span
+                      style={{
+                        fontSize: 10,
+                        padding: '1px 6px',
+                        backgroundColor: 'var(--knit-surface)',
+                        borderRadius: 'var(--knit-radius-xs)',
+                        border: '1px solid var(--knit-border)',
+                        color: 'var(--knit-text-secondary)',
+                      }}
+                    >
+                      {networkStore.currentProfile.role}
+                    </span>
+                  )}
+                  {networkStore.currentProfile && !networkStore.currentProfile.share_email_p2p && (
+                    <span
+                      style={{
+                        fontSize: 10,
+                        padding: '1px 6px',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        color: '#10B981',
+                        borderRadius: 'var(--knit-radius-xs)',
+                        fontWeight: 600,
+                        border: '1px solid rgba(16, 185, 129, 0.3)',
+                      }}
+                      title="Votre email n'est pas diffusé sur le réseau P2P"
+                    >
+                      🔒 Zéro-Fuite
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--knit-text-muted)', marginTop: 2 }}>
+                  {networkStore.currentProfile?.status_message || '✍️ En rédaction'}
+                  {networkStore.currentProfile?.email && networkStore.currentProfile.share_email_p2p && (
+                    <span style={{ marginLeft: 8 }}>• {networkStore.currentProfile.email}</span>
+                  )}
                 </div>
                 <div
                   style={{
-                    fontSize: 11,
+                    fontSize: 10,
                     fontFamily: 'var(--knit-font-mono)',
                     color: 'var(--knit-text-secondary)',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
+                    marginTop: 2,
                   }}
                   title={localId.peer_id}
                 >
                   Clé: {localId.peer_id.slice(0, 16)}...{localId.peer_id.slice(-8)}
                 </div>
               </div>
+
+              <button
+                type="button"
+                className="knit-btn"
+                onClick={() => setIsProfileOpen(true)}
+                style={{ fontSize: 11, padding: '3px 8px', gap: 4, flexShrink: 0 }}
+              >
+                <DuotoneIcon name="user" size={12} />
+                <span>Profil</span>
+              </button>
             </div>
           )}
 
@@ -336,41 +403,82 @@ export const NetworkModal: React.FC<NetworkModalProps> = ({ isOpen, onClose }) =
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      padding: '8px 12px',
+                      padding: '10px 12px',
                       backgroundColor: 'var(--knit-bg)',
                       borderRadius: 'var(--knit-radius-sm)',
                       border: '1px solid var(--knit-border)',
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
                       <div
                         style={{
-                          width: 26,
-                          height: 26,
+                          width: 32,
+                          height: 32,
                           borderRadius: '50%',
                           backgroundColor: peer.color_hex,
                           color: '#FFFFFF',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          fontSize: 11,
+                          fontSize: 12,
                           fontWeight: 700,
                           flexShrink: 0,
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
                         }}
                       >
                         {peer.initials}
                       </div>
-                      <div>
-                        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--knit-text)' }}>
-                          {peer.display_name}
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--knit-text)' }}>
+                            {peer.display_name}
+                          </span>
+                          {peer.role && (
+                            <span
+                              style={{
+                                fontSize: 10,
+                                padding: '1px 5px',
+                                backgroundColor: 'var(--knit-surface)',
+                                borderRadius: 'var(--knit-radius-xs)',
+                                border: '1px solid var(--knit-border)',
+                                color: 'var(--knit-text-secondary)',
+                              }}
+                            >
+                              {peer.role}
+                            </span>
+                          )}
+                          {!peer.email && (
+                            <span
+                              style={{
+                                fontSize: 9,
+                                padding: '1px 5px',
+                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                color: '#10B981',
+                                borderRadius: 'var(--knit-radius-xs)',
+                                fontWeight: 600,
+                                border: '1px solid rgba(16, 185, 129, 0.3)',
+                              }}
+                            >
+                              🔒 Zéro-Fuite
+                            </span>
+                          )}
                         </div>
-                        <div style={{ fontSize: 10, color: 'var(--knit-text-muted)', fontFamily: 'var(--knit-font-mono)' }}>
-                          {peer.peer_id.slice(0, 12)}...
+                        <div style={{ fontSize: 11, color: 'var(--knit-text-muted)', marginTop: 1 }}>
+                          {peer.status_message ? (
+                            <span>{peer.status_message}</span>
+                          ) : (
+                            <span style={{ fontFamily: 'var(--knit-font-mono)', fontSize: 10 }}>
+                              {peer.peer_id.slice(0, 12)}...
+                            </span>
+                          )}
+                          {peer.email && (
+                            <span style={{ marginLeft: 6, fontSize: 10 }}>• {peer.email}</span>
+                          )}
                         </div>
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                       {peer.latency_ms !== undefined && peer.latency_ms !== null && (
                         <span
                           style={{
@@ -393,7 +501,7 @@ export const NetworkModal: React.FC<NetworkModalProps> = ({ isOpen, onClose }) =
                           borderRadius: '50%',
                           backgroundColor: '#10B981',
                         }}
-                        title="Connecté via QUIC"
+                        title="Connecté via QUIC Iroh"
                       />
                     </div>
                   </div>
@@ -403,6 +511,8 @@ export const NetworkModal: React.FC<NetworkModalProps> = ({ isOpen, onClose }) =
           </div>
         </div>
       </div>
+
+      <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
     </div>
   );
 };

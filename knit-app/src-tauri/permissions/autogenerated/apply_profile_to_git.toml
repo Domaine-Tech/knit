@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-apply-profile-to-git"
+description = "Enables the apply_profile_to_git command without any pre-configured scope."
+commands.allow = ["apply_profile_to_git"]
+
+[[permission]]
+identifier = "deny-apply-profile-to-git"
+description = "Denies the apply_profile_to_git command without any pre-configured scope."
+commands.deny = ["apply_profile_to_git"]

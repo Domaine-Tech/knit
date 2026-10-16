@@ -108,6 +108,39 @@ where
 
 /// Traite une requête de blob entrante pour un coffre local et produit le message de réponse
 pub fn handle_blob_request(vault_root: &Path, rel_path: &str, requested_hash: &str) -> BlobMessage {
+    // 1. Vérifier si l'empreinte demandée correspond à l'avatar local de l'utilisateur
+    let local_avatar = vault_root.join(".knit").join("identity").join("avatar.png");
+    if local_avatar.is_file() {
+        if let Ok(data) = fs::read(&local_avatar) {
+            if compute_blake3_hash(&data) == requested_hash {
+                return BlobMessage::ResponseBlob {
+                    blake3_hash: requested_hash.to_string(),
+                    rel_path: rel_path.to_string(),
+                    data,
+                };
+            }
+        }
+    }
+
+    // 2. Vérifier si l'avatar est présent dans le cache décentralisé .knit/cache/avatars/
+    let cached_avatar = vault_root
+        .join(".knit")
+        .join("cache")
+        .join("avatars")
+        .join(format!("{}.png", requested_hash));
+    if cached_avatar.is_file() {
+        if let Ok(data) = fs::read(&cached_avatar) {
+            if compute_blake3_hash(&data) == requested_hash {
+                return BlobMessage::ResponseBlob {
+                    blake3_hash: requested_hash.to_string(),
+                    rel_path: rel_path.to_string(),
+                    data,
+                };
+            }
+        }
+    }
+
+    // 3. Traitement standard des assets et pièces jointes du coffre
     let safe_path = match resolve_safe_path(vault_root, rel_path) {
         Ok(p) => p,
         Err(_) => return BlobMessage::NotFound {

@@ -16,11 +16,32 @@ pub enum KnitSyncMessage {
         display_name: String,
         vault_name: Option<String>,
         version: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        profile: Option<crate::vault::identity::PeerProfileSummary>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        endpoint_addr: Option<iroh::EndpointAddr>,
     },
     HandshakeAck {
         peer_id: String,
         display_name: String,
         vault_name: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        profile: Option<crate::vault::identity::PeerProfileSummary>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        endpoint_addr: Option<iroh::EndpointAddr>,
+    },
+    ProfileUpdate {
+        profile: crate::vault::identity::PeerProfileSummary,
+    },
+    SyncStep1 {
+        doc_id: String,
+        #[serde(with = "serde_bytes")]
+        state_vector: Vec<u8>,
+    },
+    SyncStep2 {
+        doc_id: String,
+        #[serde(with = "serde_bytes")]
+        update: Vec<u8>,
     },
     YjsUpdate {
         doc_id: String,
@@ -137,6 +158,8 @@ mod tests {
             display_name: "Thomas".to_string(),
             vault_name: Some("Mon Super Coffre".to_string()),
             version: "0.2.0".to_string(),
+            profile: None,
+            endpoint_addr: None,
         };
 
         let mut buffer = Vec::new();

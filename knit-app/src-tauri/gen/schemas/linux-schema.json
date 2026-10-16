@@ -177,6 +177,12 @@
       "description": "Permission identifier",
       "oneOf": [
         {
+          "description": "Enables the apply_profile_to_git command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-apply-profile-to-git",
+          "markdownDescription": "Enables the apply_profile_to_git command without any pre-configured scope."
+        },
+        {
           "description": "Enables the broadcast_awareness command without any pre-configured scope.",
           "type": "string",
           "const": "allow-broadcast-awareness",
@@ -243,10 +249,34 @@
           "markdownDescription": "Enables the get_p2p_invitation_code command without any pre-configured scope."
         },
         {
+          "description": "Enables the get_user_profile command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-get-user-profile",
+          "markdownDescription": "Enables the get_user_profile command without any pre-configured scope."
+        },
+        {
           "description": "Enables the get_vault_tree command without any pre-configured scope.",
           "type": "string",
           "const": "allow-get-vault-tree",
           "markdownDescription": "Enables the get_vault_tree command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the list_doc_snapshots command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-list-doc-snapshots",
+          "markdownDescription": "Enables the list_doc_snapshots command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the load_avatar_base64 command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-load-avatar-base64",
+          "markdownDescription": "Enables the load_avatar_base64 command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the load_latest_doc_snapshot command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-load-latest-doc-snapshot",
+          "markdownDescription": "Enables the load_latest_doc_snapshot command without any pre-configured scope."
         },
         {
           "description": "Enables the parse_frontmatter command without any pre-configured scope.",
@@ -279,6 +309,12 @@
           "markdownDescription": "Enables the rename_vault_file command without any pre-configured scope."
         },
         {
+          "description": "Enables the reset_user_avatar command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-reset-user-avatar",
+          "markdownDescription": "Enables the reset_user_avatar command without any pre-configured scope."
+        },
+        {
           "description": "Enables the restore_vault_path command without any pre-configured scope.",
           "type": "string",
           "const": "allow-restore-vault-path",
@@ -291,10 +327,34 @@
           "markdownDescription": "Enables the reveal_in_explorer command without any pre-configured scope."
         },
         {
+          "description": "Enables the save_doc_snapshot command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-save-doc-snapshot",
+          "markdownDescription": "Enables the save_doc_snapshot command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the save_user_profile command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-save-user-profile",
+          "markdownDescription": "Enables the save_user_profile command without any pre-configured scope."
+        },
+        {
           "description": "Enables the save_vault_asset command without any pre-configured scope.",
           "type": "string",
           "const": "allow-save-vault-asset",
           "markdownDescription": "Enables the save_vault_asset command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the send_p2p_sync_step1 command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-send-p2p-sync-step1",
+          "markdownDescription": "Enables the send_p2p_sync_step1 command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the send_p2p_sync_step2 command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-send-p2p-sync-step2",
+          "markdownDescription": "Enables the send_p2p_sync_step2 command without any pre-configured scope."
         },
         {
           "description": "Enables the start_p2p_network command without any pre-configured scope.",
@@ -339,10 +399,22 @@
           "markdownDescription": "Enables the update_frontmatter command without any pre-configured scope."
         },
         {
+          "description": "Enables the upload_user_avatar command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-upload-user-avatar",
+          "markdownDescription": "Enables the upload_user_avatar command without any pre-configured scope."
+        },
+        {
           "description": "Enables the write_vault_file command without any pre-configured scope.",
           "type": "string",
           "const": "allow-write-vault-file",
           "markdownDescription": "Enables the write_vault_file command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the apply_profile_to_git command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-apply-profile-to-git",
+          "markdownDescription": "Denies the apply_profile_to_git command without any pre-configured scope."
         },
         {
           "description": "Denies the broadcast_awareness command without any pre-configured scope.",
@@ -411,10 +483,34 @@
           "markdownDescription": "Denies the get_p2p_invitation_code command without any pre-configured scope."
         },
         {
+          "description": "Denies the get_user_profile command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-get-user-profile",
+          "markdownDescription": "Denies the get_user_profile command without any pre-configured scope."
+        },
+        {
           "description": "Denies the get_vault_tree command without any pre-configured scope.",
           "type": "string",
           "const": "deny-get-vault-tree",
           "markdownDescription": "Denies the get_vault_tree command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the list_doc_snapshots command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-list-doc-snapshots",
+          "markdownDescription": "Denies the list_doc_snapshots command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the load_avatar_base64 command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-load-avatar-base64",
+          "markdownDescription": "Denies the load_avatar_base64 command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the load_latest_doc_snapshot command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-load-latest-doc-snapshot",
+          "markdownDescription": "Denies the load_latest_doc_snapshot command without any pre-configured scope."
         },
         {
           "description": "Denies the parse_frontmatter command without any pre-configured scope.",
@@ -447,6 +543,12 @@
           "markdownDescription": "Denies the rename_vault_file command without any pre-configured scope."
         },
         {
+          "description": "Denies the reset_user_avatar command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-reset-user-avatar",
+          "markdownDescription": "Denies the reset_user_avatar command without any pre-configured scope."
+        },
+        {
           "description": "Denies the restore_vault_path command without any pre-configured scope.",
           "type": "string",
           "const": "deny-restore-vault-path",
@@ -459,10 +561,34 @@
           "markdownDescription": "Denies the reveal_in_explorer command without any pre-configured scope."
         },
         {
+          "description": "Denies the save_doc_snapshot command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-save-doc-snapshot",
+          "markdownDescription": "Denies the save_doc_snapshot command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the save_user_profile command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-save-user-profile",
+          "markdownDescription": "Denies the save_user_profile command without any pre-configured scope."
+        },
+        {
           "description": "Denies the save_vault_asset command without any pre-configured scope.",
           "type": "string",
           "const": "deny-save-vault-asset",
           "markdownDescription": "Denies the save_vault_asset command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the send_p2p_sync_step1 command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-send-p2p-sync-step1",
+          "markdownDescription": "Denies the send_p2p_sync_step1 command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the send_p2p_sync_step2 command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-send-p2p-sync-step2",
+          "markdownDescription": "Denies the send_p2p_sync_step2 command without any pre-configured scope."
         },
         {
           "description": "Denies the start_p2p_network command without any pre-configured scope.",
@@ -505,6 +631,12 @@
           "type": "string",
           "const": "deny-update-frontmatter",
           "markdownDescription": "Denies the update_frontmatter command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the upload_user_avatar command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-upload-user-avatar",
+          "markdownDescription": "Denies the upload_user_avatar command without any pre-configured scope."
         },
         {
           "description": "Denies the write_vault_file command without any pre-configured scope.",

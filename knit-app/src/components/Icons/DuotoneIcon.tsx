@@ -31,7 +31,10 @@ export type IconName =
   | 'folder-plus'
   | 'share'
   | 'arrow-right'
-  | 'x';
+  | 'x'
+  | 'user'
+  | 'upload'
+  | 'shield';
 
 interface DuotoneIconProps {
   name: IconName;
@@ -537,6 +540,59 @@ export const DuotoneIcon: React.FC<DuotoneIconProps> = ({
           <>
             <line x1="128" y1="128" x2="384" y2="384" stroke={primaryStroke} strokeWidth="40" strokeLinecap="round" />
             <line x1="384" y1="128" x2="128" y2="384" stroke={primaryStroke} strokeWidth="40" strokeLinecap="round" />
+          </>
+        );
+
+      case 'user':
+        return (
+          <>
+            <circle cx="256" cy="160" r="72" fill={secondaryFill} fillOpacity="0.25" stroke={primaryStroke} strokeWidth="32" />
+            <path
+              d="M128 432 C128 344 184 304 256 304 C328 304 384 344 384 432"
+              fill={secondaryFill}
+              fillOpacity="0.18"
+              stroke={primaryStroke}
+              strokeWidth="32"
+              strokeLinecap="round"
+            />
+          </>
+        );
+
+      case 'upload':
+        return (
+          <>
+            <path
+              d="M112 368 L112 416 C112 433.7 126.3 448 144 448 L368 448 C385.7 448 400 433.7 400 416 L400 368"
+              fill={secondaryFill}
+              fillOpacity="0.18"
+              stroke={primaryStroke}
+              strokeWidth="32"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <line x1="256" y1="352" x2="256" y2="128" stroke={primaryStroke} strokeWidth="36" strokeLinecap="round" />
+            <polyline
+              points="160,224 256,128 352,224"
+              fill="none"
+              stroke={primaryStroke}
+              strokeWidth="36"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </>
+        );
+
+      case 'shield':
+        return (
+          <>
+            <path
+              d="M256 64 L400 120 L400 248 C400 352 256 448 256 448 C256 448 112 352 112 248 L112 120 Z"
+              fill={secondaryFill}
+              fillOpacity="0.22"
+              stroke={primaryStroke}
+              strokeWidth="32"
+              strokeLinejoin="round"
+            />
           </>
         );
 

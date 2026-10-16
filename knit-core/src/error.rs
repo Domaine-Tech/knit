@@ -26,6 +26,9 @@ pub enum KnitError {
     #[error("Erreur Réseau P2P : {0}")]
     Network(String),
 
+    #[error("Erreur Coffre-fort / Snapshot : {0}")]
+    Vault(String),
+
     #[error("Erreur interne : {0}")]
     Custom(String),
 }

@@ -17,8 +17,15 @@ pub use network::{
 };
 pub use vault::assets::save_asset;
 pub use vault::identity::{
-    compute_deterministic_color_index, compute_initials, load_or_generate_identity, PeerIdentity,
-    AI_AGENT_COLOR, COLLABORATIVE_PALETTE,
+    compute_deterministic_color_index, compute_initials, configure_vault_git_author,
+    load_or_create_profile, load_or_generate_identity, reset_custom_avatar, save_custom_avatar,
+    save_profile, AvatarInfo, PeerIdentity, PeerProfileSummary, UserProfile, AI_AGENT_COLOR,
+    COLLABORATIVE_PALETTE,
+};
+pub use vault::snapshot::{
+    compute_snapshot_payload, create_and_save_snapshot, get_snapshots_dir, list_snapshots_for_doc,
+    load_latest_snapshot, prune_old_snapshots, sign_snapshot_payload, verify_snapshot_signature,
+    DocSnapshot, SnapshotAuthor, MAX_SNAPSHOTS_PER_DOC,
 };
 pub use vault::tree::{
     commit_trash_to_os, create_dir, create_file, delete_path, read_file_content, read_vault_tree,

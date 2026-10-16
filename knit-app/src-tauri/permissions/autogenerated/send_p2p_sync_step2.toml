@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-send-p2p-sync-step2"
+description = "Enables the send_p2p_sync_step2 command without any pre-configured scope."
+commands.allow = ["send_p2p_sync_step2"]
+
+[[permission]]
+identifier = "deny-send-p2p-sync-step2"
+description = "Denies the send_p2p_sync_step2 command without any pre-configured scope."
+commands.deny = ["send_p2p_sync_step2"]

@@ -1,8 +1,10 @@
 use crate::error::{KnitError, Result};
+use crate::network::blobs::compute_blake3_hash;
 use iroh::{PublicKey, SecretKey};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
+use std::time::{SystemTime, UNIX_EPOCH};
 use xxhash_rust::xxh3::xxh3_64;
 
 /// Les 10 teintes collaboratives sobres définies dans docs/UI_UX.md
@@ -21,6 +23,71 @@ pub const COLLABORATIVE_PALETTE: [&str; 10] = [
 
 /// Couleur réservée aux agents IA externes (Cursor, Claude Code)
 pub const AI_AGENT_COLOR: &str = "#8B5CF6";
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct AvatarInfo {
+    #[serde(rename = "type")]
+    pub avatar_type: String, // "custom" | "initials"
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub blake3_hash: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mime_type: Option<String>,
+}
+
+impl Default for AvatarInfo {
+    fn default() -> Self {
+        Self {
+            avatar_type: "initials".to_string(),
+            blake3_hash: None,
+            mime_type: None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct UserProfile {
+    pub first_name: String,
+    pub last_name: String,
+    pub display_name: String,
+    pub email: String,
+    pub role: String,
+    pub status_message: String,
+    pub share_email_p2p: bool,
+    pub avatar: AvatarInfo,
+    pub created_at_sec: u64,
+    pub updated_at_sec: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct PeerProfileSummary {
+    pub first_name: String,
+    pub last_name: String,
+    pub display_name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub email: Option<String>,
+    pub role: String,
+    pub status_message: String,
+    pub avatar: AvatarInfo,
+}
+
+impl PeerProfileSummary {
+    pub fn from_profile(profile: &UserProfile) -> Self {
+        Self {
+            first_name: profile.first_name.clone(),
+            last_name: profile.last_name.clone(),
+            display_name: profile.display_name.clone(),
+            // Privacy Toggle: l'email n'est diffusé en P2P QUE si explicitement consenti
+            email: if profile.share_email_p2p && !profile.email.trim().is_empty() {
+                Some(profile.email.clone())
+            } else {
+                None
+            },
+            role: profile.role.clone(),
+            status_message: profile.status_message.clone(),
+            avatar: profile.avatar.clone(),
+        }
+    }
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct PeerIdentity {
@@ -73,6 +140,166 @@ pub fn compute_initials(name: &str) -> String {
         let last = words[words.len() - 1].chars().next().unwrap_or('B').to_ascii_uppercase();
         format!("{}{}", first, last)
     }
+}
+
+/// Découpe un nom d'affichage en prénom et nom
+pub fn split_display_name(name: &str) -> (String, String) {
+    let parts: Vec<&str> = name.split_whitespace().collect();
+    if parts.is_empty() {
+        ("".to_string(), "".to_string())
+    } else if parts.len() == 1 {
+        (parts[0].to_string(), "".to_string())
+    } else {
+        (parts[0].to_string(), parts[1..].join(" "))
+    }
+}
+
+/// Charge le profil utilisateur enrichi depuis `<vault>/.knit/identity/profile.json`
+/// ou le génère automatiquement avec les conventions par défaut si absent.
+pub fn load_or_create_profile(vault_root: &Path, default_name: &str) -> Result<UserProfile> {
+    let identity_dir = vault_root.join(".knit").join("identity");
+    if !identity_dir.exists() {
+        fs::create_dir_all(&identity_dir).map_err(KnitError::Io)?;
+    }
+
+    let profile_path = identity_dir.join("profile.json");
+    if profile_path.exists() {
+        if let Ok(bytes) = fs::read(&profile_path) {
+            if let Ok(profile) = serde_json::from_slice::<UserProfile>(&bytes) {
+                return Ok(profile);
+            }
+        }
+    }
+
+    let (first, last) = split_display_name(default_name);
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+
+    let profile = UserProfile {
+        first_name: first,
+        last_name: last,
+        display_name: default_name.to_string(),
+        email: "".to_string(),
+        role: "Collaborateur".to_string(),
+        status_message: "✍️ En rédaction".to_string(),
+        share_email_p2p: false, // Privacy mode Zéro-Fuite actif par défaut
+        avatar: AvatarInfo::default(),
+        created_at_sec: now,
+        updated_at_sec: now,
+    };
+
+    save_profile(vault_root, &profile)?;
+    Ok(profile)
+}
+
+/// Enregistre le profil utilisateur dans `<vault>/.knit/identity/profile.json`
+/// et propage éventuellement à la configuration Git locale si un dépôt `.git` existe.
+pub fn save_profile(vault_root: &Path, profile: &UserProfile) -> Result<()> {
+    let identity_dir = vault_root.join(".knit").join("identity");
+    if !identity_dir.exists() {
+        fs::create_dir_all(&identity_dir).map_err(KnitError::Io)?;
+    }
+
+    let profile_path = identity_dir.join("profile.json");
+    let json_bytes = serde_json::to_vec_pretty(profile)
+        .map_err(|e| KnitError::Vault(format!("Erreur d'encodage du profil: {}", e)))?;
+
+    fs::write(&profile_path, json_bytes).map_err(KnitError::Io)?;
+
+    // Tentative d'auto-configuration Git sans bloquer en cas d'absence de repo git
+    let _ = configure_vault_git_author(vault_root, &profile.display_name, &profile.email);
+
+    Ok(())
+}
+
+/// Enregistre une photo d'avatar personnalisée, calcule son BLAKE3 et met à jour le profil
+pub fn save_custom_avatar(
+    vault_root: &Path,
+    image_bytes: &[u8],
+    mime_type: &str,
+) -> Result<AvatarInfo> {
+    let identity_dir = vault_root.join(".knit").join("identity");
+    if !identity_dir.exists() {
+        fs::create_dir_all(&identity_dir).map_err(KnitError::Io)?;
+    }
+
+    let blake3_hash = compute_blake3_hash(image_bytes);
+
+    // Sauvegarde locale dans .knit/identity/avatar.png
+    let avatar_file = identity_dir.join("avatar.png");
+    fs::write(&avatar_file, image_bytes).map_err(KnitError::Io)?;
+
+    // Sauvegarde dans le cache blobs des avatars pour distribution P2P immédiate
+    let avatars_cache_dir = vault_root.join(".knit").join("cache").join("avatars");
+    if !avatars_cache_dir.exists() {
+        let _ = fs::create_dir_all(&avatars_cache_dir);
+    }
+    let cached_file = avatars_cache_dir.join(format!("{}.png", blake3_hash));
+    let _ = fs::write(cached_file, image_bytes);
+
+    let avatar_info = AvatarInfo {
+        avatar_type: "custom".to_string(),
+        blake3_hash: Some(blake3_hash),
+        mime_type: Some(mime_type.to_string()),
+    };
+
+    // Mettre à jour le profil existant
+    if let Ok(mut profile) = load_or_create_profile(vault_root, "Moi") {
+        profile.avatar = avatar_info.clone();
+        profile.updated_at_sec = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+        let _ = save_profile(vault_root, &profile);
+    }
+
+    Ok(avatar_info)
+}
+
+/// Supprime l'avatar personnalisé et réinitialise au mode initiales/teintes
+pub fn reset_custom_avatar(vault_root: &Path) -> Result<AvatarInfo> {
+    let avatar_file = vault_root.join(".knit").join("identity").join("avatar.png");
+    if avatar_file.exists() {
+        let _ = fs::remove_file(avatar_file);
+    }
+
+    let default_avatar = AvatarInfo::default();
+    if let Ok(mut profile) = load_or_create_profile(vault_root, "Moi") {
+        profile.avatar = default_avatar.clone();
+        profile.updated_at_sec = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+        let _ = save_profile(vault_root, &profile);
+    }
+
+    Ok(default_avatar)
+}
+
+/// Auto-configuration transparente des commits Git (`git config user.name / user.email`)
+pub fn configure_vault_git_author(vault_root: &Path, name: &str, email: &str) -> Result<bool> {
+    let git_dir = vault_root.join(".git");
+    if !git_dir.exists() {
+        return Ok(false);
+    }
+
+    if !name.trim().is_empty() {
+        let _ = std::process::Command::new("git")
+            .current_dir(vault_root)
+            .args(["config", "user.name", name.trim()])
+            .status();
+    }
+
+    if !email.trim().is_empty() {
+        let _ = std::process::Command::new("git")
+            .current_dir(vault_root)
+            .args(["config", "user.email", email.trim()])
+            .status();
+    }
+
+    Ok(true)
 }
 
 /// Charge la clé secrète Ed25519 persistée dans `<vault>/.knit/identity/keypair.bin`
@@ -153,5 +380,57 @@ mod tests {
         assert_eq!(compute_initials("Bob Martin Dupont"), "BD");
         assert_eq!(compute_initials("X"), "XX");
         assert_eq!(compute_initials(""), "AN");
+    }
+
+    #[test]
+    fn test_user_profile_and_privacy_toggle() {
+        let dir = tempdir().expect("tempdir");
+        let vault_root = dir.path();
+
+        // 1. Chargement/création d'un profil par défaut
+        let profile = load_or_create_profile(vault_root, "Thomas H.").expect("create profile");
+        assert_eq!(profile.display_name, "Thomas H.");
+        assert_eq!(profile.first_name, "Thomas");
+        assert_eq!(profile.last_name, "H.");
+        assert!(!profile.share_email_p2p, "Privacy mode par défaut actif");
+
+        // 2. Mode Zéro-Fuite : l'email ne doit pas fuiter sur le réseau P2P
+        let mut modified = profile.clone();
+        modified.email = "thomas@example.com".to_string();
+        modified.share_email_p2p = false;
+        save_profile(vault_root, &modified).expect("save profile");
+
+        let summary = PeerProfileSummary::from_profile(&modified);
+        assert_eq!(summary.email, None, "L'email ne doit pas être diffusé en P2P");
+
+        // 3. Mode Partagé activé : l'email est transmis
+        modified.share_email_p2p = true;
+        let summary_shared = PeerProfileSummary::from_profile(&modified);
+        assert_eq!(summary_shared.email, Some("thomas@example.com".to_string()));
+    }
+
+    #[test]
+    fn test_custom_avatar_blake3_and_reset() {
+        let dir = tempdir().expect("tempdir");
+        let vault_root = dir.path();
+
+        let image_data = b"FAKE_PNG_BINARY_DATA_FOR_AVATAR";
+        let avatar_info = save_custom_avatar(vault_root, image_data, "image/png").expect("save avatar");
+
+        assert_eq!(avatar_info.avatar_type, "custom");
+        assert!(avatar_info.blake3_hash.is_some());
+        assert_eq!(avatar_info.mime_type.as_deref(), Some("image/png"));
+
+        let hash = avatar_info.blake3_hash.unwrap();
+        assert_eq!(hash, compute_blake3_hash(image_data));
+
+        // Vérifier la présence du fichier avatar
+        let avatar_path = vault_root.join(".knit").join("identity").join("avatar.png");
+        assert!(avatar_path.exists());
+
+        // Réinitialisation de l'avatar
+        let reset = reset_custom_avatar(vault_root).expect("reset avatar");
+        assert_eq!(reset.avatar_type, "initials");
+        assert!(!avatar_path.exists());
     }
 }

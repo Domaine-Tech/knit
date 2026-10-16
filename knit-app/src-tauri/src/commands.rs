@@ -3,10 +3,14 @@ use knit_core::markdown::{
     find_backlinks_in_vault, parse_frontmatter as core_parse_fm,
     update_frontmatter_field as core_update_fm, FrontmatterDoc, LinkRefactorReport,
 };
-use knit_core::network::{
-    ConnectedPeerInfo, KnitNetworkNode, RemoteNetworkEvent,
+use knit_core::network::{ConnectedPeerInfo, KnitNetworkNode, RemoteNetworkEvent};
+use knit_core::vault::identity::{
+    configure_vault_git_author, load_or_create_profile, reset_custom_avatar, save_custom_avatar,
+    save_profile, AvatarInfo, PeerIdentity, UserProfile,
 };
-use knit_core::vault::identity::PeerIdentity;
+use knit_core::vault::snapshot::{
+    create_and_save_snapshot, list_snapshots_for_doc, load_latest_snapshot, DocSnapshot,
+};
 use knit_core::vault::{self, FileNode};
 use knit_core::watcher::{VaultWatchEvent, VaultWatcher, WriteGuard};
 use std::path::Path;
@@ -340,6 +344,26 @@ pub async fn start_p2p_network(
                 RemoteNetworkEvent::LanPeerDiscovered(lan_peer) => {
                     let _ = app_handle.emit("p2p_lan_peer_discovered", lan_peer);
                 }
+                RemoteNetworkEvent::SyncRequestReceived { doc_id, state_vector, from_peer } => {
+                    let b64 = base64::engine::general_purpose::STANDARD.encode(&state_vector);
+                    let _ = app_handle.emit(
+                        "p2p_sync_request_received",
+                        serde_json::json!({ "doc_id": doc_id, "state_vector": b64, "from_peer": from_peer }),
+                    );
+                }
+                RemoteNetworkEvent::SyncResponseReceived { doc_id, update, from_peer } => {
+                    let b64 = base64::engine::general_purpose::STANDARD.encode(&update);
+                    let _ = app_handle.emit(
+                        "p2p_sync_response_received",
+                        serde_json::json!({ "doc_id": doc_id, "update": b64, "from_peer": from_peer }),
+                    );
+                }
+                RemoteNetworkEvent::ProfileUpdated { from_peer, profile } => {
+                    let _ = app_handle.emit(
+                        "p2p_profile_updated",
+                        serde_json::json!({ "from_peer": from_peer, "profile": profile }),
+                    );
+                }
             }
         }
     });
@@ -456,4 +480,204 @@ pub async fn get_local_peer_identity(
     let lock = state.network_node.read().await;
     Ok(lock.as_ref().map(|node| node.identity.clone()))
 }
+
+#[tauri::command]
+pub async fn get_user_profile(
+    state: tauri::State<'_, AppState>,
+    vault_path: String,
+) -> Result<UserProfile, String> {
+    let path = Path::new(&vault_path);
+    let lock = state.network_node.read().await;
+    if let Some(node) = lock.as_ref() {
+        Ok(node.get_local_profile().await)
+    } else {
+        load_or_create_profile(path, "Moi").map_err(|e| e.to_string())
+    }
+}
+
+#[tauri::command]
+pub async fn save_user_profile(
+    state: tauri::State<'_, AppState>,
+    vault_path: String,
+    profile: UserProfile,
+) -> Result<(), String> {
+    let path = Path::new(&vault_path);
+    save_profile(path, &profile).map_err(|e| e.to_string())?;
+
+    let lock = state.network_node.read().await;
+    if let Some(node) = lock.as_ref() {
+        node.update_local_profile(profile).await.map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn upload_user_avatar(
+    state: tauri::State<'_, AppState>,
+    vault_path: String,
+    image_base64: String,
+    mime_type: String,
+) -> Result<AvatarInfo, String> {
+    let path = Path::new(&vault_path);
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(&image_base64)
+        .map_err(|e| format!("Base64 invalide: {}", e))?;
+
+    let avatar = save_custom_avatar(path, &bytes, &mime_type).map_err(|e| e.to_string())?;
+
+    let lock = state.network_node.read().await;
+    if let Some(node) = lock.as_ref() {
+        let mut prof = node.get_local_profile().await;
+        prof.avatar = avatar.clone();
+        let _ = node.update_local_profile(prof).await;
+    }
+
+    Ok(avatar)
+}
+
+#[tauri::command]
+pub async fn reset_user_avatar(
+    state: tauri::State<'_, AppState>,
+    vault_path: String,
+) -> Result<AvatarInfo, String> {
+    let path = Path::new(&vault_path);
+    let avatar = reset_custom_avatar(path).map_err(|e| e.to_string())?;
+
+    let lock = state.network_node.read().await;
+    if let Some(node) = lock.as_ref() {
+        let mut prof = node.get_local_profile().await;
+        prof.avatar = avatar.clone();
+        let _ = node.update_local_profile(prof).await;
+    }
+
+    Ok(avatar)
+}
+
+#[tauri::command]
+pub async fn apply_profile_to_git(
+    vault_path: String,
+    name: String,
+    email: String,
+) -> Result<bool, String> {
+    let path = Path::new(&vault_path);
+    configure_vault_git_author(path, &name, &email).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn save_doc_snapshot(
+    state: tauri::State<'_, AppState>,
+    vault_path: String,
+    doc_id: String,
+    state_vector_base64: String,
+    yjs_snapshot_base64: String,
+) -> Result<DocSnapshot, String> {
+    let path = Path::new(&vault_path);
+    let profile = {
+        let lock = state.network_node.read().await;
+        if let Some(node) = lock.as_ref() {
+            node.get_local_profile().await
+        } else {
+            load_or_create_profile(path, "Moi").map_err(|e| e.to_string())?
+        }
+    };
+
+    create_and_save_snapshot(
+        path,
+        &doc_id,
+        &state_vector_base64,
+        &yjs_snapshot_base64,
+        &profile,
+    )
+    .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn list_doc_snapshots(
+    vault_path: String,
+    doc_id: String,
+) -> Result<Vec<DocSnapshot>, String> {
+    let path = Path::new(&vault_path);
+    list_snapshots_for_doc(path, &doc_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn load_latest_doc_snapshot(
+    vault_path: String,
+    doc_id: String,
+) -> Result<Option<DocSnapshot>, String> {
+    let path = Path::new(&vault_path);
+    load_latest_snapshot(path, &doc_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn send_p2p_sync_step1(
+    state: tauri::State<'_, AppState>,
+    doc_id: String,
+    state_vector_base64: String,
+) -> Result<(), String> {
+    let lock = state.network_node.read().await;
+    if let Some(node) = lock.as_ref() {
+        let bytes = base64::engine::general_purpose::STANDARD
+            .decode(&state_vector_base64)
+            .map_err(|e| format!("Base64 invalide: {}", e))?;
+        node.send_sync_step1(&doc_id, &bytes).await;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn send_p2p_sync_step2(
+    state: tauri::State<'_, AppState>,
+    peer_id: String,
+    doc_id: String,
+    update_base64: String,
+) -> Result<(), String> {
+    let lock = state.network_node.read().await;
+    if let Some(node) = lock.as_ref() {
+        let bytes = base64::engine::general_purpose::STANDARD
+            .decode(&update_base64)
+            .map_err(|e| format!("Base64 invalide: {}", e))?;
+        node.send_sync_step2(&peer_id, &doc_id, &bytes).await;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn load_avatar_base64(
+    vault_path: String,
+    hash: Option<String>,
+) -> Result<Option<String>, String> {
+    let p = Path::new(&vault_path);
+    let avatar_file = if let Some(h) = hash {
+        let png = p.join(".knit").join("cache").join("avatars").join(format!("{}.png", h));
+        let jpg = p.join(".knit").join("cache").join("avatars").join(format!("{}.jpg", h));
+        if png.exists() {
+            png
+        } else if jpg.exists() {
+            jpg
+        } else {
+            return Ok(None);
+        }
+    } else {
+        let png = p.join(".knit").join("identity").join("avatar.png");
+        let jpg = p.join(".knit").join("identity").join("avatar.jpg");
+        if png.exists() {
+            png
+        } else if jpg.exists() {
+            jpg
+        } else {
+            return Ok(None);
+        }
+    };
+
+    let bytes = std::fs::read(&avatar_file).map_err(|e| e.to_string())?;
+    let b64 = base64::engine::general_purpose::STANDARD.encode(&bytes);
+    let mime = if avatar_file.extension().and_then(|e| e.to_str()) == Some("jpg") {
+        "image/jpeg"
+    } else {
+        "image/png"
+    };
+    Ok(Some(format!("data:{};base64,{}", mime, b64)))
+}
+
 

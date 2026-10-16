@@ -1,11 +1,42 @@
 # Changelog — v0.2.0
 
-> Version 0.2.0 — Réseau Peer-to-Peer & Synchronisation Multi-Pairs.
-> Statut : 🚧 En cours (Sprint 3 validé ✅, Sprint 4 en attente)
+> Version 0.2.0 — Réseau Peer-to-Peer, Snapshots Cryptographiques & Profils Utilisateurs Décentralisés.
+> Statut : ✅ Validé & Terminé (Sprint 3 ✅ & Sprint 4 ✅)
 
 ---
 
-## ✨ Nouveautés (Sprint 3)
+## ✨ Nouveautés (Sprint 4 — Résilience, Snapshots & Identité Utilisateur)
+
+- **Gestion des déconnexions et rattrapage d'état automatique (B-018)** :
+  - Protocole de réconciliation en deux temps (`SyncStep1` et `SyncStep2`) permettant à deux pairs qui se reconnectent de comparer leurs vecteurs d'état Yjs et de n'échanger que les deltas manquants.
+  - Convergence déterministe immédiate sans conflit ni duplication après interruption réseau.
+- **Compaction et snapshots périodiques Yjs (B-019)** :
+  - Déclenchement automatique d'un snapshot compacté toutes les 200 opérations de frappe/édition par document.
+  - Calcul et persistance du vecteur d'état (`state_vector_base64`) et du snapshot binaire compressé (`yjs_snapshot_base64`).
+- **Bornage d'espace disque & Élagage dans `.knit/snapshots/` (B-020)** :
+  - Stockage structuré dans `.knit/snapshots/{doc_id_slug}/` des fichiers snapshots JSON horodatés.
+  - Élagage automatique conservant au maximum 50 snapshots par document pour empêcher l'inflation de l'historique CRDT.
+  - Pré-chargement instantané du dernier snapshot compacté à l'ouverture de document pour accélérer l'initialisation CRDT.
+- **Profil utilisateur enrichi & UI dédiée (B-020a)** :
+  - Stockage décentralisé du profil dans `.knit/identity/profile.json` (`first_name`, `last_name`, `display_name`, `email`, `role`, `status_message`, `share_email_p2p`, `avatar`).
+  - Composant `ProfileModal` accessible depuis le Header ou la modale Réseau, offrant une édition complète avec prévisualisation.
+  - Badge d'avatar cliquable dans la barre d'en-tête (Header) avec infobulle et statut collaborateur.
+- **Synchronisation P2P d'avatars personnalisés via Iroh Blobs (B-020b)** :
+  - Support des photos de profil PNG/JPEG avec hachage cryptographique BLAKE3 et distribution P2P via l'ALPN `/knit/blobs/1`.
+  - Fallback déterministe automatique sur les initiales et la palette collaborative de 10 teintes harmonieuses si aucun avatar personnalisé n'est configuré.
+  - Commande native `load_avatar_base64` pour un affichage sécurisé et sans blocage de scope en environnement de bureau.
+- **Signatures Ed25519 des snapshots, Privacy Toggle & Auto-config Git (B-020c)** :
+  - Signature cryptographique Ed25519 systématique de chaque snapshot assurant l'authenticité et la non-répudiation des versions.
+  - **Mode Confidentialité / Zéro-Fuite** : interrupteur de confidentialité empêchant la diffusion de l'e-mail sur le réseau P2P tout en préservant la signature locale. Badge visuel `🔒 Zéro-Fuite` affiché pour les pairs protecteurs.
+  - **Auto-configuration Git locale** : synchronisation en un clic des paramètres `user.name` et `user.email` du dépôt Git local du vault (`.git/config`).
+- **Tests d'intégration réseau & résilience aux coupures (B-021 & B-022)** :
+  - Test d'intégration automatisé `test_peer_profile_exchange_and_privacy_handshake` validant l'échange de profil et le masquage d'email.
+  - Test d'intégration automatisé `test_network_partition_and_offline_yjs_catchup` prouvant la convergence mathématique de deux nœuds isolés ayant édité indépendamment puis reconnectés.
+  - Test d'intégration automatisé `test_custom_avatar_p2p_sync_via_blobs` validant la distribution d'avatar par flux QUIC blob et vérification BLAKE3.
+
+---
+
+## ✨ Nouveautés (Sprint 3 — Iroh & Transport P2P)
 
 - **Moteur P2P Iroh (B-013)** :
   - Intégration d'Iroh 1.3.0 en Rust dans `knit-core` pour la communication directe chiffrée de bout en bout via QUIC.
@@ -35,21 +66,16 @@
 
 ---
 
-## 🐛 Corrections
+## 🐛 Corrections & Optimisations
 
-- Élimination des boucles de réémission en marquant l'origine des deltas Yjs (`origin: 'p2p'`).
-- Robustesse face aux fermetures impromptues de flux QUIC avec reconnexion et heartbeat Ping/Pong.
-
----
-
-## 🔧 Technique
-
-- Sécurité hybride : aucun serveur central ni intermédiaire en LAN, relay purement aveugle et éphémère en WAN.
-- Absence totale de base de données centrale : chaque nœud est souverain et héberge l'intégralité du vault.
-- 0 warning `cargo clippy` et 0 warning `oxlint`, 27 tests unitaires et d'intégration validés.
+- Rechargement fluide des avatars sous forme de flux Base64 sans nécessiter de permissions `asset:` spéciales.
+- Isolation stricte des flux QUIC blobs avec `send.finish()` et `conn.closed().await` évitant les resets de flux intempestifs.
+- Pruning automatique des snapshots limitant la consommation disque à moins de 50 versions par document.
 
 ---
 
-## 💥 Breaking Changes
+## 🔧 Métriques Techniques & Qualité
 
-- Ajout de la structure `.knit/identity/` pour les clés Ed25519 de l'instance locale.
+- **Tests automatisés** : 33 tests unitaires et d'intégration validés en Rust (`cargo test --workspace` : 0 échec).
+- **Linter & Compilateur Rust** : 0 warning avec `cargo clippy --workspace -- -D warnings`.
+- **Linter & Compilateur TypeScript** : 0 warning et 0 erreur avec `oxlint` et `tsc -b`.

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-reset-user-avatar"
+description = "Enables the reset_user_avatar command without any pre-configured scope."
+commands.allow = ["reset_user_avatar"]
+
+[[permission]]
+identifier = "deny-reset-user-avatar"
+description = "Denies the reset_user_avatar command without any pre-configured scope."
+commands.deny = ["reset_user_avatar"]

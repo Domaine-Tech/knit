@@ -33,6 +33,17 @@
     "allow-broadcast-yjs-update",
     "allow-broadcast-awareness",
     "allow-sync-asset-from-peers",
-    "allow-get-local-peer-identity"
+    "allow-get-local-peer-identity",
+    "allow-get-user-profile",
+    "allow-save-user-profile",
+    "allow-upload-user-avatar",
+    "allow-reset-user-avatar",
+    "allow-apply-profile-to-git",
+    "allow-save-doc-snapshot",
+    "allow-list-doc-snapshots",
+    "allow-load-latest-doc-snapshot",
+    "allow-send-p2p-sync-step1",
+    "allow-send-p2p-sync-step2",
+    "allow-load-avatar-base64"
   ]
 }
