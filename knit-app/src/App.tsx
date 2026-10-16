@@ -360,7 +360,7 @@ export const App: React.FC = () => {
       icon: 'folder-open',
       action: () => vaultStore.pickAndOpenVault(),
     },
-  ], [theme, handleNewNote, handleSaveActiveNote]);
+  ], [theme, handleNewNote, handleSaveActiveNote, handleSelectFile]);
 
   return (
     <div

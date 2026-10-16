@@ -59,7 +59,12 @@ export const Editor: React.FC<EditorProps> = ({
   const [frontmatter, setFrontmatter] = useState<FrontmatterDoc | null>(null);
   const [backlinks, setBacklinks] = useState<string[]>([]);
   const [knownTags, setKnownTags] = useState<string[]>([]);
+  const knownTagsRef = useRef<string[]>(knownTags);
   const [, setTick] = useState(0);
+
+  useEffect(() => {
+    knownTagsRef.current = knownTags;
+  }, [knownTags]);
 
   useEffect(() => {
     vaultStore.getVaultTags().then((tags) => {
@@ -99,6 +104,11 @@ export const Editor: React.FC<EditorProps> = ({
       }
     }
   }, []);
+
+  const handleOpenWikiLinkRef = useRef(handleOpenWikiLink);
+  useEffect(() => {
+    handleOpenWikiLinkRef.current = handleOpenWikiLink;
+  }, [handleOpenWikiLink]);
 
   useEffect(() => {
     return networkStore.subscribe(() => {
@@ -273,7 +283,7 @@ export const Editor: React.FC<EditorProps> = ({
         // Autocomplétion intelligente WikiLinks [[Note]] et Tags #tag
         createKnitAutocompletion({
           getFiles: () => getFlatFiles(vaultStore.files),
-          getTags: () => knownTags,
+          getTags: () => knownTagsRef.current,
         }),
         // Connexion CRDT Yjs avec yCollab et Awareness collaboratif
         yCollab(ytext, awareness),
@@ -292,7 +302,7 @@ export const Editor: React.FC<EditorProps> = ({
                 if (col >= start && col <= end) {
                   event.preventDefault();
                   const target = match[1].trim();
-                  handleOpenWikiLink(target);
+                  handleOpenWikiLinkRef.current(target);
                   return true;
                 }
               }
@@ -425,23 +435,6 @@ export const Editor: React.FC<EditorProps> = ({
 
     viewRef.current = view;
 
-    if (initialLine && initialLine > 0) {
-      setTimeout(() => {
-        try {
-          const totalLines = view.state.doc.lines;
-          const targetLineNum = Math.min(Math.max(1, initialLine), totalLines);
-          const lineInfo = view.state.doc.line(targetLineNum);
-          view.dispatch({
-            selection: { anchor: lineInfo.from },
-            scrollIntoView: true,
-          });
-          view.focus();
-        } catch {
-          // ignore
-        }
-      }, 50);
-    }
-
     return () => {
       if (saveTimerRef.current) {
         clearTimeout(saveTimerRef.current);
@@ -453,6 +446,30 @@ export const Editor: React.FC<EditorProps> = ({
       viewRef.current = null;
     };
   }, [path]);
+
+  // Positionnement dynamique sur la ligne demandée (ex: depuis la recherche globale)
+  useEffect(() => {
+    if (!initialLine || initialLine <= 0) return;
+    const view = viewRef.current;
+    if (!view) return;
+
+    const timer = setTimeout(() => {
+      try {
+        const totalLines = view.state.doc.lines;
+        const targetLineNum = Math.min(Math.max(1, initialLine), totalLines);
+        const lineInfo = view.state.doc.line(targetLineNum);
+        view.dispatch({
+          selection: { anchor: lineInfo.from },
+          scrollIntoView: true,
+        });
+        view.focus();
+      } catch {
+        // ignore
+      }
+    }, 50);
+
+    return () => clearTimeout(timer);
+  }, [initialLine]);
 
   // Si le contenu extérieur change sans que l'éditeur ait le focus
   useEffect(() => {

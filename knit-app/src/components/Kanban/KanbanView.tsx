@@ -163,34 +163,37 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
   };
 
   // Ajout d'une carte dans une colonne
-  const handleAddCardSubmit = (columnId: string, e: React.FormEvent) => {
-    e.preventDefault();
-    const title = newCardTitle.trim();
-    if (!title) {
-      setAddingCardInColumnId(null);
-      return;
-    }
-
-    const newCard: KanbanCard = {
-      id: `card-${Date.now().toString().slice(-5)}`,
-      title,
-      completed: false,
-      rawText: `- [ ] ${title}`,
-    };
-
-    const updatedCols = board.columns.map((col) => {
-      if (col.id === columnId) {
-        return { ...col, cards: [...col.cards, newCard] };
+  const handleAddCardSubmit = useCallback(
+    (columnId: string, e: React.FormEvent) => {
+      e.preventDefault();
+      const title = newCardTitle.trim();
+      if (!title) {
+        setAddingCardInColumnId(null);
+        return;
       }
-      return col;
-    });
 
-    persistBoard({ ...board, columns: updatedCols });
-    setNewCardTitle('');
-    // On conserve le focus pour ajouter rapidement plusieurs cartes
-    setTimeout(() => addCardInputRef.current?.focus(), 20);
-    toast.success('Tâche ajoutée', title);
-  };
+      const newCard: KanbanCard = {
+        id: `card-${Date.now().toString().slice(-5)}`,
+        title,
+        completed: false,
+        rawText: `- [ ] ${title}`,
+      };
+
+      const updatedCols = board.columns.map((col) => {
+        if (col.id === columnId) {
+          return { ...col, cards: [...col.cards, newCard] };
+        }
+        return col;
+      });
+
+      persistBoard({ ...board, columns: updatedCols });
+      setNewCardTitle('');
+      // On conserve le focus pour ajouter rapidement plusieurs cartes
+      setTimeout(() => addCardInputRef.current?.focus(), 20);
+      toast.success('Tâche ajoutée', title);
+    },
+    [newCardTitle, board, persistBoard]
+  );
 
   // Bascule de la case à cocher d'une carte
   const handleToggleCardCheckbox = (columnId: string, cardId: string) => {

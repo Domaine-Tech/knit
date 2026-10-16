@@ -1025,7 +1025,7 @@ class VaultStore {
           const id = fm.fields['id'] || relPath.split('/').pop()?.replace('.md', '') || 'task';
           const titre = fm.fields['titre'] || fm.body.split('\n')[0].replace(/^#+\s*/, '') || id;
           const tags = fm.fields['tags']
-            ? fm.fields['tags'].replace(/[\[\]]/g, '').split(',').map((t) => t.trim().replace(/^#/, '')).filter(Boolean)
+            ? fm.fields['tags'].replace(/[[\]]/g, '').split(',').map((t) => t.trim().replace(/^#/, '')).filter(Boolean)
             : [];
           tasks.push({
             rel_path: relPath,
@@ -1088,7 +1088,7 @@ class VaultStore {
       for (const [relPath, content] of Object.entries(this.localContents)) {
         const fm = await this.parseFrontmatter(content);
         if (fm.fields['tags']) {
-          const raw = fm.fields['tags'].replace(/[\[\]]/g, '');
+          const raw = fm.fields['tags'].replace(/[[\]]/g, '');
           raw.split(',').forEach((t) => {
             const clean = t.trim().replace(/^#/, '').toLowerCase();
             if (clean) {
@@ -1097,7 +1097,7 @@ class VaultStore {
             }
           });
         }
-        const inlineMatches = content.matchAll(/(?:^|[\s(])#([a-zA-Z0-9_\-\/]+)/g);
+        const inlineMatches = content.matchAll(/(?:^|[\s(])#([a-zA-Z0-9_\-/]+)/g);
         for (const m of inlineMatches) {
           const tag = m[1].toLowerCase();
           if (tag && isNaN(Number(tag))) {

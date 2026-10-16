@@ -45,7 +45,7 @@ export function createKnitAutocompletion(sources: AutocompleteSourceProps) {
         }
 
         // 2. Détection des Tags `#...`
-        const tagMatch = context.matchBefore(/(?:^|[\s(])#([a-zA-Z0-9_\-\/]*)$/);
+        const tagMatch = context.matchBefore(/(?:^|[\s(])#([a-zA-Z0-9_\-/]*)$/);
         if (tagMatch) {
           const tags = sources.getTags();
           const matchedText = tagMatch.text;
