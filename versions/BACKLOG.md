@@ -107,7 +107,7 @@
 
 | # | Tâche | Priorité | Statut | Sprint |
 |---|---|---|---|---|
-| B-027 | Rendu Mermaid inline dans CodeMirror 6 (WidgetType) | 🔴 | 📋 | Sprint 6 |
+| B-027 | Rendu Mermaid inline dans n'importe quel fichier `.md` classique (WidgetType CodeMirror 6) | 🔴 | 📋 | Sprint 6 |
 | B-028 | Coloration syntaxique Mermaid (`codemirror-lang-mermaid`) | 🟠 | 📋 | Sprint 6 |
 | B-029 | Thème Mermaid synchronisé avec `--knit-hue` | 🟡 | 📋 | Sprint 6 |
 | B-030 | Mode code ↔ rendu (clic sur le diagramme pour éditer) | 🟠 | 📋 | Sprint 6 |

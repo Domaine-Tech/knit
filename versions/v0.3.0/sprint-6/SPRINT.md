@@ -14,7 +14,7 @@
 
 | # | Tâche | Priorité | Statut | Assigné |
 |---|---|---|---|---|
-| B-027 | Rendu Mermaid inline dans CodeMirror 6 via l'API `WidgetType` | 🔴 | 📋 | — |
+| B-027 | Rendu Mermaid inline dans n'importe quel fichier `.md` classique (WidgetType CodeMirror 6) | 🔴 | 📋 | — |
 | B-028 | Coloration syntaxique du code Mermaid (`codemirror-lang-mermaid`) | 🟠 | 📋 | — |
 | B-029 | Thème Mermaid synchronisé dynamiquement avec `--knit-hue` et mode sombre | 🟡 | 📋 | — |
 | B-030 | Mode interactif code ↔ rendu (clic sur le diagramme pour éditer la source) | 🟠 | 📋 | — |
@@ -28,8 +28,9 @@
 
 ## Critères d'acceptation (DoD - Definition of Done)
 
-- [ ] Les blocs de code ```` ```mermaid ```` s'affichent par défaut sous forme de diagrammes SVG élégants aux angles arrondis.
-- [ ] Cliquer sur le diagramme ou placer le curseur dessus affiche le code source éditable.
+- [ ] Dans n'importe quelle note Markdown classique (sans configuration ni type spécial requis), les blocs ```` ```mermaid ```` sont automatiquement interceptés et rendus inline sous forme de superbes diagrammes SVG intégrés entre les paragraphes de texte.
+- [ ] Cliquer sur le diagramme SVG ou placer le curseur texte à l'intérieur révèle instantanément le code source Mermaid pour modification en direct.
+- [ ] Dès que le curseur quitte le bloc, le diagramme se recompile et se réaffiche en direct avec un debounce de 300ms.
 - [ ] Les éléments Markdown (titres `#`, gras `**`, listes à cocher `- [ ]`) sont rendus visuellement et révèlent leur syntaxe brute au survol/clic de la ligne (Live Preview Obsidian).
 - [ ] Le bouton `[Code Source </>]` est présent et accessible dans l'en-tête de chaque onglet pour basculer instantanément entre la vue visuelle (Live Preview, Kanban, Tableau) et le code Markdown brut.
 - [ ] Taper `/` sur une ligne vide ouvre le menu de sélection rapide Notion-like sans latence (`/kanban`, `/tableau`, `/mermaid`, `/callout`, `/titre`).
