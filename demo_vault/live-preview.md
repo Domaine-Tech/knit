@@ -4,8 +4,8 @@ titre: Demonstration Complete Live Preview
 statut: en-cours
 priorite: haute
 assigne: Thomas
-tags: [test, live-preview, sprint-6, markdown]
-id: TEST-001
+tags: [demo, live-preview, sprint-6, markdown]
+id: DEMO-001
 echeance: 2026-10-30
 ---
 
@@ -46,7 +46,7 @@ Chaque case ci-dessous est interactive. Un simple clic change son etat selon le 
 
 - [ ] Corriger le conflit de synchronisation CRDT Yjs !p1 @Thomas @2026-10-20 14:00-15:30
 - [ ] Optimiser la palette de couleurs d'accentuation !p2 @vault @2026-10-21
-- [ ] Nettoyer les classes CSS obseletes !p3 due: 2026-10-25
+- [ ] Nettoyer les classes CSS obsoletes !p3 due: 2026-10-25
 - [ ] Deploiement de la version P2P sur le reseau Iroh !p1 @Thomas H.
 
 ---
@@ -67,39 +67,21 @@ Chaque case ci-dessous est interactive. Un simple clic change son etat selon le 
 
 ## 5. Tableaux Markdown GFM (Alignement Parfait 1:1 et Liens Interactifs)
 
-Survolez les liens dans les cellules pour afficher l'aperçu dynamique flottant (US B-053). Utilisez **Ctrl + Clic** pour ouvrir la cible correspondante.
+Survolez les liens dans les cellules pour afficher l'apercu dynamique flottant (US B-053). Utilisez **Ctrl + Clic** pour ouvrir la cible correspondante.
 
-| Type de Cible | Intitulé | Destinataire / Statut | Lien Interactif | Action Attendue |
+| Type de Cible | Intitule | Destinataire / Statut | Lien Interactif | Action Attendue |
 | :--- | :--- | :---: | :--- | :--- |
-| **Note Existante** | Document long | `Validé` | [[test-long-document.md]] | Ouvre la note avec aperçu snippet |
-| **Alias WikiLink** | Vue Synthétique | `Actif` | [[test-table.md\|Inventaire Composants]] | Ouvre la vue Tableau |
-| **Tableau Kanban** | Tâches P2P | `En cours` | [[test-kanban.md]] | Ouvre le tableau Kanban |
-| **Ancre Interne** | Statuts de tâches | `Local` | [[#2. Les 7 Statuts de Taches Standardises (B-054)]] | Défile vers la section 2 |
-| **Lien Web Externe** | GitHub Repo | `HTTPS` | [Dépôt GitHub Knit](https://github.com/Domaine-Tech/knit) | Ouvre le navigateur système |
+| **Note Existante** | Document long | `Valide` | [[document-long.md]] | Ouvre la note avec apercu snippet |
+| **Alias WikiLink** | Vue Synthetique | `Actif` | [[table.md|Inventaire Composants]] | Ouvre la vue Tableau |
+| **Tableau Kanban** | Taches P2P | `En cours` | [[kanban.md]] | Ouvre le tableau Kanban |
+| **Ancre Interne** | Statuts de taches | `Local` | [[#2. Les 7 Statuts de Taches Standardises (B-054)]] | Defile vers la section 2 |
+| **Lien Web Externe** | GitHub Repo | `HTTPS` | [Depot GitHub Knit](https://github.com/Domaine-Tech/knit) | Ouvre le navigateur systeme |
 | **URL Brute** | Documentation | `Web` | https://github.com/Domaine-Tech/knit | Ouvre le navigateur |
 | **Dossier Local** | Configuration | `Dossier` | [Dossier .knit](./.knit/) | Ouvre l'explorateur de fichiers |
-| **Fichier Externe** | Cahier des charges | `Document` | [Spécification Office](./spec-technique.docx) | Ouvre avec l'application par défaut |
-
-Second tableau technique pour valider la synchronisation et l'absence totale de décalage :
-
-| Port | Protocole | Service | Rôle et Lien |
-| :--- | :--- | :--- | :--- |
-| 11200 | QUIC / UDP | Iroh P2P | Transport pair-à-pair [[test-long-document.md\|Protocole]] |
-| 5173 | HTTP / TCP | Vite Dev Server | Interface [Vite Localhost](http://localhost:5173) |
-| 1420 | IPC / Rust | Tauri v2 | Pont natif multiplateforme |
 
 ---
 
 ## 6. Scripts et Blocs de Code avec Bouton Copier
-
-### Script PowerShell de maintenance
-
-```powershell
-.\.scripts\audit-fiches-md.ps1
-# Corriger automatiquement les blocs de code non types :
-.\.scripts\audit-fiches-md.ps1 -FixCodeBlocks
-Get-Process | Where-Object { $_.ProcessName -like "*knit*" }
-```
 
 ### Script Shell Unix / Bash
 
@@ -121,25 +103,6 @@ export interface PeerConfig {
   listenPort: number;
   enableRelay: boolean;
   heartbeatIntervalMs: number;
-}
-
-export function createPeerNode(config: PeerConfig): Promise<void> {
-  console.log("Initialisation du noeud P2P :", config.nodeId);
-  return Promise.resolve();
-}
-```
-
-### Configuration JSON
-
-```json
-{
-  "name": "knit-demo-vault",
-  "version": "0.3.0",
-  "features": {
-    "crdt": true,
-    "p2p": true,
-    "livePreview": true
-  }
 }
 ```
 
@@ -186,20 +149,3 @@ graph TD
 2. Deuxieme point structure
    - Validation croisee
    - Synchronisation sans conflit
-
----
-
-## 10. Images et Médias Intégrés
-
-Image d'architecture réseau avec légende :
-
-![Architecture Réseau P2P Iroh & Synchronisation Décentralisée](https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80)
-
-Espace de travail feutré et minimaliste :
-
-![Espace de travail minimaliste Knit](https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=80)
-
-Test de fallback gracieux sur image introuvable :
-
-![Schéma local non présent dans le coffre](./assets/schema-inexistant.png)
-

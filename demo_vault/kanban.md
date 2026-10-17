@@ -40,3 +40,4 @@ Vous pouvez a tout moment basculer en mode source (`</>`) avec `Ctrl+E` pour con
 - [x] Neutralisation des marges asymetriques sur les titres !p1
 - [x] Support des 7 statuts de taches standardises B-054 !p2
 - [x] Mise en place de la triple garde WriteGuard anti-boucle !p1 @Thomas
+
