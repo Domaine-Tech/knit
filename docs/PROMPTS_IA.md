@@ -666,30 +666,32 @@ Structure ta réponse avec les sections suivantes :
 
 ---
 
-## 🧱 Prompt 9 : Audit & Centralisation : Types, Utilitaires & Moteur CRDT
+## 🧱 Prompt 9 : Audit & Centralisation : Types, Utilitaires, Hooks React & Moteur CRDT
 
-> **Objectif** : Vérifier la centralisation stricte de l'architecture logicielle : rassembler 100% des types et interfaces de domaine dans `src/types/index.ts`, unifier les fonctions utilitaires réutilisables dans `src/utils/`, et encapsuler rigoureusement les flux CRDT/P2P et conversions binaires au sein de `src/crdt/crdtManager.ts` et `src/utils/encodingUtils.ts` (0 duplication de type, zéro boucle d'encodage manuelle en $O(N^2)$, typage strict sans `any`).
+> **Objectif** : Vérifier la centralisation stricte de l'architecture logicielle : rassembler 100% des types et interfaces de domaine dans `src/types/index.ts`, unifier les fonctions utilitaires pures réutilisables dans `src/utils/`, isoler rigoureusement l'ensemble des hooks personnalisés React dans `src/hooks/`, et encapsuler les flux CRDT/P2P et conversions binaires au sein de `src/crdt/crdtManager.ts` et `src/utils/encodingUtils.ts` (0 duplication de type, zéro hook mélangé aux fonctions pures, zéro boucle d'encodage manuelle en $O(N^2)$, typage strict sans `any`).
 
 ```markdown
 <role>
-Tu es un Principal Systems Integrity & Software Architect d'élite, expert en architectures modulaires TypeScript strict / React 19, contrats de types unifiés et gestionnaires distribués CRDT (Yjs, Automerge, state vectors, encodage binaire haute performance).
+Tu es un Principal Systems Integrity & Software Architect d'élite, expert en architectures modulaires TypeScript strict / React 19, contrats de types unifiés, hooks React réutilisables et gestionnaires distribués CRDT (Yjs, Automerge, state vectors, encodage binaire haute performance).
 </role>
 
 <context>
 Projet : Knit — Application collaborative local-first P2P en Markdown pur.
 Périmètre analysé : {{PERIMETRE_TYPES_UTILS_CRDT}} (par défaut : l'ensemble de `knit-app/src` et les contrats IPC / Serde DTOs avec `knit-core` / `src-tauri`).
 Règles architecturales absolues de Knit (Règle 18 & ADRs) :
-1. Centralisation intégrale du typage : Tout type, interface ou énumération de domaine (`FileNode`, `Tab`, `UserProfile`, `KanbanBoard`, `TaskStatus`, `DocType`, `ViewMode`, `AppViewMode`, etc.) DOIT être déclaré dans `src/types/` (`vault.ts`, `markdown.ts`, `network.ts`, `kanban.ts`, `views.ts`, etc.) et réexporté via le point d'entrée unique `src/types/index.ts`. Zéro type orphelin ou dupliqué dans les composants ou stores.
-2. Centralisation des Utilitaires : Toute fonction utilitaire transverse (manipulation de chaînes, chemins de fichiers, dates, parsing de tags, manipulation de tableaux, debounce/throttle) doit résider dans `src/utils/` (`pathUtils.ts`, `dateUtils.ts`, etc.) et ne jamais être réécrite inline dans des composants ou des hooks.
-3. Encapsulation du Moteur CRDT & Conversions Binaires :
+1. Centralisation intégrale du typage : Tout type, interface ou énumération de domaine (`FileNode`, `Tab`, `UserProfile`, `KanbanBoard`, `TaskStatus`, `DocType`, `ViewMode`, `AppViewMode`, etc.) DOIT être déclaré dans `src/types/` (`vault.ts`, `markdown.ts`, `network.ts`, `kanban.ts`, `views.ts`, `ui.ts`, etc.) et réexporté via le point d'entrée unique `src/types/index.ts`. Zéro type orphelin ou dupliqué dans les composants ou stores.
+2. Centralisation des Utilitaires Purs : Toute fonction utilitaire pure transverse (manipulation de chaînes, chemins de fichiers, dates, parsing de tags, manipulation de tableaux, debounce/throttle) doit résider dans `src/utils/` (`pathUtils.ts`, `treeUtils.ts`, `encodingUtils.ts`, `dateUtils.ts`, etc.) et ne jamais être réécrite inline dans des composants.
+3. Isolation des Hooks React : Tout hook personnalisé React manipulant du state ou des cycles de vie (`useState`, `useEffect`, `useCallback`, `useMemo`) DOIT impérativement résider dans `src/hooks/` (`useKanbanBoard.ts`, `useKnitShortcuts.ts`, `useResizablePanels.ts`, etc.) et ne JAMAIS être mélangé dans `src/utils/` avec les fonctions pures.
+4. Encapsulation du Moteur CRDT & Conversions Binaires :
    - L'instanciation de documents Yjs, la synchronisation d'états, la capture de snapshots, et l'émission/réception d'updates doivent impérativement passer par `src/crdt/crdtManager.ts` (ou stores dédiés comme `networkStore.ts`). Aucune manipulation directe d'OpLog ou transaction opaque dispersée dans les vues UI.
    - Toutes les conversions binaires `Uint8Array` ↔ `Base64` (flux CRDT, invitations P2P, state vectors, snapshots Tauri) DOIVENT exclusivement employer `src/utils/encodingUtils.ts` (`uint8ArrayToBase64`, `base64ToUint8Array`) par blocs de 32 Ko, éliminant formellement toute boucle d'encodage manuelle en $O(N^2)$.
-4. Zéro émoji dans l'interface et le code applicatif (icônes vectorielles sobres DuotoneIcon/SVG).
+5. Conformité Stricte de Consommation & Zéro Réexportation Opaque : Tout fichier (`components/**`, `stores/**`, `hooks/**`) DOIT importer ses types exclusivement depuis `src/types` (jamais depuis des stores intermédiaires comme `vaultStore`), ses hooks depuis `src/hooks`, ses utilitaires purs depuis `src/utils`, et ses flux collaboratifs via `crdtManager`. Interdiction formelle pour un store de réexporter des types de domaine externes.
+6. Zéro émoji dans l'interface et le code applicatif (icônes vectorielles sobres DuotoneIcon/SVG).
 </context>
 
 <rules>
 1. STRICT MODE PLAN : Tu ne dois AUCUNEMENT modifier, créer ou déplacer de fichier lors de cette première réponse d'audit.
-2. Parcourir exhaustivement le code source et répertorier chaque anomalie (types inline/dupliqués, utilitaires disséminés, opérations CRDT non encapsulées ou conversions manuelles).
+2. Parcourir exhaustivement le code source et répertorier chaque anomalie (types inline/dupliqués, utilitaires disséminés, hooks égarés, imports indirects via des stores, opérations CRDT non encapsulées ou conversions manuelles).
 3. Rétrocompatibilité et sécurité : toute factorisation proposée doit préserver les imports existants sans provoquer de régression à l'exécution.
 4. Éviter le sur-typage théorique inutile : proposer des types expressifs, pragmatiques et stricts (éliminer `any` et les casts forcés `as any`).
 5. Structurer le plan d'action en lots clairs avec critères de validation stricts (`npm run lint`, `tsc --noEmit`, `cargo check`).
@@ -701,25 +703,37 @@ Règles architecturales absolues de Knit (Règle 18 & ADRs) :
   * Détecte les `interface` ou `type` déclarés directement à l'intérieur des composants (`src/components/**`), stores (`src/stores/**`) ou hooks (`src/hooks/**`).
   * Repère les duplications de signatures (ex: types de tâches, statuts, colonnes Kanban, métadonnées de notes) redéfinies à plusieurs endroits.
   * Détecte l'usage de types lâches (`any`, `unknown` non casté, signatures d'événements imprécises) et vérifie la cohérence avec les structs Rust Serde correspondants.
-- Audit des Utilitaires (`src/utils/`) :
-  * Identifie les fonctions d'aide redondantes (calcul de chemins, formatage de dates, normalisation de tags, hachage, debounce, manipulation de tableaux).
+- Audit des Hooks React (`src/hooks/`) :
+  * Détecte les hooks situés hors de `src/hooks/` (ex: stockés à tort dans `src/utils/` ou dupliqués dans des composants).
+  * Vérifie la cohésion et l'isolation des dépendances de chaque hook.
+- Audit des Utilitaires Purs (`src/utils/`) :
+  * Identifie les fonctions d'aide redondantes (calcul de chemins, navigation dans l'arbre de fichiers, formatage de dates, normalisation de tags, hachage, debounce).
   * Vérifie que les composants n'implémentent pas de micro-fonctions métier pures qui devraient être isolées et testables unitairement dans `src/utils/`.
 - Audit du Moteur CRDT & Conversions Binaires (`src/crdt/` & `src/utils/encodingUtils.ts`) :
   * Vérifie que toutes les interactions CRDT (Y.Doc, Y.Text, Y.Map, UndoManager, State Vector, diffs d'updates) sont proprement encapsulées et isolées du cycle de vie des composants UI.
   * Vérifie qu'aucun fichier ne réalise de conversion binaire brute (`btoa`, `atob`, `String.fromCharCode`, boucles `for` d'octets) hors de `src/utils/encodingUtils.ts`.
   * Vérifie la gestion du cycle de vie des listeners CRDT (destruction des abonnements pour éviter les fuites mémoire).
+- Audit de Consommation & Conformité des Imports (Consommation Centralisée) :
+  * Vérifie rigoureusement que 100% des fichiers de l'application consomment les briques centralisées :
+    - Les types sont importés depuis `src/types` (et NON depuis `vaultStore`, `tabStore`, `networkStore` ou des composants).
+    - Les hooks sont importés depuis `src/hooks` (et NON depuis `src/utils`).
+    - Les fonctions utilitaires sont importées depuis `src/utils`.
+    - Aucune logique CRDT (transactions Yjs, awareness, updates) n'est manipulée hors de `crdtManager`.
 
 Étape 2 : Conception de l'Architecture Cible & Modèle de Réexportation
-- Définis la cartographie idéale des fichiers dans `src/types/` (ex: `vault.ts`, `markdown.ts`, `network.ts`, `kanban.ts`, `views.ts`, `crdt.ts`) et de l'index central `src/types/index.ts`.
+- Définis la cartographie idéale des fichiers dans `src/types/` (ex: `vault.ts`, `markdown.ts`, `network.ts`, `kanban.ts`, `views.ts`, `ui.ts`, `crdt.ts`) et de l'index central `src/types/index.ts`.
+- Définis les hooks cibles dans `src/hooks/` et le hub `src/hooks/index.ts`.
 - Définis les modules utilitaires cibles dans `src/utils/`.
 - Précise les frontières d'encapsulation de `crdtManager.ts` pour une utilisation propre via hooks ou contextes.
 
 Étape 3 : Plan d'Action Phasé & Priorisé
 - Découpe la refactorisation en étapes incrémentales :
   * Lot 1 : Centralisation des types orphelins & consolidation du hub `src/types/index.ts`.
-  * Lot 2 : Factorisation des fonctions utilitaires dans `src/utils/` et migration des imports.
-  * Lot 3 : Consolidation du gestionnaire CRDT (`src/crdt/`) et sécurisation des flux binaires.
-  * Lot 4 : Nettoyage final, élimination du code mort et vérification du linter/compilateur.
+  * Lot 2 : Déplacement et isolation des hooks React dans `src/hooks/` avec index dédié.
+  * Lot 3 : Factorisation des fonctions utilitaires dans `src/utils/`.
+  * Lot 4 : Migration de 100% des imports consommateurs vers les hubs centralisés (`src/types`, `src/hooks`, `src/utils`) et suppression des réexportations en cascade dans les stores.
+  * Lot 5 : Consolidation du gestionnaire CRDT (`src/crdt/`) et sécurisation des flux binaires.
+  * Lot 6 : Nettoyage final, élimination du code mort et vérification du linter/compilateur.
 
 Étape 4 : Stratégie de Vérification & Non-Régression
 - Définis les commandes de vérification à exécuter (`npx tsc --noEmit`, `npm run lint`, `cargo check --workspace`, tests unitaires).
@@ -727,8 +741,8 @@ Règles architecturales absolues de Knit (Règle 18 & ADRs) :
 
 <output_format>
 Structure ta réponse avec les sections suivantes :
-1. 📊 Matrice d'Audit des Écarts (Tableau : Fichier Source | Élément Non Centralisé | Catégorie [Type / Util / CRDT] | Emplacement Cible Recommandé | Criticité)
-2. 🏛️ Schéma Cible d'Organisation (`src/types/`, `src/utils/`, `src/crdt/`)
+1. 📊 Matrice d'Audit des Écarts (Tableau : Fichier Source | Élément Non Centralisé | Catégorie [Type / Hook / Util / CRDT] | Emplacement Cible Recommandé | Criticité)
+2. 🏛️ Schéma Cible d'Organisation (`src/types/`, `src/hooks/`, `src/utils/`, `src/crdt/`)
 3. 📋 Plan d'Action Phasé d'Exécution (Cases à cocher `[ ]` par lot prioritaire)
 4. 🔍 Prévisualisation Représentative (Diff conceptuel succinct d'un cas de centralisation clé)
 5. ❓ Questions de Cadrage & Demande Explicite de Validation avant de débuter

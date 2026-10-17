@@ -14,7 +14,7 @@ Ce skill permet d'exécuter instantanément l'un des 11 prompts spécialisés de
 - `fait prompt 6` / `prompt 6`
 - `fait prompt 7` / `prompt 7`
 - `fait prompt 8` / `prompt 8`
-- `fait prompt 9` / `prompt 9` (Centralisation Types, Utils & Moteur CRDT)
+- `fait prompt 9` / `prompt 9` (Centralisation Types, Utils, Hooks React & Moteur CRDT)
 - `fait prompt 10` / `prompt 10` / `réalise sprint X` / `exécute sprint X` / `clôture sprint X` (Audit & Clôture de Sprint)
 - `fait prompt 11` / `prompt 11` / `commit et push` / `smart commit` (Commit & Push Intelligent)
 - `fait prompt bonus` / `meta prompt`
@@ -27,9 +27,9 @@ Ce skill permet d'exécuter instantanément l'un des 11 prompts spécialisés de
 - **Prompt 1** : **Nettoyage & Refactorisation** (`fait prompt 1`)
   - *Rôle* : Principal Software Architect & Refactoring Specialist
   - *Réf* : [docs/PROMPTS_IA.md#prompt-1](file:///d:/Dev/Repos/knit/docs/PROMPTS_IA.md#-prompt-1--nettoyage--refactorisation-architecturale)
-- **Prompt 9** : **Centralisation Types, Utils & CRDT** (`fait prompt 9`)
+- **Prompt 9** : **Centralisation Types, Utils, Hooks React & CRDT** (`fait prompt 9`)
   - *Rôle* : Principal Systems Integrity & Software Architect
-  - *Réf* : [docs/PROMPTS_IA.md#prompt-9](file:///d:/Dev/Repos/knit/docs/PROMPTS_IA.md#-prompt-9--audit--centralisation--types-utilitaires--moteur-crdt)
+  - *Réf* : [docs/PROMPTS_IA.md#prompt-9](file:///d:/Dev/Repos/knit/docs/PROMPTS_IA.md#-prompt-9--audit--centralisation--types-utilitaires-hooks-react--moteur-crdt)
 
 ### ⚡ Performance & Sécurité
 - **Prompt 2** : **Optimisation & Performance** (`fait prompt 2`)
