@@ -269,3 +269,79 @@ export function renderRichMarkdownPreview(raw: string): string {
 
   return htmlParts.join('') || '<div style="color:var(--knit-text-muted);font-style:italic;">(Note vide)</div>';
 }
+
+import type { FileNode } from '../stores/vaultStore';
+
+/**
+ * Normalise un texte ou un titre de section en identifiant slug sécurisé (compatible GitHub/Obsidian)
+ */
+export function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+/**
+ * Recherche récursive d'un nœud dans l'arborescence du coffre à partir d'une cible WikiLink
+ */
+export function findVaultNode(target: string, nodes: FileNode[]): FileNode | null {
+  const clean = target
+    .replace(/^\[\[/, '')
+    .replace(/\]\]$/, '')
+    .split('|')[0]
+    .replace(/^\.\//, '')
+    .replace(/\/$/, '')
+    .trim();
+
+  const cleanNoExt = clean.replace(/\.md$/i, '');
+  const cleanBase = cleanNoExt.split('/').pop() || cleanNoExt;
+
+  let match: FileNode | null = null;
+  const traverse = (items: FileNode[]) => {
+    for (const item of items) {
+      const itemNoExt = item.path.replace(/\.md$/i, '');
+      const itemBase = item.name.replace(/\.md$/i, '');
+
+      if (
+        item.path === clean ||
+        item.path === `${clean}.md` ||
+        itemNoExt === clean ||
+        itemNoExt === cleanNoExt ||
+        itemBase.toLowerCase() === cleanBase.toLowerCase() ||
+        item.name.toLowerCase() === clean.toLowerCase() ||
+        item.path.toLowerCase().endsWith(`/${cleanNoExt.toLowerCase()}.md`)
+      ) {
+        match = item;
+        return;
+      }
+      if (item.is_dir && item.children) {
+        traverse(item.children);
+        if (match) return;
+      }
+    }
+  };
+  traverse(nodes);
+  return match;
+}
+
+/**
+ * Aplatit l'arborescence pour lister tous les chemins relatifs des fichiers Markdown du coffre
+ */
+export function getFlatFiles(nodes: FileNode[]): string[] {
+  const res: string[] = [];
+  const traverse = (items: FileNode[]) => {
+    for (const item of items) {
+      if (item.is_dir) {
+        traverse(item.children);
+      } else if (item.path.endsWith('.md') || item.name === 'KNIT.md') {
+        res.push(item.path);
+      }
+    }
+  };
+  traverse(nodes);
+  return res;
+}
+

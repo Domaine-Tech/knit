@@ -2,16 +2,15 @@ import * as Y from 'yjs';
 import diff from 'fast-diff';
 import { Awareness, encodeAwarenessUpdate, applyAwarenessUpdate } from 'y-protocols/awareness';
 import { networkStore } from '../stores/networkStore';
-import { vaultStore, isTauriEnvironment } from '../stores/vaultStore';
+import { vaultStore } from '../stores/vaultStore';
+import { isTauriEnvironment } from '../utils/env';
+import { uint8ArrayToBase64, base64ToUint8Array } from '../utils/encodingUtils';
 import { invoke } from '@tauri-apps/api/core';
 
-export interface DocSnapshot {
-  snapshot_id: string;
-  doc_id: string;
-  state_vector_base64: string;
-  yjs_snapshot_base64: string;
-  created_at_sec: number;
-}
+import type { DocSnapshot } from '../types';
+
+export type { DocSnapshot };
+
 
 export class CRDTManager {
   private docs: Map<string, Y.Doc> = new Map();
@@ -102,17 +101,8 @@ export class CRDTManager {
       const stateVector = Y.encodeStateVector(doc);
       const snapshotBytes = Y.encodeStateAsUpdate(doc);
 
-      let svBinary = '';
-      for (let i = 0; i < stateVector.length; i++) {
-        svBinary += String.fromCharCode(stateVector[i]);
-      }
-      const stateVectorBase64 = btoa(svBinary);
-
-      let snapBinary = '';
-      for (let i = 0; i < snapshotBytes.length; i++) {
-        snapBinary += String.fromCharCode(snapshotBytes[i]);
-      }
-      const yjsSnapshotBase64 = btoa(snapBinary);
+      const stateVectorBase64 = uint8ArrayToBase64(stateVector);
+      const yjsSnapshotBase64 = uint8ArrayToBase64(snapshotBytes);
 
       const vaultPath = vaultStore.vaultPath;
       if (vaultPath && isTauriEnvironment()) {
@@ -175,7 +165,7 @@ export class CRDTManager {
         .then((snapshot) => {
           if (snapshot && snapshot.yjs_snapshot_base64 && ytext.length === 0) {
             try {
-              const bytes = Uint8Array.from(atob(snapshot.yjs_snapshot_base64), (c) => c.charCodeAt(0));
+              const bytes = base64ToUint8Array(snapshot.yjs_snapshot_base64);
               Y.applyUpdate(doc, bytes, 'snapshot-load');
             } catch (err) {
               console.warn('Erreur chargement snapshot compacté:', err);

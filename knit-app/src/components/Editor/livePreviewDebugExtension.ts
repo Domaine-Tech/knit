@@ -116,7 +116,7 @@ export const livePreviewDebugPlugin = ViewPlugin.fromClass(
             console.table(this.lastStats.mismatches);
           } else {
             console.log(
-              '%c✓ Parfait : 100% des lignes sont alignées au pixel près avec leur gouttière.',
+              '%c[OK] Parfait : 100% des lignes sont alignées au pixel près avec leur gouttière.',
               'color: #10B981;'
             );
           }
@@ -246,9 +246,9 @@ export const livePreviewDebugPlugin = ViewPlugin.fromClass(
           badgeEl.style.top = `${badgeTop + 2}px`;
 
           if (isMismatch) {
-            badgeEl.innerHTML = `⚠️ L${docLine.number} Δ:${delta > 0 ? `+${delta}` : delta}px [H:${info.lineHeight}]`;
+            badgeEl.textContent = `! L${docLine.number} Δ:${delta > 0 ? `+${delta}` : delta}px [H:${info.lineHeight}]`;
           } else {
-            badgeEl.innerHTML = `L${docLine.number} [H:${info.lineHeight}] ✓`;
+            badgeEl.textContent = `L${docLine.number} [H:${info.lineHeight}] OK`;
           }
 
           this.overlayEl.appendChild(badgeEl);

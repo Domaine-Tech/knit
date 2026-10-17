@@ -36,4 +36,13 @@ pub enum KnitError {
     Custom(String),
 }
 
+impl serde::Serialize for KnitError {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
 pub type Result<T> = std::result::Result<T, KnitError>;

@@ -1,14 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { isTauriEnvironment } from '../../utils/env';
+
+interface WindowControlsCSSProperties extends React.CSSProperties {
+  WebkitAppRegion?: 'drag' | 'no-drag';
+}
 
 export const WindowControls: React.FC = () => {
   const [isMaximized, setIsMaximized] = useState(false);
-  const [isTauri, setIsTauri] = useState(true);
+  const isTauri = isTauriEnvironment();
 
   useEffect(() => {
+    if (!isTauri) return;
+
     try {
       const appWindow = getCurrentWindow();
-      appWindow.isMaximized().then(setIsMaximized).catch(() => setIsTauri(false));
+      appWindow.isMaximized().then(setIsMaximized).catch(() => {});
 
       const unlistenPromise = appWindow.listen('tauri://resize', async () => {
         try {
@@ -23,9 +30,9 @@ export const WindowControls: React.FC = () => {
         unlistenPromise.then((unlisten) => unlisten());
       };
     } catch {
-      setIsTauri(false);
+      // ignore
     }
-  }, []);
+  }, [isTauri]);
 
   const handleMinimize = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -61,7 +68,7 @@ export const WindowControls: React.FC = () => {
     return null;
   }
 
-  const btnBaseStyle: React.CSSProperties = {
+  const btnBaseStyle: WindowControlsCSSProperties = {
     width: 46,
     height: '100%',
     display: 'flex',
@@ -76,21 +83,21 @@ export const WindowControls: React.FC = () => {
     outline: 'none',
     padding: 0,
     margin: 0,
-    // @ts-expect-error Non standard CSS property for Tauri drag prevention
+    WebkitAppRegion: 'no-drag',
+  };
+
+  const containerStyle: WindowControlsCSSProperties = {
+    display: 'flex',
+    alignItems: 'stretch',
+    height: '100%',
+    margin: 0,
+    padding: 0,
     WebkitAppRegion: 'no-drag',
   };
 
   return (
     <div
-      style={{
-        display: 'flex',
-        alignItems: 'stretch',
-        height: '100%',
-        margin: 0,
-        padding: 0,
-        // @ts-expect-error Non standard CSS property for Tauri drag prevention
-        WebkitAppRegion: 'no-drag',
-      }}
+      style={containerStyle}
       onDoubleClick={(e) => e.stopPropagation()}
     >
       {/* Bouton Réduire */}

@@ -6,6 +6,12 @@ import { contextMenu } from '../../stores/contextMenuStore';
 import { toast } from '../../stores/toastStore';
 import { networkStore } from '../../stores/networkStore';
 import { tabStore } from '../../stores/tabStore';
+import {
+  copyRelativePath,
+  copyAbsolutePath,
+  copyFileName,
+  copyMarkdownLink,
+} from '../../utils/clipboardUtils';
 
 interface TreeNodeProps {
   node: FileNode;
@@ -82,12 +88,6 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
   const isSearchActive = Boolean(searchQuery && searchQuery.trim().length > 0);
   const [isManualOpen, setIsManualOpen] = useState<boolean | null>(null);
   const [, setTick] = useState(0);
-
-  useEffect(() => {
-    if (selectedPath && node.is_dir && (selectedPath === node.path || selectedPath.startsWith(node.path + '/'))) {
-      setIsManualOpen(true);
-    }
-  }, [selectedPath, node.path, node.is_dir]);
 
   useEffect(() => {
     return networkStore.subscribe(() => {
@@ -170,7 +170,6 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
     onSelectTreeNode?.(node.path, node.is_dir, node.name);
 
     const absPath = vaultStore.getAbsolutePath(node.path);
-    const mdLink = `[${node.name.replace(/\.md$/, '')}](${node.path})`;
 
     if (node.is_dir) {
       contextMenu.show(e, [
@@ -254,8 +253,7 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
           label: 'Copier le chemin relatif',
           icon: 'copy',
           onClick: () => {
-            navigator.clipboard.writeText(node.path);
-            toast.info('Chemin relatif copié', node.path);
+            copyRelativePath(node.path);
           },
         },
         {
@@ -263,8 +261,7 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
           label: 'Copier le chemin absolu',
           icon: 'copy',
           onClick: () => {
-            navigator.clipboard.writeText(absPath);
-            toast.info('Chemin absolu copié', absPath);
+            copyAbsolutePath(absPath);
           },
         },
         {
@@ -272,8 +269,7 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
           label: 'Copier le nom du dossier',
           icon: 'clipboard',
           onClick: () => {
-            navigator.clipboard.writeText(node.name);
-            toast.info('Nom copié', node.name);
+            copyFileName(node.name);
           },
         },
         { id: 'div-dir-delete', divider: true },
@@ -351,8 +347,7 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
           label: 'Copier le chemin relatif',
           icon: 'copy',
           onClick: () => {
-            navigator.clipboard.writeText(node.path);
-            toast.info('Chemin relatif copié', node.path);
+            copyRelativePath(node.path);
           },
         },
         {
@@ -360,8 +355,7 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
           label: 'Copier le chemin absolu',
           icon: 'copy',
           onClick: () => {
-            navigator.clipboard.writeText(absPath);
-            toast.info('Chemin absolu copié', absPath);
+            copyAbsolutePath(absPath);
           },
         },
         {
@@ -369,8 +363,7 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
           label: 'Copier le nom du fichier',
           icon: 'clipboard',
           onClick: () => {
-            navigator.clipboard.writeText(node.name);
-            toast.info('Nom copié', node.name);
+            copyFileName(node.name);
           },
         },
         {
@@ -378,8 +371,7 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
           label: 'Copier le lien Markdown',
           icon: 'link',
           onClick: () => {
-            navigator.clipboard.writeText(mdLink);
-            toast.info('Lien Markdown copié', mdLink);
+            copyMarkdownLink(node.path, node.name);
           },
         },
         { id: 'div-file-delete', divider: true },

@@ -1,17 +1,7 @@
-export type DocType = 'note' | 'kanban' | 'table';
-export type ViewMode = 'visual' | 'source';
+import type { DocType, ViewMode, Tab } from '../types';
 
-export interface Tab {
-  id: string; // Rel path
-  path: string;
-  title: string;
-  isPreview: boolean;
-  isDirty: boolean;
-  content: string;
-  docType: DocType;
-  viewMode: ViewMode;
-  isPinned?: boolean;
-}
+export type { DocType, ViewMode, Tab };
+
 
 export function detectDocType(content: string, path: string): DocType {
   const lowerPath = path.toLowerCase();

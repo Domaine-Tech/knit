@@ -28,18 +28,18 @@ export const TableDebugHUD: React.FC<TableDebugHUDProps> = ({
     <div className="knit-live-debug-hud">
       <div className="knit-debug-hud-header">
         <div className="knit-debug-hud-title">
-          <span style={{ fontSize: '14px' }}>🐞</span>
+          <DuotoneIcon name="bug" size={14} style={{ color: 'var(--knit-accent)' }} />
           <span style={{ fontWeight: 700, letterSpacing: '-0.01em' }}>Inspecteur Table & Données</span>
 
           <span className="knit-debug-hud-badge is-ok">
-            <span style={{ fontSize: '11px' }}>✓</span>
+            <DuotoneIcon name="check" size={12} />
             <span>
               {filteredCount} / {rowsCount} lignes affichées | {columns.length} colonnes
             </span>
           </span>
 
           <span style={{ fontSize: '11px', color: 'var(--knit-text-muted)', marginLeft: 4 }}>
-            (Tri : {sortField} {sortOrder === 'asc' ? '▲' : '▼'})
+            (Tri : {sortField} [{sortOrder.toUpperCase()}])
           </span>
 
           {filePath && (

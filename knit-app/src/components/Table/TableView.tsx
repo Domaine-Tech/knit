@@ -1,11 +1,7 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { vaultStore, type KanbanFileInfo } from '../../stores/vaultStore';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
-  parseKanbanMarkdown,
-  serializeKanbanMarkdown,
   parseCardMetadata,
   adaptCardStatusToColumn,
-  type KanbanBoard,
   type KanbanCard,
   type TaskStatus,
 } from '../../utils/kanbanParser';
@@ -14,6 +10,8 @@ import { toast } from '../../stores/toastStore';
 import { contextMenu } from '../../stores/contextMenuStore';
 import { debugStore, useDebugMode } from '../../stores/debugStore';
 import { TableDebugHUD } from './TableDebugHUD';
+
+import { useKanbanBoard } from '../../utils/useKanbanBoard';
 
 interface TableViewProps {
   activeFilePath?: string | null;
@@ -44,7 +42,12 @@ export const TableView: React.FC<TableViewProps> = ({
   onOpenFile,
   onSwitchToEditor,
 }) => {
-  const [availableKanbans, setAvailableKanbans] = useState<KanbanFileInfo[]>([]);
+  const { availableKanbans, currentPath, board, persistBoard } = useKanbanBoard({
+    activeFilePath,
+    activeFileContent,
+    onUpdateContent,
+  });
+
   const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
 
   const [searchFilter, setSearchFilter] = useState('');
@@ -56,35 +59,6 @@ export const TableView: React.FC<TableViewProps> = ({
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskColumnId, setNewTaskColumnId] = useState('');
-
-  // Chargement des fichiers kanbans du coffre
-  const loadKanbanFiles = useCallback(async () => {
-    const list = await vaultStore.getKanbanFiles();
-    setAvailableKanbans(list);
-  }, []);
-
-  useEffect(() => {
-    loadKanbanFiles();
-    return vaultStore.subscribe(() => {
-      loadKanbanFiles();
-    });
-  }, [loadKanbanFiles]);
-
-  const currentPath = activeFilePath || (availableKanbans.length > 0 ? availableKanbans[0].path : null);
-
-  const board: KanbanBoard = useMemo(() => {
-    const title = currentPath ? currentPath.split('/').pop()?.replace(/\.md$/, '') || 'Kanban' : 'Mon Tableau';
-    return parseKanbanMarkdown(activeFileContent, title);
-  }, [activeFileContent, currentPath]);
-
-  const persistBoard = useCallback(
-    (updatedBoard: KanbanBoard) => {
-      if (!currentPath) return;
-      const newMarkdown = serializeKanbanMarkdown(updatedBoard);
-      onUpdateContent(currentPath, newMarkdown);
-    },
-    [currentPath, onUpdateContent]
-  );
 
   // Aplatissement des cartes en lignes de tableau
   const allRows: TableRowItem[] = useMemo(() => {
@@ -777,7 +751,7 @@ export const TableView: React.FC<TableViewProps> = ({
             });
           }}
           onDumpConsole={() => {
-            console.group('🐞 [TABLE DEBUG]');
+            console.group('[TABLE DEBUG]');
             console.log('Lignes filtrées :', filteredAndSortedRows);
             console.table(filteredAndSortedRows);
             console.groupEnd();

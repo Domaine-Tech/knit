@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { EditorState } from '@codemirror/state';
 import {
@@ -11,14 +11,12 @@ import {
 } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { markdown } from '@codemirror/lang-markdown';
-import { search, searchKeymap, openSearchPanel } from '@codemirror/search';
+import { search, searchKeymap } from '@codemirror/search';
 import {
-  HighlightStyle,
   syntaxHighlighting,
   foldGutter,
   foldKeymap,
 } from '@codemirror/language';
-import { tags } from '@lezer/highlight';
 import { yCollab } from 'y-codemirror.next';
 import { crdtManager } from '../../crdt/crdtManager';
 import { contextMenu } from '../../stores/contextMenuStore';
@@ -41,9 +39,20 @@ import {
 } from './livePreviewDebugExtension';
 import { LivePreviewDebugHUD } from './LivePreviewDebugHUD';
 import { debugStore, useDebugMode } from '../../stores/debugStore';
-import type { FileNode } from '../../stores/vaultStore';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
-import { renderRichMarkdownPreview } from '../../utils/markdownUtils';
+import { getFlatFiles } from '../../utils/markdownUtils';
+import {
+  copyRelativePath,
+  copyAbsolutePath,
+  copyMarkdownLink,
+} from '../../utils/clipboardUtils';
+import { useEditorLinks, findLinkAtCoords } from './useEditorLinks';
+import {
+  createKnitEditorTheme,
+  knitHighlightStyle,
+  knitPhrases,
+  createCustomEditorKeymap,
+} from './editorTheme';
 
 interface EditorProps {
   content: string;
@@ -54,128 +63,6 @@ interface EditorProps {
   onChange: (newContent: string) => void;
   onSave: () => void;
   onNavigateFile?: (targetPath: string) => void;
-}
-
-function findVaultNode(target: string, nodes: FileNode[]): FileNode | null {
-  const clean = target
-    .replace(/^\[\[/, '')
-    .replace(/\]\]$/, '')
-    .split('|')[0]
-    .replace(/^\.\//, '')
-    .replace(/\/$/, '')
-    .trim();
-
-  const cleanNoExt = clean.replace(/\.md$/i, '');
-  const cleanBase = cleanNoExt.split('/').pop() || cleanNoExt;
-
-  let match: FileNode | null = null;
-  const traverse = (items: FileNode[]) => {
-    for (const item of items) {
-      const itemNoExt = item.path.replace(/\.md$/i, '');
-      const itemBase = item.name.replace(/\.md$/i, '');
-
-      if (
-        item.path === clean ||
-        item.path === `${clean}.md` ||
-        itemNoExt === clean ||
-        itemNoExt === cleanNoExt ||
-        itemBase.toLowerCase() === cleanBase.toLowerCase() ||
-        item.name.toLowerCase() === clean.toLowerCase() ||
-        item.path.toLowerCase().endsWith(`/${cleanNoExt.toLowerCase()}.md`)
-      ) {
-        match = item;
-        return;
-      }
-      if (item.is_dir && item.children) {
-        traverse(item.children);
-        if (match) return;
-      }
-    }
-  };
-  traverse(nodes);
-  return match;
-}
-
-function getFlatFiles(nodes: FileNode[]): string[] {
-  const res: string[] = [];
-  const traverse = (items: FileNode[]) => {
-    for (const item of items) {
-      if (item.is_dir) {
-        traverse(item.children);
-      } else if (item.path.endsWith('.md') || item.name === 'KNIT.md') {
-        res.push(item.path);
-      }
-    }
-  };
-  traverse(nodes);
-  return res;
-}
-
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
-/**
- * Détecte l'URL ou la cible de lien (WikiLink, lien Markdown, URL brute, chemin local) sous les coordonnées du curseur
- */
-function findLinkAtCoords(x: number, y: number, view: EditorView): string | null {
-  const pos = view.posAtCoords({ x, y });
-  if (pos === null) return null;
-
-  const line = view.state.doc.lineAt(pos);
-  const lineText = line.text;
-  const col = pos - line.from;
-
-  // 1. WikiLinks [[Note#Ancre|Alias]] ou [[Note]] ou [[#Ancre]]
-  const wikiRegex = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
-  let wm: RegExpExecArray | null;
-  while ((wm = wikiRegex.exec(lineText)) !== null) {
-    const start = wm.index;
-    const end = start + wm[0].length;
-    if (col >= start && col <= end) {
-      return wm[1].trim();
-    }
-  }
-
-  // 2. Liens Markdown [Label](url-or-path)
-  const mdLinkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
-  let ml: RegExpExecArray | null;
-  while ((ml = mdLinkRegex.exec(lineText)) !== null) {
-    const start = ml.index;
-    const end = start + ml[0].length;
-    if (col >= start && col <= end) {
-      return ml[2].trim();
-    }
-  }
-
-  // 3. URLs brutes ou file URLs (ex: https://..., http://..., file:///..., mailto:...)
-  const rawUrlRegex = /(https?:\/\/[^\s<>)"]+|file:\/\/\/[^\s<>)"]+|mailto:[^\s<>)"]+)/g;
-  let rm: RegExpExecArray | null;
-  while ((rm = rawUrlRegex.exec(lineText)) !== null) {
-    const start = rm.index;
-    const end = start + rm[0].length;
-    if (col >= start && col <= end) {
-      return rm[1].trim();
-    }
-  }
-
-  // 4. Chemins de fichiers ou dossiers (ex: C:\... ou D:/... ou ./...)
-  const pathRegex = /(?:^|\s)((?:[a-zA-Z]:[\\/]|(?:\.\.?\/))[^\s<>)"]+)/g;
-  let pm: RegExpExecArray | null;
-  while ((pm = pathRegex.exec(lineText)) !== null) {
-    const start = pm.index;
-    const end = start + pm[0].length;
-    if (col >= start && col <= end) {
-      return pm[1].trim();
-    }
-  }
-
-  return null;
 }
 
 export const Editor: React.FC<EditorProps> = ({
@@ -208,15 +95,13 @@ export const Editor: React.FC<EditorProps> = ({
   // Curseur Fantôme IA (US B-044) : Violet #8B5CF6 avec fade-out 1.5s
   const [aiGhostActive, setAiGhostActive] = useState(false);
 
-  // Hover Preview Tooltip (US B-053)
-  const [hoverPreview, setHoverPreview] = useState<{
-    x: number;
-    y: number;
-    target: string;
-    htmlSnippet: string;
-    icon?: 'file-markdown' | 'external-link' | 'link' | 'folder' | 'file-text';
-  } | null>(null);
-  const hoverTargetRef = useRef<string | null>(null);
+  // Gestion unifiée des liens, navigation et info-bulles Hover Preview via hook extrait
+  const {
+    hoverPreview,
+    handleNavigateLinkRef,
+    showHoverPreviewRef,
+    hideHoverPreviewRef,
+  } = useEditorLinks({ path, viewRef, editorRef });
 
   const handleToggleFullWidth = () => {
     const next = !isFullWidth;
@@ -229,6 +114,10 @@ export const Editor: React.FC<EditorProps> = ({
 
   // Mode Debug Global (Inspecteur Live Viewer & Éditeur)
   const { isDebugActive, toggleDebug } = useDebugMode();
+  const isDebugActiveRef = useRef(isDebugActive);
+  useEffect(() => {
+    isDebugActiveRef.current = isDebugActive;
+  }, [isDebugActive]);
   const [debugStats, setDebugStats] = useState<LivePreviewDebugStats | null>(null);
 
   // Synchronisation du compartiment CodeMirror réactif quand isDebugActive change
@@ -288,365 +177,11 @@ export const Editor: React.FC<EditorProps> = ({
     };
   }, []);
 
-  // Gestionnaire unifié de navigation par lien (ancre interne #, fichier local, ou URL web)
-  const handleNavigateLink = useCallback(async (target: string, view?: EditorView) => {
-    if (!target) return;
-    const cleanTarget = target.trim();
-    const currentView = view || viewRef.current;
-
-    // 1. URL Web externe (http://, https://, mailto:)
-    if (/^https?:\/\//i.test(cleanTarget) || /^mailto:/i.test(cleanTarget)) {
-      await vaultStore.openExternalPath(cleanTarget);
-      toast.info('Lien ouvert dans le navigateur', cleanTarget);
-      return;
-    }
-
-    // 2. Ancre interne (#section) sur le document courant
-    if (cleanTarget.startsWith('#') || cleanTarget.startsWith('[[#')) {
-      const anchorRaw = cleanTarget.replace(/^\[\[/, '').replace(/\]\]$/, '').replace(/^#/, '').trim();
-      const targetSlug = slugify(anchorRaw);
-
-      if (currentView) {
-        const doc = currentView.state.doc;
-        for (let i = 1; i <= doc.lines; i++) {
-          const line = doc.line(i);
-          const text = line.text.trim();
-          if (text.startsWith('#')) {
-            const headingText = text.replace(/^#+\s*/, '').trim();
-            const headingSlug = slugify(headingText);
-            if (
-              headingSlug === targetSlug ||
-              headingSlug.includes(targetSlug) ||
-              targetSlug.includes(headingSlug) ||
-              headingText.toLowerCase().includes(anchorRaw.toLowerCase())
-            ) {
-              currentView.dispatch({
-                selection: { anchor: line.from },
-                scrollIntoView: true,
-              });
-              currentView.focus();
-              toast.info('Section atteinte', headingText);
-              return;
-            }
-          }
-        }
-      }
-      toast.info('Section introuvable', cleanTarget);
-      return;
-    }
-
-    // Découpage cible et ancre éventuelle (ex: Note.md#section ou [[Note#section|alias]])
-    const [filePartRaw, anchorPartRaw] = cleanTarget.split('#');
-    const filePart = filePartRaw.replace(/^\[\[/, '').replace(/\]\]$/, '').split('|')[0].trim();
-    const anchorPart = anchorPartRaw ? anchorPartRaw.replace(/\]\]$/, '').split('|')[0].trim() : undefined;
-
-    // 3. Recherche prioritaire dans l'arborescence du coffre-fort (Dossier ou Note)
-    const vaultNode = findVaultNode(filePart, vaultStore.files);
-
-    if (vaultNode) {
-      if (vaultNode.is_dir) {
-        // Dossier du coffre : déplier et sélectionner dans l'arborescence (arbre de l'application)
-        window.dispatchEvent(
-          new CustomEvent('knit-reveal-in-tree', {
-            bubbles: true,
-            detail: { path: vaultNode.path, isDir: true },
-          })
-        );
-        toast.info("Dossier déplié dans l'arborescence", vaultNode.name);
-        return;
-      } else {
-        // Fichier du coffre : ouvrir dans un onglet Knit ET révéler / sélectionner dans l'arborescence
-        try {
-          const c = await vaultStore.readFile(vaultNode.path);
-          tabStore.openTab(vaultNode.path, false, c);
-          window.dispatchEvent(
-            new CustomEvent('knit-reveal-in-tree', {
-              bubbles: true,
-              detail: { path: vaultNode.path, isDir: false },
-            })
-          );
-          toast.info('Document ouvert', vaultNode.name);
-
-          // Si une ancre était spécifiée dans le document cible
-          if (anchorPart) {
-            const targetSlug = slugify(anchorPart);
-            setTimeout(() => {
-              const v = viewRef.current;
-              if (v) {
-                const doc = v.state.doc;
-                for (let i = 1; i <= doc.lines; i++) {
-                  const line = doc.line(i);
-                  const text = line.text.trim();
-                  if (text.startsWith('#')) {
-                    const headingText = text.replace(/^#+\s*/, '').trim();
-                    const headingSlug = slugify(headingText);
-                    if (
-                      headingSlug === targetSlug ||
-                      headingText.toLowerCase().includes(anchorPart.toLowerCase())
-                    ) {
-                      v.dispatch({
-                        selection: { anchor: line.from },
-                        scrollIntoView: true,
-                      });
-                      v.focus();
-                      break;
-                    }
-                  }
-                }
-              }
-            }, 120);
-          }
-          return;
-        } catch (err) {
-          toast.error('Erreur ouverture', String(err));
-          return;
-        }
-      }
-    }
-
-    // 4. Chemin absolu ou URI file:// (hors coffre-fort ou système global)
-    const isAbsolute =
-      /^[a-zA-Z]:[\\/]/.test(filePart) ||
-      filePart.startsWith('/') ||
-      filePart.startsWith('\\\\') ||
-      filePart.startsWith('file:///');
-
-    if (isAbsolute) {
-      const isDir = filePart.endsWith('/') || filePart.endsWith('\\');
-      await vaultStore.openExternalPath(filePart);
-      if (isDir) {
-        toast.info("Dossier ouvert dans l'explorateur système", filePart);
-      } else {
-        toast.info("Fichier ouvert avec l'application par défaut", filePart.split(/[\\/]/).pop() || filePart);
-      }
-      return;
-    }
-
-    // 5. Fichier non Markdown externe (ex: .docx, .xlsx, .pdf, etc.) ou dossier hors coffre
-    const hasNonMdExt = /\.(docx|doc|xlsx|xls|pptx|ppt|pdf|zip|rar|7z|png|jpg|jpeg|gif|svg|mp4|mp3|wav|txt|csv|exe|ps1|sh)$/i.test(filePart);
-    const isFolder = filePart.endsWith('/') || filePart.endsWith('\\');
-
-    if (hasNonMdExt || isFolder) {
-      const vaultPath = vaultStore.currentVaultPath;
-      const currentDir = path.includes('/') ? path.slice(0, path.lastIndexOf('/')) : '';
-      const cleanRel = filePart.replace(/^\.\//, '');
-      const relCandidate = currentDir ? `${currentDir}/${cleanRel}` : cleanRel;
-      const fullPath = vaultPath ? `${vaultPath}/${relCandidate}` : relCandidate;
-
-      await vaultStore.openExternalPath(fullPath);
-      if (isFolder) {
-        toast.info("Dossier ouvert dans l'explorateur système", filePart);
-      } else {
-        toast.info("Fichier ouvert avec le logiciel par défaut", filePart.split(/[\\/]/).pop() || filePart);
-      }
-      return;
-    }
-
-    // 6. Si c'est un WikiLink sans extension, créer la note dans le vault (Obsidian-like)
-    const cleanStem = filePart.replace(/^\[\[/, '').replace(/\]\]$/, '').split('|')[0].trim();
-    if (!hasNonMdExt && !isFolder) {
-      const newPath = cleanStem.endsWith('.md') ? cleanStem : `wiki/${cleanStem}.md`;
-      try {
-        await vaultStore.createFile(newPath, `# ${cleanStem.replace(/\.md$/, '')}\n\nNote créée via lien.\n`);
-        const c = await vaultStore.readFile(newPath);
-        tabStore.openTab(newPath, false, c);
-        window.dispatchEvent(
-          new CustomEvent('knit-reveal-in-tree', {
-            bubbles: true,
-            detail: { path: newPath, isDir: false },
-          })
-        );
-        toast.success('Note créée via WikiLink', newPath);
-        return;
-      } catch {
-        // fallback
-      }
-    }
-
-    toast.info('Lien cible introuvable', cleanTarget);
-  }, [path]);
-
-  const handleOpenWikiLink = useCallback(async (targetStem: string) => {
-    handleNavigateLink(targetStem, viewRef.current || undefined);
-  }, [handleNavigateLink]);
-
-  const handleOpenWikiLinkRef = useRef(handleOpenWikiLink);
-  useEffect(() => {
-    handleOpenWikiLinkRef.current = handleOpenWikiLink;
-  }, [handleOpenWikiLink]);
-
-  const handleNavigateLinkRef = useRef(handleNavigateLink);
-  useEffect(() => {
-    handleNavigateLinkRef.current = handleNavigateLink;
-  }, [handleNavigateLink]);
-
-  const hideHoverPreview = useCallback(() => {
-    hoverTargetRef.current = null;
-    setHoverPreview(null);
-  }, []);
-
-  const hideHoverPreviewRef = useRef(hideHoverPreview);
-  useEffect(() => {
-    hideHoverPreviewRef.current = hideHoverPreview;
-  }, [hideHoverPreview]);
-
-  const showHoverPreview = useCallback(
-    async (rawTarget: string, clientX: number, clientY: number) => {
-      const cleanTarget = rawTarget.trim();
-      if (!cleanTarget) {
-        hideHoverPreview();
-        return;
-      }
-
-      hoverTargetRef.current = cleanTarget;
-
-      // Positionnement avec contrainte d'écran (évite tout débordement)
-      const clampX = Math.min(Math.max(12, clientX + 12), window.innerWidth - 380);
-      const clampY =
-        clientY + 22 + 180 > window.innerHeight
-          ? Math.max(12, clientY - 180)
-          : clientY + 18;
-
-      // 1. Lien Web externe
-      if (/^https?:\/\//i.test(cleanTarget) || /^mailto:/i.test(cleanTarget)) {
-        setHoverPreview({
-          x: clampX,
-          y: clampY,
-          target: cleanTarget,
-          htmlSnippet: `
-            <div style="font-weight:600;color:var(--knit-primary);margin-bottom:2px;">Lien Web externe</div>
-            <div style="color:var(--knit-text-secondary);font-size:11px;">Ctrl + Clic pour ouvrir dans le navigateur par défaut</div>
-          `,
-          icon: 'external-link',
-        });
-        return;
-      }
-
-      // 2. Ancre de section interne (ex: #section ou [[#section]])
-      const isAnchorOnly = cleanTarget.startsWith('#') || cleanTarget.startsWith('[[#');
-      if (isAnchorOnly) {
-        const anchorClean = cleanTarget.replace(/^\[\[/, '').replace(/\]\]$/, '').trim();
-        setHoverPreview({
-          x: clampX,
-          y: clampY,
-          target: anchorClean,
-          htmlSnippet: `
-            <div style="font-weight:600;color:var(--knit-primary);margin-bottom:2px;">Ancre de section interne</div>
-            <div style="color:var(--knit-text-secondary);font-size:11px;">Ctrl + Clic pour faire défiler la note jusqu'à cette section</div>
-          `,
-          icon: 'link',
-        });
-        return;
-      }
-
-      // Découpage cible et ancre
-      const [filePartRaw] = cleanTarget.split('#');
-      const filePart = filePartRaw.replace(/^\[\[/, '').replace(/\]\]$/, '').split('|')[0].trim();
-      const vaultNode = findVaultNode(filePart, vaultStore.files);
-
-      // 3. Dossier
-      const isFolder = filePart.endsWith('/') || filePart.endsWith('\\') || Boolean(vaultNode?.is_dir);
-      if (isFolder) {
-        const isVaultFolder = Boolean(vaultNode?.is_dir);
-        setHoverPreview({
-          x: clampX,
-          y: clampY,
-          target: cleanTarget,
-          htmlSnippet: `
-            <div style="font-weight:600;color:var(--knit-primary);margin-bottom:2px;">${isVaultFolder ? 'Dossier du coffre-fort' : 'Dossier local'}</div>
-            <div style="color:var(--knit-text-secondary);font-size:11px;">Ctrl + Clic pour ${isVaultFolder ? "déplier et sélectionner dans l'arborescence" : "ouvrir dans l'explorateur système"}</div>
-          `,
-          icon: 'folder',
-        });
-        return;
-      }
-
-      // 4. Fichier externe hors Markdown
-      const hasNonMdExt = /\.(docx|doc|xlsx|xls|pptx|ppt|pdf|zip|rar|7z|png|jpg|jpeg|gif|svg|mp4|mp3|wav|txt|csv|exe|ps1|sh)$/i.test(filePart);
-      if (hasNonMdExt && (!vaultNode || !vaultNode.path.endsWith('.md'))) {
-        const ext = filePart.split('.').pop()?.toUpperCase() || 'DOCUMENT';
-        setHoverPreview({
-          x: clampX,
-          y: clampY,
-          target: cleanTarget,
-          htmlSnippet: `
-            <div style="font-weight:600;color:var(--knit-primary);margin-bottom:2px;">Fichier externe (${ext})</div>
-            <div style="color:var(--knit-text-secondary);font-size:11px;">Ctrl + Clic pour ouvrir avec l'application système par défaut</div>
-          `,
-          icon: 'file-text',
-        });
-        return;
-      }
-
-      // 5. Note Markdown existante dans le coffre-fort
-      if (vaultNode && !vaultNode.is_dir) {
-        try {
-          const content = await vaultStore.readFile(vaultNode.path);
-          if (hoverTargetRef.current !== cleanTarget) return;
-
-          const htmlSnippet = renderRichMarkdownPreview(content);
-          setHoverPreview({
-            x: clampX,
-            y: clampY,
-            target: vaultNode.path,
-            htmlSnippet,
-            icon: 'file-markdown',
-          });
-        } catch {
-          if (hoverTargetRef.current === cleanTarget) {
-            setHoverPreview({
-              x: clampX,
-              y: clampY,
-              target: vaultNode.path,
-              htmlSnippet: `
-                <div style="font-weight:600;color:var(--knit-primary);margin-bottom:2px;">Note du coffre-fort</div>
-                <div style="color:var(--knit-text-secondary);font-size:11px;">Ctrl + Clic pour ouvrir dans un onglet Knit</div>
-              `,
-              icon: 'file-markdown',
-            });
-          }
-        }
-        return;
-      }
-
-      // 6. Nouvelle note à créer
-      setHoverPreview({
-        x: clampX,
-        y: clampY,
-        target: cleanTarget,
-        htmlSnippet: `
-          <div style="font-weight:600;color:var(--knit-primary);margin-bottom:2px;">Nouvelle note</div>
-          <div style="color:var(--knit-text-secondary);font-size:11px;">Ctrl + Clic pour créer et éditer cette note dans le coffre</div>
-        `,
-        icon: 'file-markdown',
-      });
-    },
-    [hideHoverPreview]
-  );
-
-  const showHoverPreviewRef = useRef(showHoverPreview);
-  useEffect(() => {
-    showHoverPreviewRef.current = showHoverPreview;
-  }, [showHoverPreview]);
-
-  // Écoute des navigations et hovers issus des widgets interactifs (ex: tableaux)
+  // Écoute des événements de débogage HUD CodeMirror
   useEffect(() => {
     const el = editorRef.current;
     if (!el) return;
-    const onKnitNav = (e: Event) => {
-      const custom = e as CustomEvent<{ url: string }>;
-      if (custom.detail?.url) {
-        handleNavigateLinkRef.current(custom.detail.url, viewRef.current || undefined);
-      }
-    };
-    const onKnitHover = (e: Event) => {
-      const custom = e as CustomEvent<{ target: string; x: number; y: number } | null>;
-      if (custom.detail?.target) {
-        showHoverPreviewRef.current(custom.detail.target, custom.detail.x, custom.detail.y);
-      } else {
-        hideHoverPreviewRef.current();
-      }
-    };
+
     const onDebugUpdate = (e: Event) => {
       const custom = e as CustomEvent<LivePreviewDebugStats>;
       if (custom.detail) {
@@ -657,24 +192,14 @@ export const Editor: React.FC<EditorProps> = ({
       toggleDebug();
     };
 
-    el.addEventListener('knit-navigate-link', onKnitNav);
-    el.addEventListener('knit-hover-link', onKnitHover);
-    el.addEventListener('mouseleave', hideHoverPreview);
-    window.addEventListener('knit-hover-link', onKnitHover);
-    window.addEventListener('knit-navigate-link', onKnitNav);
     el.addEventListener('knit-live-debug-update', onDebugUpdate);
     window.addEventListener('knit-toggle-live-debug', onToggleDebugEvent);
 
     return () => {
-      el.removeEventListener('knit-navigate-link', onKnitNav);
-      el.removeEventListener('knit-hover-link', onKnitHover);
-      el.removeEventListener('mouseleave', hideHoverPreview);
-      window.removeEventListener('knit-hover-link', onKnitHover);
-      window.removeEventListener('knit-navigate-link', onKnitNav);
       el.removeEventListener('knit-live-debug-update', onDebugUpdate);
       window.removeEventListener('knit-toggle-live-debug', onToggleDebugEvent);
     };
-  }, [toggleDebug, hideHoverPreview]);
+  }, [toggleDebug]);
 
   useEffect(() => {
     return networkStore.subscribe(() => {
@@ -685,13 +210,7 @@ export const Editor: React.FC<EditorProps> = ({
   useEffect(() => {
     onSaveRef.current = onSave;
     onChangeRef.current = onChange;
-  });
-
-
-
-
-
-  // Détection des backlinks (mentions liées et non liées)
+  }, [onSave, onChange]);
   useEffect(() => {
     vaultStore.getBacklinks(path).then((bl) => {
       setBacklinks(bl);
@@ -727,179 +246,21 @@ export const Editor: React.FC<EditorProps> = ({
     const awareness = crdtManager.getAwareness(path);
 
     // Thème CodeMirror 6 stylé avec les tokens Knit et respect de la largeur saine
-    const knitEditorTheme = EditorView.theme({
-      '&': {
-        height: '100%',
-        backgroundColor: 'var(--knit-surface)',
-        color: 'var(--knit-text)',
-        fontSize: '14px',
-        fontFamily: 'var(--knit-font-mono)',
+    const knitEditorTheme = createKnitEditorTheme(isFullWidth);
+
+    const customKeymap = createCustomEditorKeymap({
+      onSave: () => {
+        if (onSaveRef.current) {
+          onSaveRef.current();
+        }
       },
-      '.cm-scroller': {
-        overflow: 'auto',
-        fontFamily: 'inherit',
-        lineHeight: '1.6',
-        padding: '0',
+      onToggleViewMode: () => {
+        tabStore.toggleViewMode();
       },
-      '.cm-content': {
-        caretColor: 'var(--knit-primary)',
-        maxWidth: isFullWidth ? '100%' : '760px',
-        margin: '0 auto',
-        padding: isFullWidth ? '16px 32px' : '16px 20px',
-      },
-      '&.cm-focused .cm-cursor': {
-        borderLeftColor: 'var(--knit-primary)',
-        borderLeftWidth: '2px',
-      },
-      '.cm-cursorLayer': {
-        zIndex: '10 !important',
-        pointerEvents: 'none !important',
-      },
-      /* Sélection active ou inactive : positionnée au-dessus des lignes (z-index: 5) pour que le surlignage s'affiche sur le texte */
-      '.cm-selectionLayer': {
-        zIndex: '5 !important',
-        pointerEvents: 'none !important',
-      },
-      '.cm-selectionBackground, &.cm-focused .cm-selectionBackground, .cm-selectionLayer .cm-selectionBackground': {
-        backgroundColor: 'hsla(var(--knit-hue), 70%, 55%, 0.35) !important',
-        opacity: '1 !important',
-      },
-      '& ::selection, ::selection': {
-        backgroundColor: 'hsla(var(--knit-hue), 70%, 55%, 0.35) !important',
-      },
-      '.cm-gutters': {
-        backgroundColor: 'var(--knit-surface)',
-        color: 'var(--knit-text-muted)',
-        borderRight: '1px solid var(--knit-border)',
-        paddingRight: '6px',
-        userSelect: 'none',
-      },
-      '.cm-gutterElement': {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'flex-end',
-        paddingRight: '4px',
-        boxSizing: 'border-box',
-      },
-      '.cm-activeLine': {
-        backgroundColor: 'var(--knit-surface-hover)',
-      },
-      '.cm-activeLineGutter': {
-        backgroundColor: 'var(--knit-surface-hover)',
-        color: 'var(--knit-text)',
-      },
-      /* Chevrons discrets de pliage hiérarchique (foldGutter) */
-      '.cm-foldGutter span': {
-        color: 'var(--knit-text-muted)',
-        cursor: 'pointer',
-        fontSize: '11px',
-      },
-      '.cm-foldGutter span:hover': {
-        color: 'var(--knit-primary)',
-      },
-      /* Surlignage dynamique des correspondances de recherche */
-      '.cm-searchMatch': {
-        backgroundColor: 'hsla(var(--knit-hue), 80%, 50%, 0.3)',
-      },
-      '.cm-searchMatch.cm-searchMatch-selected': {
-        backgroundColor: 'hsla(var(--knit-hue), 80%, 50%, 0.6)',
-      },
-      /* Liens Markdown et URLs adaptés dynamiquement à la teinte du client */
-      '.cm-content .cm-link, .cm-link, .tok-link': {
-        color: 'var(--knit-primary) !important',
-        textDecoration: 'underline',
-      },
-      '.cm-content .cm-url, .cm-url, .tok-url': {
-        color: 'var(--knit-primary) !important',
-        opacity: '0.85',
-      },
-      /* Fenêtre d'autocomplétion stylée selon la DA Knit */
-      '.cm-tooltip.cm-tooltip-autocomplete': {
-        backgroundColor: 'var(--knit-surface) !important',
-        border: '1px solid var(--knit-border) !important',
-        borderRadius: 'var(--knit-radius-md) !important',
-        boxShadow: 'var(--knit-shadow-lg) !important',
-        color: 'var(--knit-text) !important',
-        fontFamily: 'var(--knit-font) !important',
-      },
-      '.cm-tooltip-autocomplete ul li[aria-selected="true"], .cm-tooltip-autocomplete ul li.cm-completionSelected': {
-        backgroundColor: 'var(--knit-primary-alpha) !important',
-        color: 'var(--knit-text) !important',
-      },
-      '.cm-tooltip-autocomplete ul li:hover:not([aria-selected="true"]):not(.cm-completionSelected)': {
-        backgroundColor: 'var(--knit-surface-hover) !important',
-      },
-      '.cm-completionMatchedText': {
-        color: 'var(--knit-primary) !important',
-        fontWeight: '700 !important',
-      },
-      '.cm-completionDetail': {
-        color: 'var(--knit-text-muted) !important',
-        fontFamily: 'var(--knit-font-mono) !important',
+      onPackageAI: () => {
+        packageContextForAI(path, viewRef.current?.state.doc.toString() || '');
       },
     });
-
-    // Style de coloration syntaxique propre à Knit connecté aux variables CSS
-    const knitHighlightStyle = HighlightStyle.define([
-      { tag: tags.link, color: 'var(--knit-primary)', textDecoration: 'underline' },
-      { tag: tags.url, color: 'var(--knit-primary)', opacity: '0.85' },
-      { tag: tags.heading, color: 'var(--knit-text)', fontWeight: 'bold' },
-      { tag: tags.emphasis, fontStyle: 'italic' },
-      { tag: tags.strong, fontWeight: 'bold' },
-      { tag: tags.strikethrough, textDecoration: 'line-through' },
-      { tag: tags.keyword, color: 'var(--knit-primary)' },
-      { tag: tags.atom, color: 'var(--knit-primary-hover)' },
-      { tag: tags.bool, color: 'var(--knit-primary-hover)' },
-      { tag: tags.meta, color: 'var(--knit-text-muted)' },
-      { tag: tags.comment, color: 'var(--knit-text-muted)', fontStyle: 'italic' },
-      { tag: tags.monospace, color: 'var(--knit-text)' },
-      { tag: tags.quote, color: 'var(--knit-text-secondary)', fontStyle: 'italic' },
-      { tag: tags.contentSeparator, color: 'var(--knit-border)' },
-    ]);
-
-    const customKeymap = keymap.of([
-      {
-        key: 'Mod-s',
-        run: () => {
-          if (onSaveRef.current) {
-            onSaveRef.current();
-          }
-          return true;
-        },
-      },
-      {
-        key: 'Mod-f',
-        run: openSearchPanel,
-      },
-      {
-        key: 'Mod-h',
-        run: (view) => {
-          openSearchPanel(view);
-          setTimeout(() => {
-            const replaceInput = view.dom.querySelector('.cm-search input[name="replace"]') as HTMLInputElement | null;
-            if (replaceInput) {
-              replaceInput.focus();
-              replaceInput.select();
-            }
-          }, 20);
-          return true;
-        },
-      },
-      {
-        key: 'Mod-e',
-        run: () => {
-          tabStore.toggleViewMode();
-          return true;
-        },
-      },
-      {
-        key: 'Mod-Shift-c',
-        run: () => {
-          packageContextForAI(path, viewRef.current?.state.doc.toString() || '');
-          return true;
-        },
-      },
-    ]);
 
     const extensions = [
       lineNumbers(),
@@ -911,19 +272,7 @@ export const Editor: React.FC<EditorProps> = ({
       EditorView.lineWrapping,
       syntaxHighlighting(knitHighlightStyle, { fallback: true }),
       markdown(),
-      EditorState.phrases.of({
-        'Find': 'Rechercher...',
-        'Replace': 'Remplacer par...',
-        'next': 'Suivant',
-        'previous': 'Précédent',
-        'all': 'Tout',
-        'match case': 'Casse',
-        'by word': 'Mot entier',
-        'regexp': 'RegEx',
-        'replace': 'Remplacer',
-        'replace all': 'Tout remplacer',
-        'close': 'Fermer',
-      }),
+      knitPhrases,
       search({ top: true }),
       customKeymap,
       createAutoWrapKeymap(),
@@ -932,7 +281,7 @@ export const Editor: React.FC<EditorProps> = ({
       knitEditorTheme,
       // Mode Debug Live Viewer (Compartment CodeMirror réactif)
       livePreviewDebugCompartment.of(
-        isDebugActive && viewMode === 'visual'
+        isDebugActiveRef.current && viewMode === 'visual'
           ? createLivePreviewDebugExtension(() => debugStore.toggle())
           : []
       ),
@@ -1138,7 +487,7 @@ export const Editor: React.FC<EditorProps> = ({
         viewRef.current = null;
       }
     };
-  }, [path, viewMode, isFullWidth]);
+  }, [path, viewMode, isFullWidth, handleNavigateLinkRef, showHoverPreviewRef, hideHoverPreviewRef]);
 
   // Positionnement dynamique sur la ligne demandée
   useEffect(() => {
@@ -1193,8 +542,6 @@ export const Editor: React.FC<EditorProps> = ({
     const hasSelection = selection.length > 0;
 
     const absPath = vaultStore.getAbsolutePath(path);
-    const fileName = path.split('/').pop() || path;
-    const mdLink = `[${fileName.replace(/\.md$/, '')}](${path})`;
 
     contextMenu.show(e, [
       ...(hasSelection
@@ -1285,8 +632,7 @@ export const Editor: React.FC<EditorProps> = ({
         label: 'Copier le chemin relatif',
         icon: 'copy' as const,
         onClick: () => {
-          navigator.clipboard.writeText(path);
-          toast.info('Chemin relatif copié', path);
+          copyRelativePath(path);
         },
       },
       {
@@ -1294,8 +640,7 @@ export const Editor: React.FC<EditorProps> = ({
         label: 'Copier le chemin absolu',
         icon: 'copy' as const,
         onClick: () => {
-          navigator.clipboard.writeText(absPath);
-          toast.info('Chemin absolu copié', absPath);
+          copyAbsolutePath(absPath);
         },
       },
       {
@@ -1303,8 +648,7 @@ export const Editor: React.FC<EditorProps> = ({
         label: 'Copier le lien Markdown',
         icon: 'link' as const,
         onClick: () => {
-          navigator.clipboard.writeText(mdLink);
-          toast.info('Lien Markdown copié', mdLink);
+          copyMarkdownLink(path);
         },
       },
     ]);

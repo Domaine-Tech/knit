@@ -9,30 +9,10 @@
  * - Support des priorités inline : !p1, !p2, !p3
  */
 
-export type TaskStatus = ' ' | '/' | 'x' | '-' | '?' | '>' | '!';
+import type { TaskStatus, KanbanCard, KanbanColumn, KanbanBoard } from '../types';
 
-export interface KanbanCard {
-  id: string;
-  title: string;
-  completed: boolean;
-  status: TaskStatus;
-  priority?: 'p1' | 'p2' | 'p3';
-  rawText: string;
-}
+export type { TaskStatus, KanbanCard, KanbanColumn, KanbanBoard };
 
-export interface KanbanColumn {
-  id: string;
-  title: string;
-  color?: string;
-  cards: KanbanCard[];
-}
-
-export interface KanbanBoard {
-  frontmatter: string;
-  title: string;
-  preamble: string;
-  columns: KanbanColumn[];
-}
 
 // Couleurs par défaut attribuées cycliquement aux colonnes
 export const COLUMN_ACCENT_COLORS = [
@@ -71,7 +51,7 @@ export function isKanbanContent(content: string, path?: string): boolean {
 
   // Si le document possède au moins 2 titres ## et des items de liste - [ ]
   const h2Count = (content.match(/^##\s+/gm) || []).length;
-  const taskCount = (content.match(/^-\s*\[[ xX\/\-\?\>\!]\]/gm) || []).length;
+  const taskCount = (content.match(/^-\s*\[[ xX/?!>-]\]/gm) || []).length;
   return h2Count >= 2 && taskCount >= 1;
 }
 
@@ -185,7 +165,7 @@ export function parseKanbanMarkdown(content: string, fallbackTitle: string = 'Ta
     // Détection d'une carte dans la colonne courante
     if (currentColumn) {
       // Format 1 : - [ ] Tâche ou - [x] Tâche ou - [/] etc. (7 statuts)
-      const checkMatch = trimmed.match(/^-\s*\[([ xX\/\-\?\>\!])\]\s*(.*)$/);
+      const checkMatch = trimmed.match(/^-\s*\[([ xX/?!>-])\]\s*(.*)$/);
       if (checkMatch) {
         cardCounter++;
         const status = normalizeTaskStatus(checkMatch[1]);
@@ -324,7 +304,7 @@ export function parseCardMetadata(title: string): {
   const priority = priorityMatch ? (priorityMatch[1].toLowerCase() as 'p1' | 'p2' | 'p3') : undefined;
 
   // Extraction assignation @collaborateur
-  const assigneeMatch = title.match(/@([a-zA-Z0-9_\-\.\/]+)/);
+  const assigneeMatch = title.match(/@([a-zA-Z0-9_./-]+)/);
   const assignee = assigneeMatch ? assigneeMatch[1] : undefined;
 
   // Extraction date @YYYY-MM-DD

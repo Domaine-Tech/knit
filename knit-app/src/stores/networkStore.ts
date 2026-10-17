@@ -2,61 +2,24 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import type { UnlistenFn } from '@tauri-apps/api/event';
 import { toast } from './toastStore';
-import { isTauriEnvironment } from './vaultStore';
+import { isTauriEnvironment } from '../utils/env';
+import { uint8ArrayToBase64, base64ToUint8Array } from '../utils/encodingUtils';
 
-export interface PeerIdentity {
-  peer_id: string;
-  display_name: string;
-  color_index: number;
-  color_hex: string;
-  initials: string;
-}
+import type {
+  PeerIdentity,
+  AvatarInfo,
+  UserProfile,
+  ConnectedPeerInfo,
+  DiscoveredLanPeer,
+} from '../types';
 
-export interface AvatarInfo {
-  type: 'custom' | 'initials';
-  blake3_hash?: string;
-  mime_type?: string;
-}
-
-export interface UserProfile {
-  first_name: string;
-  last_name: string;
-  display_name: string;
-  email: string;
-  role: string;
-  status_message: string;
-  share_email_p2p: boolean;
-  avatar: AvatarInfo;
-  created_at_sec: number;
-  updated_at_sec: number;
-}
-
-export interface ConnectedPeerInfo {
-  peer_id: string;
-  display_name: string;
-  vault_name?: string;
-  color_index: number;
-  color_hex: string;
-  initials: string;
-  latency_ms?: number;
-  connected_at_sec: number;
-  first_name?: string;
-  last_name?: string;
-  email?: string;
-  role?: string;
-  status_message?: string;
-  avatar?: AvatarInfo;
-}
-
-export interface DiscoveredLanPeer {
-  peer_id: string;
-  display_name: string;
-  vault_name?: string;
-  addresses: string[];
-  port: number;
-  invitation_code?: string;
-  last_seen_sec: number;
-}
+export type {
+  PeerIdentity,
+  AvatarInfo,
+  UserProfile,
+  ConnectedPeerInfo,
+  DiscoveredLanPeer,
+};
 
 export const COLLABORATIVE_PALETTE = [
   '#3B82F6', // 0: Bleu Ardoise
@@ -190,7 +153,7 @@ class NetworkStore {
         'p2p_yjs_update',
         (event) => {
           const { doc_id, update, from_peer } = event.payload;
-          const bytes = Uint8Array.from(atob(update), (c) => c.charCodeAt(0));
+          const bytes = base64ToUint8Array(update);
           this.onRemoteYjsUpdateListeners.forEach((l) => l(doc_id, bytes, from_peer));
         }
       );
@@ -200,7 +163,7 @@ class NetworkStore {
         'p2p_awareness_update',
         (event) => {
           const { doc_id, awareness, from_peer } = event.payload;
-          const bytes = Uint8Array.from(atob(awareness), (c) => c.charCodeAt(0));
+          const bytes = base64ToUint8Array(awareness);
           this.activeFileByPeer.set(from_peer, doc_id);
           this.notify();
           this.onRemoteAwarenessListeners.forEach((l) => l(doc_id, bytes, from_peer));
@@ -240,7 +203,7 @@ class NetworkStore {
         'p2p_sync_request_received',
         (event) => {
           const { doc_id, state_vector, from_peer } = event.payload;
-          const bytes = Uint8Array.from(atob(state_vector), (c) => c.charCodeAt(0));
+          const bytes = base64ToUint8Array(state_vector);
           this.onRemoteSyncRequestListeners.forEach((l) => l(doc_id, bytes, from_peer));
         }
       );
@@ -250,7 +213,7 @@ class NetworkStore {
         'p2p_sync_response_received',
         (event) => {
           const { doc_id, update, from_peer } = event.payload;
-          const bytes = Uint8Array.from(atob(update), (c) => c.charCodeAt(0));
+          const bytes = base64ToUint8Array(update);
           this.onRemoteSyncResponseListeners.forEach((l) => l(doc_id, bytes, from_peer));
         }
       );
@@ -367,11 +330,7 @@ class NetworkStore {
     if (!this.isNetworkActive || !isTauriEnvironment()) return;
 
     try {
-      let binary = '';
-      for (let i = 0; i < update.length; i++) {
-        binary += String.fromCharCode(update[i]);
-      }
-      const b64 = btoa(binary);
+      const b64 = uint8ArrayToBase64(update);
       await invoke('broadcast_yjs_update', { docId, updateBase64: b64 });
     } catch (err) {
       console.warn('Erreur broadcast Yjs update:', err);
@@ -385,11 +344,7 @@ class NetworkStore {
     if (!this.isNetworkActive || !isTauriEnvironment()) return;
 
     try {
-      let binary = '';
-      for (let i = 0; i < awareness.length; i++) {
-        binary += String.fromCharCode(awareness[i]);
-      }
-      const b64 = btoa(binary);
+      const b64 = uint8ArrayToBase64(awareness);
       await invoke('broadcast_awareness', { docId, awarenessBase64: b64 });
     } catch (err) {
       console.warn('Erreur broadcast awareness:', err);
@@ -522,11 +477,7 @@ class NetworkStore {
   public async uploadAvatar(vaultPath: string, file: File): Promise<AvatarInfo> {
     const arrayBuffer = await file.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
-    let binary = '';
-    for (let i = 0; i < bytes.length; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    const imageBase64 = btoa(binary);
+    const imageBase64 = uint8ArrayToBase64(bytes);
 
     if (!isTauriEnvironment()) {
       const demoAvatar: AvatarInfo = {
@@ -621,11 +572,7 @@ class NetworkStore {
     if (!this.isNetworkActive || !isTauriEnvironment()) return;
 
     try {
-      let binary = '';
-      for (let i = 0; i < stateVector.length; i++) {
-        binary += String.fromCharCode(stateVector[i]);
-      }
-      const stateVectorBase64 = btoa(binary);
+      const stateVectorBase64 = uint8ArrayToBase64(stateVector);
       await invoke('send_p2p_sync_step1', { docId, stateVectorBase64 });
     } catch (err) {
       console.warn('Erreur envoi SyncStep1:', err);
@@ -639,11 +586,7 @@ class NetworkStore {
     if (!this.isNetworkActive || !isTauriEnvironment()) return;
 
     try {
-      let binary = '';
-      for (let i = 0; i < update.length; i++) {
-        binary += String.fromCharCode(update[i]);
-      }
-      const updateBase64 = btoa(binary);
+      const updateBase64 = uint8ArrayToBase64(update);
       await invoke('send_p2p_sync_step2', { peerId, docId, updateBase64 });
     } catch (err) {
       console.warn('Erreur envoi SyncStep2:', err);

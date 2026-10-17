@@ -1,4 +1,5 @@
-import { autocompletion, type CompletionContext, type CompletionResult } from '@codemirror/autocomplete';
+import { autocompletion, type Completion, type CompletionContext, type CompletionResult } from '@codemirror/autocomplete';
+import type { EditorView } from '@codemirror/view';
 import { networkStore } from '../../stores/networkStore';
 import { vaultStore, type SuggestIndexData, type HeadingItem } from '../../stores/vaultStore';
 
@@ -79,7 +80,7 @@ export async function getOrLoadSuggestIndex(): Promise<SuggestIndexData> {
     cachedSuggestIndex = await vaultStore.getSuggestIndex();
     lastSuggestIndexTime = now;
   }
-  return cachedSuggestIndex;
+  return cachedSuggestIndex || { docs: [], headings: [], tags: [] };
 }
 
 /**
@@ -149,7 +150,7 @@ export function createKnitAutocompletion(sources: AutocompleteSourceProps) {
                 label: `#${h.text}`,
                 detail: `Section H${h.level} (cette note)`,
                 type: 'heading',
-                apply: (view: any, _completion: any, from: number, to: number) => {
+                apply: (view: EditorView, _completion: Completion, from: number, to: number) => {
                   const insertText = `#${h.text}]]`;
                   view.dispatch({
                     changes: { from: from - 1, to, insert: insertText },
@@ -183,7 +184,7 @@ export function createKnitAutocompletion(sources: AutocompleteSourceProps) {
                 label: h.text,
                 detail: `H${h.level} dans ${h.file_rel}`,
                 type: 'heading',
-                apply: (view: any, _completion: any, from: number, to: number) => {
+                apply: (view: EditorView, _completion: Completion, from: number, to: number) => {
                   const insertText = `${h.text}]]`;
                   view.dispatch({
                     changes: { from, to, insert: insertText },
@@ -209,7 +210,7 @@ export function createKnitAutocompletion(sources: AutocompleteSourceProps) {
                   label: aliasText || 'Mon alias',
                   detail: `Alias d'affichage pour ${targetDoc}`,
                   type: 'alias',
-                  apply: (view: any, _completion: any, from: number, to: number) => {
+                  apply: (view: EditorView, _completion: Completion, from: number, to: number) => {
                     const text = `${aliasText || 'Mon alias'}]]`;
                     view.dispatch({
                       changes: { from, to, insert: text },
@@ -240,7 +241,7 @@ export function createKnitAutocompletion(sources: AutocompleteSourceProps) {
                 detail: filePath,
                 type: docType,
                 boost: docType === 'kanban' ? 2 : 1,
-                apply: (view: any, completion: any, from: number, to: number) => {
+                apply: (view: EditorView, completion: Completion, from: number, to: number) => {
                   const insertText = `${completion.label}]]`;
                   view.dispatch({
                     changes: { from, to, insert: insertText },
@@ -261,7 +262,7 @@ export function createKnitAutocompletion(sources: AutocompleteSourceProps) {
         }
 
         // --- 2. DÉCLENCHEUR CALENDRIER / DATE `@@...` ---
-        const dateMatch = context.matchBefore(/(?:^|\s)@@([a-zA-Z0-9_\-]*)$/);
+        const dateMatch = context.matchBefore(/(?:^|\s)@@([a-zA-Z0-9_-]*)$/);
         if (dateMatch) {
           const raw = dateMatch.text.trim().slice(2).toLowerCase();
           const today = new Date();
@@ -281,7 +282,7 @@ export function createKnitAutocompletion(sources: AutocompleteSourceProps) {
               label: s.label,
               detail: s.detail,
               type: 'date',
-              apply: (view: any, _completion: any, from: number, to: number) => {
+              apply: (view: EditorView, _completion: Completion, from: number, to: number) => {
                 const insertText = `@${s.date} `;
                 view.dispatch({
                   changes: { from: from - 2, to, insert: insertText },
@@ -299,7 +300,7 @@ export function createKnitAutocompletion(sources: AutocompleteSourceProps) {
         }
 
         // --- 3. DÉCLENCHEUR MENTIONS COLLABORATEURS `@...` ---
-        const mentionMatch = context.matchBefore(/(?:^|\s)@([a-zA-Z0-9_\-\.\/]*)$/);
+        const mentionMatch = context.matchBefore(/(?:^|\s)@([a-zA-Z0-9_./-]*)$/);
         if (mentionMatch && !mentionMatch.text.includes('@@')) {
           const atIdx = mentionMatch.text.indexOf('@');
           const query = mentionMatch.text.slice(atIdx + 1).toLowerCase();
@@ -312,7 +313,7 @@ export function createKnitAutocompletion(sources: AutocompleteSourceProps) {
               detail: 'Attribution collective partagée avec tous les pairs',
               type: 'vault',
               boost: 10,
-              apply: (view: any, _c: any, from: number, to: number) => {
+              apply: (view: EditorView, _c: Completion, from: number, to: number) => {
                 const text = '@vault ';
                 view.dispatch({
                   changes: { from: from - 1, to, insert: text },
@@ -325,7 +326,7 @@ export function createKnitAutocompletion(sources: AutocompleteSourceProps) {
               detail: `Pair connecté (${peer.initials})`,
               type: 'mention',
               boost: 5,
-              apply: (view: any, _c: any, from: number, to: number) => {
+              apply: (view: EditorView, _c: Completion, from: number, to: number) => {
                 const text = `@${peer.display_name} `;
                 view.dispatch({
                   changes: { from: from - 1, to, insert: text },
@@ -354,7 +355,7 @@ export function createKnitAutocompletion(sources: AutocompleteSourceProps) {
               label: `:${shortcode}:`,
               detail: emoji,
               type: 'emoji',
-              apply: (view: any, _c: any, from: number, to: number) => {
+              apply: (view: EditorView, _c: Completion, from: number, to: number) => {
                 view.dispatch({
                   changes: { from: from - 1, to, insert: `${emoji} ` },
                   selection: { anchor: from - 1 + emoji.length + 1 },
@@ -393,7 +394,7 @@ export function createKnitAutocompletion(sources: AutocompleteSourceProps) {
         }
 
         // --- 6. DÉCLENCHEUR SLASH COMMANDS `/` ---
-        const slashMatch = context.matchBefore(/^\s*\/([a-zA-Z0-9_\-]*)$/);
+        const slashMatch = context.matchBefore(/^\s*\/([a-zA-Z0-9_-]*)$/);
         if (slashMatch) {
           const query = slashMatch.text.trim().slice(1).toLowerCase();
 
@@ -466,7 +467,7 @@ export function createKnitAutocompletion(sources: AutocompleteSourceProps) {
               label: cmd.label,
               detail: cmd.detail,
               type: 'slash',
-              apply: (view: any, _c: any, _from: number, to: number) => {
+              apply: (view: EditorView, _c: Completion, _from: number, to: number) => {
                 view.dispatch({
                   changes: { from: slashMatch.from, to, insert: cmd.template },
                   selection: { anchor: slashMatch.from + cmd.template.length },

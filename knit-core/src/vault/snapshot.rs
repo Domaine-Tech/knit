@@ -230,8 +230,8 @@ pub fn load_latest_snapshot(vault_root: &Path, doc_id: &str) -> Result<Option<Do
 fn fast_rand_id() -> String {
     use rand::Rng;
     let mut rng = rand::thread_rng();
-    let num: u32 = rng.gen_range(1000..9999);
-    format!("{:04}", num)
+    let num: u32 = rng.gen();
+    format!("{:08x}", num)
 }
 
 #[cfg(test)]

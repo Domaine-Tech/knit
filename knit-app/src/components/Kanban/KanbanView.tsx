@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { vaultStore, type KanbanFileInfo } from '../../stores/vaultStore';
+import { vaultStore } from '../../stores/vaultStore';
 import {
-  parseKanbanMarkdown,
-  serializeKanbanMarkdown,
   parseCardMetadata,
   adaptCardStatusToColumn,
   COLUMN_ACCENT_COLORS,
@@ -25,6 +23,8 @@ interface KanbanViewProps {
   onSwitchToEditor?: () => void;
 }
 
+import { useKanbanBoard } from '../../utils/useKanbanBoard';
+
 export const KanbanView: React.FC<KanbanViewProps> = ({
   activeFilePath,
   activeFileContent = '',
@@ -32,8 +32,12 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
   onOpenFile,
   onSwitchToEditor,
 }) => {
-  // Liste des fichiers Kanban disponibles dans le coffre
-  const [availableKanbans, setAvailableKanbans] = useState<KanbanFileInfo[]>([]);
+  const { availableKanbans, currentPath, board, persistBoard } = useKanbanBoard({
+    activeFilePath,
+    activeFileContent,
+    onUpdateContent,
+  });
+
   const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
 
   // Recherche / Filtre textuel dans les cartes
@@ -65,38 +69,6 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
   // Drag and Drop
   const [draggedCard, setDraggedCard] = useState<{ cardId: string; sourceColumnId: string } | null>(null);
   const [dragOverColumnId, setDragOverColumnId] = useState<string | null>(null);
-
-  // Chargement des fichiers kanbans du coffre
-  const loadKanbanFiles = useCallback(async () => {
-    const list = await vaultStore.getKanbanFiles();
-    setAvailableKanbans(list);
-  }, []);
-
-  useEffect(() => {
-    loadKanbanFiles();
-    return vaultStore.subscribe(() => {
-      loadKanbanFiles();
-    });
-  }, [loadKanbanFiles]);
-
-  // Détermination du fichier actuellement affiché
-  const currentPath = activeFilePath || (availableKanbans.length > 0 ? availableKanbans[0].path : null);
-
-  // Parse de la structure Kanban depuis le Markdown actif
-  const board: KanbanBoard = useMemo(() => {
-    const title = currentPath ? currentPath.split('/').pop()?.replace(/\.md$/, '') || 'Kanban' : 'Mon Kanban';
-    return parseKanbanMarkdown(activeFileContent, title);
-  }, [activeFileContent, currentPath]);
-
-  // Sauvegarde des modifications du tableau dans le fichier Markdown
-  const persistBoard = useCallback(
-    (updatedBoard: KanbanBoard) => {
-      if (!currentPath) return;
-      const newMarkdown = serializeKanbanMarkdown(updatedBoard);
-      onUpdateContent(currentPath, newMarkdown);
-    },
-    [currentPath, onUpdateContent]
-  );
 
   // Gestion de l'ajout d'une nouvelle colonne personnalisée
   const handleAddColumnSubmit = (e: React.FormEvent) => {
@@ -1285,7 +1257,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
             });
           }}
           onDumpConsole={() => {
-            console.group('🐞 [KANBAN DEBUG]');
+            console.group('[KANBAN DEBUG]');
             console.log('Board :', board);
             console.table(board.columns.map((c) => ({ id: c.id, title: c.title, cards: c.cards.length })));
             console.groupEnd();

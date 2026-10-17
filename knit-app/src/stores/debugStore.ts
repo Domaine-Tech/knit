@@ -333,9 +333,9 @@ class DebugStore {
       toggle: () => debugStore.toggle(),
       setDebug: (active: boolean) => debugStore.setDebug(active),
       runBenchmark: async () => {
-        console.log('⏱️ [KNIT PROFILER] Lancement du benchmark d\'indexation...');
+        console.log('[KNIT PROFILER] Lancement du benchmark d\'indexation...');
         const report = await debugStore.runVaultBenchmark();
-        console.group('⏱️ [KNIT PROFILER BENCHMARK REPORT]');
+        console.group('[KNIT PROFILER BENCHMARK REPORT]');
         console.log(`Stockage : ${report.storageLabel}`);
         console.log(`Documents : ${report.markdownFilesCount} Markdown (${report.totalFilesCount} au total)`);
         console.log(`Temps total : ${report.totalTimeMs} ms (${report.throughputDocsPerSec} docs/s)`);
@@ -352,7 +352,7 @@ class DebugStore {
       },
       dumpReport: () => {
         const report = debugStore.generateReport();
-        console.group('🐞 [KNIT GLOBAL DEBUG REPORT]');
+        console.group('[KNIT GLOBAL DEBUG REPORT]');
         console.log(`Actif : ${report.isDebugActive ? 'OUI' : 'NON'}`);
         console.log(`Vue courante : ${report.activeView}`);
         console.log(`Horodatage : ${report.timestamp}`);

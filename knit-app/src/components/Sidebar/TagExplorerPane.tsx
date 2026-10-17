@@ -14,7 +14,6 @@ export const TagExplorerPane: React.FC<TagExplorerPaneProps> = ({ onSelectFile }
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   const loadTags = useCallback(async () => {
-    setIsLoading(true);
     try {
       const items = await vaultStore.getVaultTags();
       setTags(items);

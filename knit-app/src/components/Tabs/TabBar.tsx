@@ -2,9 +2,14 @@ import React, { useState } from 'react';
 import type { Tab } from '../../stores/tabStore';
 import { tabStore } from '../../stores/tabStore';
 import { vaultStore } from '../../stores/vaultStore';
-import { toast } from '../../stores/toastStore';
 import { contextMenu } from '../../stores/contextMenuStore';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
+import {
+  copyRelativePath,
+  copyAbsolutePath,
+  copyFileName,
+  copyMarkdownLink,
+} from '../../utils/clipboardUtils';
 
 interface TabBarProps {
   tabs: Tab[];
@@ -70,7 +75,6 @@ export const TabBar: React.FC<TabBarProps> = ({
     e.stopPropagation();
 
     const absPath = vaultStore.getAbsolutePath(tab.path);
-    const mdLink = `[${tab.title.replace(/\.md$/, '')}](${tab.path})`;
 
     contextMenu.show(e, [
       {
@@ -164,8 +168,7 @@ export const TabBar: React.FC<TabBarProps> = ({
         label: 'Copier le chemin relatif',
         icon: 'copy' as const,
         onClick: () => {
-          navigator.clipboard.writeText(tab.path);
-          toast.info('Chemin relatif copié', tab.path);
+          copyRelativePath(tab.path);
         },
       },
       {
@@ -173,8 +176,7 @@ export const TabBar: React.FC<TabBarProps> = ({
         label: 'Copier le chemin absolu',
         icon: 'copy' as const,
         onClick: () => {
-          navigator.clipboard.writeText(absPath);
-          toast.info('Chemin absolu copié', absPath);
+          copyAbsolutePath(absPath);
         },
       },
       {
@@ -182,8 +184,7 @@ export const TabBar: React.FC<TabBarProps> = ({
         label: 'Copier le nom du fichier',
         icon: 'clipboard' as const,
         onClick: () => {
-          navigator.clipboard.writeText(tab.title);
-          toast.info('Nom copié', tab.title);
+          copyFileName(tab.title);
         },
       },
       {
@@ -191,8 +192,7 @@ export const TabBar: React.FC<TabBarProps> = ({
         label: 'Copier le lien Markdown',
         icon: 'link' as const,
         onClick: () => {
-          navigator.clipboard.writeText(mdLink);
-          toast.info('Lien Markdown copié', mdLink);
+          copyMarkdownLink(tab.path, tab.title);
         },
       },
       { id: 'div-tab-3', divider: true },

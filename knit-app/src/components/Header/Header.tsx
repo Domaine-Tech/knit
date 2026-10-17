@@ -10,8 +10,9 @@ import { ProfileModal } from '../Profile/ProfileModal';
 import { WindowControls } from './WindowControls';
 import { getAppVersion, APP_VERSION } from '../../utils/version';
 import { debugStore, useDebugMode } from '../../stores/debugStore';
+import type { AppViewMode } from '../../types';
 
-export type AppViewMode = 'editor' | 'kanban' | 'table';
+export type { AppViewMode };
 
 interface HeaderProps {
   theme: ThemeMode;
@@ -311,7 +312,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         )}
 
-        {/* Bouton Unique Global Debug (🐞) */}
+        {/* Bouton Unique Global Debug (Ctrl+Alt+D) */}
         <button
           onClick={() => debugStore.toggle()}
           data-tooltip={

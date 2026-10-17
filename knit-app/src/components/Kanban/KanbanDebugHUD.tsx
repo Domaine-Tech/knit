@@ -26,11 +26,11 @@ export const KanbanDebugHUD: React.FC<KanbanDebugHUDProps> = ({
     <div className="knit-live-debug-hud">
       <div className="knit-debug-hud-header">
         <div className="knit-debug-hud-title">
-          <span style={{ fontSize: '14px' }}>🐞</span>
+          <DuotoneIcon name="bug" size={14} style={{ color: 'var(--knit-accent)' }} />
           <span style={{ fontWeight: 700, letterSpacing: '-0.01em' }}>Inspecteur Kanban</span>
 
           <span className="knit-debug-hud-badge is-ok">
-            <span style={{ fontSize: '11px' }}>✓</span>
+            <DuotoneIcon name="check" size={12} />
             <span>
               {columnsCount} colonnes | {cardsCount} cartes ({completedCount} terminées - {percentCompleted}%)
             </span>
