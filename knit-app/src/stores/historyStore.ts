@@ -1,9 +1,4 @@
-export interface UndoableAction {
-  id: string;
-  description: string;
-  undo: () => Promise<void> | void;
-  createdAt: number;
-}
+import type { UndoableAction } from '../types';
 
 type HistoryListener = () => void;
 

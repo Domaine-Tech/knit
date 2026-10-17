@@ -1,14 +1,10 @@
 import { autocompletion, type Completion, type CompletionContext, type CompletionResult } from '@codemirror/autocomplete';
 import type { EditorView } from '@codemirror/view';
 import { networkStore } from '../../stores/networkStore';
-import { vaultStore, type SuggestIndexData, type HeadingItem } from '../../stores/vaultStore';
+import { vaultStore } from '../../stores/vaultStore';
+import type { SuggestIndexData, HeadingItem, AutocompleteSourceProps } from '../../types';
 
-export interface AutocompleteSourceProps {
-  getFiles: () => string[];
-  getTags: () => string[];
-  currentPath?: string;
-  getContent?: () => string;
-}
+export type { AutocompleteSourceProps };
 
 export const EMOJI_DICTIONARY: Record<string, string> = {
   sparkles: '✨',

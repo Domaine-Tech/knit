@@ -11,6 +11,12 @@ export interface FileNode {
   children: FileNode[];
 }
 
+export interface FlattenedFile {
+  path: string;
+  name: string;
+  parentDir: string;
+}
+
 export interface FrontmatterDoc {
   has_frontmatter: boolean;
   raw_frontmatter?: string;

@@ -1,4 +1,6 @@
-export type ThemeMode = 'light' | 'dark';
+import type { ThemeMode } from '../types';
+
+export type { ThemeMode };
 
 const THEME_STORAGE_KEY = 'knit-theme-mode';
 const HUE_STORAGE_KEY = 'knit-theme-hue';

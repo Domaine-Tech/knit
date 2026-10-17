@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { vaultStore } from '../../stores/vaultStore';
-import type { FileNode } from '../../types';
+import { flattenFileNodes } from '../../utils/treeUtils';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { BaseSearchModal } from './BaseSearchModal';
 
@@ -8,12 +8,6 @@ interface QuickSwitcherModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelectFile: (path: string, inNewTab?: boolean) => void;
-}
-
-interface FlattenedFile {
-  path: string;
-  name: string;
-  parentDir: string;
 }
 
 export const QuickSwitcherModal: React.FC<QuickSwitcherModalProps> = ({
@@ -24,28 +18,9 @@ export const QuickSwitcherModal: React.FC<QuickSwitcherModalProps> = ({
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
 
-  // Aplatit l'arborescence des fichiers pour la recherche rapide
+  // Aplatit l'arborescence des fichiers pour la recherche rapide via treeUtils
   const allFiles = useMemo(() => {
-    const list: FlattenedFile[] = [];
-
-    const traverse = (nodes: FileNode[]) => {
-      for (const node of nodes) {
-        if (node.is_dir) {
-          traverse(node.children);
-        } else {
-          const parts = node.path.split('/');
-          const parentDir = parts.length > 1 ? parts.slice(0, -1).join('/') : '';
-          list.push({
-            path: node.path,
-            name: node.name,
-            parentDir,
-          });
-        }
-      }
-    };
-
-    traverse(vaultStore.files);
-    return list;
+    return flattenFileNodes(vaultStore.files);
   }, []);
 
   const matchingFiles = useMemo(() => {

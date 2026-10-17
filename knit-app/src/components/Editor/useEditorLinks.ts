@@ -5,13 +5,9 @@ import { tabStore } from '../../stores/tabStore';
 import { toast } from '../../stores/toastStore';
 import { renderRichMarkdownPreview, findVaultNode, slugify } from '../../utils/markdownUtils';
 
-export interface HoverPreviewData {
-  x: number;
-  y: number;
-  target: string;
-  htmlSnippet: string;
-  icon?: 'file-markdown' | 'external-link' | 'link' | 'folder' | 'file-text';
-}
+import type { HoverPreviewData } from '../../types';
+
+export type { HoverPreviewData };
 
 /**
  * Détecte l'URL ou la cible de lien (WikiLink, lien Markdown, URL brute, chemin local) sous les coordonnées du curseur

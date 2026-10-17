@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { DuotoneIcon, type IconName } from '../Icons/DuotoneIcon';
+import { DuotoneIcon } from '../Icons/DuotoneIcon';
+import type { IconName } from '../../types';
 
 export interface BaseSearchModalProps {
   isOpen: boolean;

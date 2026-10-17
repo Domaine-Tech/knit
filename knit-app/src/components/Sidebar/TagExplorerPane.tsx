@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { vaultStore } from '../../stores/vaultStore';
-import type { TagInfo } from '../../stores/vaultStore';
+import type { TagInfo } from '../../types';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 
 interface TagExplorerPaneProps {

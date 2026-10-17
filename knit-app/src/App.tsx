@@ -1,16 +1,22 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { Header, type AppViewMode } from './components/Header/Header';
+import { Header } from './components/Header/Header';
 import { Sidebar } from './components/Sidebar/Sidebar';
 import { TabBar } from './components/Tabs/TabBar';
 import { Editor } from './components/Editor/Editor';
 import { KanbanView } from './components/Kanban/KanbanView';
 import { TableView } from './components/Table/TableView';
 import { QuickSwitcherModal } from './components/Modal/QuickSwitcherModal';
-import { CommandPaletteModal, type CommandItem } from './components/Modal/CommandPaletteModal';
+import { CommandPaletteModal } from './components/Modal/CommandPaletteModal';
 import { ToastContainer } from './components/Toast/ToastContainer';
 import { ContextMenuContainer } from './components/ContextMenu/ContextMenuContainer';
 import { TooltipContainer } from './components/Tooltip/TooltipContainer';
-import type { ThemeMode } from './theme/theme';
+import type {
+  AppViewMode,
+  CommandItem,
+  ThemeMode,
+  FileNode,
+  Tab,
+} from './types';
 import {
   getStoredTheme,
   getStoredHue,
@@ -18,16 +24,13 @@ import {
   applyHue,
 } from './theme/theme';
 import { vaultStore } from './stores/vaultStore';
-import type { FileNode } from './stores/vaultStore';
 import { tabStore } from './stores/tabStore';
-import type { Tab } from './stores/tabStore';
 import { toast } from './stores/toastStore';
 import { DuotoneIcon } from './components/Icons/DuotoneIcon';
 import { packageContextForAI } from './components/Editor/smartUxExtension';
 import { ErrorBoundary } from './components/Common/ErrorBoundary';
 import { debugStore } from './stores/debugStore';
-import { useResizablePanels } from './utils/useResizablePanels';
-import { useKnitShortcuts } from './utils/useKnitShortcuts';
+import { useResizablePanels, useKnitShortcuts } from './hooks';
 import { buildCommandList } from './utils/commandRegistry';
 import { APP_VERSION } from './utils/version';
 

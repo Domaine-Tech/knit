@@ -5,7 +5,7 @@ import {
   Decoration,
   type DecorationSet,
 } from '@codemirror/view';
-import type { TaskStatus } from '../../utils/kanbanParser';
+import type { TaskStatus } from '../../types';
 import { splitTableRow, renderSimpleMarkdown } from '../../utils/markdownUtils';
 
 /* ==========================================================================

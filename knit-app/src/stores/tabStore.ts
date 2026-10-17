@@ -1,42 +1,7 @@
-import type { DocType, ViewMode, Tab } from '../types';
+import type { DocType, Tab } from '../types';
+import { detectDocType } from '../utils/markdownUtils';
 
-export type { DocType, ViewMode, Tab };
-
-
-export function detectDocType(content: string, path: string): DocType {
-  const lowerPath = path.toLowerCase();
-  if (lowerPath.includes('kanban') || lowerPath.endsWith('.kanban.md')) {
-    return 'kanban';
-  }
-  if (lowerPath.includes('tableau') || lowerPath.includes('table') || lowerPath.endsWith('.table.md')) {
-    return 'table';
-  }
-  if (!content) return 'note';
-
-  const fmMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  if (fmMatch) {
-    const yaml = fmMatch[1].toLowerCase();
-    for (const line of yaml.split('\n')) {
-      const parts = line.split(':');
-      if (parts.length >= 2 && parts[0].trim() === 'type') {
-        const val = parts.slice(1).join(':').trim();
-        if (val.includes('kanban') || val.includes('board')) return 'kanban';
-        if (val.includes('table') || val.includes('tableau')) return 'table';
-        if (val.includes('note')) return 'note';
-      }
-    }
-    if (yaml.includes('kanban: true') || yaml.includes('kanban-plugin:')) {
-      return 'kanban';
-    }
-    return 'note';
-  }
-
-  // Sans frontmatter : Kanban uniquement si explicitement nommé dans le chemin
-  if (lowerPath.includes('kanban')) return 'kanban';
-  if (lowerPath.includes('table')) return 'table';
-
-  return 'note';
-}
+export { detectDocType };
 
 type TabListener = () => void;
 

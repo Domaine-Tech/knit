@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from '../../stores/toastStore';
-import type { ToastItem } from '../../stores/toastStore';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
-import type { IconName } from '../Icons/DuotoneIcon';
+import type { ToastItem, IconName } from '../../types';
 
 export const ToastContainer: React.FC = () => {
   const [toasts, setToasts] = useState<ToastItem[]>([]);

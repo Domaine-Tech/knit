@@ -4,14 +4,15 @@ import type { UnlistenFn } from '@tauri-apps/api/event';
 import { toast } from './toastStore';
 import { historyStore } from './historyStore';
 import { crdtManager } from '../crdt/crdtManager';
-import { tabStore, detectDocType } from './tabStore';
+import { tabStore } from './tabStore';
 import { networkStore } from './networkStore';
+import { detectDocType } from '../utils/markdownUtils';
+import { extractKanbanFiles } from '../utils/treeUtils';
 import { createDefaultKanbanMarkdown } from '../utils/kanbanParser';
 
 import type {
   HeadingItem,
   SuggestDocItem,
-  SuggestTagItem,
   SuggestIndexData,
   FileNode,
   FrontmatterDoc,
@@ -23,22 +24,6 @@ import type {
   TagInfo,
   KanbanFileInfo,
 } from '../types';
-
-export type {
-  HeadingItem,
-  SuggestDocItem,
-  SuggestTagItem,
-  SuggestIndexData,
-  FileNode,
-  FrontmatterDoc,
-  LinkRefactorReport,
-  TrashRecord,
-  SearchSnippet,
-  FileSearchResult,
-  TaskCard,
-  TagInfo,
-  KanbanFileInfo,
-};
 
 type VaultListener = () => void;
 
@@ -751,30 +736,7 @@ class VaultStore {
   }
 
   public async getKanbanFiles(): Promise<KanbanFileInfo[]> {
-    const list: KanbanFileInfo[] = [];
-
-    const traverse = (nodes: FileNode[]) => {
-      for (const node of nodes) {
-        if (node.is_dir) {
-          traverse(node.children);
-        } else if (node.path.endsWith('.md')) {
-          const lower = node.name.toLowerCase();
-          const cleanTitle = node.name.replace(/\.md$/, '').replace(/^kanban-?/, '').trim() || node.name;
-          const formattedTitle = cleanTitle.charAt(0).toUpperCase() + cleanTitle.slice(1);
-
-          if (lower.includes('kanban') || lower.includes('tableau') || lower.includes('board')) {
-            list.push({
-              path: node.path,
-              name: node.name,
-              title: formattedTitle,
-            });
-          }
-        }
-      }
-    };
-
-    traverse(this.files);
-    return list;
+    return extractKanbanFiles(this.files);
   }
 
   public async createKanbanFile(

@@ -1,11 +1,7 @@
 import React from 'react';
+import type { TooltipProps } from '../../types';
 
-export interface TooltipProps {
-  content: string;
-  shortcut?: string;
-  position?: 'top' | 'bottom' | 'left' | 'right';
-  children: React.ReactElement<React.HTMLAttributes<HTMLElement>>;
-}
+export type { TooltipProps };
 
 /**
  * Composant Tooltip déclaratif Knit.

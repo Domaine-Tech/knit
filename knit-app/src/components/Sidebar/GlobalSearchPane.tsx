@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { vaultStore } from '../../stores/vaultStore';
-import type { FileSearchResult } from '../../stores/vaultStore';
+import type { FileSearchResult } from '../../types';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 
 interface GlobalSearchPaneProps {

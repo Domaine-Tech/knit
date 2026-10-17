@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
-import type { ThemeMode } from '../../theme/theme';
+import type { ThemeMode, AppViewMode } from '../../types';
 import { ColorPickerPopover } from './ColorPickerPopover';
 import { contextMenu } from '../../stores/contextMenuStore';
 import { vaultStore } from '../../stores/vaultStore';
@@ -10,9 +10,6 @@ import { ProfileModal } from '../Profile/ProfileModal';
 import { WindowControls } from './WindowControls';
 import { getAppVersion, APP_VERSION } from '../../utils/version';
 import { debugStore, useDebugMode } from '../../stores/debugStore';
-import type { AppViewMode } from '../../types';
-
-export type { AppViewMode };
 
 interface HeaderProps {
   theme: ThemeMode;

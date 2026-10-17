@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { LivePreviewDebugStats } from './livePreviewDebugExtension';
+import type { LivePreviewDebugStats } from '../../types';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { toast } from '../../stores/toastStore';
 import { useDebugMode } from '../../stores/debugStore';

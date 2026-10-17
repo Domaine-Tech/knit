@@ -22,7 +22,8 @@ import { crdtManager } from '../../crdt/crdtManager';
 import { contextMenu } from '../../stores/contextMenuStore';
 import { vaultStore } from '../../stores/vaultStore';
 import { toast } from '../../stores/toastStore';
-import { tabStore, type ViewMode } from '../../stores/tabStore';
+import { tabStore } from '../../stores/tabStore';
+import type { ViewMode, LivePreviewDebugStats } from '../../types';
 import { networkStore } from '../../stores/networkStore';
 import { createKnitAutocompletion } from './autocomplete';
 import { createMermaidInlinePlugin } from './mermaidExtension';
@@ -35,7 +36,6 @@ import {
 import {
   createLivePreviewDebugExtension,
   livePreviewDebugCompartment,
-  type LivePreviewDebugStats,
 } from './livePreviewDebugExtension';
 import { LivePreviewDebugHUD } from './LivePreviewDebugHUD';
 import { debugStore, useDebugMode } from '../../stores/debugStore';

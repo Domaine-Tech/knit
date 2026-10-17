@@ -1,26 +1,9 @@
-import type { CommandItem } from '../components/Modal/CommandPaletteModal';
 import { tabStore } from '../stores/tabStore';
-import type { Tab } from '../stores/tabStore';
 import { vaultStore } from '../stores/vaultStore';
-import { applyTheme, type ThemeMode } from '../theme/theme';
-import type { AppViewMode } from '../components/Header/Header';
+import { applyTheme } from '../theme/theme';
+import type { CommandItem, CommandRegistryOptions } from '../types';
 
-export interface CommandRegistryOptions {
-  splitTabId: string | null;
-  activeTab: Tab | null | undefined;
-  isZenMode: boolean;
-  theme: ThemeMode;
-  setIsZenMode: (fn: (prev: boolean) => boolean) => void;
-  setTheme: (theme: ThemeMode) => void;
-  setSidebarTab: (tab: 'files' | 'search' | 'tags') => void;
-  setIsQuickSwitcherOpen: (open: boolean) => void;
-  handleNewNote: () => void;
-  handleNewKanban: () => void;
-  handleSaveActiveNote: () => void;
-  handleOpenDailyNote: () => void;
-  handlePackageContext: () => void;
-  handleHeaderViewChange: (view: AppViewMode) => void;
-}
+export type { CommandRegistryOptions };
 
 export function buildCommandList(opts: CommandRegistryOptions): CommandItem[] {
   const {

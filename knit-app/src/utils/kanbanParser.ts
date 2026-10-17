@@ -11,8 +11,6 @@
 
 import type { TaskStatus, KanbanCard, KanbanColumn, KanbanBoard } from '../types';
 
-export type { TaskStatus, KanbanCard, KanbanColumn, KanbanBoard };
-
 
 // Couleurs par défaut attribuées cycliquement aux colonnes
 export const COLUMN_ACCENT_COLORS = [

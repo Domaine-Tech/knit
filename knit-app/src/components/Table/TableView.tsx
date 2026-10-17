@@ -2,16 +2,20 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   parseCardMetadata,
   adaptCardStatusToColumn,
-  type KanbanCard,
-  type TaskStatus,
 } from '../../utils/kanbanParser';
+import type {
+  KanbanCard,
+  TaskStatus,
+  TableRowItem,
+  SortField,
+  SortOrder,
+} from '../../types';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { toast } from '../../stores/toastStore';
 import { contextMenu } from '../../stores/contextMenuStore';
 import { debugStore, useDebugMode } from '../../stores/debugStore';
 import { TableDebugHUD } from './TableDebugHUD';
-
-import { useKanbanBoard } from '../../utils/useKanbanBoard';
+import { useKanbanBoard } from '../../hooks';
 
 interface TableViewProps {
   activeFilePath?: string | null;
@@ -20,20 +24,6 @@ interface TableViewProps {
   onOpenFile: (path: string) => void;
   onSwitchToEditor?: () => void;
 }
-
-interface TableRowItem {
-  id: string;
-  columnId: string;
-  columnTitle: string;
-  columnColor?: string;
-  title: string;
-  completed: boolean;
-  tags: string[];
-  wikiLinks: string[];
-}
-
-type SortField = 'column' | 'title' | 'completed';
-type SortOrder = 'asc' | 'desc';
 
 export const TableView: React.FC<TableViewProps> = ({
   activeFilePath,

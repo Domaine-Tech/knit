@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { FileNode } from '../../stores/vaultStore';
+import type { FileNode } from '../../types';
 import { vaultStore } from '../../stores/vaultStore';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { contextMenu } from '../../stores/contextMenuStore';

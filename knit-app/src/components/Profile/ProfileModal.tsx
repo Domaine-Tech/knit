@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { networkStore, COLLABORATIVE_PALETTE } from '../../stores/networkStore';
-import type { UserProfile } from '../../stores/networkStore';
+import type { UserProfile } from '../../types';
 import { vaultStore } from '../../stores/vaultStore';
 import { toast } from '../../stores/toastStore';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';

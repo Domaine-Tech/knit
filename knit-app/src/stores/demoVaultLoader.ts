@@ -1,4 +1,4 @@
-import type { FileNode } from './vaultStore';
+import type { FileNode } from '../types';
 
 /**
  * Chargeur dynamique du coffre de démonstration Knit
@@ -39,7 +39,7 @@ function getOrCreateDirNode(parts: string[]): FileNode {
       }
       parentNode = rootNodes[part];
     } else if (parentNode) {
-      let child: FileNode | undefined = parentNode.children.find((c) => c.name === part);
+      let child: FileNode | undefined = parentNode.children.find((c: FileNode) => c.name === part);
       if (!child) {
         child = {
           id: currentPath,

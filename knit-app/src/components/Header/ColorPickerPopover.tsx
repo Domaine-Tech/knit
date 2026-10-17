@@ -1,10 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
-
-interface PresetColor {
-  name: string;
-  hue: number;
-}
+import type { PresetColor } from '../../types';
 
 const PRESET_COLORS: PresetColor[] = [
   { name: 'Ambre Knit (Défaut)', hue: 35 },

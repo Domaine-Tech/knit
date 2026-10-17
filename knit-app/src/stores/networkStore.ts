@@ -13,14 +13,6 @@ import type {
   DiscoveredLanPeer,
 } from '../types';
 
-export type {
-  PeerIdentity,
-  AvatarInfo,
-  UserProfile,
-  ConnectedPeerInfo,
-  DiscoveredLanPeer,
-};
-
 export const COLLABORATIVE_PALETTE = [
   '#3B82F6', // 0: Bleu Ardoise
   '#10B981', // 1: Émeraude Sauge

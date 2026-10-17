@@ -1,62 +1,31 @@
 import { useState, useEffect } from 'react';
 import { vaultStore } from './vaultStore';
 
-export type ActiveDebugView = 'editor' | 'kanban' | 'table';
+import type {
+  AppViewMode,
+  VaultProfilingRecommendation,
+  VaultProfilingReport,
+  GlobalDebugReport,
+  EditorDebugReport,
+} from '../types';
 
-export interface VaultProfilingRecommendation {
-  severity: 'info' | 'warning' | 'urgent';
-  title: string;
-  description: string;
-}
-
-export interface VaultProfilingReport {
-  timestamp: string;
-  vaultPath: string;
-  storageType: 'local_ssd' | 'network_share' | 'slow_disk';
-  storageLabel: string;
-
-  // Timing metrics (ms)
-  treeWalkMs: number;
-  suggestIndexMs: number;
-  tasksCollectMs: number;
-  tagsCollectMs: number;
-  sampleIoReadMs: number;
-  totalTimeMs: number;
-
-  // Volume metrics
-  totalFilesCount: number;
-  markdownFilesCount: number;
-  indexedHeadingsCount: number;
-  indexedTagsCount: number;
-  indexedTasksCount: number;
-
-  // Throughput & Latency
-  throughputDocsPerSec: number;
-  averageLatencyPerDocMs: number;
-
-  recommendations: VaultProfilingRecommendation[];
-}
-
-export interface GlobalDebugReport {
-  timestamp: string;
-  isDebugActive: boolean;
-  activeView: ActiveDebugView;
-  editor?: unknown;
-  kanban?: unknown;
-  table?: unknown;
-  profiler?: VaultProfilingReport | null;
-}
+export type {
+  VaultProfilingRecommendation,
+  VaultProfilingReport,
+  GlobalDebugReport,
+  EditorDebugReport,
+};
 
 type DebugListener = () => void;
 
 class DebugStore {
   private _isActive: boolean = false;
-  private _activeView: ActiveDebugView = 'editor';
+  private _activeView: AppViewMode = 'editor';
   private _isBenchmarking: boolean = false;
   private _latestProfilingReport: VaultProfilingReport | null = null;
   private listeners: Set<DebugListener> = new Set();
 
-  private editorStatsProvider: (() => unknown) | null = null;
+  private editorStatsProvider: (() => EditorDebugReport | null) | null = null;
   private kanbanStatsProvider: (() => unknown) | null = null;
   private tableStatsProvider: (() => unknown) | null = null;
 
@@ -68,7 +37,7 @@ class DebugStore {
     return this._isActive;
   }
 
-  public get activeView(): ActiveDebugView {
+  public get activeView(): AppViewMode {
     return this._activeView;
   }
 
@@ -80,7 +49,7 @@ class DebugStore {
     return this._latestProfilingReport;
   }
 
-  public setActiveView(view: ActiveDebugView) {
+  public setActiveView(view: AppViewMode) {
     if (this._activeView !== view) {
       this._activeView = view;
       this.notify();
@@ -121,7 +90,7 @@ class DebugStore {
     }
   }
 
-  public registerEditorStats(provider: () => unknown) {
+  public registerEditorStats(provider: () => EditorDebugReport | null) {
     this.editorStatsProvider = provider;
   }
 
@@ -390,7 +359,7 @@ export const debugStore = new DebugStore();
  */
 export function useDebugMode(): {
   isDebugActive: boolean;
-  activeView: ActiveDebugView;
+  activeView: AppViewMode;
   toggleDebug: () => void;
   isBenchmarking: boolean;
   profilingReport: VaultProfilingReport | null;

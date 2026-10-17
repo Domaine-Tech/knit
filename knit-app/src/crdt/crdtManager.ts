@@ -9,8 +9,6 @@ import { invoke } from '@tauri-apps/api/core';
 
 import type { DocSnapshot } from '../types';
 
-export type { DocSnapshot };
-
 
 export class CRDTManager {
   private docs: Map<string, Y.Doc> = new Map();

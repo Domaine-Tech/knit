@@ -6,31 +6,9 @@ import {
 } from '@codemirror/view';
 import { Compartment, type Extension } from '@codemirror/state';
 
-export interface LineDebugInfo {
-  lineNum: number;
-  lineTop: number;
-  lineHeight: number;
-  gutterTop: number;
-  gutterHeight: number;
-  delta: number;
-  isMismatch: boolean;
-  textSnippet: string;
-}
+import type { LineDebugInfo, WidgetDebugInfo, LivePreviewDebugStats } from '../../types';
 
-export interface WidgetDebugInfo {
-  type: string;
-  domHeight: number;
-  offsetTop: number;
-}
-
-export interface LivePreviewDebugStats {
-  totalLines: number;
-  visibleLines: number;
-  mismatches: LineDebugInfo[];
-  lines: LineDebugInfo[];
-  widgets: WidgetDebugInfo[];
-  timestamp: number;
-}
+export type { LineDebugInfo, WidgetDebugInfo, LivePreviewDebugStats };
 
 export const livePreviewDebugCompartment = new Compartment();
 

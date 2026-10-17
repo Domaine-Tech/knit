@@ -1,20 +1,4 @@
-export type ToastType = 'info' | 'warning' | 'error' | 'success' | 'sync';
-
-export interface ToastAction {
-  label: string;
-  onClick: () => void;
-}
-
-export interface ToastItem {
-  id: string;
-  type: ToastType;
-  title: string;
-  message?: string;
-  count?: number;
-  duration?: number;
-  action?: ToastAction;
-  createdAt: number;
-}
+import type { ToastItem } from '../types';
 
 type ToastListener = (toasts: ToastItem[]) => void;
 

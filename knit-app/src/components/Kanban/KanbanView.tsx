@@ -4,11 +4,13 @@ import {
   parseCardMetadata,
   adaptCardStatusToColumn,
   COLUMN_ACCENT_COLORS,
-  type KanbanBoard,
-  type KanbanColumn,
-  type KanbanCard,
-  type TaskStatus,
 } from '../../utils/kanbanParser';
+import type {
+  KanbanBoard,
+  KanbanColumn,
+  KanbanCard,
+  TaskStatus,
+} from '../../types';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { toast } from '../../stores/toastStore';
 import { contextMenu } from '../../stores/contextMenuStore';
@@ -23,7 +25,7 @@ interface KanbanViewProps {
   onSwitchToEditor?: () => void;
 }
 
-import { useKanbanBoard } from '../../utils/useKanbanBoard';
+import { useKanbanBoard } from '../../hooks';
 
 export const KanbanView: React.FC<KanbanViewProps> = ({
   activeFilePath,

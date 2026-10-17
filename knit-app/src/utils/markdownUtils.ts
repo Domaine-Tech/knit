@@ -270,7 +270,8 @@ export function renderRichMarkdownPreview(raw: string): string {
   return htmlParts.join('') || '<div style="color:var(--knit-text-muted);font-style:italic;">(Note vide)</div>';
 }
 
-import type { FileNode } from '../stores/vaultStore';
+import type { DocType } from '../types';
+export { findVaultNode, getFlatFiles } from './treeUtils';
 
 /**
  * Normalise un texte ou un titre de section en identifiant slug sécurisé (compatible GitHub/Obsidian)
@@ -285,63 +286,34 @@ export function slugify(text: string): string {
 }
 
 /**
- * Recherche récursive d'un nœud dans l'arborescence du coffre à partir d'une cible WikiLink
+ * Détecte le type de document ('note' | 'kanban' | 'table') à partir du contenu Markdown et du chemin de fichier
  */
-export function findVaultNode(target: string, nodes: FileNode[]): FileNode | null {
-  const clean = target
-    .replace(/^\[\[/, '')
-    .replace(/\]\]$/, '')
-    .split('|')[0]
-    .replace(/^\.\//, '')
-    .replace(/\/$/, '')
-    .trim();
+export function detectDocType(content: string, path: string): DocType {
+  const lowerPath = path.toLowerCase();
+  if (lowerPath.includes('kanban') || lowerPath.endsWith('.kanban.md')) {
+    return 'kanban';
+  }
+  if (lowerPath.includes('tableau') || lowerPath.includes('table') || lowerPath.endsWith('.table.md')) {
+    return 'table';
+  }
+  if (!content) return 'note';
 
-  const cleanNoExt = clean.replace(/\.md$/i, '');
-  const cleanBase = cleanNoExt.split('/').pop() || cleanNoExt;
-
-  let match: FileNode | null = null;
-  const traverse = (items: FileNode[]) => {
-    for (const item of items) {
-      const itemNoExt = item.path.replace(/\.md$/i, '');
-      const itemBase = item.name.replace(/\.md$/i, '');
-
-      if (
-        item.path === clean ||
-        item.path === `${clean}.md` ||
-        itemNoExt === clean ||
-        itemNoExt === cleanNoExt ||
-        itemBase.toLowerCase() === cleanBase.toLowerCase() ||
-        item.name.toLowerCase() === clean.toLowerCase() ||
-        item.path.toLowerCase().endsWith(`/${cleanNoExt.toLowerCase()}.md`)
-      ) {
-        match = item;
-        return;
-      }
-      if (item.is_dir && item.children) {
-        traverse(item.children);
-        if (match) return;
+  const fmMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (fmMatch) {
+    const yaml = fmMatch[1].toLowerCase();
+    for (const line of yaml.split('\n')) {
+      const parts = line.split(':');
+      if (parts.length >= 2 && parts[0].trim() === 'type') {
+        const val = parts.slice(1).join(':').trim();
+        if (val.includes('kanban') || val.includes('board')) return 'kanban';
+        if (val.includes('table') || val.includes('tableau')) return 'table';
+        if (val.includes('note')) return 'note';
       }
     }
-  };
-  traverse(nodes);
-  return match;
-}
-
-/**
- * Aplatit l'arborescence pour lister tous les chemins relatifs des fichiers Markdown du coffre
- */
-export function getFlatFiles(nodes: FileNode[]): string[] {
-  const res: string[] = [];
-  const traverse = (items: FileNode[]) => {
-    for (const item of items) {
-      if (item.is_dir) {
-        traverse(item.children);
-      } else if (item.path.endsWith('.md') || item.name === 'KNIT.md') {
-        res.push(item.path);
-      }
+    if (yaml.includes('kanban: true') || yaml.includes('kanban-plugin:')) {
+      return 'kanban';
     }
-  };
-  traverse(nodes);
-  return res;
+  }
+  return 'note';
 }
 

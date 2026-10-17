@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { Tab } from '../../stores/tabStore';
+import type { Tab } from '../../types';
 import { tabStore } from '../../stores/tabStore';
 import { vaultStore } from '../../stores/vaultStore';
 import { contextMenu } from '../../stores/contextMenuStore';

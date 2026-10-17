@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { contextMenu } from '../../stores/contextMenuStore';
-import type { ContextMenuItem, ContextMenuState } from '../../stores/contextMenuStore';
+import type { ContextMenuItem, ContextMenuState } from '../../types';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 
 // Masque complètement les actions non disponibles et purge les séparateurs orphelins/doublons

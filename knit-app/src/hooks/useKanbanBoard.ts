@@ -1,11 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { vaultStore } from '../stores/vaultStore';
-import type { KanbanFileInfo } from '../types';
-import {
-  parseKanbanMarkdown,
-  serializeKanbanMarkdown,
-  type KanbanBoard,
-} from './kanbanParser';
+import type { KanbanFileInfo, KanbanBoard } from '../types';
+import { parseKanbanMarkdown, serializeKanbanMarkdown } from '../utils/kanbanParser';
 
 interface UseKanbanBoardProps {
   activeFilePath?: string | null;

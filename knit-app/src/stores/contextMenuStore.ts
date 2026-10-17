@@ -1,22 +1,4 @@
-import type { IconName } from '../components/Icons/DuotoneIcon';
-
-export interface ContextMenuItem {
-  id: string;
-  label?: string;
-  icon?: IconName;
-  shortcut?: string;
-  danger?: boolean;
-  disabled?: boolean;
-  divider?: boolean;
-  onClick?: () => void;
-}
-
-export interface ContextMenuState {
-  isOpen: boolean;
-  x: number;
-  y: number;
-  items: ContextMenuItem[];
-}
+import type { ContextMenuItem, ContextMenuState } from '../types';
 
 type ContextMenuListener = (state: ContextMenuState) => void;
 

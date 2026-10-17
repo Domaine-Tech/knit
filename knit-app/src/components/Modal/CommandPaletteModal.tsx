@@ -1,15 +1,9 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { DuotoneIcon, type IconName } from '../Icons/DuotoneIcon';
+import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { BaseSearchModal } from './BaseSearchModal';
+import type { CommandItem } from '../../types';
 
-export interface CommandItem {
-  id: string;
-  title: string;
-  category: string;
-  shortcut?: string;
-  icon: IconName;
-  action: () => void;
-}
+export type { CommandItem };
 
 interface CommandPaletteModalProps {
   isOpen: boolean;
