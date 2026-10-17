@@ -91,7 +91,7 @@ Pour toute modification du frontend React (`knit-app`) :
    - **Pattern bijectif des blocs de code** : Suivre le pattern universel des tableaux : widget unifié CodeBlockCardWidget quand le curseur est hors du bloc, et affichage complet en mode source dès que le curseur entre dans le bloc, évitant tout artefact de surlignage horizontal .cm-activeLine.
 
 10. **Déclencheur Rapide des Prompts Standardisés (`docs/PROMPTS_IA.md`)** :
-    - Dès que l'utilisateur écrit `fait prompt X` ou `prompt X` (1 à 6 ou bonus) dans le chat / Composer :
-    - Charger immédiatement le prompt défini dans `docs/PROMPTS_IA.md`.
+    - Dès que l'utilisateur écrit `fait prompt X` ou `prompt X` (1 à 7 ou bonus) dans le chat / Composer :
+    - Charger immédiatement le prompt défini dans `docs/PROMPTS_IA.md` (1: Refactoring, 2: Performance, 3: Traduction/i18n, 4: Sécurité, 5: UX/Killer App, 6: Alignement Code/Doc/Versions, 7: Collaboration P2P).
     - Endosser le rôle expert associé et activer le **STRICT MODE PLAN** (aucun fichier modifié au 1er tour).
     - Fournir un diagnostic clair et un plan d'action ordonné avec cases à cocher `[ ]`, en demandant validation avant exécution.

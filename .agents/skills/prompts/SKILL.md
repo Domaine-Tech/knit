@@ -1,17 +1,18 @@
 ---
 name: prompts-ia
-description: Déclencheur et exécuteur automatique des 6 prompts IA standardisés en Mode Plan (Nettoyage, Performance, Traduction/i18n, Sécurité, UX/Killer App, Alignement Code/Doc/Versions) définis dans docs/PROMPTS_IA.md. S'active lorsque l'utilisateur demande "fait prompt X", "exécute le prompt X", ou mentionne un prompt de la documentation.
+description: Déclencheur et exécuteur automatique des 7 prompts IA standardisés en Mode Plan (Nettoyage, Performance, Traduction/i18n, Sécurité, UX/Killer App, Alignement Code/Doc/Versions, Collaboration P2P) définis dans docs/PROMPTS_IA.md. S'active lorsque l'utilisateur demande "fait prompt X", "exécute le prompt X", ou mentionne un prompt de la documentation.
 ---
 
 # Skill : Prompts IA Standardisés & Mode Plan (Knit)
 
-Ce skill permet d'exécuter instantanément l'un des 6 prompts spécialisés de [docs/PROMPTS_IA.md](file:///d:/Dev/Repos/knit/docs/PROMPTS_IA.md) lorsqu'un utilisateur tape une commande de type :
+Ce skill permet d'exécuter instantanément l'un des 7 prompts spécialisés de [docs/PROMPTS_IA.md](file:///d:/Dev/Repos/knit/docs/PROMPTS_IA.md) lorsqu'un utilisateur tape une commande de type :
 - `fait prompt 1` / `exécute le prompt 1` / `prompt 1`
 - `fait prompt 2` / `prompt 2`
 - `fait prompt 3` / `prompt 3`
 - `fait prompt 4` / `prompt 4`
 - `fait prompt 5` / `prompt 5`
 - `fait prompt 6` / `prompt 6`
+- `fait prompt 7` / `prompt 7`
 - `fait prompt bonus` / `meta prompt`
 
 ---
@@ -26,6 +27,7 @@ Ce skill permet d'exécuter instantanément l'un des 6 prompts spécialisés de 
 | **Prompt 4** | **Sécurité & Durcissement (Zero-UX-Loss)**| *Senior Application Security Engineer* | `docs/PROMPTS_IA.md#prompt-4` |
 | **Prompt 5** | **UX Excellence & Killer App** | *VP of Product & Principal UX/UI Designer* | `docs/PROMPTS_IA.md#prompt-5` |
 | **Prompt 6** | **Alignement Code, Doc & Versions** | *QA Lead & Release Coordinator* | `docs/PROMPTS_IA.md#prompt-6` |
+| **Prompt 7** | **Collaboration P2P & Présence** | *Principal Distributed Systems & Collaboration Designer* | `docs/PROMPTS_IA.md#prompt-7` |
 | **Prompt Bonus** | **Méta-Prompt sur Mesure** | *Meta-Prompt Engineer & Agent Orchestrator* | `docs/PROMPTS_IA.md#prompt-bonus` |
 
 ---

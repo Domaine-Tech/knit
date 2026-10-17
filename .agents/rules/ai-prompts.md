@@ -9,6 +9,7 @@ Lorsqu'un utilisateur tape dans le chat une commande courte du type :
 - `fait prompt 4` / `exécute prompt 4` / `prompt 4` : Audit de Sécurité & Renforcement Sans Perte d'UX
 - `fait prompt 5` / `exécute prompt 5` / `prompt 5` : Solutions UX & Fonctionnalités « Killer App »
 - `fait prompt 6` / `exécute prompt 6` / `prompt 6` : Analyse d'Alignement Global (Code, Doc, Versions & Directives IA)
+- `fait prompt 7` / `exécute prompt 7` / `prompt 7` : Collaboration P2P, Présence & Expérience Multi-Utilisateurs
 - `fait prompt bonus` / `meta prompt` : Méta-Prompt d'Orchestration sur Mesure
 
 L'agent DOIT :

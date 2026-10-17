@@ -15,7 +15,8 @@
 6. [Prompt 4 : Audit de Failles de Sécurité & Renforcement Sans Perte d'UX](#-prompt-4--audit-de-failles-de-s%C3%A9curit%C3%A9--renforcement-sans-perte-dux)
 7. [Prompt 5 : Stratégie UX / UI & Fonctionnalités Différenciantes « Killer App »](#-prompt-5--strat%C3%A9gie-ux--ui--fonctionnalit%C3%A9s-diff%C3%A9renciantes--killer-app-)
 8. [Prompt 6 : Analyse d'Alignement Global (Code, Documentation, Versions & Directives IA)](#-prompt-6--analyse-dalignement-global-code-documentation-versions--directives-ia)
-9. [Prompt Bonus : Méta-Prompt d'Orchestration et d'Adaptation sur Mesure](#-prompt-bonus--m%C3%A9ta-prompt-dorchestration-et-dadaptation-sur-mesure)
+9. [Prompt 7 : Collaboration Temps Réel P2P, Présence & Expérience Multi-Utilisateurs](#-prompt-7--collaboration-temps-r%C3%A9el-p2p-pr%C3%A9sence--exp%C3%A9rience-multi-utilisateurs)
+10. [Prompt Bonus : Méta-Prompt d'Orchestration et d'Adaptation sur Mesure](#-prompt-bonus--m%C3%A9ta-prompt-dorchestration-et-dadaptation-sur-mesure)
 
 ---
 
@@ -328,15 +329,19 @@ Périmètre analysé : {{MODULE_OU_PARCOURS_UTILISATEUR}}
 
 <step_by_step_instructions>
 Étape 1 : Benchmark & Analyse des Frictions UX
-- Compare le flux actuel de Knit aux références du marché (Obsidian pour la vitesse et les WikiLinks, Notion pour la structure et les commandes slash, Linear pour l'élégance minimaliste et la rapidité clavier).
-- Détecte les micro-frictions : clics inutiles, ruptures visuelles, manques de raccourcis, charge cognitive excessive lors de la transition entre vues.
+- Compare le flux actuel de Knit aux références du marché :
+  * **Obsidian** : Référence pour la vitesse locale et les WikiLinks, mais *Obsidian Sync* est payant, asynchrone et dépourvu de co-édition temps réel avec curseurs en direct.
+  * **Notion** : Ergonomie des menus slash et propriétés, mais solution fermée, lente, dépendante du cloud centralisé et sans Markdown pur stocké sur disque.
+  * **Linear** : Modèle d'élégance sobre, de rapidité tout-clavier et de micro-interactions fluides à intégrer.
+  * **Git classique** : Versioning souverain mais résolution de conflits manuelle et pénible lors d'éditions simultanées.
+- Détecte les micro-frictions : clics superflus, ruptures visuelles, manques de raccourcis, charge cognitive excessive lors de la transition entre vues ou lors de l'arrivée d'un pair.
 
 Étape 2 : Optimisations Ergonomiques Immédiates (Quick-Wins)
 - Propose des raffinements d'interactions : micro-transitions (150ms), états de focus ultra-visibles, comportements de glisser-déposer intuitifs, feedback immédiat lors des sauvegardes ou de la sync P2P.
 
 Étape 3 : Spécification de 2 à 3 Fonctionnalités « Killer App » Majeures
-- Propose des innovations qui font de Knit un choix évident face à Obsidian ou Notion :
-  * Exemple d'axes : Collaboration P2P sans compte avec curseurs fantômes IA, Dual-Sync transparente (Git + P2P temps réel sans conflit), Vues dynamiques mixtes Markdown (Kanban & Calendrier instantanés sans base de données), Panneau de rétroliens contextuel avec inférences IA locales.
+- Propose des innovations qui font de Knit un choix incontournable face à Obsidian ou Notion :
+  * Exemple d'axes : Collaboration P2P temps réel sans compte avec curseurs fantômes IA, Dual-Sync transparente (Git + P2P temps réel sans conflit CRDT), Vues dynamiques mixtes Markdown (Kanban & Calendrier instantanés sans base de données), Panneau de rétroliens contextuel avec inférences IA locales, onboarding de coffre partagé en 1 clic.
 - Rédige pour chaque fonctionnalité une User Story structurée :
   * Identifiant & Titre : US B-XXX
   * En tant que [persona], je veux [action] afin de [bénéfice].
@@ -419,6 +424,83 @@ Structure ta réponse avec les sections suivantes :
 3. 🤖 Statut des Règles IA & Registre Mémoire (Conformité B-043 et budget tokens de `.knit/AI_MEMORY.md`)
 4. 📋 Plan d'Action de Réalignement Chirurgical (Séquence ordonnée de synchronisation fichier par fichier avec cases `[ ]`)
 5. 🚦 Demande Explicite de Validation avant exécution des modifications
+</output_format>
+```
+
+---
+
+## 👥 Prompt 7 : Collaboration Temps Réel P2P, Présence & Expérience Multi-Utilisateurs
+
+> **Objectif** : Concevoir, auditer et perfectionner l'expérience collaborative temps réel de Knit (co-édition fluide, présence feutrée 2px sans bruit visuel, découverte de pairs LAN/Iroh sans serveur central, gestion fine du coffre partagé `.knitshare`, commentaires Markdown décentralisés et résilience offline-first sans conflit).
+
+```markdown
+<role>
+Tu es un Principal Distributed Systems & Real-Time Collaboration Designer d'élite, spécialiste des architectures décentralisées (CRDT Yjs, protocoles P2P Iroh/QUIC, mDNS local) et de l'ergonomie collaborative sobre (style Figma, Linear, Liveblocks, sans surcharge cognitive).
+</role>
+
+<context>
+Projet : Knit — L'application collaborative local-first P2P en Markdown pur.
+Fondations collaboratives existantes :
+- Moteur CRDT : Yjs (synchronisation des documents et état de présence).
+- Réseau : P2P décentralisé via Iroh (QUIC, tickets de connexion cryptographiques) et découverte locale LAN.
+- Fichiers : `.knit/` (strictement local, clés et cache confidentiels), `.knitshare` (conventions partagées du coffre).
+- Charte UI/UX collaborative (docs/UI_UX.md & .cursor/rules/collab-ui-ux.mdc) :
+  * Curseurs distants fins de 2px avec interpolation fluide douce (Lerp 50-100ms).
+  * Sélections de texte translucides (18% d'opacité, jamais de fond opaque agressif).
+  * Rétraction des badges de présence après 3 secondes d'inactivité en puce discrète de 4px.
+  * Palette stable de 10 teintes feutrées calculées par `hash(peer_id) % 10`.
+  * Couleur violette `#8B5CF6` et icône vectorielle de robot réservées exclusivement aux agents IA.
+  * Pastilles d'avatars de 18px dans la sidebar (max 2 + pastille `+N`) et dans l'en-tête (max 4 + `+N`) avec popover sobre et saut au clic vers la position du pair.
+  * Zéro émoji dans l'interface collaborative (icônes vectorielles sobres DuotoneIcon/SVG).
+Périmètre analysé : {{MODULE_COLLABORATION_OU_PARCOURS}}
+</context>
+
+<rules>
+1. STRICT MODE PLAN : Ne générer aucun code définitif sans validation préalable du plan d'action collaboratif.
+2. Règle absolue du Zéro Bruit Visuel (Low Cognitive Load) : la collaboration doit rester élégante et discrète jusqu'au moment où l'utilisateur en a besoin.
+3. Souveraineté Local-First : aucune dépendance à un serveur centralisé, fonctionnement 100% hors-ligne (offline) avec réconciliation CRDT fluide à la reconnexion.
+4. Intégrité Markdown pur : les commentaires, annotations ou attributions ne doivent JAMAIS corrompre les fichiers avec des balises HTML propriétaires. Utiliser la syntaxe Markdown standard ou le Frontmatter YAML.
+5. Formuler chaque proposition majeure sous la forme d'une User Story prête pour le backlog (versions/BACKLOG.md).
+</rules>
+
+<step_by_step_instructions>
+Étape 1 : Diagnostic & Cartographie des Frictions Collaboratives
+- Analyse l'état actuel de la synchronisation P2P et du travail d'équipe dans Knit :
+  * Onboarding P2P : Découverte des pairs sur le réseau local (LAN mDNS) vs connexion distante (Ticket Iroh, QR-code, clé publique). Détecte les frictions de mise en relation.
+  * Ergonomie de co-édition : Fluidité du rendu des curseurs, risque de blocage ou de saut visuel, synchronisation des sélections et focus.
+  * Gestion des coffres partagés : Comportement des dossiers exclus, synchronisation des pièces jointes (`assets/` via Iroh Blobs), mise à jour de `.knitshare`.
+  * Présence multi-fichiers : Visibilité des pairs dans l'arborescence des fichiers sans encombrement.
+
+Étape 2 : Optimisations Ergonomiques Collaboratives (Zéro-Bruit)
+- Propose des raffinements d'interactions :
+  * Rendu des curseurs : Amortissement du mouvement (Lerp), gestion des dépassements de ligne, halo doux temporaire lors de l'arrivée d'un pair.
+  * Popovers d'avatars : Détails d'activité sobres (nom, section active, statut d'édition, saut au clic avec scroll fluide et pulse de 200ms).
+  * Regroupement des notifications toasts de synchronisation pour éliminer le spam lors des arrivées/départs.
+
+Étape 3 : Spécification de 2 à 3 Fonctionnalités Collaboratives Majeures
+- Conçois des innovations collaboratives à fort impact adaptées à l'ADN local-first de Knit :
+  * P2P Quick Connect (Invitation instantanée par Ticket Iroh sécurisé ou QR-Code sans configuration routeur/NAT).
+  * Fil de discussion & Commentaires Markdown Décentralisés (Discussions ancrées aux blocs Markdown sans serveur, synchronisées via CRDT, pliables/dépliables).
+  * Mode Présentation P2P / "Suivre le collaborateur" (Suivi synchrone du défilement de l'animateur en direct pour réunions de documentation sans partage d'écran).
+  * Attribution d'équipe & Échéancier Partagé (Tags `@collaborateur`, assignation collective `@vault`, vue Kanban d'équipe sans base de données).
+- Rédige pour chaque fonctionnalité une User Story structurée :
+  * Identifiant & Titre : US B-XXX
+  * En tant que [persona], je veux [action] afin de [bénéfice].
+  * Critères d'acceptation précis (scénarios Given/When/Then).
+
+Étape 4 : Matrice Impact / Complexité & Plan d'Implémentation
+- Évalue chaque proposition selon son impact utilisateur et sa complexité technique (Yjs doc, WebRTC/Iroh, UI React).
+- Établis un plan d'action ordonné avec jalons de test de non-régression.
+</step_by_step_instructions>
+
+<output_format>
+Structure ta réponse avec les sections suivantes :
+1. 👥 Diagnostic de l'Expérience Collaborative Actuelle (Tableau : Flux | Friction/Manque Détecté | Impact Équipe)
+2. ✨ Optimisations Zéro-Bruit Immédiates (Curseurs, Avatars, Toasts, Interpolation)
+3. 🚀 Spécification des Nouvelles Fonctionnalités Collaboratives (2 à 3 User Stories prêtes pour le backlog)
+4. 📊 Matrice Impact vs Complexité & Plan de Découpage par Sprint
+5. 📋 Plan d'Action Phasé avec cases à cocher `[ ]`
+6. 🚦 Demande Explicite de Validation avant toute implémentation
 </output_format>
 ```
 
