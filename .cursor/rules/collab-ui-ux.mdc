@@ -15,7 +15,7 @@ Toutes les interfaces collaboratives dans Knit doivent respecter les principes s
 ## 2. Palette Collaborateurs Sobre & Déterministe
 - Utiliser la palette des 10 teintes feutrées calibrées définie dans `docs/UI_UX.md`.
 - Assigner la couleur via un hash stable : `hash(peer_id) % 10`.
-- Réserver exclusivement le violet `#8B5CF6` et l'icône `🤖` pour les agents d'intelligence artificielle.
+- Réserver exclusivement le violet `#8B5CF6` et l'icône vectorielle de robot (`DuotoneIcon` ou SVG) pour les agents d'intelligence artificielle (zéro émoji).
 
 ## 3. Présence dans la Sidebar (File Tree) & En-tête
 - Afficher des pastilles circulaires de 18px avec initiales majuscules (`border-radius: 50%`) à droite du nom de fichier.
@@ -39,6 +39,7 @@ Toutes les interfaces collaboratives dans Knit doivent respecter les principes s
 - **Callouts Markdown** : Support visuel sobre des alertes GFM (`> [!NOTE]`, `> [!TIP]`, `> [!WARNING]`).
 
 ## 6. Manifeste Anti-Look « Codé par IA »
+- **Zéro émoji dans l'interface & le code** : Ne JAMAIS insérer d'émojis dans les composants React, menus contextuels, barres d'outils, boutons, en-têtes, onglets, toasts, badges, callouts, ou templates Markdown par défaut. Toujours utiliser des icônes vectorielles précises et sobres (`DuotoneIcon` ou SVG purs). Les émojis sont réservés strictement au contenu texte saisi librement par l'utilisateur final.
 - **Zéro gradient fluo** : Interdiction des boutons ou bannières avec des dégradés saturés (rose/violet/cyan néon).
 - **Vrais noirs mats (Style Obsidian)** : Le thème sombre utilise `#141414`, `#1E1E1E` et `#252525`. Aucun fond bleu marine spatial (`#0F172A`).
 - **Micro-contrastes au lieu d'ombres massives** : Utiliser des bordures nettes de 1px (`var(--knit-border)`) et de faibles ombres légères.
@@ -77,10 +78,12 @@ Toutes les interfaces collaboratives dans Knit doivent respecter les principes s
   - `toastStore` : Dédoublonnage automatique des toasts identiques émis à moins de 400ms d'intervalle.
 
 ## 11. Tooltips Modernes (`TooltipContainer`) & Lisibilité des Icônes
-- **Infobulles réactives & sobres** :
+- **Infobulles réactives & intelligentes** :
   - Ne jamais utiliser le comportement natif du système d'exploitation. Utiliser `<Tooltip>` ou les attributs `data-tooltip="Texte"` et `data-shortcut="Ctrl+X"`.
-  - Le `TooltipContainer` global intercepte automatiquement tout attribut `title` pour supprimer le popup natif de l'OS et extraire les raccourcis dans un badge `<kbd>`.
-  - Rendu épuré : fond `--knit-surface`, bordure fine `--knit-border`, ombre douce `--knit-shadow-md`, délai court (220ms au premier survol, 40ms en transition continue).
+  - Le `TooltipContainer` global intercepte automatiquement tout attribut `title` et extrait intelligemment les raccourcis `(Ctrl+...)` dans un badge `<kbd>` dédié.
+  - **Positionnement intelligent & Clamping Viewport** : Le tooltip est mesuré dynamiquement avant affichage (`useLayoutEffect`). Ses coordonnées sont strictement verrouillées dans les limites de l'écran (`12px <= left <= window.innerWidth - width - 12px`), éliminant tout débordement ou coupure de texte.
+  - **Dégagement anti-gêne de la souris** : Le tooltip bascule automatiquement sous l'élément si proche du haut d'écran (< 65px), et applique une marge de sécurité de 24px pour que le corps de la flèche du curseur souris ne masque jamais les lettres.
+  - Rendu épuré : fond `--knit-surface`, bordure fine `--knit-border`, ombre douce, délai court (200ms au premier survol, 40ms en transition continue).
 - **Tracés vectoriels des icônes (`DuotoneIcon`)** :
   - Les icônes d'actions à 14px doivent avoir un tracé contrasté (strokeWidth >= 40 en viewBox 512).
   - Éviter les lignes parallèles trop rapprochées ou les chevrons fermés qui forment des pâtés de pixels à petite échelle. Privilégier des angles orthogonaux à 90° et des flèches franches.

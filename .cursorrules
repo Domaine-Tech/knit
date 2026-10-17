@@ -25,6 +25,7 @@ Vous êtes un agent IA collaborant au développement de **Knit**, une applicatio
 ## 🎨 Principes UI/UX Collaboratifs (Sober & Fluid)
 
 Pour toute modification du frontend React (`knit-app`) :
+- **Zéro émoji dans l'interface & le code applicatif** : Ne JAMAIS insérer d'émojis Unicode dans les composants React, boutons, onglets, en-têtes, menus contextuels, toasts, badges, statuts, callouts, vues ou templates par défaut. Utiliser systématiquement des icônes vectorielles précises et sobres (`DuotoneIcon` ou SVG purs). Les émojis sont réservés strictement au contenu texte saisi librement par l'utilisateur final dans ses notes.
 - **Pas de look IA gadget** : Aucun dégradé néon criard, pas d'ombres violettes agressives, pas de glassmorphism flou lourd.
 - **Sobriété & Design System** : Utiliser exclusivement les variables CSS de `docs/UI_UX.md` (`--knit-hue`, `--knit-primary`, `--knit-radius-md`, etc.).
 - **Palette Collaborateurs Sobre** : 10 teintes feutrées stables, calculées déterministement par `hash(peer_id) % 10`.
@@ -84,5 +85,7 @@ Pour toute modification du frontend React (`knit-app`) :
      6. `knit-app/src/utils/version.ts` : `export const APP_VERSION = 'X.Y.Z'` (fallback Web/Dev & affichage runtime).
    - **Documentation & Sprints** : Le dossier `versions/vX.Y.Z/` (`CHANGELOG.md`, `sprint-N/SPRINT.md`), `versions/VERSIONING.md` et `.knit/AI_MEMORY.md` doivent refléter le même numéro de version. Zéro désynchronisation tolérée.
 
-
-
+9. **Mode Debug Global Unifié & Inspecteurs Multi-Vues (B-056)** :
+   - **Bouton unique Header** : Il ne doit exister qu'un seul bouton de debug global dans le Header (dans Header.tsx relié à debugStore.ts). Aucun bouton local dupliqué dans la TabBar ou les sous-vues.
+   - **Contrôle DevTools** : Accessible via window.__KNIT_DEBUG__ pour les tests et diagnostics automatisés.
+   - **Pattern bijectif des blocs de code** : Suivre le pattern universel des tableaux : widget unifié CodeBlockCardWidget quand le curseur est hors du bloc, et affichage complet en mode source dès que le curseur entre dans le bloc, évitant tout artefact de surlignage horizontal .cm-activeLine.

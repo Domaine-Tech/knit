@@ -18,6 +18,9 @@ src-tauri/target/
 .knit/*
 !.knit/AI_MEMORY.md
 !.knitshare
+**/.knit/*
+!**/.knit/AI_MEMORY.md
+!**/.knitshare
 
 # === OS & IDE ===
 .DS_Store

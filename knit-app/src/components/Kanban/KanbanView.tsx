@@ -4,14 +4,18 @@ import {
   parseKanbanMarkdown,
   serializeKanbanMarkdown,
   parseCardMetadata,
+  adaptCardStatusToColumn,
   COLUMN_ACCENT_COLORS,
   type KanbanBoard,
   type KanbanColumn,
   type KanbanCard,
+  type TaskStatus,
 } from '../../utils/kanbanParser';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { toast } from '../../stores/toastStore';
 import { contextMenu } from '../../stores/contextMenuStore';
+import { debugStore, useDebugMode } from '../../stores/debugStore';
+import { KanbanDebugHUD } from './KanbanDebugHUD';
 
 interface KanbanViewProps {
   activeFilePath?: string | null;
@@ -176,6 +180,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
         id: `card-${Date.now().toString().slice(-5)}`,
         title,
         completed: false,
+        status: ' ',
         rawText: `- [ ] ${title}`,
       };
 
@@ -201,7 +206,15 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
       if (col.id !== columnId) return col;
       return {
         ...col,
-        cards: col.cards.map((c) => (c.id === cardId ? { ...c, completed: !c.completed } : c)),
+        cards: col.cards.map((c) => {
+          if (c.id !== cardId) return c;
+          const nextCompleted = !c.completed;
+          return {
+            ...c,
+            completed: nextCompleted,
+            status: (nextCompleted ? 'x' : ' ') as TaskStatus,
+          };
+        }),
       };
     });
 
@@ -270,16 +283,9 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
     const cardToMove = sourceCol?.cards.find((c) => c.id === cardId);
     if (!cardToMove) return;
 
-    // Si la colonne cible s'appelle "Terminé", "Fait" ou "Done", on peut marquer la carte complétée
+    // Colonne cible et adaptation bijective du statut (- [ ] -> - [/] -> - [x])
     const targetCol = board.columns.find((c) => c.id === targetColumnId);
-    const isTargetDone = targetCol
-      ? /termin[eé]|fait|done/i.test(targetCol.title)
-      : false;
-
-    const updatedCard: KanbanCard = {
-      ...cardToMove,
-      completed: isTargetDone ? true : cardToMove.completed,
-    };
+    const updatedCard: KanbanCard = adaptCardStatusToColumn(cardToMove, targetCol?.title || '');
 
     const updatedCols = board.columns.map((col) => {
       if (col.id === sourceColumnId) {
@@ -320,6 +326,28 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
   // Cartes filtrées
   const filterQuery = searchFilter.toLowerCase().trim();
   const totalCards = board.columns.reduce((sum, c) => sum + c.cards.length, 0);
+
+  // Intégration Mode Debug Global (US B-054)
+  const { isDebugActive, toggleDebug } = useDebugMode();
+  const completedCount = useMemo(() => {
+    return board.columns.reduce(
+      (sum, c) => sum + c.cards.filter((card) => card.completed).length,
+      0
+    );
+  }, [board]);
+
+  useEffect(() => {
+    debugStore.registerKanbanStats(() => ({
+      path: currentPath,
+      columnsCount: board.columns.length,
+      totalCards,
+      completedCount,
+      columns: board.columns.map((c) => ({ id: c.id, title: c.title, cards: c.cards.length })),
+    }));
+    return () => {
+      debugStore.unregisterKanbanStats();
+    };
+  }, [currentPath, board, totalCards, completedCount]);
 
   return (
     <div
@@ -687,6 +715,12 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                   >
                     {column.cards.length}
                   </span>
+
+                  {isDebugActive && (
+                    <span className="knit-debug-kanban-col-badge">
+                      #{column.id}
+                    </span>
+                  )}
                 </div>
 
                 {/* Actions de colonne */}
@@ -894,30 +928,36 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                               {/* WikiLinks cliquables */}
                               {meta.wikiLinks.length > 0 && (
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 5 }}>
-                                  {meta.wikiLinks.map((link) => (
-                                    <button
-                                      key={link}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        onOpenFile(`${link}.md`);
-                                      }}
-                                      title={`Ouvrir la note [[${link}]]`}
-                                      style={{
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        gap: 3,
-                                        padding: '1px 6px',
-                                        borderRadius: 4,
-                                        backgroundColor: 'var(--knit-primary-alpha)',
-                                        border: '1px solid var(--knit-primary)',
-                                        color: 'var(--knit-primary)',
-                                        fontSize: 11,
-                                        cursor: 'pointer',
-                                      }}
-                                    >
-                                      <span>[[{link}]]</span>
-                                    </button>
-                                  ))}
+                                  {meta.wikiLinks.map((link) => {
+                                    const [target, alias] = link.split('|');
+                                    const targetClean = target.trim();
+                                    const displayName = (alias || targetClean).trim();
+                                    const filePath = targetClean.endsWith('.md') ? targetClean : `${targetClean}.md`;
+                                    return (
+                                      <button
+                                        key={link}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          onOpenFile(filePath);
+                                        }}
+                                        title={`Ouvrir la note [[${displayName}]] (Ctrl + Clic ou Clic)`}
+                                        style={{
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: 3,
+                                          padding: '1px 6px',
+                                          borderRadius: 4,
+                                          backgroundColor: 'var(--knit-primary-alpha)',
+                                          border: '1px solid var(--knit-primary)',
+                                          color: 'var(--knit-primary)',
+                                          fontSize: 11,
+                                          cursor: 'pointer',
+                                        }}
+                                      >
+                                        <span>[[{displayName}]]</span>
+                                      </button>
+                                    );
+                                  })}
                                 </div>
                               )}
 
@@ -939,6 +979,14 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                                       #{tag}
                                     </span>
                                   ))}
+                                </div>
+                              )}
+
+                              {isDebugActive && (
+                                <div style={{ marginTop: 4 }}>
+                                  <span className="knit-debug-kanban-card-badge">
+                                    #{card.id.slice(-6)}
+                                  </span>
                                 </div>
                               )}
                             </div>
@@ -1222,6 +1270,29 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
             </form>
           </div>
         </div>
+      )}
+
+      {/* Inspecteur HUD en bas de la vue Kanban (Mode Debug Global) */}
+      {isDebugActive && (
+        <KanbanDebugHUD
+          columnsCount={board.columns.length}
+          cardsCount={totalCards}
+          completedCount={completedCount}
+          filePath={currentPath}
+          onCopyJson={() => {
+            navigator.clipboard.writeText(JSON.stringify(board, null, 2)).then(() => {
+              toast.success('Structure JSON copiée', 'Le tableau Kanban a été copié.');
+            });
+          }}
+          onDumpConsole={() => {
+            console.group('🐞 [KANBAN DEBUG]');
+            console.log('Board :', board);
+            console.table(board.columns.map((c) => ({ id: c.id, title: c.title, cards: c.cards.length })));
+            console.groupEnd();
+            toast.info('Inspecteur Console', 'Données Kanban affichées dans la console (F12).');
+          }}
+          onClose={toggleDebug}
+        />
       )}
     </div>
   );

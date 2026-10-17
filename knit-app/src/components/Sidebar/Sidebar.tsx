@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { FileNode } from '../../stores/vaultStore';
 import { vaultStore } from '../../stores/vaultStore';
 import { TreeNode } from './TreeNode';
@@ -15,6 +15,7 @@ interface SidebarProps {
   files: FileNode[];
   activePath: string | null;
   sidebarTab?: 'files' | 'search' | 'tags';
+  width?: number;
   onSidebarTabChange?: (tab: 'files' | 'search' | 'tags') => void;
   onSelectFile: (path: string, preview: boolean) => void;
   onMiddleClickFile: (path: string) => void;
@@ -25,6 +26,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   files,
   activePath,
   sidebarTab: controlledSidebarTab,
+  width,
   onSidebarTabChange,
   onSelectFile,
   onMiddleClickFile,
@@ -43,7 +45,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [renameTarget, setRenameTarget] = useState<{ oldPath: string; newPath: string } | null>(null);
   const [selectedNode, setSelectedNode] = useState<{ path: string; isDir: boolean; name: string } | null>(null);
   const [isAllExpanded, setIsAllExpanded] = useState(false);
+  const [isPinnedExpanded, setIsPinnedExpanded] = useState(true);
   const [treeKey, setTreeKey] = useState(0);
+
+  useEffect(() => {
+    const onReveal = (e: Event) => {
+      const custom = e as CustomEvent<{ path: string; isDir: boolean }>;
+      if (custom.detail?.path) {
+        setInternalSidebarTab('files');
+        setSelectedNode({
+          path: custom.detail.path,
+          isDir: custom.detail.isDir,
+          name: custom.detail.path.split('/').pop() || custom.detail.path,
+        });
+        setTimeout(() => {
+          const el = document.querySelector(`[data-tree-path="${custom.detail.path}"]`);
+          el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }, 120);
+      }
+    };
+    window.addEventListener('knit-reveal-in-tree', onReveal);
+    return () => {
+      window.removeEventListener('knit-reveal-in-tree', onReveal);
+    };
+  }, []);
 
   const handleToggleExpandAll = () => {
     setIsAllExpanded((prev) => !prev);
@@ -255,7 +280,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <aside
       onContextMenu={handleSidebarContextMenu}
       style={{
-        width: 250,
+        width: width || 250,
         height: '100%',
         backgroundColor: 'var(--knit-bg)',
         borderRight: '1px solid var(--knit-border)',
@@ -537,6 +562,100 @@ export const Sidebar: React.FC<SidebarProps> = ({
               outline: 'none',
             }}
           >
+            {/* Groupe Favoris / Épinglés */}
+            {(() => {
+              const pinnedNotes = vaultStore.getPinnedNotes();
+              if (pinnedNotes.length === 0 || filterText.trim().length > 0) return null;
+
+              return (
+                <div style={{ marginBottom: 8, paddingBottom: 6, borderBottom: '1px solid var(--knit-border)' }}>
+                  <div
+                    onClick={() => setIsPinnedExpanded((prev) => !prev)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '3px 8px',
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: 'var(--knit-text-muted)',
+                      cursor: 'pointer',
+                      userSelect: 'none',
+                    }}
+                  >
+                    <DuotoneIcon name={isPinnedExpanded ? 'chevron-down' : 'chevron-right'} size={11} />
+                    <DuotoneIcon name="pin" size={11} style={{ color: 'var(--knit-primary)' }} />
+                    <span>FAVORIS ({pinnedNotes.length})</span>
+                  </div>
+
+                  {isPinnedExpanded && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 1, marginTop: 2 }}>
+                      {pinnedNotes.map((path) => {
+                        const name = path.split('/').pop() || path;
+                        const isNodeActive = path === activePath;
+                        return (
+                          <div
+                            key={`pinned-${path}`}
+                            onClick={() => onSelectFile(path, false)}
+                            onAuxClick={(e) => {
+                              if (e.button === 1) {
+                                e.preventDefault();
+                                onMiddleClickFile(path);
+                              }
+                            }}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              padding: '4px 8px 4px 18px',
+                              borderRadius: 'var(--knit-radius-sm)',
+                              backgroundColor: isNodeActive ? 'var(--knit-primary-alpha)' : 'transparent',
+                              color: isNodeActive ? 'var(--knit-primary)' : 'var(--knit-text)',
+                              cursor: 'pointer',
+                              fontSize: 13,
+                              fontWeight: isNodeActive ? 600 : 400,
+                              userSelect: 'none',
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!isNodeActive) e.currentTarget.style.backgroundColor = 'var(--knit-surface-hover)';
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!isNodeActive) e.currentTarget.style.backgroundColor = 'transparent';
+                            }}
+                          >
+                            <DuotoneIcon name="file-markdown" size={13} />
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                              {name}
+                            </span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                vaultStore.togglePinNote(path);
+                              }}
+                              title="Retirer des favoris"
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: 'var(--knit-text-muted)',
+                                cursor: 'pointer',
+                                padding: 2,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                borderRadius: 'var(--knit-radius-xs)',
+                              }}
+                            >
+                              <DuotoneIcon name="close" size={10} />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
             {filtered.length === 0 ? (
               <div
                 style={{

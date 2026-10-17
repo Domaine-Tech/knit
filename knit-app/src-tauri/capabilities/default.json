@@ -53,6 +53,12 @@
     "allow-load-latest-doc-snapshot",
     "allow-send-p2p-sync-step1",
     "allow-send-p2p-sync-step2",
-    "allow-load-avatar-base64"
+    "allow-load-avatar-base64",
+    "allow-search-vault",
+    "allow-get-vault-tasks",
+    "allow-update-task-status",
+    "allow-get-vault-tags",
+    "allow-get-suggest-index",
+    "allow-open-external-path"
   ]
 }

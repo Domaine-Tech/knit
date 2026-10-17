@@ -169,7 +169,7 @@ class NetworkStore {
           this.loadPeerAvatar(vaultPath, peer.peer_id, peer.avatar.blake3_hash);
         }
         this.notify();
-        toast.info(`🌐 Pair connecté : ${peer.display_name} (${peer.initials})`);
+        toast.info(`Pair connecté : ${peer.display_name} (${peer.initials})`);
       });
       this.unlistenFns.push(unlistenConnected);
 
@@ -231,7 +231,7 @@ class NetworkStore {
         if (!exists) {
           this.discoveredLanPeers = [...this.discoveredLanPeers, lanPeer];
           this.notify();
-          toast.info(`🏠 Pair découvert en LAN : ${lanPeer.display_name}`);
+          toast.info(`Pair découvert en LAN : ${lanPeer.display_name}`);
         }
       });
       this.unlistenFns.push(unlistenLan);
@@ -435,7 +435,7 @@ class NetworkStore {
         display_name: 'Moi',
         email: '',
         role: 'Collaborateur',
-        status_message: '✍️ En rédaction',
+        status_message: 'En rédaction',
         share_email_p2p: false,
         avatar: { type: 'initials' },
         created_at_sec: Math.floor(Date.now() / 1000),

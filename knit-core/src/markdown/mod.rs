@@ -1,6 +1,7 @@
 pub mod frontmatter;
 pub mod links;
 pub mod search;
+pub mod suggest;
 pub mod tags;
 pub mod tasks;
 
@@ -10,6 +11,11 @@ pub use links::{
     LinkRefactorReport,
 };
 pub use search::{search_vault, FileSearchResult, SearchQueryFilter, SearchSnippet};
+pub use suggest::{
+    build_suggest_index, detect_doc_type, extract_headings_from_content, slugify_heading, HeadingItem,
+    SuggestDocItem, SuggestIndexData, SuggestTagItem,
+};
 pub use tags::{collect_vault_tags, TagInfo};
 pub use tasks::{collect_vault_tasks, update_task_status, TaskCard};
+
 

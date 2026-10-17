@@ -4,12 +4,16 @@ import {
   parseKanbanMarkdown,
   serializeKanbanMarkdown,
   parseCardMetadata,
+  adaptCardStatusToColumn,
   type KanbanBoard,
   type KanbanCard,
+  type TaskStatus,
 } from '../../utils/kanbanParser';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { toast } from '../../stores/toastStore';
 import { contextMenu } from '../../stores/contextMenuStore';
+import { debugStore, useDebugMode } from '../../stores/debugStore';
+import { TableDebugHUD } from './TableDebugHUD';
 
 interface TableViewProps {
   activeFilePath?: string | null;
@@ -139,12 +143,37 @@ export const TableView: React.FC<TableViewProps> = ({
     }
   };
 
+  // Intégration Mode Debug Global (US B-054)
+  const { isDebugActive, toggleDebug } = useDebugMode();
+
+  useEffect(() => {
+    debugStore.registerTableStats(() => ({
+      path: currentPath,
+      rowsCount: allRows.length,
+      filteredCount: filteredAndSortedRows.length,
+      columns: ['Statut', 'Colonne', 'Tâche', 'Tags'],
+      sortField,
+      sortOrder,
+    }));
+    return () => {
+      debugStore.unregisterTableStats();
+    };
+  }, [currentPath, allRows, filteredAndSortedRows, sortField, sortOrder]);
+
   const handleToggleTaskCheckbox = (row: TableRowItem) => {
     const updatedCols = board.columns.map((col) => {
       if (col.id !== row.columnId) return col;
       return {
         ...col,
-        cards: col.cards.map((c) => (c.id === row.id ? { ...c, completed: !c.completed } : c)),
+        cards: col.cards.map((c) => {
+          if (c.id !== row.id) return c;
+          const nextCompleted = !c.completed;
+          return {
+            ...c,
+            completed: nextCompleted,
+            status: (nextCompleted ? 'x' : ' ') as TaskStatus,
+          };
+        }),
       };
     });
     persistBoard({ ...board, columns: updatedCols });
@@ -158,12 +187,7 @@ export const TableView: React.FC<TableViewProps> = ({
     if (!card) return;
 
     const targetCol = board.columns.find((c) => c.id === targetColumnId);
-    const isTargetDone = targetCol ? /termin[eé]|fait|done/i.test(targetCol.title) : false;
-
-    const updatedCard: KanbanCard = {
-      ...card,
-      completed: isTargetDone ? true : card.completed,
-    };
+    const updatedCard: KanbanCard = adaptCardStatusToColumn(card, targetCol?.title || '');
 
     const updatedCols = board.columns.map((col) => {
       if (col.id === currentColumnId) {
@@ -200,6 +224,7 @@ export const TableView: React.FC<TableViewProps> = ({
       id: `card-${Date.now().toString().slice(-5)}`,
       title,
       completed: false,
+      status: ' ',
       rawText: `- [ ] ${title}`,
     };
 
@@ -253,7 +278,7 @@ export const TableView: React.FC<TableViewProps> = ({
 
     let md = `| Statut | Tâche | Fait | Tags |\n|---|---|:---:|---|\n`;
     for (const r of allRows) {
-      md += `| ${r.columnTitle} | ${r.title} | ${r.completed ? '✅' : '⬜'} | ${r.tags.map((t) => `#${t}`).join(' ')} |\n`;
+      md += `| ${r.columnTitle} | ${r.title} | ${r.completed ? '[x]' : '[ ]'} | ${r.tags.map((t) => `#${t}`).join(' ')} |\n`;
     }
 
     navigator.clipboard.writeText(md);
@@ -561,20 +586,26 @@ export const TableView: React.FC<TableViewProps> = ({
                 style={{ padding: '8px 10px', width: 44, cursor: 'pointer' }}
               >
                 Fait {sortField === 'completed' && (sortOrder === 'asc' ? '↑' : '↓')}
+                {isDebugActive && <span className="knit-debug-table-col-badge">bool</span>}
               </th>
               <th
                 onClick={() => handleToggleSort('column')}
                 style={{ padding: '8px 12px', width: 170, cursor: 'pointer' }}
               >
                 Colonne / Statut {sortField === 'column' && (sortOrder === 'asc' ? '↑' : '↓')}
+                {isDebugActive && <span className="knit-debug-table-col-badge">enum</span>}
               </th>
               <th
                 onClick={() => handleToggleSort('title')}
                 style={{ padding: '8px 12px', cursor: 'pointer' }}
               >
                 Tâche {sortField === 'title' && (sortOrder === 'asc' ? '↑' : '↓')}
+                {isDebugActive && <span className="knit-debug-table-col-badge">string</span>}
               </th>
-              <th style={{ padding: '8px 12px', width: 180 }}>Tags</th>
+              <th style={{ padding: '8px 12px', width: 180 }}>
+                Tags
+                {isDebugActive && <span className="knit-debug-table-col-badge">tags[]</span>}
+              </th>
               <th style={{ padding: '8px 10px', width: 70, textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>
@@ -656,23 +687,30 @@ export const TableView: React.FC<TableViewProps> = ({
 
                       {row.wikiLinks.length > 0 && (
                         <div style={{ display: 'flex', gap: 4 }}>
-                          {row.wikiLinks.map((l) => (
-                            <button
-                              key={l}
-                              onClick={() => onOpenFile(`${l}.md`)}
-                              style={{
-                                padding: '1px 5px',
-                                borderRadius: 3,
-                                backgroundColor: 'var(--knit-primary-alpha)',
-                                border: '1px solid var(--knit-primary)',
-                                color: 'var(--knit-primary)',
-                                fontSize: 10,
-                                cursor: 'pointer',
-                              }}
-                            >
-                              [[{l}]]
-                            </button>
-                          ))}
+                          {row.wikiLinks.map((l) => {
+                            const [target, alias] = l.split('|');
+                            const targetClean = target.trim();
+                            const displayName = (alias || targetClean).trim();
+                            const filePath = targetClean.endsWith('.md') ? targetClean : `${targetClean}.md`;
+                            return (
+                              <button
+                                key={l}
+                                onClick={() => onOpenFile(filePath)}
+                                title={`Ouvrir la note [[${displayName}]] (Ctrl + Clic ou Clic)`}
+                                style={{
+                                  padding: '1px 5px',
+                                  borderRadius: 3,
+                                  backgroundColor: 'var(--knit-primary-alpha)',
+                                  border: '1px solid var(--knit-primary)',
+                                  color: 'var(--knit-primary)',
+                                  fontSize: 10,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                [[{displayName}]]
+                              </button>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
@@ -723,6 +761,31 @@ export const TableView: React.FC<TableViewProps> = ({
           </tbody>
         </table>
       </div>
+
+      {/* Inspecteur HUD en bas de la vue Table (Mode Debug Global) */}
+      {isDebugActive && (
+        <TableDebugHUD
+          rowsCount={allRows.length}
+          filteredCount={filteredAndSortedRows.length}
+          columns={['Statut', 'Colonne', 'Tâche', 'Tags']}
+          sortField={sortField}
+          sortOrder={sortOrder}
+          filePath={currentPath}
+          onCopyJson={() => {
+            navigator.clipboard.writeText(JSON.stringify(filteredAndSortedRows, null, 2)).then(() => {
+              toast.success('Données JSON copiées', `${filteredAndSortedRows.length} lignes copiées.`);
+            });
+          }}
+          onDumpConsole={() => {
+            console.group('🐞 [TABLE DEBUG]');
+            console.log('Lignes filtrées :', filteredAndSortedRows);
+            console.table(filteredAndSortedRows);
+            console.groupEnd();
+            toast.info('Inspecteur Console', 'Données de la table affichées dans la console (F12).');
+          }}
+          onClose={toggleDebug}
+        />
+      )}
     </div>
   );
 };

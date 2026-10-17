@@ -1,7 +1,7 @@
 # Changelog — v0.3.0
 
 > Version 0.3.0 — Vues Projets Dynamiques & Rendu Mermaid Vivant.
-> Statut : 🟡 En cours (Sprint 5 livré ✅, Sprint 6 planifié)
+> Statut : 🟢 Livrée (Sprint 5 & Sprint 6 livrés ✅)
 
 ---
 
@@ -56,6 +56,11 @@
     - Mode Zen (`Ctrl+Shift+F`) : masquage de l'interface pour une concentration absolue à 760px centré.
     - Lazy-rendering (`IntersectionObserver`) des diagrammes Mermaid et blocs dynamiques Dataview.
     - Flush disque atomique temporisé à 250ms avec hachage XXH3 (WriteGuard) pour préserver les SSD.
+  - **Mode Debug Global Unifié & Inspecteurs Multi-Vues (B-056)** :
+    - Bouton unique dans le Header (`debugStore`, `window.__KNIT_DEBUG__`) pour activer/désactiver le diagnostic global en un clic.
+    - HUD overlay temps réel mesurant l'alignement pixel-perfect CodeMirror 6 (0 décalage cumulatif, ratio 100%).
+    - Rendu bijectif unifié des blocs de code Markdown (carte avec badge langage et bouton copier en lecture, bascule source complète au clic).
+    - Inspecteurs dédiés extensibles pour chaque vue (Note, Kanban, Table, Graphe).
   - **Curseur Fantôme IA (Ghost Cursor)** : matérialisation des modifications effectuées par Cursor/Claude avec curseur violet `#8B5CF6` et surlignage doux temporaire.
   - **Packager de Contexte IA (`Ctrl+Shift+C`)** : copie en 1 clic de la note avec métadonnées YAML et extraits des WikiLinks pour les LLMs.
   - **Pliage hiérarchique de titres (`Ctrl+Alt+[` / `]`)** : masquage/dépliage de sections entières `##` et `###`.

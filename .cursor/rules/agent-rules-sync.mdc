@@ -78,5 +78,7 @@ Tout agent IA intervenant sur le dépôt doit appliquer ce protocole de vérific
 
 - Ne **jamais** laisser une fonctionnalité de coffre non documentée dans les règles IA.
 - Ne **jamais** committer ou livrer un sprint avec des versions désalignées.
+- Ne **jamais** introduire d'émojis dans les composants UI, menus, boutons, badges, toasts ou templates par défaut de l'application (utiliser exclusivement des icônes vectorielles `DuotoneIcon` ou SVG purs).
 - Un agent IA qui arrive dans un coffre Knit doit être capable, en lisant ces règles, d'utiliser la fonctionnalité sans erreur de syntaxe ni hallucination.
+
 

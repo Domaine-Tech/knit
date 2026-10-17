@@ -100,8 +100,6 @@ Tout agent IA générant ou manipulant des fichiers dans le coffre doit se confo
     - `knit-app/package.json` et racine `package.json` (`"version": "X.Y.Z"`)
     - `knit-app/src/utils/version.ts` (`export const APP_VERSION = 'X.Y.Z'`)
     - `versions/vX.Y.Z/CHANGELOG.md`, `versions/vX.Y.Z/sprint-N/SPRINT.md`, `versions/VERSIONING.md` et `.knit/AI_MEMORY.md`.
+15. **Zéro émoji dans l'interface et le code** : Interdiction absolue d'ajouter des émojis dans les interfaces utilisateur, boutons, barres d'outils, menus contextuels, notifications toasts, badges, onglets ou templates par défaut générés par l'IA. Toujours utiliser des icônes vectorielles sobres (`DuotoneIcon` ou SVG purs). L'utilisation d'émojis est un choix réservé strictement au texte Markdown libre rédigé par l'utilisateur final.
 
-
-
-
-
+16. **Mode Debug Global Unifié (US B-056)** : Tout composant ou vue réagissant au mode debug doit passer par `useDebugStore` (`src/stores/debugStore.ts`). Un seul bouton dans le Header (`knit-app/src/components/Header.tsx`), aucun bouton local dans les onglets. L'overlay HUD fournit un diagnostic temps réel de l'alignement pixel-perfect de CodeMirror 6 (0 décalage cumulatif). Les blocs de code Markdown utilisent le rendu bijectif unifié (carte élégante en lecture, source intégrale au clic).

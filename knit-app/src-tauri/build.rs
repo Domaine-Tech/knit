@@ -42,6 +42,12 @@ fn main() {
             "send_p2p_sync_step1",
             "send_p2p_sync_step2",
             "load_avatar_base64",
+            "search_vault",
+            "get_vault_tasks",
+            "update_task_status",
+            "get_vault_tags",
+            "get_suggest_index",
+            "open_external_path",
         ]),
     );
     tauri_build::try_build(attributes).expect("Erreur lors de la compilation de tauri-build");

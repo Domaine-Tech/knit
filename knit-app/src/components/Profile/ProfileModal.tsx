@@ -339,7 +339,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
                 type="text"
                 className="knit-input"
                 style={{ width: '100%', boxSizing: 'border-box' }}
-                placeholder="Ex: ✍️ En rédaction"
+                placeholder="Ex: En rédaction"
                 value={profile.status_message}
                 onChange={(e) => handleChange('status_message', e.target.value)}
               />
@@ -378,10 +378,13 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
                 <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--knit-text)' }}>
                   Mode Confidentialité P2P (Zéro-Fuite)
                 </div>
-                <div style={{ fontSize: 11, color: 'var(--knit-text-muted)' }}>
-                  {profile.share_email_p2p
-                    ? '⚠️ Votre e-mail est transmis aux collaborateurs sur le réseau'
-                    : '🔒 Votre adresse e-mail reste strictement locale et privée'}
+                <div style={{ fontSize: 11, color: 'var(--knit-text-muted)', display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
+                  <DuotoneIcon name={profile.share_email_p2p ? 'warning' : 'shield'} size={12} />
+                  <span>
+                    {profile.share_email_p2p
+                      ? 'Votre e-mail est transmis aux collaborateurs sur le réseau'
+                      : 'Votre adresse e-mail reste strictement locale et privée'}
+                  </span>
                 </div>
               </div>
               <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', gap: 6 }}>

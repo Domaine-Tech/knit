@@ -9,6 +9,7 @@ import { NetworkModal } from '../Network/NetworkModal';
 import { ProfileModal } from '../Profile/ProfileModal';
 import { WindowControls } from './WindowControls';
 import { getAppVersion, APP_VERSION } from '../../utils/version';
+import { debugStore, useDebugMode } from '../../stores/debugStore';
 
 export type AppViewMode = 'editor' | 'kanban' | 'table';
 
@@ -23,6 +24,8 @@ interface HeaderProps {
   onHueChange: (newHue: number) => void;
   onSave: () => void;
   canSave: boolean;
+  isZenMode?: boolean;
+  onToggleZenMode?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -36,12 +39,15 @@ export const Header: React.FC<HeaderProps> = ({
   onHueChange,
   onSave,
   canSave,
+  isZenMode = false,
+  onToggleZenMode,
 }) => {
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
   const [isNetworkModalOpen, setIsNetworkModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [appVersion, setAppVersion] = useState(APP_VERSION);
   const [, setTick] = useState(0);
+  const { isDebugActive } = useDebugMode();
 
   useEffect(() => {
     getAppVersion().then(setAppVersion);
@@ -144,7 +150,7 @@ export const Header: React.FC<HeaderProps> = ({
               userSelect: 'none',
               marginLeft: 2,
             }}
-            title={`Knit v${appVersion} — Sprint 1 & Sprint 2`}
+            title={`Knit v${appVersion} — Sprint 6`}
           >
             v{appVersion}
           </span>
@@ -280,6 +286,77 @@ export const Header: React.FC<HeaderProps> = ({
           <DuotoneIcon name="command" size={12} />
           <kbd style={{ fontSize: 9, padding: '1px 3px', border: '1px solid var(--knit-border)', borderRadius: 2 }}>Ctrl+P</kbd>
         </button>
+
+        {onToggleZenMode && (
+          <button
+            onClick={onToggleZenMode}
+            data-tooltip={isZenMode ? "Quitter le mode Zen (Ctrl+Shift+F)" : "Mode Zen sans distraction (Ctrl+Shift+F)"}
+            data-shortcut="Ctrl+Shift+F"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+              padding: '3px 8px',
+              borderRadius: 'var(--knit-radius-sm)',
+              backgroundColor: isZenMode ? 'var(--knit-primary-alpha)' : 'transparent',
+              border: '1px solid var(--knit-border)',
+              color: isZenMode ? 'var(--knit-primary)' : 'var(--knit-text-secondary)',
+              fontSize: 11,
+              fontWeight: isZenMode ? 700 : 500,
+              cursor: 'pointer',
+            }}
+          >
+            <DuotoneIcon name="sun" size={12} />
+            <span>Zen</span>
+          </button>
+        )}
+
+        {/* Bouton Unique Global Debug (🐞) */}
+        <button
+          onClick={() => debugStore.toggle()}
+          data-tooltip={
+            isDebugActive
+              ? 'Désactiver le Mode Debug Global (Ctrl+Alt+D)'
+              : 'Activer le Mode Debug Global (Ctrl+Alt+D) — Inspecteur de géométrie, métriques et données'
+          }
+          data-shortcut="Ctrl+Alt+D"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: '3px 8px',
+            borderRadius: 'var(--knit-radius-sm)',
+            backgroundColor: isDebugActive ? 'rgba(239, 68, 68, 0.15)' : 'transparent',
+            border: isDebugActive ? '1px solid rgba(239, 68, 68, 0.5)' : '1px solid var(--knit-border)',
+            color: isDebugActive ? '#EF4444' : 'var(--knit-text-secondary)',
+            fontSize: 11,
+            fontWeight: isDebugActive ? 700 : 500,
+            cursor: 'pointer',
+            transition: 'all var(--knit-transition-fast)',
+          }}
+          onMouseEnter={(e) => {
+            if (!isDebugActive) e.currentTarget.style.backgroundColor = 'var(--knit-surface-hover)';
+          }}
+          onMouseLeave={(e) => {
+            if (!isDebugActive) e.currentTarget.style.backgroundColor = 'transparent';
+          }}
+        >
+          <DuotoneIcon name="bug" size={13} style={{ color: isDebugActive ? '#EF4444' : 'currentColor' }} />
+          <span>Debug</span>
+          {isDebugActive && (
+            <span
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: '50%',
+                backgroundColor: '#EF4444',
+                boxShadow: '0 0 6px #EF4444',
+                marginLeft: 1,
+              }}
+            />
+          )}
+        </button>
+
 
         {/* Sélecteur de couleur d'accent (dot cliquable avec popover 3x3 + slider) */}
         <div style={{ position: 'relative' }}>

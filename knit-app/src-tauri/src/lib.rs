@@ -51,6 +51,8 @@ pub fn run() {
             get_vault_tasks,
             update_task_status,
             get_vault_tags,
+            get_suggest_index,
+            open_external_path,
         ])
         .run(tauri::generate_context!())
         .expect("Erreur lors de l'exécution de l'application Knit Tauri");

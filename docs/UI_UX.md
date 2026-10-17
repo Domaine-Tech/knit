@@ -27,6 +27,7 @@
 | Typo fantaisie | Inter (ou police système), hiérarchie par taille |
 | Dark mode = fond bleu marine | Dark mode = vrais noirs/gris neutres mats (style Obsidian) |
 | Boutons bombés avec ombres violettes | Boutons plats et sobres, contrastes subtils |
+| Émojis dans l'UI (boutons, badges, menus) | Icônes vectorielles nettes et sobres (`DuotoneIcon` / SVG) |
 
 ---
 
@@ -68,7 +69,7 @@ Pour concevoir une expérience immédiatement familière et ultra-productive, Kn
 | **Le Quick Switcher (`Ctrl+O`)** | Boîte de recherche floue (*fuzzy search*) instantanée pour sauter à n'importe quel fichier du coffre en tapant 3 lettres au clavier. Vitesse < 10ms. |
 | **La Palette de Commandes (`Ctrl+P`)** | Exécuter n'importe quelle action sans lever les mains du clavier : changer de thème, créer un fichier, insérer un schéma Mermaid, ouvrir l'historique. |
 | **L'Arbre de fichiers pur et sans mensonge** | La barre latérale reflète exactement les dossiers et fichiers sur le disque dur. Aucun dossier virtuel caché. |
-| **Section Favoris / Épinglés** | Épingler en un clic (`⭐ Épingler`) ses notes centrales pour les garder accessibles en haut de la Sidebar. |
+| **Section Favoris / Épinglés** | Épingler en un clic (icône marque-page / épingle vectorielle) ses notes centrales pour les garder accessibles en haut de la Sidebar. |
 | **Multi-onglets & Split View (`Ctrl+\`)** | Travailler sur deux notes côte à côte ou scinder verticalement/horizontalement l'espace de travail. |
 | **Pliage hiérarchique de titres** | Chevrons discrets dans la marge CodeMirror 6 pour plier/déplier les sections `##`, `###` (`Ctrl+Alt+[` / `]`). |
 | **Vue Graphe Local 2D** | Exploration interactive des liens de la note courante sous forme de réseau de force dynamique. |
@@ -89,6 +90,9 @@ Pour garantir que l'application ne dégage **jamais** la sensation d'un template
    - Les micro-interactions durent entre **80ms et 150ms** : elles sont perçues comme instantanées et tactiles.
 4. **Keyboard-First absolu** :
    - Une application professionnelle se pilote aux raccourcis clavier. Si une action nécessite 4 clics de souris, l'UX a échoué.
+5. **Zéro émoji dans l'interface utilisateur (Inspiration Linear & Obsidian)** :
+   - Aucun bouton, badge, menu contextuel, onglet ou toast ne doit comporter d'émoji.
+   - Tout visuel d'interface repose sur des tracés vectoriels fins (`DuotoneIcon` ou SVG purs). Les émojis sont strictement réservés au texte libre rédigé par l'utilisateur.
 
 ---
 

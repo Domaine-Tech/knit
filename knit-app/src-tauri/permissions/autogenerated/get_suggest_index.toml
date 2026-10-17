@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-get-suggest-index"
+description = "Enables the get_suggest_index command without any pre-configured scope."
+commands.allow = ["get_suggest_index"]
+
+[[permission]]
+identifier = "deny-get-suggest-index"
+description = "Denies the get_suggest_index command without any pre-configured scope."
+commands.deny = ["get_suggest_index"]

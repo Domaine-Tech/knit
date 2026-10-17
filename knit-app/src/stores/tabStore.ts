@@ -1,3 +1,6 @@
+export type DocType = 'note' | 'kanban' | 'table';
+export type ViewMode = 'visual' | 'source';
+
 export interface Tab {
   id: string; // Rel path
   path: string;
@@ -5,14 +8,58 @@ export interface Tab {
   isPreview: boolean;
   isDirty: boolean;
   content: string;
+  docType: DocType;
+  viewMode: ViewMode;
+  isPinned?: boolean;
+}
+
+export function detectDocType(content: string, path: string): DocType {
+  const lowerPath = path.toLowerCase();
+  if (lowerPath.includes('kanban') || lowerPath.endsWith('.kanban.md')) {
+    return 'kanban';
+  }
+  if (lowerPath.includes('tableau') || lowerPath.includes('table') || lowerPath.endsWith('.table.md')) {
+    return 'table';
+  }
+  if (!content) return 'note';
+
+  const fmMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (fmMatch) {
+    const yaml = fmMatch[1].toLowerCase();
+    for (const line of yaml.split('\n')) {
+      const parts = line.split(':');
+      if (parts.length >= 2 && parts[0].trim() === 'type') {
+        const val = parts.slice(1).join(':').trim();
+        if (val.includes('kanban') || val.includes('board')) return 'kanban';
+        if (val.includes('table') || val.includes('tableau')) return 'table';
+        if (val.includes('note')) return 'note';
+      }
+    }
+    if (yaml.includes('kanban: true') || yaml.includes('kanban-plugin:')) {
+      return 'kanban';
+    }
+    return 'note';
+  }
+
+  // Sans frontmatter : Kanban uniquement si explicitement nommé dans le chemin
+  if (lowerPath.includes('kanban')) return 'kanban';
+  if (lowerPath.includes('table')) return 'table';
+
+  return 'note';
 }
 
 type TabListener = () => void;
 
 class TabStore {
-  public tabs: Tab[] = [];
-  public activeTabId: string | null = null;
-  private closedTabsHistory: { path: string; title: string }[] = [];
+  public tabs: Tab[] = []; // Groupe 1 (panneau gauche)
+  public group2Tabs: Tab[] = []; // Groupe 2 (panneau droit scindé)
+  public activeTabId: string | null = null; // Onglet actif groupe 1
+  public activeGroup2TabId: string | null = null; // Onglet actif groupe 2
+  public activeGroupId: 1 | 2 = 1; // Groupe actuellement ciblé / focus (style VS Code)
+  public isSplit: boolean = false;
+  public splitDirection: 'vertical' | 'horizontal' = 'vertical';
+
+  private closedTabsHistory: { path: string; title: string; docType?: DocType; group?: 1 | 2 }[] = [];
   private listeners: Set<TabListener> = new Set();
 
   public subscribe(listener: TabListener): () => void {
@@ -23,37 +70,118 @@ class TabStore {
     };
   }
 
-  private notify() {
+  public notify() {
     this.listeners.forEach((l) => l());
+  }
+
+  // Rétrocompatibilité : getter/setter splitTabId
+  public get splitTabId(): string | null {
+    return this.isSplit ? this.activeGroup2TabId : null;
+  }
+
+  public set splitTabId(id: string | null) {
+    this.activeGroup2TabId = id;
+    this.isSplit = !!id;
+    this.notify();
   }
 
   public get activeTab(): Tab | undefined {
     return this.tabs.find((t) => t.id === this.activeTabId);
   }
 
-  public setActiveTab(id: string) {
-    if (this.tabs.some((t) => t.id === id)) {
-      this.activeTabId = id;
+  public get splitTab(): Tab | undefined {
+    return this.group2Tabs.find((t) => t.id === this.activeGroup2TabId);
+  }
+
+  public get currentFocusedTab(): Tab | undefined {
+    if (this.isSplit && this.activeGroupId === 2) {
+      return this.splitTab || this.activeTab;
+    }
+    return this.activeTab;
+  }
+
+  public setFocusedGroup(group: 1 | 2) {
+    if (this.activeGroupId !== group) {
+      this.activeGroupId = group;
       this.notify();
     }
+  }
+
+  public setActiveTab(id: string, group: 1 | 2 = 1) {
+    if (group === 2) {
+      if (this.group2Tabs.some((t) => t.id === id)) {
+        this.activeGroup2TabId = id;
+        this.activeGroupId = 2;
+        this.notify();
+      }
+    } else {
+      if (this.tabs.some((t) => t.id === id)) {
+        this.activeTabId = id;
+        this.activeGroupId = 1;
+        this.notify();
+      }
+    }
+  }
+
+  public toggleSplit(targetPath?: string) {
+    if (this.isSplit) {
+      this.closeSplit();
+    } else {
+      this.isSplit = true;
+      if (targetPath) {
+        this.openTab(targetPath, false, '', true, undefined, 2);
+      } else {
+        // Si d'autres onglets existent dans le groupe 1, ouvrir l'un d'eux dans le groupe 2
+        const other = this.tabs.find((t) => t.id !== this.activeTabId);
+        if (other) {
+          this.openTab(other.path, false, other.content, true, other.docType, 2);
+        } else if (this.activeTab) {
+          // Sinon dupliquer l'onglet courant dans le panneau droit (comme VS Code)
+          this.openTab(this.activeTab.path, false, this.activeTab.content, true, this.activeTab.docType, 2);
+        }
+      }
+      this.activeGroupId = 2;
+      this.notify();
+    }
+  }
+
+  public closeSplit() {
+    this.isSplit = false;
+    this.activeGroupId = 1;
+    this.notify();
   }
 
   public openTab(
     path: string,
     preview: boolean = false,
     content: string = '',
-    activate: boolean = true
+    activate: boolean = true,
+    forcedDocType?: DocType,
+    targetGroup?: 1 | 2
   ) {
-    const existingIndex = this.tabs.findIndex((t) => t.id === path);
+    // Si un groupe cible n'est pas spécifié, on ouvre dans le groupe actuellement focalisé (comportement VS Code)
+    const group = targetGroup || (this.isSplit ? this.activeGroupId : 1);
+    const targetTabs = group === 2 ? this.group2Tabs : this.tabs;
+    const resolvedDocType = forcedDocType || detectDocType(content, path);
+    const existingIndex = targetTabs.findIndex((t) => t.id === path);
 
     if (existingIndex !== -1) {
-      // Si l'onglet est déjà ouvert
+      const existing = targetTabs[existingIndex];
       if (!preview) {
-        // Un double-clic ou une ouverture forcée le rend permanent
-        this.tabs[existingIndex].isPreview = false;
+        existing.isPreview = false;
       }
-      if (activate || this.activeTabId === null) {
-        this.activeTabId = path;
+      if (content && content !== existing.content) {
+        existing.content = content;
+        existing.docType = resolvedDocType;
+      }
+      if (activate) {
+        if (group === 2) {
+          this.activeGroup2TabId = path;
+          this.activeGroupId = 2;
+        } else {
+          this.activeTabId = path;
+          this.activeGroupId = 1;
+        }
       }
       this.notify();
       return;
@@ -61,28 +189,35 @@ class TabStore {
 
     const title = path.split('/').pop() || path;
 
-    // Si on ouvre en mode aperçu, on vérifie s'il y a déjà un onglet d'aperçu à remplacer
+    // Remplacement d'aperçu au sein du groupe
     if (preview) {
-      const previewIndex = this.tabs.findIndex((t) => t.isPreview && !t.isDirty);
+      const previewIndex = targetTabs.findIndex((t) => t.isPreview && !t.isDirty && !t.isPinned);
       if (previewIndex !== -1) {
-        // On remplace l'onglet aperçu existant
-        this.tabs[previewIndex] = {
+        targetTabs[previewIndex] = {
           id: path,
           path,
           title,
           isPreview: true,
           isDirty: false,
           content,
+          docType: resolvedDocType,
+          viewMode: 'visual',
+          isPinned: false,
         };
-        if (activate || this.activeTabId === null) {
-          this.activeTabId = path;
+        if (activate) {
+          if (group === 2) {
+            this.activeGroup2TabId = path;
+            this.activeGroupId = 2;
+          } else {
+            this.activeTabId = path;
+            this.activeGroupId = 1;
+          }
         }
         this.notify();
         return;
       }
     }
 
-    // Sinon nouvel onglet
     const newTab: Tab = {
       id: path,
       path,
@@ -90,75 +225,151 @@ class TabStore {
       isPreview: preview,
       isDirty: false,
       content,
+      docType: resolvedDocType,
+      viewMode: 'visual',
+      isPinned: false,
     };
 
-    this.tabs.push(newTab);
-    if (activate || this.activeTabId === null) {
-      this.activeTabId = path;
+    targetTabs.push(newTab);
+    if (activate) {
+      if (group === 2) {
+        this.activeGroup2TabId = path;
+        this.activeGroupId = 2;
+      } else {
+        this.activeTabId = path;
+        this.activeGroupId = 1;
+      }
     }
     this.notify();
   }
 
-  public pinTab(id: string) {
-    const tab = this.tabs.find((t) => t.id === id);
-    if (tab && tab.isPreview) {
-      tab.isPreview = false;
-      this.notify();
-    }
-  }
+  public closeTab(id: string, group?: 1 | 2) {
+    const targetGroup =
+      group ||
+      (this.group2Tabs.some((t) => t.id === id) && !this.tabs.some((t) => t.id === id) ? 2 : 1);
 
-  public closeTab(id: string) {
-    const index = this.tabs.findIndex((t) => t.id === id);
+    const targetList = targetGroup === 2 ? this.group2Tabs : this.tabs;
+    const index = targetList.findIndex((t) => t.id === id);
     if (index === -1) return;
 
-    const [closed] = this.tabs.splice(index, 1);
-    this.closedTabsHistory.push({ path: closed.path, title: closed.title });
+    const [closed] = targetList.splice(index, 1);
+    this.closedTabsHistory.push({ path: closed.path, title: closed.title, docType: closed.docType, group: targetGroup });
     if (this.closedTabsHistory.length > 20) {
       this.closedTabsHistory.shift();
     }
 
-    // Définir le nouvel onglet actif si c'était celui fermé
-    if (this.activeTabId === id) {
-      if (this.tabs.length > 0) {
-        // Prendre le voisin immédiat (à gauche de préférence ou le premier)
-        const newIndex = Math.max(0, index - 1);
-        this.activeTabId = this.tabs[newIndex].id;
-      } else {
-        this.activeTabId = null;
+    if (targetGroup === 2) {
+      if (this.activeGroup2TabId === id) {
+        if (targetList.length > 0) {
+          const newIndex = Math.max(0, index - 1);
+          this.activeGroup2TabId = targetList[newIndex].id;
+        } else {
+          this.activeGroup2TabId = null;
+          // Si plus aucun onglet dans le groupe 2, fermer la division
+          this.closeSplit();
+        }
+      }
+    } else {
+      if (this.activeTabId === id) {
+        if (targetList.length > 0) {
+          const newIndex = Math.max(0, index - 1);
+          this.activeTabId = targetList[newIndex].id;
+        } else {
+          this.activeTabId = null;
+        }
       }
     }
 
     this.notify();
   }
 
-  public closeOtherTabs(id: string) {
-    this.tabs = this.tabs.filter((t) => t.id === id);
-    this.activeTabId = id;
-    this.notify();
+  public pinTab(id: string, group: 1 | 2 = 1) {
+    const targetList = group === 2 ? this.group2Tabs : this.tabs;
+    const tab = targetList.find((t) => t.id === id);
+    if (tab) {
+      tab.isPreview = false;
+      tab.isPinned = !tab.isPinned;
+      this.notify();
+    }
   }
 
-  public closeTabsToTheRight(id: string) {
-    const index = this.tabs.findIndex((t) => t.id === id);
-    if (index === -1) return;
+  public toggleViewMode(id?: string, group?: 1 | 2) {
+    const targetGroup = group || this.activeGroupId;
+    const targetList = targetGroup === 2 ? this.group2Tabs : this.tabs;
+    const targetId = id || (targetGroup === 2 ? this.activeGroup2TabId : this.activeTabId);
+    if (!targetId) return;
 
-    const removed = this.tabs.slice(index + 1);
-    removed.forEach((tab) => {
-      this.closedTabsHistory.push({ path: tab.path, title: tab.title });
-    });
-    this.tabs = this.tabs.slice(0, index + 1);
+    const tab = targetList.find((t) => t.id === targetId);
+    if (tab) {
+      tab.viewMode = tab.viewMode === 'visual' ? 'source' : 'visual';
+      this.notify();
+    }
+  }
 
-    if (this.activeTabId && !this.tabs.some((t) => t.id === this.activeTabId)) {
+  public setDocType(id: string, docType: DocType, group?: 1 | 2) {
+    const targetGroup = group || this.activeGroupId;
+    const targetList = targetGroup === 2 ? this.group2Tabs : this.tabs;
+    const tab = targetList.find((t) => t.id === id);
+    if (tab && tab.docType !== docType) {
+      tab.docType = docType;
+      this.notify();
+    }
+  }
+
+  public closeOtherTabs(id: string, group: 1 | 2 = 1) {
+    const targetList = group === 2 ? this.group2Tabs : this.tabs;
+    const kept = targetList.filter((t) => t.id === id || t.isPinned);
+    if (group === 2) {
+      this.group2Tabs = kept;
+      this.activeGroup2TabId = id;
+    } else {
+      this.tabs = kept;
       this.activeTabId = id;
     }
     this.notify();
   }
 
-  public closeAllTabs() {
-    this.tabs.forEach((tab) => {
-      this.closedTabsHistory.push({ path: tab.path, title: tab.title });
+  public closeTabsToTheRight(id: string, group: 1 | 2 = 1) {
+    const targetList = group === 2 ? this.group2Tabs : this.tabs;
+    const index = targetList.findIndex((t) => t.id === id);
+    if (index === -1) return;
+
+    const kept = targetList.slice(0, index + 1);
+    const right = targetList.slice(index + 1);
+
+    right.forEach((tab) => {
+      if (tab.isPinned) {
+        kept.push(tab);
+      } else {
+        this.closedTabsHistory.push({ path: tab.path, title: tab.title, docType: tab.docType, group });
+      }
     });
-    this.tabs = [];
-    this.activeTabId = null;
+
+    if (group === 2) {
+      this.group2Tabs = kept;
+      if (this.activeGroup2TabId && !kept.some((t) => t.id === this.activeGroup2TabId)) {
+        this.activeGroup2TabId = id;
+      }
+    } else {
+      this.tabs = kept;
+      if (this.activeTabId && !kept.some((t) => t.id === this.activeTabId)) {
+        this.activeTabId = id;
+      }
+    }
+    this.notify();
+  }
+
+  public closeAllTabs(group?: 1 | 2) {
+    if (!group || group === 1) {
+      const pinned = this.tabs.filter((t) => t.isPinned);
+      this.tabs = pinned;
+      this.activeTabId = pinned.length > 0 ? pinned[0].id : null;
+    }
+    if (!group || group === 2) {
+      this.group2Tabs = [];
+      this.activeGroup2TabId = null;
+      if (this.isSplit) this.closeSplit();
+    }
     this.notify();
   }
 
@@ -166,95 +377,71 @@ class TabStore {
     const last = this.closedTabsHistory.pop();
     if (!last) return;
 
+    const targetGroup = last.group || 1;
     if (getContent) {
       getContent(last.path).then((c) => {
-        this.openTab(last.path, false, c);
+        this.openTab(last.path, false, c, true, last.docType, targetGroup);
       });
     } else {
-      this.openTab(last.path, false, '');
+      this.openTab(last.path, false, '', true, last.docType, targetGroup);
     }
   }
 
-  public nextTab() {
-    if (this.tabs.length <= 1) return;
-    const currentIndex = this.tabs.findIndex((t) => t.id === this.activeTabId);
-    const nextIndex = (currentIndex + 1) % this.tabs.length;
-    this.activeTabId = this.tabs[nextIndex].id;
-    this.notify();
-  }
-
-  public prevTab() {
-    if (this.tabs.length <= 1) return;
-    const currentIndex = this.tabs.findIndex((t) => t.id === this.activeTabId);
-    const prevIndex = (currentIndex - 1 + this.tabs.length) % this.tabs.length;
-    this.activeTabId = this.tabs[prevIndex].id;
-    this.notify();
-  }
-
-  public goToTab(index: number) {
-    if (index >= 0 && index < this.tabs.length) {
-      this.activeTabId = this.tabs[index].id;
-      this.notify();
+  public nextTab(group: 1 | 2 = 1) {
+    const list = group === 2 ? this.group2Tabs : this.tabs;
+    if (list.length <= 1) return;
+    const currentId = group === 2 ? this.activeGroup2TabId : this.activeTabId;
+    const currentIndex = list.findIndex((t) => t.id === currentId);
+    const nextIndex = (currentIndex + 1) % list.length;
+    if (group === 2) {
+      this.activeGroup2TabId = list[nextIndex].id;
+    } else {
+      this.activeTabId = list[nextIndex].id;
     }
+    this.notify();
   }
 
-  public updateContent(id: string, content: string) {
-    const tab = this.tabs.find((t) => t.id === id);
-    if (!tab) return;
+  public prevTab(group: 1 | 2 = 1) {
+    const list = group === 2 ? this.group2Tabs : this.tabs;
+    if (list.length <= 1) return;
+    const currentId = group === 2 ? this.activeGroup2TabId : this.activeTabId;
+    const currentIndex = list.findIndex((t) => t.id === currentId);
+    const prevIndex = (currentIndex - 1 + list.length) % list.length;
+    if (group === 2) {
+      this.activeGroup2TabId = list[prevIndex].id;
+    } else {
+      this.activeTabId = list[prevIndex].id;
+    }
+    this.notify();
+  }
 
-    if (tab.content !== content) {
-      tab.content = content;
-      tab.isDirty = true;
-      // La frappe transforme immédiatement un aperçu en permanent
-      if (tab.isPreview) {
-        tab.isPreview = false;
+  public goToTab(index: number, group: 1 | 2 = 1) {
+    const list = group === 2 ? this.group2Tabs : this.tabs;
+    if (index >= 0 && index < list.length) {
+      if (group === 2) {
+        this.activeGroup2TabId = list[index].id;
+      } else {
+        this.activeTabId = list[index].id;
       }
       this.notify();
     }
   }
 
-  public markClean(idOrPath: string) {
-    const tab = this.tabs.find((t) => t.id === idOrPath || t.path === idOrPath);
-    if (tab && tab.isDirty) {
-      tab.isDirty = false;
-      this.notify();
-    }
-  }
-
-  public reorderTabs(fromIndex: number, toIndex: number) {
-    if (
-      fromIndex < 0 ||
-      fromIndex >= this.tabs.length ||
-      toIndex < 0 ||
-      toIndex >= this.tabs.length
-    ) {
-      return;
-    }
-    const [moved] = this.tabs.splice(fromIndex, 1);
-    this.tabs.splice(toIndex, 0, moved);
-    this.notify();
-  }
-
-  public renameTab(oldPath: string, newPath: string) {
+  public updateContent(id: string, content: string) {
     let changed = false;
-    for (const tab of this.tabs) {
-      if (tab.id === oldPath || tab.path === oldPath) {
-        tab.id = newPath;
-        tab.path = newPath;
-        tab.title = newPath.split('/').pop() || newPath;
-        if (this.activeTabId === oldPath) {
-          this.activeTabId = newPath;
+    // Mise à jour synchronisée dans les deux groupes
+    const all = [...this.tabs, ...this.group2Tabs];
+    for (const tab of all) {
+      if (tab.id === id && tab.content !== content) {
+        tab.content = content;
+        tab.isDirty = true;
+        if (tab.isPreview) {
+          tab.isPreview = false;
         }
-        changed = true;
-      } else if (tab.path.startsWith(`${oldPath}/`)) {
-        const sub = tab.path.slice(oldPath.length + 1);
-        const updatedPath = `${newPath}/${sub}`;
-        if (this.activeTabId === tab.id) {
-          this.activeTabId = updatedPath;
+        const newDocType = detectDocType(content, tab.path);
+        if (newDocType !== tab.docType) {
+          tab.docType = newDocType;
         }
-        tab.id = updatedPath;
-        tab.path = updatedPath;
-        tab.title = updatedPath.split('/').pop() || updatedPath;
         changed = true;
       }
     }
@@ -263,12 +450,67 @@ class TabStore {
     }
   }
 
+  public markClean(idOrPath: string) {
+    let changed = false;
+    const all = [...this.tabs, ...this.group2Tabs];
+    for (const tab of all) {
+      if ((tab.id === idOrPath || tab.path === idOrPath) && tab.isDirty) {
+        tab.isDirty = false;
+        changed = true;
+      }
+    }
+    if (changed) {
+      this.notify();
+    }
+  }
+
+  public reorderTabs(fromIndex: number, toIndex: number, group: 1 | 2 = 1) {
+    const list = group === 2 ? this.group2Tabs : this.tabs;
+    if (fromIndex < 0 || fromIndex >= list.length || toIndex < 0 || toIndex >= list.length) {
+      return;
+    }
+    const [moved] = list.splice(fromIndex, 1);
+    list.splice(toIndex, 0, moved);
+    this.notify();
+  }
+
+  public renameTab(oldPath: string, newPath: string) {
+    let changed = false;
+    const all = [...this.tabs, ...this.group2Tabs];
+    for (const tab of all) {
+      if (tab.id === oldPath || tab.path === oldPath) {
+        tab.id = newPath;
+        tab.path = newPath;
+        tab.title = newPath.split('/').pop() || newPath;
+        tab.docType = detectDocType(tab.content, newPath);
+        changed = true;
+      } else if (tab.path.startsWith(`${oldPath}/`)) {
+        const sub = tab.path.slice(oldPath.length + 1);
+        const updatedPath = `${newPath}/${sub}`;
+        tab.id = updatedPath;
+        tab.path = updatedPath;
+        tab.title = updatedPath.split('/').pop() || updatedPath;
+        tab.docType = detectDocType(tab.content, updatedPath);
+        changed = true;
+      }
+    }
+
+    if (this.activeTabId === oldPath) this.activeTabId = newPath;
+    if (this.activeGroup2TabId === oldPath) this.activeGroup2TabId = newPath;
+
+    if (changed) {
+      this.notify();
+    }
+  }
+
   public closeTabsForPath(path: string) {
-    const toClose = this.tabs.filter(
-      (t) => t.path === path || t.path.startsWith(path + '/')
-    );
-    for (const tab of toClose) {
-      this.closeTab(tab.id);
+    const toClose1 = this.tabs.filter((t) => t.path === path || t.path.startsWith(path + '/'));
+    for (const tab of toClose1) {
+      this.closeTab(tab.id, 1);
+    }
+    const toClose2 = this.group2Tabs.filter((t) => t.path === path || t.path.startsWith(path + '/'));
+    for (const tab of toClose2) {
+      this.closeTab(tab.id, 2);
     }
   }
 }

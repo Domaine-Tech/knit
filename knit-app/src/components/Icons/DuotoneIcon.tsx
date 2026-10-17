@@ -45,7 +45,8 @@ export type IconName =
   | 'filter'
   | 'sort'
   | 'knit'
-  | 'logo';
+  | 'logo'
+  | 'bug';
 
 interface DuotoneIconProps {
   name: IconName;
@@ -351,7 +352,7 @@ export const DuotoneIcon: React.FC<DuotoneIconProps> = ({
           </>
         );
 
-      case 'vault':
+      case 'split':
         return (
           <>
             <rect
@@ -361,12 +362,27 @@ export const DuotoneIcon: React.FC<DuotoneIconProps> = ({
               height="384"
               rx="48"
               fill={secondaryFill}
-              fillOpacity="0.2"
+              fillOpacity="0.18"
               stroke={primaryStroke}
-              strokeWidth="32"
+              strokeWidth="28"
             />
-            <circle cx="256" cy="256" r="72" fill="none" stroke={primaryStroke} strokeWidth="32" />
-            <circle cx="256" cy="256" r="24" fill={secondaryFill} />
+            <line
+              x1="256"
+              y1="64"
+              x2="256"
+              y2="448"
+              stroke={primaryStroke}
+              strokeWidth="28"
+            />
+            <rect
+              x="64"
+              y="64"
+              width="192"
+              height="384"
+              rx="48"
+              fill={secondaryFill}
+              fillOpacity="0.32"
+            />
           </>
         );
 
@@ -868,6 +884,67 @@ export const DuotoneIcon: React.FC<DuotoneIconProps> = ({
               strokeLinejoin="round"
             />
           </g>
+        );
+
+      case 'bug':
+        return (
+          <>
+            {/* Corps du bug */}
+            <path
+              d="M160 210 C160 145 352 145 352 210 L352 320 C352 390 160 390 160 320 Z"
+              fill={secondaryFill}
+              fillOpacity="0.22"
+            />
+            <path
+              d="M160 210 C160 145 352 145 352 210 L352 320 C352 390 160 390 160 320 Z"
+              fill="none"
+              stroke={primaryStroke}
+              strokeWidth="26"
+              strokeLinejoin="round"
+            />
+            {/* Tête */}
+            <path
+              d="M200 145 C200 105 312 105 312 145 Z"
+              fill={secondaryFill}
+              fillOpacity="0.3"
+              stroke={primaryStroke}
+              strokeWidth="24"
+              strokeLinejoin="round"
+            />
+            {/* Ligne médiane de la carapace */}
+            <path
+              d="M256 160 L256 360"
+              stroke={primaryStroke}
+              strokeWidth="22"
+              strokeLinecap="round"
+            />
+            {/* Antennes */}
+            <path
+              d="M225 105 Q195 55 160 65 M287 105 Q317 55 352 65"
+              fill="none"
+              stroke={primaryStroke}
+              strokeWidth="22"
+              strokeLinecap="round"
+            />
+            {/* Pattes gauches */}
+            <path
+              d="M160 210 L95 180 L65 200 M160 265 L85 265 L65 300 M160 320 L95 355 L80 405"
+              fill="none"
+              stroke={primaryStroke}
+              strokeWidth="22"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            {/* Pattes droites */}
+            <path
+              d="M352 210 L417 180 L447 200 M352 265 L427 265 L447 300 M352 320 L417 355 L432 405"
+              fill="none"
+              stroke={primaryStroke}
+              strokeWidth="22"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </>
         );
 
       default:

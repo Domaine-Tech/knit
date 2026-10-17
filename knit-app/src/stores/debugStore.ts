@@ -1,0 +1,423 @@
+import { useState, useEffect } from 'react';
+import { vaultStore } from './vaultStore';
+
+export type ActiveDebugView = 'editor' | 'kanban' | 'table';
+
+export interface VaultProfilingRecommendation {
+  severity: 'info' | 'warning' | 'urgent';
+  title: string;
+  description: string;
+}
+
+export interface VaultProfilingReport {
+  timestamp: string;
+  vaultPath: string;
+  storageType: 'local_ssd' | 'network_share' | 'slow_disk';
+  storageLabel: string;
+
+  // Timing metrics (ms)
+  treeWalkMs: number;
+  suggestIndexMs: number;
+  tasksCollectMs: number;
+  tagsCollectMs: number;
+  sampleIoReadMs: number;
+  totalTimeMs: number;
+
+  // Volume metrics
+  totalFilesCount: number;
+  markdownFilesCount: number;
+  indexedHeadingsCount: number;
+  indexedTagsCount: number;
+  indexedTasksCount: number;
+
+  // Throughput & Latency
+  throughputDocsPerSec: number;
+  averageLatencyPerDocMs: number;
+
+  recommendations: VaultProfilingRecommendation[];
+}
+
+export interface GlobalDebugReport {
+  timestamp: string;
+  isDebugActive: boolean;
+  activeView: ActiveDebugView;
+  editor?: unknown;
+  kanban?: unknown;
+  table?: unknown;
+  profiler?: VaultProfilingReport | null;
+}
+
+type DebugListener = () => void;
+
+class DebugStore {
+  private _isActive: boolean = false;
+  private _activeView: ActiveDebugView = 'editor';
+  private _isBenchmarking: boolean = false;
+  private _latestProfilingReport: VaultProfilingReport | null = null;
+  private listeners: Set<DebugListener> = new Set();
+
+  private editorStatsProvider: (() => unknown) | null = null;
+  private kanbanStatsProvider: (() => unknown) | null = null;
+  private tableStatsProvider: (() => unknown) | null = null;
+
+  constructor() {
+    this.setupWindowBridge();
+  }
+
+  public get isActive(): boolean {
+    return this._isActive;
+  }
+
+  public get activeView(): ActiveDebugView {
+    return this._activeView;
+  }
+
+  public get isBenchmarking(): boolean {
+    return this._isBenchmarking;
+  }
+
+  public get latestProfilingReport(): VaultProfilingReport | null {
+    return this._latestProfilingReport;
+  }
+
+  public setActiveView(view: ActiveDebugView) {
+    if (this._activeView !== view) {
+      this._activeView = view;
+      this.notify();
+    }
+  }
+
+  public subscribe(listener: DebugListener): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  private notify() {
+    this.listeners.forEach((l) => l());
+  }
+
+  public toggle(): boolean {
+    this._isActive = !this._isActive;
+    this.notify();
+    window.dispatchEvent(
+      new CustomEvent('knit-debug-toggled', {
+        detail: { isActive: this._isActive, view: this._activeView },
+      })
+    );
+    return this._isActive;
+  }
+
+  public setDebug(active: boolean) {
+    if (this._isActive !== active) {
+      this._isActive = active;
+      this.notify();
+      window.dispatchEvent(
+        new CustomEvent('knit-debug-toggled', {
+          detail: { isActive: this._isActive, view: this._activeView },
+        })
+      );
+    }
+  }
+
+  public registerEditorStats(provider: () => unknown) {
+    this.editorStatsProvider = provider;
+  }
+
+  public unregisterEditorStats() {
+    this.editorStatsProvider = null;
+  }
+
+  public registerKanbanStats(provider: () => unknown) {
+    this.kanbanStatsProvider = provider;
+  }
+
+  public unregisterKanbanStats() {
+    this.kanbanStatsProvider = null;
+  }
+
+  public registerTableStats(provider: () => unknown) {
+    this.tableStatsProvider = provider;
+  }
+
+  public unregisterTableStats() {
+    this.tableStatsProvider = null;
+  }
+
+  /**
+   * Lance un benchmark complet de profiling sur le coffre actif :
+   * Mesure l'I/O disque/réseau, le temps de parcours d'arborescence,
+   * la vitesse de construction de l'index d'autocomplétion, et détecte
+   * les goulots d'étranglement (partages SMB/NFS, coffres volumineux).
+   */
+  public async runVaultBenchmark(): Promise<VaultProfilingReport> {
+    this._isBenchmarking = true;
+    this.notify();
+
+    const t0 = performance.now();
+    const vaultPath = vaultStore.currentVaultPath || 'Knit Demo Vault';
+    const isUNC = vaultPath.startsWith('\\\\') || vaultPath.startsWith('//');
+
+    // 1. Parcours de l'arborescence
+    const tTree0 = performance.now();
+    const treeNodes = vaultStore.files;
+    const treeWalkMs = Math.round((performance.now() - tTree0) * 10) / 10;
+
+    const flatFiles: string[] = [];
+    interface NodeLike {
+      path: string;
+      is_dir: boolean;
+      children?: NodeLike[];
+    }
+    const collectFlat = (nodes: NodeLike[]) => {
+      for (const n of nodes) {
+        if (!n.is_dir) flatFiles.push(n.path);
+        if (n.children) collectFlat(n.children);
+      }
+    };
+    collectFlat(treeNodes as unknown as NodeLike[]);
+    const totalFilesCount = flatFiles.length;
+    const mdFiles = flatFiles.filter((f) => f.endsWith('.md') || f.endsWith('.markdown'));
+    const markdownFilesCount = mdFiles.length;
+
+    // 2. Index d'autocomplétion (KnitSuggestIndex)
+    const tSuggest0 = performance.now();
+    const suggestData = await vaultStore.getSuggestIndex();
+    const suggestIndexMs = Math.round((performance.now() - tSuggest0) * 10) / 10;
+    const indexedHeadingsCount = suggestData.headings.length;
+    const indexedTagsCount = suggestData.tags.length;
+
+    // 3. Collecte des tâches Markdown
+    const tTasks0 = performance.now();
+    const tasks = await vaultStore.getVaultTasks();
+    const tasksCollectMs = Math.round((performance.now() - tTasks0) * 10) / 10;
+    const indexedTasksCount = tasks.length;
+
+    // 4. Collecte des tags
+    const tTags0 = performance.now();
+    await vaultStore.getVaultTags();
+    const tagsCollectMs = Math.round((performance.now() - tTags0) * 10) / 10;
+
+    // 5. Échantillonnage de la latence I/O par lecture unitaire de fichiers
+    const sampleFiles = mdFiles.slice(0, 5);
+    const tIo0 = performance.now();
+    for (const sf of sampleFiles) {
+      try {
+        await vaultStore.readFile(sf);
+      } catch {
+        // Ignorer
+      }
+    }
+    const sampleIoTotal = performance.now() - tIo0;
+    const sampleIoReadMs =
+      sampleFiles.length > 0
+        ? Math.round((sampleIoTotal / sampleFiles.length) * 10) / 10
+        : 0.5;
+
+    const totalTimeMs = Math.round((performance.now() - t0) * 10) / 10;
+    const totalTimeSec = Math.max(0.001, totalTimeMs / 1000);
+    const throughputDocsPerSec = Math.round((markdownFilesCount / totalTimeSec) * 10) / 10;
+    const averageLatencyPerDocMs =
+      markdownFilesCount > 0
+        ? Math.round((totalTimeMs / markdownFilesCount) * 10) / 10
+        : 0;
+
+    // Détection du type de stockage et latence
+    let storageType: 'local_ssd' | 'network_share' | 'slow_disk' = 'local_ssd';
+    let storageLabel = 'Stockage Local NVMe / SSD Rapide';
+
+    if (isUNC || sampleIoReadMs > 12) {
+      storageType = 'network_share';
+      storageLabel = isUNC
+        ? 'Partage Réseau UNC (SMB / CIFS / NFS)'
+        : 'Partage Réseau distant (latence I/O > 12ms/doc)';
+    } else if (sampleIoReadMs > 4) {
+      storageType = 'slow_disk';
+      storageLabel = 'Disque dur mécanique (HDD) ou support externe USB';
+    }
+
+    // Recommandations d'optimisations automatisées
+    const recommendations: VaultProfilingRecommendation[] = [];
+
+    if (storageType === 'network_share') {
+      recommendations.push({
+        severity: 'urgent',
+        title: 'Optimisation Partage Réseau requise (SMB / NFS)',
+        description:
+          'Latence réseau détectée par appel I/O. Recommandation : Activer la persistance du cache binaire (.knit/cache/suggest.bin) avec invalidation incrémentale par hachage mtime plutôt que de rescanner les fichiers distants.',
+      });
+      recommendations.push({
+        severity: 'warning',
+        title: 'Parallélisation par lots (Batch I/O Rayon)',
+        description:
+          'Exécuter les lectures de fichiers en parallèle (threadpool Rayon côté Rust) pour saturer la bande passante réseau et réduire le temps d\'attente total par un facteur 4x à 10x.',
+      });
+    }
+
+    if (totalFilesCount > 2000) {
+      recommendations.push({
+        severity: 'warning',
+        title: 'Coffre volumineux (> 2 000 fichiers)',
+        description:
+          'Indexation incrémentale par événement de FileWatcher conseillée : seul le fichier modifié ou créé doit être réindexé en mémoire.',
+      });
+    }
+
+    if (suggestIndexMs < 15 && storageType === 'local_ssd') {
+      recommendations.push({
+        severity: 'info',
+        title: 'Excellentes performances locales',
+        description: `Indexation de ${markdownFilesCount} documents terminée en ${suggestIndexMs}ms (${throughputDocsPerSec} docs/s). Aucune latence perceptible pour l'utilisateur.`,
+      });
+    }
+
+    const report: VaultProfilingReport = {
+      timestamp: new Date().toISOString(),
+      vaultPath,
+      storageType,
+      storageLabel,
+      treeWalkMs,
+      suggestIndexMs,
+      tasksCollectMs,
+      tagsCollectMs,
+      sampleIoReadMs,
+      totalTimeMs,
+      totalFilesCount,
+      markdownFilesCount,
+      indexedHeadingsCount,
+      indexedTagsCount,
+      indexedTasksCount,
+      throughputDocsPerSec,
+      averageLatencyPerDocMs,
+      recommendations,
+    };
+
+    this._latestProfilingReport = report;
+    this._isBenchmarking = false;
+    this.notify();
+    return report;
+  }
+
+  public generateReport(): GlobalDebugReport {
+    return {
+      timestamp: new Date().toISOString(),
+      isDebugActive: this._isActive,
+      activeView: this._activeView,
+      editor: this.editorStatsProvider ? this.editorStatsProvider() : null,
+      kanban: this.kanbanStatsProvider ? this.kanbanStatsProvider() : null,
+      table: this.tableStatsProvider ? this.tableStatsProvider() : null,
+      profiler: this._latestProfilingReport,
+    };
+  }
+
+  private setupWindowBridge() {
+    if (typeof window === 'undefined') return;
+
+    const existing = (window as unknown as { __KNIT_DEBUG__?: Record<string, unknown> }).__KNIT_DEBUG__ || {};
+
+    (window as unknown as { __KNIT_DEBUG__: Record<string, unknown> }).__KNIT_DEBUG__ = {
+      ...existing,
+      get isActive() {
+        return debugStore.isActive;
+      },
+      get activeView() {
+        return debugStore.activeView;
+      },
+      get isBenchmarking() {
+        return debugStore.isBenchmarking;
+      },
+      get latestReport() {
+        return debugStore.latestProfilingReport;
+      },
+      toggle: () => debugStore.toggle(),
+      setDebug: (active: boolean) => debugStore.setDebug(active),
+      runBenchmark: async () => {
+        console.log('⏱️ [KNIT PROFILER] Lancement du benchmark d\'indexation...');
+        const report = await debugStore.runVaultBenchmark();
+        console.group('⏱️ [KNIT PROFILER BENCHMARK REPORT]');
+        console.log(`Stockage : ${report.storageLabel}`);
+        console.log(`Documents : ${report.markdownFilesCount} Markdown (${report.totalFilesCount} au total)`);
+        console.log(`Temps total : ${report.totalTimeMs} ms (${report.throughputDocsPerSec} docs/s)`);
+        console.log(`Arborescence : ${report.treeWalkMs} ms | Autocomplétion : ${report.suggestIndexMs} ms`);
+        console.log(`Tâches : ${report.tasksCollectMs} ms | Tags : ${report.tagsCollectMs} ms`);
+        console.log(`Latence I/O échantillon : ${report.sampleIoReadMs} ms / doc`);
+        console.group('Recommandations d\'optimisation :');
+        report.recommendations.forEach((r) => {
+          console.log(`[${r.severity.toUpperCase()}] ${r.title}: ${r.description}`);
+        });
+        console.groupEnd();
+        console.groupEnd();
+        return report;
+      },
+      dumpReport: () => {
+        const report = debugStore.generateReport();
+        console.group('🐞 [KNIT GLOBAL DEBUG REPORT]');
+        console.log(`Actif : ${report.isDebugActive ? 'OUI' : 'NON'}`);
+        console.log(`Vue courante : ${report.activeView}`);
+        console.log(`Horodatage : ${report.timestamp}`);
+        if (report.editor) {
+          console.group('Éditeur Markdown (CodeMirror 6)');
+          console.log(report.editor);
+          console.groupEnd();
+        }
+        if (report.kanban) {
+          console.group('Vue Kanban');
+          console.log(report.kanban);
+          console.groupEnd();
+        }
+        if (report.table) {
+          console.group('Vue Table');
+          console.log(report.table);
+          console.groupEnd();
+        }
+        if (report.profiler) {
+          console.group('Profilage Coffre & Indexation');
+          console.log(report.profiler);
+          console.groupEnd();
+        }
+        console.groupEnd();
+        return report;
+      },
+    };
+  }
+}
+
+export const debugStore = new DebugStore();
+
+/**
+ * Hook React pour écouter l'état du mode debug global dans les composants
+ */
+export function useDebugMode(): {
+  isDebugActive: boolean;
+  activeView: ActiveDebugView;
+  toggleDebug: () => void;
+  isBenchmarking: boolean;
+  profilingReport: VaultProfilingReport | null;
+  runBenchmark: () => Promise<VaultProfilingReport>;
+} {
+  const [isActive, setIsActive] = useState(debugStore.isActive);
+  const [activeView, setActiveView] = useState(debugStore.activeView);
+  const [isBenchmarking, setIsBenchmarking] = useState(debugStore.isBenchmarking);
+  const [profilingReport, setProfilingReport] = useState<VaultProfilingReport | null>(
+    debugStore.latestProfilingReport
+  );
+
+  useEffect(() => {
+    return debugStore.subscribe(() => {
+      setIsActive(debugStore.isActive);
+      setActiveView(debugStore.activeView);
+      setIsBenchmarking(debugStore.isBenchmarking);
+      setProfilingReport(debugStore.latestProfilingReport);
+    });
+  }, []);
+
+  return {
+    isDebugActive: isActive,
+    activeView,
+    toggleDebug: () => debugStore.toggle(),
+    isBenchmarking,
+    profilingReport,
+    runBenchmark: () => debugStore.runVaultBenchmark(),
+  };
+}

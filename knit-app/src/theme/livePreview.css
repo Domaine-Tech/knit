@@ -1,0 +1,939 @@
+/* ==========================================================================
+   KNIT LIVE PREVIEW (STYLE OBSIDIAN / LINEAR PREMIUM)
+   Rendu dynamique en lecture avec révélation transparente des balises au curseur
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   0. Gouttière et Synchronisation Numéros de Lignes 1:1 (Anti-décalage)
+   -------------------------------------------------------------------------- */
+.cm-gutters {
+  user-select: none;
+}
+
+.cm-gutterElement {
+  display: flex !important;
+  align-items: center;
+  justify-content: flex-end;
+  box-sizing: border-box;
+}
+
+/* --------------------------------------------------------------------------
+   0.1 Sélection et Curseur (Anti-occultation par les fonds de blocs de code)
+   -------------------------------------------------------------------------- */
+.cm-cursorLayer {
+  z-index: 10 !important;
+  pointer-events: none !important;
+}
+
+.cm-selectionLayer {
+  z-index: 5 !important;
+  pointer-events: none !important;
+}
+
+.cm-selectionBackground,
+.cm-editor.cm-focused .cm-selectionBackground,
+.cm-editor .cm-selectionLayer .cm-selectionBackground {
+  background-color: hsla(var(--knit-hue), 70%, 55%, 0.35) !important;
+  opacity: 1 !important;
+}
+
+.cm-editor ::selection {
+  background-color: hsla(var(--knit-hue), 70%, 55%, 0.35) !important;
+}
+
+/* --------------------------------------------------------------------------
+   1. Titres de sections (Headings) avec typographie soignée
+   -------------------------------------------------------------------------- */
+.cm-line.knit-line-h1 {
+  font-size: 1.85em;
+  font-weight: 750;
+  line-height: 1.28;
+  letter-spacing: -0.025em;
+  margin: 0 !important;
+  padding: 4px 0 6px 0 !important;
+  color: var(--knit-text);
+  border-bottom: 2px solid var(--knit-border);
+}
+
+.cm-line.knit-line-h2 {
+  font-size: 1.42em;
+  font-weight: 700;
+  line-height: 1.32;
+  letter-spacing: -0.018em;
+  margin: 0 !important;
+  padding: 0 0 4px 0 !important;
+  color: var(--knit-text);
+  border-bottom: 1px solid var(--knit-border-subtle);
+}
+
+.cm-line.knit-line-h3 {
+  font-size: 1.22em;
+  font-weight: 650;
+  line-height: 1.35;
+  letter-spacing: -0.012em;
+  margin: 0 !important;
+  padding: 0 !important;
+  color: var(--knit-text);
+}
+
+.cm-line.knit-line-h4 {
+  font-size: 1.1em;
+  font-weight: 600;
+  margin: 0 !important;
+  padding: 0 !important;
+  color: var(--knit-text);
+}
+
+.cm-line.knit-line-h5 {
+  font-size: 1em;
+  font-weight: 600;
+  margin: 0 !important;
+  padding: 0 !important;
+  color: var(--knit-text-secondary);
+}
+
+.cm-line.knit-line-h6 {
+  font-size: 0.88em;
+  font-weight: 600;
+  margin: 0 !important;
+  padding: 0 !important;
+  color: var(--knit-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* --------------------------------------------------------------------------
+   2. Éléments Markdown en ligne (Inline Formatting)
+   -------------------------------------------------------------------------- */
+.knit-preview-bold {
+  font-weight: 700;
+  color: var(--knit-text);
+}
+
+.knit-preview-italic {
+  font-style: italic;
+  color: var(--knit-text);
+}
+
+.knit-preview-strikethrough {
+  text-decoration: line-through;
+  color: var(--knit-text-muted);
+  opacity: 0.75;
+}
+
+.knit-preview-code {
+  font-family: var(--knit-font-mono);
+  font-size: 0.88em;
+  padding: 2px 6px;
+  border-radius: var(--knit-radius-xs);
+  background-color: var(--knit-bg);
+  border: 1px solid var(--knit-border);
+  color: var(--knit-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.knit-preview-link {
+  color: var(--knit-primary);
+  text-decoration: none;
+  border-bottom: 1px solid var(--knit-primary-alpha);
+  padding-bottom: 1px;
+  cursor: pointer;
+  transition: all var(--knit-duration-fast);
+}
+
+.knit-preview-link:hover {
+  border-bottom-color: var(--knit-primary);
+}
+
+.knit-preview-wikilink {
+  color: var(--knit-primary);
+  font-weight: 550;
+  cursor: pointer;
+  border-bottom: 1px dashed var(--knit-primary-alpha);
+  padding: 0 2px 1px 2px;
+  border-radius: var(--knit-radius-xs);
+  transition: all var(--knit-duration-fast);
+}
+
+.knit-preview-wikilink:hover {
+  background-color: var(--knit-primary-alpha);
+  border-bottom-color: var(--knit-primary);
+}
+
+/* Mode Ctrl+Clic actif sur les liens (style Obsidian & VS Code) */
+.knit-ctrl-active .knit-preview-link,
+.knit-ctrl-active .knit-preview-wikilink,
+.knit-ctrl-active .cm-link,
+.knit-ctrl-active .cm-url,
+.knit-ctrl-active .tok-link,
+.knit-ctrl-active .tok-url {
+  cursor: pointer !important;
+  text-decoration: underline !important;
+  filter: brightness(1.25);
+}
+
+/* Séparateur horizontal de prestige (---) sans marge externe pour synchronisation 1:1 */
+.knit-preview-hr {
+  display: flex !important;
+  align-items: center !important;
+  width: 100%;
+  height: 28px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  border: none !important;
+}
+
+.knit-preview-hr::after {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--knit-border) 20%,
+    var(--knit-border) 80%,
+    transparent
+  );
+}
+
+/* Masquage natif géré par Decoration.replace({}) pour une fidélité géométrique absolue */
+.knit-hidden-marker {
+  font-size: 0 !important;
+  line-height: 0 !important;
+  visibility: hidden !important;
+}
+
+/* --------------------------------------------------------------------------
+   3. Badges Inline : Mentions, Dates & Tags
+   -------------------------------------------------------------------------- */
+.knit-preview-mention {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px 1px 5px;
+  margin: 0 2px;
+  background-color: var(--knit-primary-alpha);
+  border: 1px solid color-mix(in srgb, var(--knit-primary) 30%, transparent);
+  border-radius: 12px;
+  color: var(--knit-primary);
+  font-size: 12px;
+  font-weight: 600;
+  vertical-align: baseline;
+  user-select: none;
+}
+
+.knit-preview-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px;
+  margin: 0 2px;
+  background-color: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: var(--knit-radius-xs);
+  color: #60a5fa;
+  font-family: var(--knit-font-mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  vertical-align: baseline;
+  user-select: none;
+}
+
+.knit-preview-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 7px;
+  margin: 0 2px;
+  background-color: var(--knit-surface-hover);
+  border: 1px solid var(--knit-border);
+  border-radius: 10px;
+  color: var(--knit-text-secondary);
+  font-size: 11.5px;
+  font-weight: 500;
+  vertical-align: baseline;
+  cursor: pointer;
+  transition: all var(--knit-duration-fast);
+}
+
+.knit-preview-tag:hover {
+  color: var(--knit-primary);
+  border-color: var(--knit-primary);
+}
+
+/* --------------------------------------------------------------------------
+   4. Carte de Propriétés YAML Frontmatter (Style Obsidian Properties)
+   -------------------------------------------------------------------------- */
+.knit-properties-card {
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  padding: 10px 14px;
+  background-color: var(--knit-surface);
+  border: 1px solid var(--knit-border);
+  border-radius: var(--knit-radius-md);
+  user-select: none;
+  cursor: pointer;
+  transition: border-color var(--knit-duration-fast), box-shadow var(--knit-duration-fast);
+}
+
+.knit-properties-card:hover {
+  border-color: var(--knit-border-hover);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.knit-properties-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.knit-properties-title-group {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--knit-text-muted);
+}
+
+.knit-properties-count-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background-color: var(--knit-surface-hover);
+  border: 1px solid var(--knit-border);
+  color: var(--knit-text-secondary);
+  font-weight: 600;
+}
+
+.knit-properties-edit-hint {
+  font-size: 11px;
+  color: var(--knit-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0.65;
+  transition: opacity var(--knit-duration-fast);
+}
+
+.knit-properties-card:hover .knit-properties-edit-hint {
+  opacity: 1;
+  color: var(--knit-primary);
+}
+
+.knit-properties-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--knit-border-subtle);
+}
+
+.knit-property-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  min-height: 24px;
+}
+
+.knit-property-key {
+  width: 105px;
+  flex-shrink: 0;
+  color: var(--knit-text-secondary);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.knit-property-val {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: var(--knit-text);
+}
+
+.knit-property-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px;
+  border-radius: var(--knit-radius-xs);
+  background-color: var(--knit-surface-hover);
+  border: 1px solid var(--knit-border);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.knit-property-pill.pill-primary {
+  background-color: var(--knit-primary-alpha);
+  border-color: color-mix(in srgb, var(--knit-primary) 35%, transparent);
+  color: var(--knit-primary);
+  font-weight: 600;
+}
+
+.knit-property-pill.pill-status {
+  background-color: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #10b981;
+  font-weight: 600;
+}
+
+/* --------------------------------------------------------------------------
+   5. Rendu Visuel des Tableaux Markdown (Interactive Table Card)
+   -------------------------------------------------------------------------- */
+.knit-rendered-table-card {
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  border-radius: var(--knit-radius-md);
+  border: 1px solid var(--knit-border);
+  background-color: var(--knit-surface);
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  transition: border-color var(--knit-duration-fast), box-shadow var(--knit-duration-fast);
+}
+
+.knit-rendered-table-card:hover {
+  border-color: var(--knit-primary-alpha);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+}
+
+.knit-rendered-table-wrapper {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.knit-rendered-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  text-align: left;
+}
+
+.knit-rendered-table th {
+  background-color: var(--knit-surface-hover);
+  padding: 9px 14px;
+  font-weight: 650;
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--knit-text-secondary);
+  border-bottom: 1px solid var(--knit-border);
+  white-space: nowrap;
+}
+
+.knit-rendered-table td {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--knit-border-subtle);
+  color: var(--knit-text);
+  line-height: 1.45;
+}
+
+.knit-rendered-table tr:last-child td {
+  border-bottom: none;
+}
+
+.knit-rendered-table tbody tr {
+  transition: background-color var(--knit-duration-fast);
+}
+
+.knit-rendered-table tbody tr:hover {
+  background-color: var(--knit-surface-hover);
+}
+
+.knit-rendered-table .knit-preview-link,
+.knit-rendered-table .knit-preview-wikilink {
+  cursor: pointer;
+  display: inline-block;
+  transition: all var(--knit-duration-fast);
+}
+
+.knit-rendered-table .knit-preview-link:hover,
+.knit-rendered-table .knit-preview-wikilink:hover {
+  text-decoration: underline;
+  color: var(--knit-primary);
+  filter: brightness(1.2);
+}
+
+.knit-ctrl-active .knit-rendered-table .knit-preview-link,
+.knit-ctrl-active .knit-rendered-table .knit-preview-wikilink {
+  text-decoration: underline !important;
+  filter: brightness(1.3) !important;
+}
+
+/* Fallback lignes brutes de tableau en cours d'édition */
+.cm-line.knit-table-header-line {
+  background-color: var(--knit-surface-hover);
+  font-weight: 600;
+  border-bottom: 2px solid var(--knit-border);
+  font-family: var(--knit-font-mono);
+  color: var(--knit-text);
+}
+
+.cm-line.knit-table-delimiter-line {
+  color: var(--knit-text-muted);
+  opacity: 0.45;
+  font-family: var(--knit-font-mono);
+  font-size: 0.85em;
+}
+
+.cm-line.knit-table-row-line {
+  background-color: transparent;
+  border-bottom: 1px solid var(--knit-border-subtle);
+  font-family: var(--knit-font-mono);
+  color: var(--knit-text);
+}
+
+.knit-table-pipe {
+  color: var(--knit-primary);
+  opacity: 0.55;
+  font-weight: 700;
+}
+
+/* --------------------------------------------------------------------------
+   6. Cases à Cocher & Tâches Étendues (B-054)
+   -------------------------------------------------------------------------- */
+.knit-task-checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 11px;
+  font-weight: 700;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  vertical-align: middle;
+  border: 1.5px solid var(--knit-border);
+  background-color: var(--knit-surface);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.knit-task-checkbox:hover {
+  transform: scale(1.08);
+  border-color: var(--knit-primary);
+}
+
+.knit-task-done-text {
+  text-decoration: line-through;
+  color: var(--knit-text-muted) !important;
+  opacity: 0.55;
+  transition: all var(--knit-duration-fast);
+}
+
+.knit-task-cancelled-text {
+  text-decoration: line-through;
+  color: var(--knit-text-muted) !important;
+  opacity: 0.45;
+}
+
+/* Badges de priorité */
+.knit-priority-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: var(--knit-radius-xs);
+  margin-left: 6px;
+  font-family: var(--knit-font-sans);
+  user-select: none;
+  vertical-align: middle;
+}
+
+/* Mini barre de progression projetée (2px) */
+.knit-doc-progress-bar {
+  margin: 0 !important;
+  padding: 8px 12px !important;
+  background-color: var(--knit-surface);
+  border: 1px solid var(--knit-border-subtle);
+  border-radius: var(--knit-radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  user-select: none;
+  box-sizing: border-box !important;
+}
+
+.knit-progress-bar-bg {
+  width: 100%;
+  height: 3px;
+  background-color: var(--knit-border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.knit-progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(to right, var(--knit-primary), color-mix(in srgb, var(--knit-primary) 80%, #ffffff));
+  box-shadow: 0 0 8px var(--knit-primary-alpha);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.knit-progress-bar-label {
+  font-size: 11px;
+  font-family: var(--knit-font-mono);
+  color: var(--knit-text-muted);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* --------------------------------------------------------------------------
+   7. Blocs de Code avec Coloration Syntaxique & En-tête IDE
+   -------------------------------------------------------------------------- */
+.knit-rendered-code-card {
+  position: relative;
+  background-color: var(--knit-surface);
+  border: 1px solid var(--knit-border);
+  border-radius: var(--knit-radius-sm);
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  overflow: hidden;
+  cursor: text;
+  transition: border-color var(--knit-duration-fast), box-shadow var(--knit-duration-fast);
+}
+
+.knit-rendered-code-card:hover {
+  border-color: var(--knit-border-hover);
+  box-shadow: var(--knit-shadow-xs);
+}
+
+.knit-rendered-code-card .knit-code-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px 10px;
+  min-height: 24px;
+  background-color: var(--knit-surface-hover);
+  border-bottom: 1px solid var(--knit-border-subtle);
+  user-select: none;
+}
+
+.knit-rendered-code-card .knit-code-pre {
+  margin: 0 !important;
+  padding: 6px 12px;
+  overflow-x: auto;
+  font-family: var(--knit-font-mono) !important;
+  font-size: 12.5px !important;
+  line-height: 1.5;
+  color: var(--knit-text);
+  background-color: transparent;
+}
+
+.knit-rendered-code-card .knit-code-content {
+  font-family: inherit;
+  font-size: inherit;
+  white-space: pre;
+}
+
+.cm-line.knit-code-line {
+  background-color: var(--knit-surface);
+  font-family: var(--knit-font-mono) !important;
+  font-size: 12.5px !important;
+  color: var(--knit-text);
+  border-left: 2px solid var(--knit-primary-alpha);
+  border-right: 1px solid var(--knit-border-subtle);
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+  padding-top: 1px !important;
+  padding-bottom: 1px !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.cm-line.knit-code-line:hover {
+  border-left-color: var(--knit-primary);
+}
+
+.cm-line.knit-code-header-line {
+  border-top: 1px solid var(--knit-border);
+  border-top-left-radius: var(--knit-radius-sm);
+  border-top-right-radius: var(--knit-radius-sm);
+  background-color: var(--knit-surface-hover);
+  color: var(--knit-primary);
+  font-weight: 500;
+  font-size: 11.5px !important;
+  padding-top: 2px !important;
+  padding-bottom: 1px !important;
+  min-height: 20px !important;
+  opacity: 0.85;
+}
+
+.cm-line.knit-code-footer-line {
+  border-bottom: 1px solid var(--knit-border);
+  border-bottom-left-radius: var(--knit-radius-sm);
+  border-bottom-right-radius: var(--knit-radius-sm);
+  background-color: var(--knit-surface-hover);
+  color: var(--knit-primary);
+  font-weight: 500;
+  font-size: 11.5px !important;
+  padding-top: 1px !important;
+  padding-bottom: 2px !important;
+  min-height: 20px !important;
+  opacity: 0.85;
+}
+
+.knit-code-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0;
+  user-select: none;
+}
+
+.knit-code-block-footer {
+  height: 18px;
+  width: 100%;
+}
+
+.knit-code-lang-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--knit-font-mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--knit-text-secondary);
+  letter-spacing: 0.03em;
+}
+
+.knit-code-lang-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 19px;
+  height: 19px;
+  border-radius: var(--knit-radius-xs);
+  background-color: var(--knit-surface);
+  border: 1px solid var(--knit-border);
+  color: var(--knit-primary);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.knit-code-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background-color: var(--knit-surface);
+  border: 1px solid var(--knit-border);
+  border-radius: var(--knit-radius-xs);
+  padding: 2px 9px;
+  font-size: 11px;
+  font-family: var(--knit-font-sans);
+  font-weight: 500;
+  color: var(--knit-text-muted);
+  cursor: pointer;
+  transition: all var(--knit-duration-fast);
+}
+
+.knit-code-copy-btn:hover {
+  background-color: var(--knit-surface-hover);
+  color: var(--knit-text);
+  border-color: var(--knit-border-hover);
+}
+
+.knit-code-copy-btn.copied {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+  color: #10b981 !important;
+  border-color: rgba(16, 185, 129, 0.4) !important;
+}
+
+/* Jet de couleurs syntaxiques pour le code */
+.knit-code-keyword {
+  color: #c678dd;
+  font-weight: 600;
+}
+
+.knit-code-string {
+  color: #98c379;
+}
+
+.knit-code-number {
+  color: #d19a66;
+}
+
+.knit-code-comment {
+  color: var(--knit-text-muted);
+  font-style: italic;
+  opacity: 0.82;
+}
+
+.knit-code-function {
+  color: #61afef;
+}
+
+/* --------------------------------------------------------------------------
+   8. Callouts GFM / Obsidian (Alertes Feutrées) & Citations
+   -------------------------------------------------------------------------- */
+.cm-line.knit-callout-line {
+  background-color: var(--callout-bg, rgba(59, 130, 246, 0.08));
+  border-left: 3.5px solid var(--callout-color, var(--knit-primary));
+  padding-left: 14px !important;
+  padding-right: 14px !important;
+  margin: 0 !important;
+}
+
+.cm-line.knit-callout-header {
+  border-top-right-radius: var(--knit-radius-md);
+  padding-top: 7px !important;
+  padding-bottom: 5px !important;
+  min-height: 30px;
+}
+
+.cm-line.knit-callout-body {
+  color: var(--knit-text);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.cm-line.knit-callout-end {
+  border-bottom-right-radius: var(--knit-radius-md);
+  padding-bottom: 9px !important;
+}
+
+.cm-line.knit-callout-note {
+  --callout-color: #3b82f6;
+  --callout-bg: rgba(59, 130, 246, 0.08);
+}
+
+.cm-line.knit-callout-tip {
+  --callout-color: #10b981;
+  --callout-bg: rgba(16, 185, 129, 0.08);
+}
+
+.cm-line.knit-callout-warning {
+  --callout-color: #f59e0b;
+  --callout-bg: rgba(245, 158, 11, 0.08);
+}
+
+.cm-line.knit-callout-important {
+  --callout-color: #8b5cf6;
+  --callout-bg: rgba(139, 92, 246, 0.08);
+}
+
+.cm-line.knit-callout-caution {
+  --callout-color: #ef4444;
+  --callout-bg: rgba(239, 68, 68, 0.08);
+}
+
+.knit-callout-header-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--callout-color);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+}
+
+.knit-callout-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.knit-callout-title {
+  letter-spacing: 0.02em;
+}
+
+/* Citations standards (> texte) */
+.cm-line.knit-blockquote-line {
+  border-left: 3px solid var(--knit-border);
+  background-color: var(--knit-surface);
+  color: var(--knit-text-muted);
+  font-style: italic;
+  padding-left: 14px !important;
+  padding-right: 14px !important;
+  margin: 0 !important;
+}
+
+.cm-line.knit-blockquote-end {
+  border-bottom-right-radius: var(--knit-radius-sm);
+}
+
+/* --------------------------------------------------------------------------
+   9. Cartes d'Images Markdown (![alt](url))
+   -------------------------------------------------------------------------- */
+.knit-preview-image-card {
+  display: block;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  max-width: 100%;
+  border-radius: var(--knit-radius-md);
+  border: 1px solid var(--knit-border);
+  background-color: var(--knit-surface);
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: border-color var(--knit-duration-fast), box-shadow var(--knit-duration-fast);
+}
+
+.knit-preview-image-card:hover {
+  border-color: var(--knit-border-hover);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.16);
+}
+
+.knit-preview-img {
+  display: block;
+  max-width: 100%;
+  max-height: 480px;
+  width: auto;
+  height: auto;
+  margin: 0 auto;
+  object-fit: contain;
+}
+
+.knit-preview-image-caption {
+  padding: 6px 12px;
+  font-size: 11.5px;
+  color: var(--knit-text-muted);
+  text-align: center;
+  background-color: var(--knit-surface-hover);
+  border-top: 1px solid var(--knit-border-subtle);
+  font-style: italic;
+}
+
+.knit-image-fallback {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  color: var(--knit-text-muted);
+  background-color: var(--knit-surface);
+}
+
+.knit-image-fallback-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.knit-image-fallback-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--knit-text);
+}
+
+.knit-image-fallback-url {
+  font-size: 11px;
+  font-family: var(--knit-font-mono);
+  color: var(--knit-text-muted);
+  word-break: break-all;
+}

@@ -202,12 +202,13 @@ export const NetworkModal: React.FC<NetworkModalProps> = ({ isOpen, onClose }) =
                       }}
                       title="Votre email n'est pas diffusé sur le réseau P2P"
                     >
-                      🔒 Zéro-Fuite
+                      <DuotoneIcon name="shield" size={11} />
+                      <span>Zéro-Fuite</span>
                     </span>
                   )}
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--knit-text-muted)', marginTop: 2 }}>
-                  {networkStore.currentProfile?.status_message || '✍️ En rédaction'}
+                  {networkStore.currentProfile?.status_message || 'En rédaction'}
                   {networkStore.currentProfile?.email && networkStore.currentProfile.share_email_p2p && (
                     <span style={{ marginLeft: 8 }}>• {networkStore.currentProfile.email}</span>
                   )}
@@ -242,8 +243,9 @@ export const NetworkModal: React.FC<NetworkModalProps> = ({ isOpen, onClose }) =
 
           {/* Partager mon code d'invitation */}
           <div>
-            <label className="knit-label" style={{ marginBottom: 6, display: 'block', fontSize: 12, fontWeight: 600 }}>
-              🔑 Mon code d'invitation (WAN & LAN)
+            <label className="knit-label" style={{ marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600 }}>
+              <DuotoneIcon name="share" size={13} />
+              <span>Mon code d'invitation (WAN & LAN)</span>
             </label>
             <div style={{ display: 'flex', gap: 8 }}>
               <input
@@ -280,8 +282,9 @@ export const NetworkModal: React.FC<NetworkModalProps> = ({ isOpen, onClose }) =
 
           {/* Rejoindre un pair */}
           <div>
-            <label className="knit-label" style={{ marginBottom: 6, display: 'block', fontSize: 12, fontWeight: 600 }}>
-              🔗 Se connecter à un collaborateur
+            <label className="knit-label" style={{ marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600 }}>
+              <DuotoneIcon name="link" size={13} />
+              <span>Se connecter à un collaborateur</span>
             </label>
             <div style={{ display: 'flex', gap: 8 }}>
               <input
@@ -320,7 +323,8 @@ export const NetworkModal: React.FC<NetworkModalProps> = ({ isOpen, onClose }) =
           {lanPeers.length > 0 && (
             <div>
               <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--knit-text)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span>🏠 Pairs découverts sur le réseau local (mDNS)</span>
+                <DuotoneIcon name="sync" size={13} />
+                <span>Pairs découverts sur le réseau local (mDNS)</span>
                 <span style={{ fontSize: 11, color: 'var(--knit-text-muted)', fontWeight: 400 }}>({lanPeers.length})</span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -376,7 +380,8 @@ export const NetworkModal: React.FC<NetworkModalProps> = ({ isOpen, onClose }) =
           {/* Pairs actuellement connectés */}
           <div>
             <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--knit-text)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span>👥 Collaborateurs connectés en direct</span>
+              <DuotoneIcon name="user" size={13} />
+              <span>Collaborateurs connectés en direct</span>
               <span style={{ fontSize: 11, color: 'var(--knit-text-muted)', fontWeight: 400 }}>({peers.length})</span>
             </div>
 
@@ -473,9 +478,13 @@ export const NetworkModal: React.FC<NetworkModalProps> = ({ isOpen, onClose }) =
                                 borderRadius: 'var(--knit-radius-xs)',
                                 fontWeight: 600,
                                 border: '1px solid rgba(16, 185, 129, 0.3)',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 3,
                               }}
                             >
-                              🔒 Zéro-Fuite
+                              <DuotoneIcon name="shield" size={10} />
+                              <span>Zéro-Fuite</span>
                             </span>
                           )}
                         </div>

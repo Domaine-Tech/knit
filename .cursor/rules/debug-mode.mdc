@@ -1,0 +1,80 @@
+---
+description: Règle d'extension et de diagnostic du Mode Debug Global Unifié (B-056)
+globs: **/*.tsx, **/*.ts, src/stores/debugStore.ts
+---
+
+# Règle B-056 : Mode Debug Global Unifié & Inspecteurs Multi-Vues
+
+> **Principe d'Architecture Absolu** : Knit intègre un Mode Debug Global Unique utilisable sur l'ensemble de l'espace de travail. Il permet aux développeurs et agents IA de diagnostiquer instantanément l'alignement pixel-perfect de l'éditeur CodeMirror 6, les métriques des vues (Kanban, Table, Graphe) et l'état des stores sans altérer le layout ni polluer l'interface utilisateur.
+
+---
+
+## 1. Règles d'Implémentation & Bonnes Pratiques
+
+### A. Bouton Global Unique dans le Header
+- **Règle** : Il ne doit exister **qu'un seul et unique bouton de debug** dans toute l'interface de Knit.
+- **Emplacement** : Dans l'en-tête principal `knit-app/src/components/Header.tsx`.
+- **Interdiction** : Ne JAMAIS créer de bouton de debug isolé ou dupliqué dans la barre d'onglets (`TabBar.tsx`), dans la barre d'outils de l'éditeur (`Editor.tsx`), ou dans les vues Kanban/Table. Tout diagnostic passe par ce déclencheur unifié.
+
+### B. Store Centralisé (`debugStore.ts`)
+- Tout composant nécessitant de réagir au mode debug ou d'y afficher des métriques doit consommer `useDebugStore` depuis `src/stores/debugStore.ts`.
+- **Méthodes & États disponibles** :
+  - `isDebugMode: boolean` : état on/off global.
+  - `toggleDebugMode()` : inverse l'état.
+  - `isInspectorOpen: boolean` : volet latéral d'inspection détaillée.
+  - `activeViewInspector: 'none' | 'editor' | 'kanban' | 'table' | 'graph'` : vue cible actuelle.
+  - `debugMetrics: Record<string, unknown>` : métriques temps réel enregistrées par les différentes vues.
+
+### C. Accessibilité Console & Automatisation (`window.__KNIT_DEBUG__`)
+- `debugStore.ts` expose automatiquement un objet global sur la fenêtre du navigateur :
+  ```ts
+  window.__KNIT_DEBUG__ = {
+    getState: () => useDebugStore.getState(),
+    toggle: () => useDebugStore.getState().toggleDebugMode(),
+    setMetrics: (key, val) => useDebugStore.getState().setDebugMetrics(key, val),
+  };
+  ```
+- Cela permet aux sous-agents de test automatisés et aux développeurs de piloter le diagnostic directement via les DevTools.
+
+---
+
+## 2. Directives par Vue & Extension du Mode Debug
+
+Si un agent IA ou développeur doit ajouter des métriques ou étendre le mode debug :
+
+### 1. Vue Note / Live Preview (CodeMirror 6)
+- **Objectif** : Zéro décalage cumulatif, 100% pixel-perfect.
+- **Métriques à maintenir dans l'HUD** :
+  - Décalage cumulé en pixels (mesuré entre `coordsAtPos` et calcul théorique de ligne).
+  - Taux de perfection pixel (`100% - (offset / hauteur)`).
+  - Hauteur de ligne nominale (`nominalLineHeight`).
+  - Ligne active, position du curseur (`sel.from`, `sel.to`).
+  - Nombre de widgets actifs (tableaux, cartes de code, images, callouts).
+- **Rendu des Blocs de Code** : Suivre le pattern universel bijectif (style Tableaux) :
+  - Curseur hors du bloc : widget unifié `CodeBlockCardWidget` (carte avec badge langage, bouton copier, fond feutré).
+  - Curseur dans le bloc : affichage complet de la syntaxe source (````lang ... ````) sans découpage de header/footer widget pour éliminer tout bug de surlignage `.cm-activeLine`.
+
+### 2. Vue Kanban (`KanbanView.tsx`)
+- En mode debug, afficher dans l'HUD ou en badges discrets :
+  - Nombre de colonnes et de cartes parsées.
+  - Cartes sans ID ou avec balises de priorité détectées (`!p1`, `!p2`, `!p3`).
+  - Latence de mise à jour Yjs et état de synchro.
+
+### 3. Vue Table (`TableView.tsx`)
+- En mode debug :
+  - Intégrité des délimiteurs markdown `|---|---|`.
+  - Typage inféré de chaque colonne (texte, nombre, date, tag).
+  - Statut de la ligne active.
+
+### 4. Vue Graphe (`GraphView.tsx`)
+- En mode debug :
+  - Nombre de nœuds et arêtes en mémoire.
+  - FPS du moteur de simulation force-directed D3 / Canvas.
+  - Taille du cache SVG Mermaid.
+
+---
+
+## 3. Règle Zéro-Émoji & Intégrité Visuelle
+- Tout texte ou widget introduit dans le mode debug ou les inspecteurs doit respecter rigoureusement la **Règle Zéro-Émoji dans l'UI** (ADR-08).
+- N'utiliser que des icônes vectorielles SVG ou les composants Lucide / `DuotoneIcon`.
+- Ne jamais laisser le HUD de debug altérer la géométrie ou le défilement normal de la page.

@@ -5,6 +5,7 @@ import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { contextMenu } from '../../stores/contextMenuStore';
 import { toast } from '../../stores/toastStore';
 import { networkStore } from '../../stores/networkStore';
+import { tabStore } from '../../stores/tabStore';
 
 interface TreeNodeProps {
   node: FileNode;
@@ -71,15 +72,22 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
   searchQuery = '',
 }) => {
   // Par défaut sur les gros coffres, les dossiers commencent FERMÉS
-  // Sauf si le fichier actif en cours d'édition se trouve dans ce sous-dossier,
+  // Sauf si le fichier actif ou sélectionné se trouve dans ce sous-dossier,
   // ou si "Déplier tout" est actif, ou si une recherche est en cours
   const isAncestorOfActive = Boolean(
-    activePath && node.is_dir && (activePath === node.path || activePath.startsWith(node.path + '/'))
+    (activePath && node.is_dir && (activePath === node.path || activePath.startsWith(node.path + '/'))) ||
+    (selectedPath && node.is_dir && (selectedPath === node.path || selectedPath.startsWith(node.path + '/')))
   );
 
   const isSearchActive = Boolean(searchQuery && searchQuery.trim().length > 0);
   const [isManualOpen, setIsManualOpen] = useState<boolean | null>(null);
   const [, setTick] = useState(0);
+
+  useEffect(() => {
+    if (selectedPath && node.is_dir && (selectedPath === node.path || selectedPath.startsWith(node.path + '/'))) {
+      setIsManualOpen(true);
+    }
+  }, [selectedPath, node.path, node.is_dir]);
 
   useEffect(() => {
     return networkStore.subscribe(() => {
@@ -294,7 +302,32 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
           icon: 'external-link',
           onClick: () => onMiddleClickFile(node.path),
         },
+        {
+          id: 'toggle-pin',
+          label: vaultStore.isPinned(node.path) ? 'Détacher des favoris' : 'Épingler aux favoris',
+          icon: 'pin',
+          onClick: () => vaultStore.togglePinNote(node.path),
+        },
         { id: 'div-file-1', divider: true },
+        {
+          id: 'convert-to-note',
+          label: 'Changer le type : Note Markdown',
+          icon: 'file-markdown',
+          onClick: () => vaultStore.convertDocumentType(node.path, 'note'),
+        },
+        {
+          id: 'convert-to-kanban',
+          label: 'Changer le type : Tableau Kanban',
+          icon: 'kanban',
+          onClick: () => vaultStore.convertDocumentType(node.path, 'kanban'),
+        },
+        {
+          id: 'convert-to-table',
+          label: 'Changer le type : Vue Tableau',
+          icon: 'table',
+          onClick: () => vaultStore.convertDocumentType(node.path, 'table'),
+        },
+        { id: 'div-file-convert', divider: true },
         {
           id: 'rename-file',
           label: 'Renommer / Déplacer...',
@@ -369,6 +402,7 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
       <div
         tabIndex={0}
         role="treeitem"
+        data-tree-path={node.path}
         aria-selected={isSelected}
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
@@ -426,10 +460,27 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
         ) : (
           <>
             <span style={{ width: 12 }} />
-            {node.name.toLowerCase().includes('kanban') || node.name.toLowerCase().includes('tableau') ? (
-              <DuotoneIcon name="kanban" size={14} style={{ color: 'var(--knit-primary)' }} />
-            ) : (
-              <DuotoneIcon name="file-markdown" size={14} />
+            {(() => {
+              const docType =
+                tabStore.tabs.find((t) => t.path === node.path)?.docType ||
+                (node.name.toLowerCase().includes('kanban')
+                  ? 'kanban'
+                  : node.name.toLowerCase().includes('tableau') || node.name.toLowerCase().includes('table')
+                  ? 'table'
+                  : 'note');
+
+              if (docType === 'kanban') {
+                return <DuotoneIcon name="kanban" size={14} style={{ color: 'var(--knit-primary)' }} />;
+              }
+              if (docType === 'table') {
+                return <DuotoneIcon name="table" size={14} style={{ color: 'var(--knit-primary)' }} />;
+              }
+              return <DuotoneIcon name="file-markdown" size={14} />;
+            })()}
+            {vaultStore.isPinned(node.path) && (
+              <span style={{ display: 'inline-flex', alignItems: 'center' }} title="Note épinglée aux favoris">
+                <DuotoneIcon name="pin" size={11} style={{ color: 'var(--knit-primary)' }} />
+              </span>
             )}
             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
               <HighlightedText text={node.name} query={searchQuery} />

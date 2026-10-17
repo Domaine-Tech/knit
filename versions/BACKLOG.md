@@ -3,7 +3,7 @@
 > Ce fichier est la source de vérité pour toutes les tâches du projet.
 > Il peut être modifié **à tout moment**, y compris en milieu de sprint.
 >
-> Dernière mise à jour : 2026-10-16
+> Dernière mise à jour : 2026-10-17
 
 ---
 
@@ -107,27 +107,28 @@
 
 | # | Tâche | Priorité | Statut | Sprint |
 |---|---|---|---|---|
-| B-026d | Architecture "Doc-Driven Views" (résolution auto par onglet via `type: ...`, élimination vue globale rigide) | 🔴 | 📋 | Sprint 6 |
-| B-026e | TabBar universelle persistante (visible sur toutes les vues, icônes dynamiques par type de doc) | 🔴 | 📋 | Sprint 6 |
-| B-026f | Menus contextuels de conversion de type de document (TreeNode, TabBar, Toolbar avec mise à jour YAML) | 🟠 | 📋 | Sprint 6 |
-| B-030d | Bouton Source universel (`</>` ↔ Rendu) & Déclencheurs de création (TabBar `+`, Slash `/kanban`) | 🟠 | 📋 | Sprint 6 |
-| B-027 | Rendu Mermaid inline dans n'importe quel fichier `.md` classique (WidgetType CodeMirror 6) | 🔴 | 📋 | Sprint 6 |
-| B-028 | Coloration syntaxique Mermaid (`codemirror-lang-mermaid`) | 🟠 | 📋 | Sprint 6 |
-| B-029 | Thème Mermaid synchronisé avec `--knit-hue` et mode sombre | 🟡 | 📋 | Sprint 6 |
-| B-030 | Mode interactif code ↔ rendu (clic sur le diagramme pour éditer la source) | 🟠 | 📋 | Sprint 6 |
-| B-031 | Optimisation de rendu : debounce 300ms et cache SVG pour éviter les saccades | 🟡 | 📋 | Sprint 6 |
-| B-030a | Menu Slash Command (`/`) & Callouts GFM (`> [!NOTE]`) (Notion) | 🟠 | 📋 | Sprint 6 |
-| B-030b | Multi-onglets & Split View (`Ctrl+\`) avec synchronisation d'état indépendante (Obsidian) | 🟡 | 📋 | Sprint 6 |
-| B-030c | Mode Live Preview (style Obsidian : masquer balises Markdown hors curseur) | 🔴 | 📋 | Sprint 6 |
-| B-030e | Confort de lecture centré (760px) & Bascule "Pleine Largeur" (style Notion) | 🟡 | 📋 | Sprint 6 |
-| B-044 | Curseur Fantôme & Présence Visuelle des Agents IA (Ghost Cursor) | 🟠 | 📋 | Sprint 6 |
-| B-045 | Générateur de Contexte IA en 1 Clic (Context Packager `Ctrl+Shift+C`) | 🟡 | 📋 | Sprint 6 |
-| B-046 | Pliage Hiérarchique de Sections (Heading Fold / Collapse `Ctrl+Alt+[` / `]`) | 🟡 | 📋 | Sprint 6 |
-| B-048 | Section "Favoris / Épinglés" en Tête de Sidebar (Pinned Notes) | 🟠 | 📋 | Sprint 6 |
-| B-052 | Moteur d'Autocomplétion Universel & Indexation Incrémentale Multi-Vues (Deep-links `[[Note#Titre]]`, ancres `[[#Titre]]`, `@date`, `@collaborateur`, `:emoji:`, `#tag`, actif Éditeur/Kanban/Table) | 🔴 | 📋 | Sprint 6 |
-| B-053 | Smart UX d'Écriture & Navigation (Smart Paste URL/image sur sélection, Auto-wrap, Tableaux `Tab`/`Entrée`, Hover preview flottant, raccourci Note Quotidienne `Ctrl+Shift+J`, panneau Backlinks) | 🟠 | 📋 | Sprint 6 |
-| B-054 | Norme Tâches Étendues Markdown & Indicateurs de Progrès (États `- [ ]`, `- [/]`, `- [x]`, `- [-]`, `- [?]`, `- [>]`, `- [!]`, priorités `!p1`..`!p3`, barre 2px projetée sous `#`, synchro Kanban) | 🟠 | 📋 | Sprint 6 |
-| B-055 | Mode Zen & Focus Absolu (`Ctrl+Shift+F`) et Optimisation Performance (Lazy-rendering `IntersectionObserver`, WriteGuard 250ms debounce) | 🟡 | 📋 | Sprint 6 |
+| B-026d | Architecture "Doc-Driven Views" (résolution auto par onglet via `type: ...`, élimination vue globale rigide) | 🔴 | ✅ | Sprint 6 |
+| B-026e | TabBar universelle persistante (visible sur toutes les vues, icônes dynamiques par type de doc) | 🔴 | ✅ | Sprint 6 |
+| B-026f | Menus contextuels de conversion de type de document (TreeNode, TabBar, Toolbar avec mise à jour YAML) | 🟠 | ✅ | Sprint 6 |
+| B-030d | Bouton Source universel (`</>` ↔ Rendu) & Déclencheurs de création (TabBar `+`, Slash `/kanban`) | 🟠 | ✅ | Sprint 6 |
+| B-027 | Rendu Mermaid inline dans n'importe quel fichier `.md` classique (WidgetType CodeMirror 6) | 🔴 | ✅ | Sprint 6 |
+| B-028 | Coloration syntaxique Mermaid (`codemirror-lang-mermaid`) | 🟠 | ✅ | Sprint 6 |
+| B-029 | Thème Mermaid synchronisé avec `--knit-hue` et mode sombre | 🟡 | ✅ | Sprint 6 |
+| B-030 | Mode interactif code ↔ rendu (clic sur le diagramme pour éditer la source) | 🟠 | ✅ | Sprint 6 |
+| B-031 | Optimisation de rendu : debounce 300ms et cache SVG pour éviter les saccades | 🟡 | ✅ | Sprint 6 |
+| B-030a | Menu Slash Command (`/`) & Callouts GFM (`> [!NOTE]`) (Notion) | 🟠 | ✅ | Sprint 6 |
+| B-030b | Multi-onglets & Split View (`Ctrl+\`) avec synchronisation d'état indépendante (Obsidian) | 🟡 | ✅ | Sprint 6 |
+| B-030c | Mode Live Preview (style Obsidian : masquer balises Markdown hors curseur) | 🔴 | ✅ | Sprint 6 |
+| B-030e | Confort de lecture centré (760px) & Bascule "Pleine Largeur" (style Notion) | 🟡 | ✅ | Sprint 6 |
+| B-044 | Curseur Fantôme & Présence Visuelle des Agents IA (Ghost Cursor) | 🟠 | ✅ | Sprint 6 |
+| B-045 | Générateur de Contexte IA en 1 Clic (Context Packager `Ctrl+Shift+C`) | 🟡 | ✅ | Sprint 6 |
+| B-046 | Pliage Hiérarchique de Sections (Heading Fold / Collapse `Ctrl+Alt+[` / `]`) | 🟡 | ✅ | Sprint 6 |
+| B-048 | Section "Favoris / Épinglés" en Tête de Sidebar (Pinned Notes) | 🟠 | ✅ | Sprint 6 |
+| B-052 | Moteur d'Autocomplétion Universel & Indexation Incrémentale Multi-Vues (Deep-links `[[Note#Titre]]`, ancres `[[#Titre]]`, `@date`, `@collaborateur`, `:emoji:`, `#tag`, actif Éditeur/Kanban/Table) | 🔴 | ✅ | Sprint 6 |
+| B-053 | Smart UX d'Écriture & Navigation (Smart Paste URL/image sur sélection, Auto-wrap, Tableaux `Tab`/`Entrée`, Hover preview flottant, raccourci Note Quotidienne `Ctrl+Shift+J`, panneau Backlinks) | 🟠 | ✅ | Sprint 6 |
+| B-054 | Norme Tâches Étendues Markdown & Indicateurs de Progrès (États `- [ ]`, `- [/]`, `- [x]`, `- [-]`, `- [?]`, `- [>]`, `- [!]`, priorités `!p1`..`!p3`, barre 2px projetée sous `#`, synchro Kanban) | 🟠 | ✅ | Sprint 6 |
+| B-055 | Mode Zen & Focus Absolu (`Ctrl+Shift+F`) et Optimisation Performance (Lazy-rendering `IntersectionObserver`, WriteGuard 250ms debounce) | 🟡 | ✅ | Sprint 6 |
+| B-056 | Mode Debug Global Unifié & Inspecteurs Multi-Vues (Bouton Header unique `debugStore`, HUD overlay temps réel, métriques pixel-perfect 0px, rendu bijectif unifié des blocs de code) | 🟡 | ✅ | Sprint 6 |
 
 
 ---

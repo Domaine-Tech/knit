@@ -9,11 +9,29 @@ import { DuotoneIcon } from '../Icons/DuotoneIcon';
 interface TabBarProps {
   tabs: Tab[];
   activeTabId: string | null;
+  groupId?: 1 | 2;
+  isFocused?: boolean;
+  isSplit?: boolean;
   onNewNote?: () => void;
+  onNewKanban?: () => void;
+  onToggleSplit?: () => void;
+  onCloseSplit?: () => void;
 }
 
-export const TabBar: React.FC<TabBarProps> = ({ tabs, activeTabId, onNewNote }) => {
+export const TabBar: React.FC<TabBarProps> = ({
+  tabs,
+  activeTabId,
+  groupId = 1,
+  isFocused = false,
+  isSplit = false,
+  onNewNote,
+  onNewKanban,
+  onToggleSplit,
+  onCloseSplit,
+}) => {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+
+  const activeTab = tabs.find((t) => t.id === activeTabId);
 
   // Empêche l'icône de scroll compass sur clic molette (la fermeture est gérée par onAuxClick)
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -32,9 +50,19 @@ export const TabBar: React.FC<TabBarProps> = ({ tabs, activeTabId, onNewNote }) 
 
   const handleDrop = (targetIndex: number) => {
     if (draggedIndex !== null && draggedIndex !== targetIndex) {
-      tabStore.reorderTabs(draggedIndex, targetIndex);
+      tabStore.reorderTabs(draggedIndex, targetIndex, groupId);
     }
     setDraggedIndex(null);
+  };
+
+  const getTabIcon = (tab: Tab) => {
+    if (tab.docType === 'kanban') {
+      return <DuotoneIcon name="kanban" size={14} style={{ color: 'var(--knit-primary)' }} />;
+    }
+    if (tab.docType === 'table') {
+      return <DuotoneIcon name="table" size={14} style={{ color: 'var(--knit-primary)' }} />;
+    }
+    return <DuotoneIcon name="file-markdown" size={14} />;
   };
 
   const handleTabContextMenu = (e: React.MouseEvent, tab: Tab, index: number) => {
@@ -45,6 +73,47 @@ export const TabBar: React.FC<TabBarProps> = ({ tabs, activeTabId, onNewNote }) 
     const mdLink = `[${tab.title.replace(/\.md$/, '')}](${tab.path})`;
 
     contextMenu.show(e, [
+      {
+        id: 'toggle-view-mode',
+        label: tab.viewMode === 'visual' ? 'Basculer en Code Source brut' : 'Basculer en Rendu Visuel',
+        icon: 'command',
+        shortcut: 'Ctrl+E',
+        onClick: () => tabStore.toggleViewMode(tab.id),
+      },
+      { id: 'div-tab-mode', divider: true },
+      {
+        id: 'convert-to-note',
+        label: tab.docType === 'note' ? 'Note Markdown (Actif)' : 'Convertir en Note Markdown',
+        icon: 'file-markdown',
+        onClick: () => vaultStore.convertDocumentType(tab.path, 'note'),
+      },
+      {
+        id: 'convert-to-kanban',
+        label: tab.docType === 'kanban' ? 'Tableau Kanban (Actif)' : 'Convertir en Tableau Kanban',
+        icon: 'kanban',
+        onClick: () => vaultStore.convertDocumentType(tab.path, 'kanban'),
+      },
+      {
+        id: 'convert-to-table',
+        label: tab.docType === 'table' ? 'Vue Tableau (Actif)' : 'Convertir en Vue Tableau',
+        icon: 'table',
+        onClick: () => vaultStore.convertDocumentType(tab.path, 'table'),
+      },
+      { id: 'div-tab-convert', divider: true },
+      {
+        id: 'split-view',
+        label: 'Scinder la vue côte à côte',
+        icon: 'split',
+        shortcut: 'Ctrl+\\',
+        onClick: () => tabStore.toggleSplit(tab.id),
+      },
+      {
+        id: 'pin',
+        label: tab.isPinned ? "Détacher l'onglet (Non épinglé)" : "Épingler l'onglet",
+        icon: 'pin' as const,
+        onClick: () => tabStore.pinTab(tab.id),
+      },
+      { id: 'div-tab-pin', divider: true },
       {
         id: 'close',
         label: 'Fermer',
@@ -81,17 +150,6 @@ export const TabBar: React.FC<TabBarProps> = ({ tabs, activeTabId, onNewNote }) 
           ]
         : []),
       { id: 'div-tab-1', divider: true },
-      ...(tab.isPreview
-        ? [
-            {
-              id: 'pin',
-              label: "Figer l'onglet (Mode permanent)",
-              icon: 'pin' as const,
-              onClick: () => tabStore.pinTab(tab.id),
-            },
-            { id: 'div-tab-pin', divider: true },
-          ]
-        : []),
       {
         id: 'reveal-file',
         label: "Révéler dans l'explorateur",
@@ -147,6 +205,44 @@ export const TabBar: React.FC<TabBarProps> = ({ tabs, activeTabId, onNewNote }) 
     ]);
   };
 
+  const handlePlusClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    contextMenu.show(e, [
+      {
+        id: 'new-note',
+        label: 'Nouvelle Note Markdown',
+        icon: 'file-markdown',
+        shortcut: 'Ctrl+N',
+        onClick: () => onNewNote?.(),
+      },
+      {
+        id: 'new-kanban',
+        label: 'Nouveau Tableau Kanban...',
+        icon: 'kanban',
+        onClick: () => onNewKanban?.(),
+      },
+      {
+        id: 'new-table',
+        label: 'Nouvelle Vue Tableau...',
+        icon: 'table',
+        onClick: async () => {
+          const name = window.prompt('Nom du nouveau tableau :', 'tableau.md');
+          if (name && name.trim()) {
+            const clean = name.trim().endsWith('.md') ? name.trim() : `${name.trim()}.md`;
+            await vaultStore.createFile(
+              clean,
+              `---\ntype: table\ntitle: "${clean.replace(/\.md$/, '')}"\n---\n\n# ${clean.replace(/\.md$/, '')}\n\n## À faire\n- [ ] Première ligne de données\n`
+            );
+            const content = await vaultStore.readFile(clean);
+            tabStore.openTab(clean, false, content);
+          }
+        },
+      },
+    ]);
+  };
+
   const handleBarContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -154,10 +250,16 @@ export const TabBar: React.FC<TabBarProps> = ({ tabs, activeTabId, onNewNote }) 
     contextMenu.show(e, [
       {
         id: 'new-note',
-        label: 'Nouvelle note',
-        icon: 'plus',
+        label: 'Nouvelle Note Markdown',
+        icon: 'file-markdown',
         shortcut: 'Ctrl+N',
         onClick: () => onNewNote?.(),
+      },
+      {
+        id: 'new-kanban',
+        label: 'Nouveau Tableau Kanban...',
+        icon: 'kanban',
+        onClick: () => onNewKanban?.(),
       },
       {
         id: 'reopen-closed',
@@ -183,17 +285,20 @@ export const TabBar: React.FC<TabBarProps> = ({ tabs, activeTabId, onNewNote }) 
     <div
       onContextMenu={handleBarContextMenu}
       onMouseDown={handleMouseDown}
+      onClick={() => tabStore.setFocusedGroup(groupId)}
       style={{
         display: 'flex',
         alignItems: 'center',
+        justifyContent: 'space-between',
         height: 38,
         backgroundColor: 'var(--knit-bg)',
         borderBottom: '1px solid var(--knit-border)',
-        overflowX: 'auto',
-        overflowY: 'hidden',
+        borderTop: (isSplit && isFocused) ? '1.5px solid var(--knit-primary)' : '1.5px solid transparent',
         userSelect: 'none',
         paddingLeft: 4,
         paddingRight: 8,
+        flexShrink: 0,
+        transition: 'border-top 0.15s ease',
       }}
       onDoubleClick={(e) => {
         // Double clic sur zone vide crée une nouvelle note
@@ -202,7 +307,19 @@ export const TabBar: React.FC<TabBarProps> = ({ tabs, activeTabId, onNewNote }) 
         }
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', height: '100%', gap: 2 }}>
+      {/* Zone gauche : Onglets et bouton + */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          height: '100%',
+          gap: 2,
+          overflowX: 'auto',
+          overflowY: 'hidden',
+          flex: 1,
+          minWidth: 0,
+        }}
+      >
         {tabs.map((tab, index) => {
           const isActive = tab.id === activeTabId;
 
@@ -219,35 +336,40 @@ export const TabBar: React.FC<TabBarProps> = ({ tabs, activeTabId, onNewNote }) 
                 if (e.button === 1) {
                   e.preventDefault();
                   e.stopPropagation();
-                  tabStore.closeTab(tab.id);
+                  tabStore.closeTab(tab.id, groupId);
                 }
               }}
-              onClick={() => tabStore.setActiveTab(tab.id)}
-              onDoubleClick={() => tabStore.pinTab(tab.id)}
-              title={`${tab.path}${tab.isPreview ? ' (Mode aperçu - Double-clic pour figer)' : ''}`}
+              onClick={() => tabStore.setActiveTab(tab.id, groupId)}
+              onDoubleClick={() => tabStore.pinTab(tab.id, groupId)}
+              title={`${tab.path}${tab.isPreview ? ' (Mode aperçu - Double-clic pour figer)' : ''}${tab.isPinned ? ' (Épinglé)' : ''}`}
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 8,
+                gap: 7,
                 height: 32,
                 padding: '0 10px',
                 borderRadius: 'var(--knit-radius-sm) var(--knit-radius-sm) 0 0',
                 backgroundColor: isActive ? 'var(--knit-surface)' : 'transparent',
                 borderLeft: '1px solid transparent',
                 borderRight: '1px solid transparent',
-                borderTop: isActive ? '2px solid var(--knit-primary)' : '2px solid transparent',
+                borderTop: isActive ? '1.5px solid var(--knit-primary)' : '1.5px solid transparent',
                 borderBottom: isActive ? '1px solid var(--knit-surface)' : 'none',
                 color: isActive ? 'var(--knit-text)' : 'var(--knit-text-secondary)',
                 fontSize: 13,
                 cursor: 'pointer',
                 transition: 'background var(--knit-transition-fast), color var(--knit-transition-fast)',
                 maxWidth: 220,
-                minWidth: 100,
+                minWidth: 90,
                 position: 'relative',
                 top: 1,
+                flexShrink: 0,
               }}
             >
-              <DuotoneIcon name="file-markdown" size={14} />
+              {tab.isPinned ? (
+                <DuotoneIcon name="pin" size={13} style={{ color: 'var(--knit-primary)' }} />
+              ) : (
+                getTabIcon(tab)
+              )}
 
               <span
                 style={{
@@ -278,7 +400,7 @@ export const TabBar: React.FC<TabBarProps> = ({ tabs, activeTabId, onNewNote }) 
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  tabStore.closeTab(tab.id);
+                  tabStore.closeTab(tab.id, groupId);
                 }}
                 title="Fermer (Ctrl+W ou clic molette)"
                 style={{
@@ -301,29 +423,134 @@ export const TabBar: React.FC<TabBarProps> = ({ tabs, activeTabId, onNewNote }) 
             </div>
           );
         })}
-      </div>
 
-      {onNewNote && (
         <button
-          onClick={onNewNote}
-          title="Nouvelle note (Ctrl+N ou double-clic sur la barre)"
+          onClick={handlePlusClick}
+          onContextMenu={handlePlusClick}
+          title="Nouveau document (+ menu de sélection)"
           style={{
             marginLeft: 4,
-            padding: 4,
+            padding: '4px 6px',
             borderRadius: 'var(--knit-radius-xs)',
             color: 'var(--knit-text-secondary)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            backgroundColor: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            flexShrink: 0,
           }}
           onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--knit-text)')}
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.color = 'var(--knit-text-secondary)')
-          }
+          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--knit-text-secondary)')}
         >
           <DuotoneIcon name="plus" size={14} />
         </button>
-      )}
+      </div>
+
+      {/* Zone droite : Bouton universel Source </> ↔ Rendu et Split View */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+        {activeTab && (
+          <button
+            onClick={() => tabStore.toggleViewMode(activeTab.id, groupId)}
+            data-tooltip={
+              activeTab.viewMode === 'visual'
+                ? 'Basculer vers le code Markdown brut (Ctrl+E)'
+                : 'Basculer vers la vue visuelle riche (Ctrl+E)'
+            }
+            data-shortcut="Ctrl+E"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 5,
+              padding: '2px 8px',
+              borderRadius: 'var(--knit-radius-xs)',
+              border: '1px solid var(--knit-border)',
+              backgroundColor:
+                activeTab.viewMode === 'source' ? 'var(--knit-primary-alpha)' : 'var(--knit-surface)',
+              color:
+                activeTab.viewMode === 'source' ? 'var(--knit-primary)' : 'var(--knit-text-secondary)',
+              fontSize: 11,
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all var(--knit-transition-fast)',
+            }}
+          >
+            {activeTab.viewMode === 'visual' ? (
+              <>
+                <DuotoneIcon name="command" size={12} />
+                <span>Source &lt;/&gt;</span>
+              </>
+            ) : (
+              <>
+                <DuotoneIcon
+                  name={
+                    activeTab.docType === 'kanban'
+                      ? 'kanban'
+                      : activeTab.docType === 'table'
+                      ? 'table'
+                      : 'file-markdown'
+                  }
+                  size={12}
+                />
+                <span>Rendu</span>
+              </>
+            )}
+          </button>
+        )}
+
+        {groupId === 2 ? (
+          <button
+            onClick={() => {
+              if (onCloseSplit) onCloseSplit();
+              else tabStore.closeSplit();
+            }}
+            data-tooltip="Fermer ce panneau scindé (Ctrl+\)"
+            data-shortcut="Ctrl+\"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '3px 6px',
+              borderRadius: 'var(--knit-radius-xs)',
+              border: '1px solid var(--knit-border)',
+              backgroundColor: 'transparent',
+              color: 'var(--knit-text-muted)',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--knit-text)')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--knit-text-muted)')}
+          >
+            <DuotoneIcon name="close" size={13} />
+          </button>
+        ) : (
+          <button
+            onClick={() => {
+              if (onToggleSplit) onToggleSplit();
+              else tabStore.toggleSplit();
+            }}
+            data-tooltip={
+              isSplit
+                ? 'Fermer le panneau scindé (Ctrl+\\)'
+                : 'Scinder l’espace de travail en 2 panneaux (Ctrl+\\)'
+            }
+            data-shortcut="Ctrl+\"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '3px 6px',
+              borderRadius: 'var(--knit-radius-xs)',
+              border: '1px solid var(--knit-border)',
+              backgroundColor: isSplit ? 'var(--knit-primary-alpha)' : 'transparent',
+              color: isSplit ? 'var(--knit-primary)' : 'var(--knit-text-muted)',
+              cursor: 'pointer',
+            }}
+          >
+            <DuotoneIcon name="split" size={13} />
+          </button>
+        )}
+      </div>
     </div>
   );
 };

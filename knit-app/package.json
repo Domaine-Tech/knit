@@ -24,6 +24,7 @@
     "@tauri-apps/plugin-dialog": "^2.8.3",
     "@types/fast-diff": "^1.1.0",
     "fast-diff": "^1.3.0",
+    "mermaid": "^12.2.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "y-codemirror.next": "^0.3.6",

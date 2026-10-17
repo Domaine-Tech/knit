@@ -41,11 +41,18 @@ Knit est une application collaborative local-first et peer-to-peer (P2P) pour la
 12. **Norme de Tâches Étendues & Markdown Pur (B-054)** :
    - Respecter les 7 statuts reconnus par Knit (`- [ ]`, `- [/]`, `- [x]`, `- [-]`, `- [?]`, `- [>]`, `- [!]`), les priorités inline (`!p1`, `!p2`, `!p3`), les dates/heures (`@YYYY-MM-DD[ HH:mm[-HH:mm]]`) et assignations (`@collaborateur` ou `@vault`). Ne jamais introduire de balise HTML propriétaire pour les tâches.
 13. **Alignement Systématique des Versions (Commit, Push, Cadrage & Livraison de Sprint)** :
-   - À chaque **commit Git**, **`git push`**, **construction/planification d'un sprint**, et **à la livraison d'un sprint/version**, vérifier impérativement la cohérence stricte de la version à travers les 6 sources de vérité du code :
-     1. `Cargo.toml` (racine) : `[workspace.package] version = "X.Y.Z"`
-     2. `knit-core/Cargo.toml` : `version.workspace = true`
-     3. `knit-app/src-tauri/Cargo.toml` : `version.workspace = true`
-     4. `knit-app/src-tauri/tauri.conf.json` : `"version": "X.Y.Z"`
-     5. `knit-app/package.json` et racine `package.json` : `"version": "X.Y.Z"`
-     6. `knit-app/src/utils/version.ts` : `export const APP_VERSION = 'X.Y.Z'`
-   - Vérifier également la concordance documentaire : `versions/vX.Y.Z/CHANGELOG.md`, `versions/vX.Y.Z/sprint-N/SPRINT.md`, `versions/VERSIONING.md` et `.knit/AI_MEMORY.md`.
+    - À chaque **commit Git**, **`git push`**, **construction/planification d'un sprint**, et **à la livraison d'un sprint/version**, vérifier impérativement la cohérence stricte de la version à travers les 6 sources de vérité du code :
+      1. `Cargo.toml` (racine) : `[workspace.package] version = "X.Y.Z"`
+      2. `knit-core/Cargo.toml` : `version.workspace = true`
+      3. `knit-app/src-tauri/Cargo.toml` : `version.workspace = true`
+      4. `knit-app/src-tauri/tauri.conf.json` : `"version": "X.Y.Z"`
+      5. `knit-app/package.json` et racine `package.json` : `"version": "X.Y.Z"`
+      6. `knit-app/src/utils/version.ts` : `export const APP_VERSION = 'X.Y.Z'`
+    - Vérifier également la concordance documentaire : `versions/vX.Y.Z/CHANGELOG.md`, `versions/vX.Y.Z/sprint-N/SPRINT.md`, `versions/VERSIONING.md` et `.knit/AI_MEMORY.md`.
+14. **Zéro Émoji dans l'Interface Utilisateur (UI) & le Code** :
+    - Interdiction formelle d'introduire des émojis Unicode dans les composants React, menus contextuels, barres d'outils, boutons, en-têtes, onglets, notifications toasts, badges, ou templates Markdown par défaut.
+    - Toujours recourir aux icônes vectorielles sobres (`DuotoneIcon` ou SVG purs) pour garantir une esthétique professionnelle et soignée (style Linear / Obsidian).
+    - Seul l'utilisateur final a le libre choix de taper des émojis dans le contenu texte brut de ses notes Markdown.
+15. **Mode Debug Global Unifié (US B-056)** :
+    - Un seul déclencheur global dans le Header (knit-app/src/components/Header.tsx) couplé à src/stores/debugStore.ts et window.__KNIT_DEBUG__. Ne jamais insérer de bouton de debug dans les onglets ou vues locales.
+    - Assure la mesure temps réel pixel-perfect (0px décalage) de CodeMirror 6 et le rendu bijectif unifié des blocs de code Markdown (carte unifiée en lecture, source intégrale au clic).

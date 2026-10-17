@@ -4,14 +4,19 @@
  * Représentation 100% Markdown standard (compatible Obsidian Kanban et CommonMark) :
  * - Frontmatter YAML avec `type: kanban` ou `kanban: true` ou `kanban-plugin: basic`
  * - Chaque colonne correspond à un titre `## Nom de la colonne`
- * - Chaque carte correspond à une ligne de liste `- [ ] Titre` ou `- [x] Titre`
- * - Supporte le nombre de colonnes illimité et personnalisable
+ * - Chaque carte correspond à une ligne de liste `- [ ] Titre`, `- [/] Titre`, `- [x] Titre` etc.
+ * - Support des 7 statuts étendus : ' ', '/', 'x', '-', '?', '>', '!'
+ * - Support des priorités inline : !p1, !p2, !p3
  */
+
+export type TaskStatus = ' ' | '/' | 'x' | '-' | '?' | '>' | '!';
 
 export interface KanbanCard {
   id: string;
   title: string;
   completed: boolean;
+  status: TaskStatus;
+  priority?: 'p1' | 'p2' | 'p3';
   rawText: string;
 }
 
@@ -66,7 +71,7 @@ export function isKanbanContent(content: string, path?: string): boolean {
 
   // Si le document possède au moins 2 titres ## et des items de liste - [ ]
   const h2Count = (content.match(/^##\s+/gm) || []).length;
-  const taskCount = (content.match(/^-\s*\[[ xX]\]/gm) || []).length;
+  const taskCount = (content.match(/^-\s*\[[ xX\/\-\?\>\!]\]/gm) || []).length;
   return h2Count >= 2 && taskCount >= 1;
 }
 
@@ -90,12 +95,35 @@ title: "${cleanTitle}"
   for (const col of columns) {
     md += `## ${col}\n\n`;
     if (col === 'À faire' || col.toLowerCase().includes('faire')) {
-      md += `- [ ] Première tâche du projet\n`;
+      md += `- [ ] Première tâche du projet !p1\n`;
     }
     md += '\n';
   }
 
   return md;
+}
+
+/**
+ * Normalise un caractère de statut de case à cocher vers l'un des 7 statuts reconnus
+ */
+export function normalizeTaskStatus(char: string): TaskStatus {
+  switch (char) {
+    case 'x':
+    case 'X':
+      return 'x';
+    case '/':
+      return '/';
+    case '-':
+      return '-';
+    case '?':
+      return '?';
+    case '>':
+      return '>';
+    case '!':
+      return '!';
+    default:
+      return ' ';
+  }
 }
 
 /**
@@ -156,16 +184,22 @@ export function parseKanbanMarkdown(content: string, fallbackTitle: string = 'Ta
 
     // Détection d'une carte dans la colonne courante
     if (currentColumn) {
-      // Format 1 : - [ ] Tâche ou - [x] Tâche
-      const checkMatch = trimmed.match(/^-\s*\[([ xX])\]\s*(.*)$/);
+      // Format 1 : - [ ] Tâche ou - [x] Tâche ou - [/] etc. (7 statuts)
+      const checkMatch = trimmed.match(/^-\s*\[([ xX\/\-\?\>\!])\]\s*(.*)$/);
       if (checkMatch) {
         cardCounter++;
-        const completed = checkMatch[1].toLowerCase() === 'x';
+        const status = normalizeTaskStatus(checkMatch[1]);
+        const completed = status === 'x';
         const cardTitle = checkMatch[2].trim() || 'Sans titre';
+        const priorityMatch = cardTitle.match(/!(p[1-3])\b/i);
+        const priority = priorityMatch ? (priorityMatch[1].toLowerCase() as 'p1' | 'p2' | 'p3') : undefined;
+
         currentColumn.cards.push({
           id: `card-${cardCounter}-${Date.now().toString().slice(-4)}`,
           title: cardTitle,
           completed,
+          status,
+          priority,
           rawText: rawLine,
         });
         continue;
@@ -176,10 +210,15 @@ export function parseKanbanMarkdown(content: string, fallbackTitle: string = 'Ta
       if (bulletMatch) {
         cardCounter++;
         const cardTitle = bulletMatch[1].trim() || 'Sans titre';
+        const priorityMatch = cardTitle.match(/!(p[1-3])\b/i);
+        const priority = priorityMatch ? (priorityMatch[1].toLowerCase() as 'p1' | 'p2' | 'p3') : undefined;
+
         currentColumn.cards.push({
           id: `card-${cardCounter}-${Date.now().toString().slice(-4)}`,
           title: cardTitle,
           completed: false,
+          status: ' ',
+          priority,
           rawText: rawLine,
         });
         continue;
@@ -201,6 +240,30 @@ export function parseKanbanMarkdown(content: string, fallbackTitle: string = 'Ta
     title,
     preamble: preambleLines.join('\n').trim(),
     columns,
+  };
+}
+
+/**
+ * Met à jour le statut d'une carte selon le nom de sa colonne de destination (Bijectivité Kanban)
+ */
+export function adaptCardStatusToColumn(card: KanbanCard, columnTitle: string): KanbanCard {
+  const lower = columnTitle.toLowerCase();
+  let nextStatus: TaskStatus = card.status;
+
+  if (lower.includes('termin') || lower.includes('done') || lower.includes('fait') || lower.includes('fini')) {
+    nextStatus = 'x';
+  } else if (lower.includes('cours') || lower.includes('progress') || lower.includes('doing') || lower.includes('actif')) {
+    nextStatus = '/';
+  } else if (lower.includes('faire') || lower.includes('todo') || lower.includes('backlog') || lower.includes('attente')) {
+    nextStatus = ' ';
+  } else if (lower.includes('annul') || lower.includes('cancel')) {
+    nextStatus = '-';
+  }
+
+  return {
+    ...card,
+    status: nextStatus,
+    completed: nextStatus === 'x',
   };
 }
 
@@ -233,8 +296,8 @@ export function serializeKanbanMarkdown(board: KanbanBoard): string {
   for (const col of board.columns) {
     output += `## ${col.title}\n\n`;
     for (const card of col.cards) {
-      const checkMark = card.completed ? 'x' : ' ';
-      output += `- [${checkMark}] ${card.title.trim()}\n`;
+      const mark = card.status || (card.completed ? 'x' : ' ');
+      output += `- [${mark}] ${card.title.trim()}\n`;
     }
     output += '\n';
   }
@@ -243,15 +306,30 @@ export function serializeKanbanMarkdown(board: KanbanBoard): string {
 }
 
 /**
- * Analyse une ligne de carte pour extraire d'éventuels WikiLinks [[...]] et #tags
+ * Analyse une ligne de carte pour extraire d'éventuels WikiLinks [[...]], #tags, et priorités !p1/!p2/!p3
  */
 export function parseCardMetadata(title: string): {
   cleanTitle: string;
   tags: string[];
   wikiLinks: string[];
+  priority?: 'p1' | 'p2' | 'p3';
+  assignee?: string;
+  dueDate?: string;
 } {
   const tags: string[] = [];
   const wikiLinks: string[] = [];
+
+  // Extraction priorités
+  const priorityMatch = title.match(/!(p[1-3])\b/i);
+  const priority = priorityMatch ? (priorityMatch[1].toLowerCase() as 'p1' | 'p2' | 'p3') : undefined;
+
+  // Extraction assignation @collaborateur
+  const assigneeMatch = title.match(/@([a-zA-Z0-9_\-\.\/]+)/);
+  const assignee = assigneeMatch ? assigneeMatch[1] : undefined;
+
+  // Extraction date @YYYY-MM-DD
+  const dateMatch = title.match(/@(\d{4}-\d{2}-\d{2}(?:\s+\d{2}:\d{2}(?:-\d{2}:\d{2})?)?)/);
+  const dueDate = dateMatch ? dateMatch[1] : undefined;
 
   // Extraction #tags
   const tagMatches = title.match(/#([\w\u00C0-\u017F-]+)/g);
@@ -265,9 +343,18 @@ export function parseCardMetadata(title: string): {
     wikiLinks.push(...linkMatches.map((l) => l.slice(2, -2)));
   }
 
+  let clean = title
+    .replace(/!(p[1-3])\b/gi, '')
+    .replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, '$2')
+    .replace(/\[\[([^\]]+)\]\]/g, '$1')
+    .trim();
+
   return {
-    cleanTitle: title,
+    cleanTitle: clean || title,
     tags,
     wikiLinks,
+    priority,
+    assignee,
+    dueDate,
   };
 }
