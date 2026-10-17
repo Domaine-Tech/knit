@@ -1,0 +1,378 @@
+/* ==========================================================================
+   KNIT AUTOCOMPLETE POPUP DESIGN SYSTEM
+   Thème moderne, compact et feutré pour l'autocomplétion CodeMirror 6
+   Conforme à la Direction Artistique Knit (tokens.css, mode sombre/clair, --knit-hue)
+   ========================================================================== */
+
+/* Conteneur principal du Tooltip d'autocomplétion */
+.cm-tooltip.cm-tooltip-autocomplete,
+.knit-autocomplete-tooltip {
+  background-color: var(--knit-surface) !important;
+  border: 1px solid var(--knit-border) !important;
+  border-radius: var(--knit-radius-md) !important; /* 10px */
+  box-shadow: var(--knit-shadow-lg), 0 0 0 1px var(--knit-border-subtle) !important;
+  font-family: var(--knit-font) !important;
+  font-size: 12.5px !important;
+  color: var(--knit-text) !important;
+  z-index: 99999 !important;
+  overflow: hidden !important;
+  padding: 3px !important;
+  min-width: 320px !important;
+  max-width: 560px !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  animation: knit-autocomplete-pop 80ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+@keyframes knit-autocomplete-pop {
+  from {
+    opacity: 0;
+    transform: translateY(3px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Liste à puces interne */
+.cm-tooltip.cm-tooltip-autocomplete > ul,
+.knit-autocomplete-tooltip > ul {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 2px !important;
+  max-height: 260px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  scrollbar-width: thin;
+  scrollbar-color: var(--knit-border) transparent;
+}
+
+/* Scrollbar personnalisée */
+.cm-tooltip.cm-tooltip-autocomplete > ul::-webkit-scrollbar,
+.knit-autocomplete-tooltip > ul::-webkit-scrollbar {
+  width: 4px;
+}
+.cm-tooltip.cm-tooltip-autocomplete > ul::-webkit-scrollbar-track,
+.knit-autocomplete-tooltip > ul::-webkit-scrollbar-track {
+  background: transparent;
+}
+.cm-tooltip.cm-tooltip-autocomplete > ul::-webkit-scrollbar-thumb,
+.knit-autocomplete-tooltip > ul::-webkit-scrollbar-thumb {
+  background: var(--knit-border);
+  border-radius: 4px;
+}
+.cm-tooltip.cm-tooltip-autocomplete > ul::-webkit-scrollbar-thumb:hover,
+.knit-autocomplete-tooltip > ul::-webkit-scrollbar-thumb:hover {
+  background: var(--knit-text-muted);
+}
+
+/* Ligne d'option standard (hauteur compacte, padding sobre) */
+.cm-tooltip.cm-tooltip-autocomplete > ul > li,
+.knit-completion-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 3px 8px !important;
+  min-height: 24px !important;
+  margin: 1px 0 !important;
+  border-radius: var(--knit-radius-sm) !important; /* 6px */
+  cursor: pointer !important;
+  color: var(--knit-text) !important;
+  background: transparent !important;
+  transition: background-color var(--knit-transition-fast), color var(--knit-transition-fast) !important;
+  border: 1px solid transparent !important;
+  user-select: none !important;
+  box-sizing: border-box !important;
+}
+
+/* Survol de souris */
+.cm-tooltip.cm-tooltip-autocomplete > ul > li:hover:not([aria-selected="true"]):not(.cm-completionSelected),
+.knit-completion-item:hover:not([aria-selected="true"]):not(.cm-completionSelected) {
+  background-color: var(--knit-surface-hover) !important;
+}
+
+/* Option sélectionnée : fond teinté doux Knit et barre d'accentuation à gauche, sans double cadre lourd */
+.cm-tooltip.cm-tooltip-autocomplete > ul > li[aria-selected="true"],
+.cm-tooltip.cm-tooltip-autocomplete > ul > li.cm-completionSelected,
+.knit-completion-item[aria-selected="true"],
+.knit-completion-item.cm-completionSelected {
+  background-color: var(--knit-primary-alpha) !important;
+  color: var(--knit-text) !important;
+  border-color: transparent !important;
+  box-shadow: inset 2.5px 0 0 var(--knit-primary) !important;
+}
+
+/* Libellé principal */
+.cm-completionLabel {
+  font-weight: 500 !important;
+  font-size: 12.5px !important;
+  line-height: 1.3 !important;
+  color: var(--knit-text) !important;
+  letter-spacing: -0.01em !important;
+  flex-shrink: 0 !important;
+}
+
+/* Texte saisi filtré : mis en évidence avec la couleur primaire Knit */
+.cm-completionMatchedText {
+  color: var(--knit-primary) !important;
+  font-weight: 700 !important;
+  text-decoration: none !important;
+}
+
+/* Détail / chemin ou note contextuelle à droite */
+.cm-completionDetail {
+  margin-left: auto !important;
+  padding-left: 10px !important;
+  font-size: 11px !important;
+  line-height: 1.3 !important;
+  font-family: var(--knit-font-mono) !important;
+  color: var(--knit-text-muted) !important;
+  opacity: 0.8 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  max-width: 240px !important;
+  font-style: normal !important;
+}
+
+.cm-tooltip.cm-tooltip-autocomplete > ul > li[aria-selected="true"] .cm-completionDetail,
+.knit-completion-item[aria-selected="true"] .cm-completionDetail {
+  color: var(--knit-text-secondary) !important;
+  opacity: 1 !important;
+}
+
+/* Neutralisation du pseudo-élément textuel CodeMirror par défaut ("abc", "var", etc.) */
+.cm-completionIcon::after {
+  display: none !important;
+  content: "" !important;
+}
+
+/* Base stylisée pour les badges d'icônes d'autocomplétion (18px × 18px parfaitement centré) */
+.cm-completionIcon {
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  min-height: 18px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-radius: 4px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  font-family: var(--knit-font-mono) !important;
+  opacity: 1 !important;
+  background: var(--knit-surface-hover) !important;
+  color: var(--knit-text-secondary) !important;
+  border: 1px solid var(--knit-border) !important;
+  transition: all var(--knit-transition-fast) !important;
+  position: relative !important;
+  flex-shrink: 0 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+/* Centrage mathématique parfait de tous les symboles d'icônes via positionnement absolu */
+.cm-completionIcon::before {
+  position: absolute !important;
+  inset: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  line-height: 1 !important;
+  text-align: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* === VARIANTES PAR TYPE D'ÉLÉMENT === */
+
+/* 1. Note Markdown (.md) */
+.cm-completionIcon-note,
+.cm-completionIcon-text,
+.knit-completion-note .cm-completionIcon {
+  background: hsla(var(--knit-hue), 55%, 55%, 0.12) !important;
+  border-color: hsla(var(--knit-hue), 55%, 55%, 0.28) !important;
+  color: var(--knit-primary) !important;
+}
+.cm-completionIcon-note::before,
+.cm-completionIcon-text::before,
+.knit-completion-note .cm-completionIcon::before {
+  content: "≡";
+  font-size: 12px;
+}
+
+/* 2. Tableau Kanban */
+.cm-completionIcon-kanban,
+.cm-completionIcon-interface,
+.knit-completion-kanban .cm-completionIcon {
+  background: rgba(245, 158, 11, 0.14) !important;
+  border-color: rgba(245, 158, 11, 0.35) !important;
+  color: #F59E0B !important;
+}
+.cm-completionIcon-kanban::before,
+.cm-completionIcon-interface::before,
+.knit-completion-kanban .cm-completionIcon::before {
+  content: "▤";
+  font-size: 11px;
+}
+
+/* 3. Vue Table */
+.cm-completionIcon-table,
+.cm-completionIcon-class,
+.knit-completion-table .cm-completionIcon {
+  background: rgba(59, 130, 246, 0.14) !important;
+  border-color: rgba(59, 130, 246, 0.35) !important;
+  color: #3B82F6 !important;
+}
+.cm-completionIcon-table::before,
+.cm-completionIcon-class::before,
+.knit-completion-table .cm-completionIcon::before {
+  content: "⊞";
+  font-size: 11px;
+}
+
+/* 4. Titre / Section (#Titre) */
+.cm-completionIcon-heading,
+.cm-completionIcon-property,
+.knit-completion-heading .cm-completionIcon {
+  background: rgba(139, 92, 246, 0.14) !important;
+  border-color: rgba(139, 92, 246, 0.35) !important;
+  color: #8B5CF6 !important;
+}
+.cm-completionIcon-heading::before,
+.cm-completionIcon-property::before,
+.knit-completion-heading .cm-completionIcon::before {
+  content: "#";
+  font-size: 11px;
+  font-weight: 800;
+}
+
+/* 5. Mention Collaborateur (@peer) */
+.cm-completionIcon-mention,
+.cm-completionIcon-type,
+.knit-completion-mention .cm-completionIcon {
+  background: rgba(16, 185, 129, 0.14) !important;
+  border-color: rgba(16, 185, 129, 0.35) !important;
+  color: #10B981 !important;
+}
+.cm-completionIcon-mention::before,
+.cm-completionIcon-type::before,
+.knit-completion-mention .cm-completionIcon::before {
+  content: "@";
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* 6. Attribution Partagée Coffre (@vault) */
+.cm-completionIcon-vault,
+.cm-completionIcon-namespace,
+.knit-completion-vault .cm-completionIcon {
+  background: hsla(var(--knit-hue), 55%, 55%, 0.22) !important;
+  border-color: var(--knit-primary) !important;
+  color: var(--knit-primary) !important;
+}
+.cm-completionIcon-vault::before,
+.cm-completionIcon-namespace::before,
+.knit-completion-vault .cm-completionIcon::before {
+  content: "◈";
+  font-size: 11px;
+  font-weight: 800;
+}
+
+/* 7. Date & Raccourci calendrier (@@date) */
+.cm-completionIcon-date,
+.cm-completionIcon-variable,
+.knit-completion-date .cm-completionIcon {
+  background: rgba(14, 165, 233, 0.14) !important;
+  border-color: rgba(14, 165, 233, 0.35) !important;
+  color: #0EA5E9 !important;
+}
+.cm-completionIcon-date::before,
+.cm-completionIcon-variable::before,
+.knit-completion-date .cm-completionIcon::before {
+  content: "◷";
+  font-size: 11px;
+}
+
+/* 8. Émoji (:emoji:) */
+.cm-completionIcon-emoji,
+.knit-completion-emoji .cm-completionIcon {
+  background: rgba(245, 158, 11, 0.14) !important;
+  border-color: rgba(245, 158, 11, 0.35) !important;
+  color: #F59E0B !important;
+}
+.cm-completionIcon-emoji::before,
+.knit-completion-emoji .cm-completionIcon::before {
+  content: "✦";
+  font-size: 11px;
+}
+/* Rendu agrandi de l'émoji dans le detail pour une prévisualisation nette */
+.knit-completion-emoji .cm-completionDetail,
+.cm-tooltip-autocomplete > ul > li:has(.cm-completionIcon-emoji) .cm-completionDetail {
+  font-size: 15px !important;
+  font-family: inherit !important;
+  opacity: 1 !important;
+}
+
+/* 9. Tag hiérarchique (#tag) */
+.cm-completionIcon-tag,
+.cm-completionIcon-keyword,
+.knit-completion-tag .cm-completionIcon {
+  background: rgba(236, 72, 153, 0.14) !important;
+  border-color: rgba(236, 72, 153, 0.35) !important;
+  color: #EC4899 !important;
+}
+.cm-completionIcon-tag::before,
+.cm-completionIcon-keyword::before,
+.knit-completion-tag .cm-completionIcon::before {
+  content: "❖";
+  font-size: 10px;
+}
+
+/* 10. Slash Command (/commande) */
+.cm-completionIcon-slash,
+.cm-completionIcon-function,
+.knit-completion-slash .cm-completionIcon {
+  background: hsla(var(--knit-hue), 55%, 55%, 0.16) !important;
+  border-color: hsla(var(--knit-hue), 55%, 55%, 0.35) !important;
+  color: var(--knit-primary) !important;
+}
+.cm-completionIcon-slash::before,
+.cm-completionIcon-function::before,
+.knit-completion-slash .cm-completionIcon::before {
+  content: "/";
+  font-size: 12px;
+  font-weight: 800;
+}
+
+/* 11. Alias d'affichage ([[Note|Alias]]) */
+.cm-completionIcon-alias,
+.knit-completion-alias .cm-completionIcon {
+  background: rgba(107, 114, 128, 0.16) !important;
+  border-color: rgba(107, 114, 128, 0.35) !important;
+  color: var(--knit-text-secondary) !important;
+}
+.cm-completionIcon-alias::before,
+.knit-completion-alias .cm-completionIcon::before {
+  content: "↳";
+  font-size: 11px;
+}
+
+/* Panneau d'information d'aide complémentaire (.cm-completionInfo) */
+.cm-tooltip.cm-completionInfo {
+  background-color: var(--knit-surface) !important;
+  border: 1px solid var(--knit-border) !important;
+  border-radius: var(--knit-radius-md) !important;
+  color: var(--knit-text) !important;
+  font-family: var(--knit-font) !important;
+  font-size: 12px !important;
+  box-shadow: var(--knit-shadow-lg) !important;
+  padding: 6px 10px !important;
+  max-width: 280px !important;
+  z-index: 100000 !important;
+}

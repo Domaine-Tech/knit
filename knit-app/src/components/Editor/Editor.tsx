@@ -813,6 +813,30 @@ export const Editor: React.FC<EditorProps> = ({
         color: 'var(--knit-primary) !important',
         opacity: '0.85',
       },
+      /* Fenêtre d'autocomplétion stylée selon la DA Knit */
+      '.cm-tooltip.cm-tooltip-autocomplete': {
+        backgroundColor: 'var(--knit-surface) !important',
+        border: '1px solid var(--knit-border) !important',
+        borderRadius: 'var(--knit-radius-md) !important',
+        boxShadow: 'var(--knit-shadow-lg) !important',
+        color: 'var(--knit-text) !important',
+        fontFamily: 'var(--knit-font) !important',
+      },
+      '.cm-tooltip-autocomplete ul li[aria-selected="true"], .cm-tooltip-autocomplete ul li.cm-completionSelected': {
+        backgroundColor: 'var(--knit-primary-alpha) !important',
+        color: 'var(--knit-text) !important',
+      },
+      '.cm-tooltip-autocomplete ul li:hover:not([aria-selected="true"]):not(.cm-completionSelected)': {
+        backgroundColor: 'var(--knit-surface-hover) !important',
+      },
+      '.cm-completionMatchedText': {
+        color: 'var(--knit-primary) !important',
+        fontWeight: '700 !important',
+      },
+      '.cm-completionDetail': {
+        color: 'var(--knit-text-muted) !important',
+        fontFamily: 'var(--knit-font-mono) !important',
+      },
     });
 
     // Style de coloration syntaxique propre à Knit connecté aux variables CSS

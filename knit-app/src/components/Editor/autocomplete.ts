@@ -28,6 +28,14 @@ export const EMOJI_DICTIONARY: Record<string, string> = {
   lock: '🔒',
   eyes: '👀',
   thumbsup: '👍',
+  smile: '😊',
+  laugh: '😂',
+  robot: '🤖',
+  brain: '🧠',
+  coffee: '☕',
+  clap: '👏',
+  wave: '👋',
+  100: '💯',
   recycle: '♻️',
   gear: '⚙️',
   hammer: '🔨',
@@ -118,6 +126,9 @@ export function createKnitAutocompletion(sources: AutocompleteSourceProps) {
   getOrLoadSuggestIndex();
 
   return autocompletion({
+    tooltipClass: () => 'knit-autocomplete-tooltip',
+    optionClass: (c) => `knit-completion-item knit-completion-${c.type || 'default'}`,
+    icons: true,
     override: [
       (context: CompletionContext): CompletionResult | null => {
         // --- 1. DÉCLENCHEUR WIKILINKS `[[...` ---
@@ -137,7 +148,7 @@ export function createKnitAutocompletion(sources: AutocompleteSourceProps) {
               .map((h) => ({
                 label: `#${h.text}`,
                 detail: `Section H${h.level} (cette note)`,
-                type: 'property',
+                type: 'heading',
                 apply: (view: any, _completion: any, from: number, to: number) => {
                   const insertText = `#${h.text}]]`;
                   view.dispatch({
@@ -171,7 +182,7 @@ export function createKnitAutocompletion(sources: AutocompleteSourceProps) {
               .map((h) => ({
                 label: h.text,
                 detail: `H${h.level} dans ${h.file_rel}`,
-                type: 'property',
+                type: 'heading',
                 apply: (view: any, _completion: any, from: number, to: number) => {
                   const insertText = `${h.text}]]`;
                   view.dispatch({
@@ -197,6 +208,7 @@ export function createKnitAutocompletion(sources: AutocompleteSourceProps) {
                 {
                   label: aliasText || 'Mon alias',
                   detail: `Alias d'affichage pour ${targetDoc}`,
+                  type: 'alias',
                   apply: (view: any, _completion: any, from: number, to: number) => {
                     const text = `${aliasText || 'Mon alias'}]]`;
                     view.dispatch({
@@ -226,7 +238,7 @@ export function createKnitAutocompletion(sources: AutocompleteSourceProps) {
               return {
                 label: stem,
                 detail: filePath,
-                type: docType === 'kanban' ? 'interface' : docType === 'table' ? 'class' : 'text',
+                type: docType,
                 boost: docType === 'kanban' ? 2 : 1,
                 apply: (view: any, completion: any, from: number, to: number) => {
                   const insertText = `${completion.label}]]`;
@@ -268,7 +280,7 @@ export function createKnitAutocompletion(sources: AutocompleteSourceProps) {
             .map((s) => ({
               label: s.label,
               detail: s.detail,
-              type: 'variable',
+              type: 'date',
               apply: (view: any, _completion: any, from: number, to: number) => {
                 const insertText = `@${s.date} `;
                 view.dispatch({
@@ -298,7 +310,7 @@ export function createKnitAutocompletion(sources: AutocompleteSourceProps) {
             {
               label: 'vault',
               detail: 'Attribution collective partagée avec tous les pairs',
-              type: 'namespace',
+              type: 'vault',
               boost: 10,
               apply: (view: any, _c: any, from: number, to: number) => {
                 const text = '@vault ';
@@ -311,7 +323,7 @@ export function createKnitAutocompletion(sources: AutocompleteSourceProps) {
             ...peers.map((peer) => ({
               label: peer.display_name.replace(/\s+/g, '-'),
               detail: `Pair connecté (${peer.initials})`,
-              type: 'type',
+              type: 'mention',
               boost: 5,
               apply: (view: any, _c: any, from: number, to: number) => {
                 const text = `@${peer.display_name} `;
@@ -331,7 +343,7 @@ export function createKnitAutocompletion(sources: AutocompleteSourceProps) {
         }
 
         // --- 4. DÉCLENCHEUR ÉMOJIS `:emoji:` ---
-        const emojiMatch = context.matchBefore(/(?:^|\s):([a-zA-Z0-9_]{1,20})$/);
+        const emojiMatch = context.matchBefore(/(?:^|\s):([a-zA-Z0-9_]{0,20})$/);
         if (emojiMatch) {
           const colonIdx = emojiMatch.text.indexOf(':');
           const query = emojiMatch.text.slice(colonIdx + 1).toLowerCase();
@@ -341,7 +353,7 @@ export function createKnitAutocompletion(sources: AutocompleteSourceProps) {
             .map(([shortcode, emoji]) => ({
               label: `:${shortcode}:`,
               detail: emoji,
-              type: 'text',
+              type: 'emoji',
               apply: (view: any, _c: any, from: number, to: number) => {
                 view.dispatch({
                   changes: { from: from - 1, to, insert: `${emoji} ` },
@@ -369,7 +381,7 @@ export function createKnitAutocompletion(sources: AutocompleteSourceProps) {
             .filter((t) => !query || t.toLowerCase().includes(query))
             .map((tag) => ({
               label: tag,
-              type: 'keyword',
+              type: 'tag',
               detail: 'tag',
             }));
 
@@ -453,7 +465,7 @@ export function createKnitAutocompletion(sources: AutocompleteSourceProps) {
             .map((cmd) => ({
               label: cmd.label,
               detail: cmd.detail,
-              type: 'function',
+              type: 'slash',
               apply: (view: any, _c: any, _from: number, to: number) => {
                 view.dispatch({
                   changes: { from: slashMatch.from, to, insert: cmd.template },
