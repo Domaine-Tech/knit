@@ -91,7 +91,14 @@ Pour toute modification du frontend React (`knit-app`) :
    - **Pattern bijectif des blocs de code** : Suivre le pattern universel des tableaux : widget unifié CodeBlockCardWidget quand le curseur est hors du bloc, et affichage complet en mode source dès que le curseur entre dans le bloc, évitant tout artefact de surlignage horizontal .cm-activeLine.
 
 10. **Déclencheur Rapide des Prompts Standardisés (`docs/PROMPTS_IA.md`)** :
-    - Dès que l'utilisateur écrit `fait prompt X` ou `prompt X` (1 à 7 ou bonus) dans le chat / Composer :
-    - Charger immédiatement le prompt défini dans `docs/PROMPTS_IA.md` (1: Refactoring, 2: Performance, 3: Traduction/i18n, 4: Sécurité, 5: UX/Killer App, 6: Alignement Code/Doc/Versions, 7: Collaboration P2P).
+    - Dès que l'utilisateur écrit `fait prompt X` ou `prompt X` (1 à 11 ou bonus), `réalise sprint X` ou `commit et push` dans le chat / Composer :
+    - Charger immédiatement le prompt défini dans `docs/PROMPTS_IA.md` (1: Refactoring, 2: Performance, 3: Traduction/i18n, 4: Sécurité, 5: UX/Killer App, 6: Alignement Code/Doc/Versions, 7: Collaboration P2P, 8: Tests & QA, 9: Centralisation Types/Utils/CRDT, 10: Réalisation & Clôture de Sprint, 11: Commit & Push Intelligent).
     - Endosser le rôle expert associé et activer le **STRICT MODE PLAN** (aucun fichier modifié au 1er tour).
     - Fournir un diagnostic clair et un plan d'action ordonné avec cases à cocher `[ ]`, en demandant validation avant exécution.
+
+11. **Centralisation du Typage (`src/types/`) & Découplage Modulaire** :
+    - **Règle absolue de zéro duplication de type** : Tous les types et interfaces de domaine métier (`FileNode`, `Tab`, `UserProfile`, `KanbanBoard`, `TaskStatus`, `DocType`, `ViewMode`, `AppViewMode`, etc.) doivent obligatoirement résider dans le répertoire dédié `knit-app/src/types/` (`vault.ts`, `markdown.ts`, `network.ts`, `kanban.ts`, `views.ts`) et être réexportés via le point d'entrée unique `src/types/index.ts`.
+    - **Rétrocompatibilité transparente** : Les stores (`vaultStore.ts`, `networkStore.ts`, `tabStore.ts`) et parseurs (`kanbanParser.ts`) réexportent ces types pour les consommateurs existants, mais aucune nouvelle déclaration de type de domaine ne doit être faite hors de `src/types/`.
+    - **Conversions binaires optimisées** : Pour tout flux CRDT Yjs, synchronisation P2P, state vectors ou snapshots natifs Tauri, utiliser obligatoirement `src/utils/encodingUtils.ts` (`uint8ArrayToBase64`, `base64ToUint8Array`) par blocs de 32 Ko. Ne jamais réintroduire de boucle naïve $O(N^2)$.
+    - **Découplage architectural des vues & modales** : Factoriser systématiquement la logique complexe dans des hooks modulaires (`useKanbanBoard`, `useEditorLinks`, `editorTheme`) et des composants de base réutilisables (`BaseSearchModal`).
+

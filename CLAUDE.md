@@ -57,5 +57,10 @@ Knit est une application collaborative local-first et peer-to-peer (P2P) pour la
     - Un seul déclencheur global dans le Header (knit-app/src/components/Header.tsx) couplé à src/stores/debugStore.ts et window.__KNIT_DEBUG__. Ne jamais insérer de bouton de debug dans les onglets ou vues locales.
     - Assure la mesure temps réel pixel-perfect (0px décalage) de CodeMirror 6 et le rendu bijectif unifié des blocs de code Markdown (carte unifiée en lecture, source intégrale au clic).
 16. **Déclencheur Rapide des Prompts Standardisés (`docs/PROMPTS_IA.md`)** :
-    - Dès que l'utilisateur demande `fait prompt X` ou `prompt X` (1 à 7 ou bonus), charger immédiatement la spécification dans `docs/PROMPTS_IA.md`.
+    - Dès que l'utilisateur demande `fait prompt X` ou `prompt X` (1 à 11 ou bonus), `réalise sprint X` ou `commit et push`, charger immédiatement la spécification dans `docs/PROMPTS_IA.md`.
     - Adopter le rôle expert, appliquer le **STRICT MODE PLAN** (analyse en lecture seule, aucune écriture sans validation), produire un plan d'action détaillé par phases avec cases à cocher `[ ]` et attendre la validation explicite de l'utilisateur.
+17. **Centralisation du Typage (`src/types/`) & Découplage Modulaire** :
+    - Tout type ou interface de domaine (`FileNode`, `Tab`, `UserProfile`, `KanbanBoard`, `TaskStatus`, `DocType`, etc.) doit obligatoirement résider dans `knit-app/src/types/` (`vault.ts`, `markdown.ts`, `network.ts`, `kanban.ts`, `views.ts`) et être réexporté via `src/types/index.ts`. Zéro duplication tolérée dans les stores ou composants.
+    - Conversions binaires (`Uint8Array` ↔ `Base64`) : utiliser obligatoirement `src/utils/encodingUtils.ts` (`uint8ArrayToBase64`, `base64ToUint8Array`) par blocs de 32 Ko pour tout flux CRDT, P2P ou snapshot. Proscription formelle des boucles manuelles inefficaces O(N²).
+    - Découplage modulaire : isoler les logiques d'infrastructure complexes dans des hooks dédiés (`useKanbanBoard`, `useEditorLinks`, `editorTheme`) et composants mutualisés (`BaseSearchModal`).
+

@@ -19,6 +19,8 @@ Dès qu'une modification touche l'un des domaines suivants :
 5. **Nouveau sous-dossier ou convention de coffre** (ex: `assets/`, `wiki/`, `projet/taches/`, etc.)
 6. **Mise à jour des formats d'ID de tâche ou statuts autorisés** (les 7 statuts Markdown reconnus `- [ ]`, `- [/]`, `- [x]`, `- [-]`, `- [?]`, `- [>]`, `- [!]`, priorités `!p1`..`!p3`, dates `@YYYY-MM-DD`, assignations `@collaborateur`/`@vault`)
 7. **Commit Git, `git push`, Cadrage ou Livraison d'un Sprint** : vérification et alignement obligatoire du numéro de version dans les 6 sources de vérité de l'application et les dossiers de sprint.
+8. **Nouveau Type de Domaine Métier ou Refactoring Architectural** : tout nouveau type ou interface de domaine doit résider dans `knit-app/src/types/` et être réexporté dans `src/types/index.ts`. Zéro duplication de type entre stores et composants.
+
 
 
 ---

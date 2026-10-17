@@ -104,7 +104,13 @@ Tout agent IA générant ou manipulant des fichiers dans le coffre doit se confo
 
 16. **Mode Debug Global Unifié (US B-056)** : Tout composant ou vue réagissant au mode debug doit passer par `useDebugStore` (`src/stores/debugStore.ts`). Un seul bouton dans le Header (`knit-app/src/components/Header.tsx`), aucun bouton local dans les onglets. L'overlay HUD fournit un diagnostic temps réel de l'alignement pixel-perfect de CodeMirror 6 (0 décalage cumulatif). Les blocs de code Markdown utilisent le rendu bijectif unifié (carte élégante en lecture, source intégrale au clic).
 
-17. **Déclencheur Rapide des Prompts IA Standardisés (`docs/PROMPTS_IA.md`)** : Dès que l'utilisateur écrit dans le chat `fait prompt X` ou `prompt X` (avec X de 1 à 7 ou bonus) :
-    - Charger immédiatement le prompt correspondant dans `docs/PROMPTS_IA.md` (1: Refactoring, 2: Performance, 3: Traduction/i18n, 4: Sécurité, 5: UX/Killer App, 6: Alignement Code/Doc/Versions, 7: Collaboration P2P).
+17. **Déclencheur Rapide des Prompts IA Standardisés (`docs/PROMPTS_IA.md`)** : Dès que l'utilisateur écrit dans le chat `fait prompt X` ou `prompt X` (avec X de 1 à 11 ou bonus), `réalise sprint X` ou `commit et push` :
+    - Charger immédiatement le prompt correspondant dans `docs/PROMPTS_IA.md` (1: Refactoring, 2: Performance, 3: Traduction/i18n, 4: Sécurité, 5: UX/Killer App, 6: Alignement Code/Doc/Versions, 7: Collaboration P2P, 8: Tests/QA, 9: Centralisation Types/Utils/CRDT, 10: Réalisation & Clôture de Sprint, 11: Commit & Push Intelligent).
     - Adopter le rôle expert, le contexte architectural de Knit et ses contraintes.
     - Appliquer rigoureusement le **STRICT MODE PLAN** : analyse en lecture seule, diagnostic chiffré, plan d'action phasé avec cases `[ ]`, et demande obligatoire de validation avant toute modification de fichier.
+
+18. **Centralisation du Typage & Découplage Modulaire** :
+    - Tout type ou interface de domaine métier (`FileNode`, `Tab`, `UserProfile`, `KanbanBoard`, `TaskStatus`, `DocType`, `ViewMode`, `AppViewMode`, etc.) doit obligatoirement être déclaré dans `knit-app/src/types/` (`vault.ts`, `markdown.ts`, `network.ts`, `kanban.ts`, `views.ts`) et réexporté via le point d'entrée unique `src/types/index.ts`. Zéro duplication de type n'est tolérée dans le code frontend.
+    - Les conversions binaires (`Uint8Array` ↔ `Base64`) associées au CRDT, au P2P et aux snapshots de coffre doivent exclusivement faire appel à `src/utils/encodingUtils.ts` (`uint8ArrayToBase64`, `base64ToUint8Array`), proscrivant les boucles de concaténation manuelles en $O(N^2)$.
+    - Découpler les vues volumineuses via des hooks métier dédiés (`useKanbanBoard`, `useEditorLinks`, `editorTheme`) et composants partagés (`BaseSearchModal`).
+

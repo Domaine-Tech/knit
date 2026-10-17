@@ -13,6 +13,10 @@ Lorsque l'utilisateur saisit dans le chat ou Composer une commande du type :
 - `fait prompt 5` / `prompt 5` : Solutions UX & Fonctionnalités « Killer App »
 - `fait prompt 6` / `prompt 6` : Analyse d'Alignement Global (Code, Doc, Versions & Directives IA)
 - `fait prompt 7` / `prompt 7` : Collaboration P2P, Présence & Expérience Multi-Utilisateurs
+- `fait prompt 8` / `prompt 8` : Stratégie de Tests, Couverture & Assurance Qualité
+- `fait prompt 9` / `prompt 9` : Audit & Centralisation : Types, Utilitaires & Moteur CRDT
+- `fait prompt 10` / `prompt 10` / `réalise sprint X` / `clôture sprint X` : Réalisation, Audit d'Avancement & Clôture de Sprint
+- `fait prompt 11` / `prompt 11` / `commit et push` / `smart commit` : Commit & Push Intelligent (Qualité & 6 Versions)
 - `fait prompt bonus` / `meta prompt` : Méta-Prompt d'Orchestration sur Mesure
 
 L'agent DOIT IMMÉDIATEMENT :

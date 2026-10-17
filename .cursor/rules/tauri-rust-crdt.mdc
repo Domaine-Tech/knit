@@ -26,3 +26,9 @@ globs: knit-core/**/*.rs, knit-app/src-tauri/**/*.rs
 ## 4. Concurrence & Performance
 - Éviter les verrous bloquants `std::sync::Mutex` dans les contextes asynchrones ; préférer `tokio::sync::RwLock` ou des canaux mpsc.
 - Utiliser `xxhash-rust::xxh3` pour toutes les opérations de hachage rapide en mémoire.
+
+## 5. Conversions Binaires & Sérialisation Échange Frontend/Backend
+- Côté frontend (`knit-app`), toute conversion binaire `Uint8Array` ↔ `Base64` (flux CRDT Yjs, synchronisation P2P, state vectors, snapshots Tauri) DOIT impérativement utiliser `src/utils/encodingUtils.ts` (`uint8ArrayToBase64`, `base64ToUint8Array`) par blocs de 32 Ko.
+- Interdiction stricte des boucles de concaténation manuelles (`for (let i = 0; ...) binary += String.fromCharCode(bytes[i])`) qui induisent une complexité $O(N^2)$ et gèlent l'Event Loop sur les gros fichiers.
+- Les structures de données transmises entre le frontend et le backend (ex: `DocSnapshot`) doivent respecter les définitions centralisées dans `src/types/vault.ts`.
+
