@@ -103,3 +103,8 @@ Tout agent IA générant ou manipulant des fichiers dans le coffre doit se confo
 15. **Zéro émoji dans l'interface et le code** : Interdiction absolue d'ajouter des émojis dans les interfaces utilisateur, boutons, barres d'outils, menus contextuels, notifications toasts, badges, onglets ou templates par défaut générés par l'IA. Toujours utiliser des icônes vectorielles sobres (`DuotoneIcon` ou SVG purs). L'utilisation d'émojis est un choix réservé strictement au texte Markdown libre rédigé par l'utilisateur final.
 
 16. **Mode Debug Global Unifié (US B-056)** : Tout composant ou vue réagissant au mode debug doit passer par `useDebugStore` (`src/stores/debugStore.ts`). Un seul bouton dans le Header (`knit-app/src/components/Header.tsx`), aucun bouton local dans les onglets. L'overlay HUD fournit un diagnostic temps réel de l'alignement pixel-perfect de CodeMirror 6 (0 décalage cumulatif). Les blocs de code Markdown utilisent le rendu bijectif unifié (carte élégante en lecture, source intégrale au clic).
+
+17. **Déclencheur Rapide des Prompts IA Standardisés (`docs/PROMPTS_IA.md`)** : Dès que l'utilisateur écrit dans le chat `fait prompt X` ou `prompt X` (avec X de 1 à 6 ou bonus) :
+    - Charger immédiatement le prompt correspondant dans `docs/PROMPTS_IA.md` (1: Refactoring, 2: Performance, 3: Traduction/i18n, 4: Sécurité, 5: UX/Killer App, 6: Alignement Code/Doc/Versions).
+    - Adopter le rôle expert, le contexte architectural de Knit et ses contraintes.
+    - Appliquer rigoureusement le **STRICT MODE PLAN** : analyse en lecture seule, diagnostic chiffré, plan d'action phasé avec cases `[ ]`, et demande obligatoire de validation avant toute modification de fichier.

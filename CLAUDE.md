@@ -56,3 +56,6 @@ Knit est une application collaborative local-first et peer-to-peer (P2P) pour la
 15. **Mode Debug Global Unifié (US B-056)** :
     - Un seul déclencheur global dans le Header (knit-app/src/components/Header.tsx) couplé à src/stores/debugStore.ts et window.__KNIT_DEBUG__. Ne jamais insérer de bouton de debug dans les onglets ou vues locales.
     - Assure la mesure temps réel pixel-perfect (0px décalage) de CodeMirror 6 et le rendu bijectif unifié des blocs de code Markdown (carte unifiée en lecture, source intégrale au clic).
+16. **Déclencheur Rapide des Prompts Standardisés (`docs/PROMPTS_IA.md`)** :
+    - Dès que l'utilisateur demande `fait prompt X` ou `prompt X` (1 à 6 ou bonus), charger immédiatement la spécification dans `docs/PROMPTS_IA.md`.
+    - Adopter le rôle expert, appliquer le **STRICT MODE PLAN** (analyse en lecture seule, aucune écriture sans validation), produire un plan d'action détaillé par phases avec cases à cocher `[ ]` et attendre la validation explicite de l'utilisateur.

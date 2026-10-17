@@ -1,0 +1,24 @@
+---
+description: Raccourcis d'exécution des Prompts IA Standardisés ("fait prompt X")
+globs: **/*
+---
+
+# Règle de Déclenchement Rapide des Prompts IA (docs/PROMPTS_IA.md)
+
+Lorsque l'utilisateur saisit dans le chat ou Composer une commande du type :
+- `fait prompt 1` / `prompt 1` : Nettoyage et Refactorisation
+- `fait prompt 2` / `prompt 2` : Optimisation & Performance (Goulets d'étranglement)
+- `fait prompt 3` / `prompt 3` : Détection des Textes & Internationalisation (i18n Front/Back)
+- `fait prompt 4` / `prompt 4` : Audit de Sécurité & Renforcement Sans Perte d'UX
+- `fait prompt 5` / `prompt 5` : Solutions UX & Fonctionnalités « Killer App »
+- `fait prompt 6` / `prompt 6` : Analyse d'Alignement Global (Code, Doc, Versions & Directives IA)
+- `fait prompt bonus` / `meta prompt` : Méta-Prompt d'Orchestration sur Mesure
+
+L'agent DOIT IMMÉDIATEMENT :
+1. Lire la spécification du prompt correspondant dans `docs/PROMPTS_IA.md`.
+2. Adopter le rôle expert, le contexte architectural de Knit et ses contraintes dures.
+3. **Appliquer le STRICT MODE PLAN** :
+   - Analyser le codebase en lecture seule.
+   - Ne modifier aucun code ou fichier lors de la première réponse.
+   - Restituer le diagnostic et un **Plan d'Action détaillé par phases avec cases à cocher `[ ]`**.
+   - Demander la validation explicite de l'utilisateur avant d'exécuter.
