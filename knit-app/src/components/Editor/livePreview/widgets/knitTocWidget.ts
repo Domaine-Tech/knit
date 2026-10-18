@@ -15,6 +15,7 @@ export class KnitTocWidget extends WidgetType {
   private from: number;
   private to: number;
   private docText: string;
+  private ro?: ResizeObserver;
 
   constructor(code: string, from: number, to: number, docText: string) {
     super();
@@ -37,6 +38,17 @@ export class KnitTocWidget extends WidgetType {
     return 120;
   }
 
+  coordsAt(dom: HTMLElement): DOMRect | null {
+    return dom.getBoundingClientRect();
+  }
+
+  destroy() {
+    if (this.ro) {
+      this.ro.disconnect();
+      this.ro = undefined;
+    }
+  }
+
   toDOM(view: EditorView): HTMLElement {
     const options = parseBlockOptions(this.code);
     const depth =
@@ -47,7 +59,12 @@ export class KnitTocWidget extends WidgetType {
           : 3;
     const collapsible = options.collapsible === true || options.collapsible === 'true';
 
-    const container = createDynamicBlockShell('knit-toc', this.from, view);
+    const { container, resizeObserver } = createDynamicBlockShell(
+      'knit-toc',
+      this.from,
+      view
+    );
+    this.ro = resizeObserver;
     const body = document.createElement('div');
     body.className = 'knit-dynamic-body';
 

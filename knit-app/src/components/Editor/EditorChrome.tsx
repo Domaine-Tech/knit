@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { packageContextForAI } from '../../utils';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { BacklinksPanel } from './BacklinksPanel';
+import { GraphView } from '../Graph/GraphView';
 
 export interface EditorChromeProps {
   path: string;
@@ -12,10 +13,11 @@ export interface EditorChromeProps {
   onToggleBacklinksPanel: () => void;
   isFullWidth: boolean;
   onToggleFullWidth: () => void;
+  onNavigateFile?: (path: string) => void;
 }
 
 /**
- * Chrome lecture de l'éditeur : barre rétroliens / largeur / Packager IA + panneau backlinks.
+ * Chrome lecture de l'éditeur : barre rétroliens / graphe / largeur / Packager IA.
  */
 export const EditorChrome: React.FC<EditorChromeProps> = ({
   path,
@@ -26,8 +28,10 @@ export const EditorChrome: React.FC<EditorChromeProps> = ({
   onToggleBacklinksPanel,
   isFullWidth,
   onToggleFullWidth,
+  onNavigateFile,
 }) => {
-  const hasChrome = backlinks.length > 0 || unlinkedMentions.length > 0;
+  const [isGraphOpen, setIsGraphOpen] = useState(false);
+  const hasChrome = true;
 
   return (
     <>
@@ -65,6 +69,26 @@ export const EditorChrome: React.FC<EditorChromeProps> = ({
               {backlinks.length} lié{backlinks.length > 1 ? 's' : ''}
               {unlinkedMentions.length > 0 ? ` • ${unlinkedMentions.length} non lié(s)` : ''}
             </span>
+          </button>
+
+          <button
+            onClick={() => setIsGraphOpen((v) => !v)}
+            data-tooltip="Vue graphe local (WikiLinks & rétroliens)"
+            style={{
+              background: isGraphOpen ? 'var(--knit-primary-alpha)' : 'none',
+              border: '1px solid var(--knit-border)',
+              padding: '2px 8px',
+              borderRadius: 'var(--knit-radius-xs)',
+              color: isGraphOpen ? 'var(--knit-primary)' : 'var(--knit-text-muted)',
+              fontSize: '11px',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 5,
+            }}
+          >
+            <DuotoneIcon name="graph" size={12} />
+            <span>Graphe</span>
           </button>
 
           <button
@@ -112,8 +136,23 @@ export const EditorChrome: React.FC<EditorChromeProps> = ({
         </div>
       )}
 
-      {isBacklinksPanelOpen && (
-        <BacklinksPanel backlinks={backlinks} unlinkedMentions={unlinkedMentions} />
+      {(isBacklinksPanelOpen || isGraphOpen) && (
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--knit-border)', width: '100%' }}>
+          {isBacklinksPanelOpen && (
+            <div style={{ flex: isGraphOpen ? '0 0 320px' : 1, minWidth: 0, borderRight: isGraphOpen ? '1px solid var(--knit-border)' : 'none' }}>
+              <BacklinksPanel backlinks={backlinks} unlinkedMentions={unlinkedMentions} />
+            </div>
+          )}
+          {isGraphOpen && (
+            <div style={{ flex: 1, minWidth: 0, width: '100%' }}>
+              <GraphView
+                centerPath={path}
+                onOpenFile={(p) => onNavigateFile?.(p)}
+                onClose={() => setIsGraphOpen(false)}
+              />
+            </div>
+          )}
+        </div>
       )}
     </>
   );

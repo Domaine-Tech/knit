@@ -10,7 +10,7 @@ import type {
   QueryResult,
   VaultOps,
 } from '../types';
-import { findFileMtimeMs, getFlatFiles } from '../utils';
+import { detectDocType, findFileMtimeMs, getFlatFiles } from '../utils';
 import { runQuery, listFolderEntries } from '../utils/queryEngine';
 
 const TASK_LINE_RE = /^(\s*[-*]\s*)\[([ xX/\-?>!])\](\s+)(.*)$/;
@@ -114,8 +114,11 @@ class FrontmatterIndex {
         fm.fields.titre ||
         fm.fields.title ||
         name.replace(/\.md$/i, '');
-      const docType = fm.fields.type || 'note';
       const fields = { ...fm.fields };
+      const docType = detectDocType(
+        fm.fields.type ? `---\ntype: ${fm.fields.type}\n---\n` : content,
+        key
+      );
       // Upsert (write / reload) : FS > champ FM > maintenant (écriture fraîche).
       const mtime =
         findFileMtimeMs(ops.files, key) ?? parseFieldMtime(fields) ?? Date.now();
@@ -168,7 +171,10 @@ class FrontmatterIndex {
                 path,
                 name,
                 title,
-                docType: fm.fields.type || 'note',
+                docType: detectDocType(
+                  fm.fields.type ? `---\ntype: ${fm.fields.type}\n---\n` : content,
+                  path
+                ),
                 mtime: resolveEntryMtime(ops, path, fields, previous),
                 fields,
               });

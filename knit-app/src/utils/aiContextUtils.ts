@@ -1,5 +1,6 @@
 import { vaultStore } from '../stores/vaultStore';
 import { copyTextWithToast } from './clipboardUtils';
+import { fileStem } from './treeUtils';
 
 /**
  * Utilitaires de préparation et d'exportation de contexte pour assistants et modèles IA
@@ -14,7 +15,7 @@ export async function packageContextForAI(
   path: string,
   content: string
 ): Promise<string> {
-  const title = path.split('/').pop()?.replace(/\.md$/, '') || 'Document';
+  const title = fileStem(path) || 'Document';
   const fm = await vaultStore.parseFrontmatter(content);
   const backlinks = await vaultStore.getBacklinks(path);
 

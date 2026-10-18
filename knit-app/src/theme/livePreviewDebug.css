@@ -262,3 +262,19 @@
   margin-left: 4px;
 }
 
+.knit-debug-view-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 9px;
+  font-family: var(--knit-font-mono, monospace);
+  font-weight: 600;
+  color: var(--knit-text-muted);
+  background: var(--knit-surface);
+  border: 1px dashed var(--knit-border);
+  padding: 1px 4px;
+  border-radius: var(--knit-radius-xs, 4px);
+  user-select: none;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+

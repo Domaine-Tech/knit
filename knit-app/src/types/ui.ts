@@ -2,6 +2,8 @@
  * Types d'interface utilisateur (UI), icônes, thèmes et infobulles de Knit
  */
 
+import type { FileNode } from './vault';
+
 export type IconName =
   | 'folder'
   | 'folder-open'
@@ -18,6 +20,9 @@ export type IconName =
   | 'warning'
   | 'info'
   | 'plus'
+  | 'add'
+  | 'minus'
+  | 'star'
   | 'chevron-right'
   | 'chevron-left'
   | 'chevron-down'
@@ -49,9 +54,26 @@ export type IconName =
   | 'sort'
   | 'knit'
   | 'logo'
-  | 'bug';
+  | 'bug'
+  | 'calendar'
+  | 'canvas'
+  | 'slides'
+  | 'gallery'
+  | 'graph';
 
 export type ThemeMode = 'light' | 'dark';
+
+/** Onglets du panneau latéral (fichiers / recherche / tags / agenda). */
+export type SidebarTab = 'files' | 'search' | 'tags' | 'calendar';
+
+/** Options du hook `useSidebarTree`. */
+export interface UseSidebarTreeOptions {
+  files: FileNode[];
+  onSelectFile: (path: string, preview: boolean) => void;
+  onMiddleClickFile: (path: string) => void;
+  controlledSidebarTab?: SidebarTab;
+  onSidebarTabChange?: (tab: SidebarTab) => void;
+}
 
 export interface PresetColor {
   name: string;

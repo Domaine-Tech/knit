@@ -10,6 +10,7 @@ import {
   parseBlockOptions,
 } from '../../../../utils/queryEngine';
 import { createKnitSelectDom } from '../../../../utils/knitSelect';
+import { bindHoverPreviewTarget, clearHoverPreview } from '../../../../utils';
 
 async function openPath(path: string): Promise<void> {
   try {
@@ -28,6 +29,7 @@ export class KnitQueryWidget extends WidgetType {
   private from: number;
   private to: number;
   private indexVersion: number;
+  private ro?: ResizeObserver;
 
   constructor(code: string, from: number, to: number, indexVersion: number) {
     super();
@@ -50,12 +52,28 @@ export class KnitQueryWidget extends WidgetType {
     return 180;
   }
 
+  coordsAt(dom: HTMLElement): DOMRect | null {
+    return dom.getBoundingClientRect();
+  }
+
+  destroy() {
+    if (this.ro) {
+      this.ro.disconnect();
+      this.ro = undefined;
+    }
+  }
+
   toDOM(view: EditorView): HTMLElement {
     const options = parseBlockOptions(this.code);
     const filter = blockOptionsToQueryFilter(options);
     const result = vaultStore.queryFiles(filter);
 
-    const container = createDynamicBlockShell('knit-query', this.from, view);
+    const { container, resizeObserver } = createDynamicBlockShell(
+      'knit-query',
+      this.from,
+      view
+    );
+    this.ro = resizeObserver;
     const body = document.createElement('div');
     body.className = 'knit-dynamic-body';
 
@@ -101,12 +119,14 @@ export class KnitQueryWidget extends WidgetType {
           btn.className = 'knit-files-link knit-btn';
           btn.textContent = value || row.title;
           btn.setAttribute('data-tooltip', row.path);
+          bindHoverPreviewTarget(btn, row.path);
           btn.addEventListener('mousedown', (e) => {
             if (e.button === 1) e.preventDefault();
           });
           btn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
+            clearHoverPreview(true);
             void openPath(row.path);
           });
           td.appendChild(btn);

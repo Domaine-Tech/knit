@@ -93,7 +93,10 @@ function getOrCreateDirNode(parts: string[]): FileNode {
     }
   }
 
-  return parentNode!;
+  if (!parentNode) {
+    throw new Error(`Impossible de créer le dossier démo: ${parts.join('/')}`);
+  }
+  return parentNode;
 }
 
 /** mtime démo déterministe (répartition sur ~14 jours) pour tri / affichage relatif. */
@@ -107,7 +110,10 @@ function demoMtimeMs(relPath: string): number {
 
 function registerFileNode(relPath: string, extension: string): void {
   const parts = relPath.split('/');
-  const fileName = parts.pop()!;
+  const fileName = parts.pop();
+  if (!fileName) {
+    throw new Error(`Chemin démo invalide: ${relPath}`);
+  }
 
   const fileNode: FileNode = {
     id: relPath,

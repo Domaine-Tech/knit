@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import type { AppViewMode, CommandItem, ThemeMode, FileNode, Tab } from '../types';
+import type { AppViewMode, CommandItem, ThemeMode, FileNode, SidebarTab, Tab } from '../types';
+import { docTypeToAppViewMode } from '../types';
 import {
   getStoredTheme,
   getStoredHue,
@@ -18,6 +19,9 @@ import {
   packageContextForAI,
   formatIsoDate,
   isMediaFilePath,
+  setSimpleLinkClick,
+  buildDailyJournalTemplate,
+  journalPathForDate,
 } from '../utils';
 
 /**
@@ -49,10 +53,18 @@ export function useAppShell() {
   } = useResizablePanels();
 
   const [isZenMode, setIsZenMode] = useState(false);
+
+  // Mode Lecture (Zen) : liens au clic simple partout (CM + widgets LP)
+  useEffect(() => {
+    setSimpleLinkClick(isZenMode);
+    return () => setSimpleLinkClick(false);
+  }, [isZenMode]);
   const [isQuickSwitcherOpen, setIsQuickSwitcherOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
-  const [sidebarTab, setSidebarTab] = useState<'files' | 'search' | 'tags'>('files');
+  const [sidebarTab, setSidebarTab] = useState<SidebarTab>('files');
   const [targetLine, setTargetLine] = useState<number | undefined>(undefined);
+  const [isGlobalAgendaOpen, setIsGlobalAgendaOpen] = useState(false);
+  const [globalAgendaFocusDate, setGlobalAgendaFocusDate] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     applyTheme(theme);
@@ -92,15 +104,19 @@ export function useAppShell() {
   useEffect(() => {
     const active = (tabStore.activeGroupId === 2 && tabStore.isSplit) ? tabStore.splitTab : tabStore.activeTab;
     if (active) {
-      if (active.docType === 'kanban') debugStore.setActiveView('kanban');
-      else if (active.docType === 'table') debugStore.setActiveView('table');
-      else if (active.docType === 'image') debugStore.setActiveView('image');
-      else debugStore.setActiveView('editor');
+      debugStore.setActiveView(docTypeToAppViewMode(active.docType));
     }
   }, [activeTabId, activeGroup2TabId, focusedGroupId, isSplit]);
 
   const handleSelectFile = useCallback(async (path: string, preview: boolean) => {
     try {
+      if (path.startsWith('knit://')) {
+        if (path === 'knit://agenda') {
+          setGlobalAgendaFocusDate(undefined);
+          setIsGlobalAgendaOpen(true);
+        }
+        return;
+      }
       if (isMediaFilePath(path)) {
         tabStore.openTab(path, preview, '', true, 'image');
         return;
@@ -114,6 +130,7 @@ export function useAppShell() {
 
   const handleMiddleClickFile = useCallback(async (path: string) => {
     try {
+      if (path.startsWith('knit://')) return;
       if (isMediaFilePath(path)) {
         tabStore.openTab(path, false, '', false, 'image');
         toast.info('Onglet média ouvert en arrière-plan', path);
@@ -168,9 +185,8 @@ export function useAppShell() {
   }, []);
 
   const handleOpenDailyNote = useCallback(async () => {
-    const now = new Date();
-    const dateStr = formatIsoDate(now);
-    const relativePath = `journal/${dateStr}.md`;
+    const dateStr = formatIsoDate(new Date());
+    const relativePath = journalPathForDate(dateStr);
 
     try {
       const existing = await vaultStore.readFile(relativePath).catch(() => null);
@@ -178,24 +194,7 @@ export function useAppShell() {
         tabStore.openTab(relativePath, false, existing);
         toast.info('Note quotidienne ouverte', relativePath);
       } else {
-        const template = `---
-title: Journal du ${dateStr}
-date: ${dateStr}
-type: note
-tags: [journal, quotidien]
----
-
-# Journal du ${dateStr}
-
-## Objectifs de la journée
-- [ ] 
-
-## Notes & Réflexions
-
-## Idées & Découvertes
-
-`;
-        await vaultStore.createFile(relativePath, template);
+        await vaultStore.createFile(relativePath, buildDailyJournalTemplate(dateStr));
         const content = await vaultStore.readFile(relativePath);
         tabStore.openTab(relativePath, false, content);
         toast.success('Note quotidienne créée', relativePath);
@@ -214,6 +213,37 @@ tags: [journal, quotidien]
     packageContextForAI(active.path, active.content);
   }, []);
 
+  const closeResidualAgendaTabs = useCallback(() => {
+    tabStore.closeTabsForPath('knit://agenda');
+  }, []);
+
+  const openGlobalAgenda = useCallback((iso?: string) => {
+    closeResidualAgendaTabs();
+    setGlobalAgendaFocusDate(iso);
+    setIsGlobalAgendaOpen(true);
+  }, [closeResidualAgendaTabs]);
+
+  const closeGlobalAgenda = useCallback(() => {
+    setIsGlobalAgendaOpen(false);
+    setGlobalAgendaFocusDate(undefined);
+  }, []);
+
+  /** Toggle Header / raccourci Ctrl+Shift+A (sans date focale). */
+  const handleOpenGlobalAgenda = useCallback(() => {
+    setIsGlobalAgendaOpen((open) => {
+      if (open) {
+        setGlobalAgendaFocusDate(undefined);
+        return false;
+      }
+      closeResidualAgendaTabs();
+      return true;
+    });
+  }, [closeResidualAgendaTabs]);
+
+  useEffect(() => {
+    closeResidualAgendaTabs();
+  }, [closeResidualAgendaTabs]);
+
   useKnitShortcuts({
     setIsQuickSwitcherOpen,
     setIsCommandPaletteOpen,
@@ -222,6 +252,7 @@ tags: [journal, quotidien]
     handlePackageContext,
     handleSaveActiveNote,
     handleNewNote,
+    handleOpenGlobalAgenda,
   });
 
   useEffect(() => {
@@ -285,6 +316,13 @@ tags: [journal, quotidien]
       if (doc.viewMode === 'source') {
         tabStore.toggleViewMode(doc.id, group);
       }
+    } else if (view === 'calendar') {
+      if (doc.docType !== 'calendar') {
+        await vaultStore.convertDocumentType(doc.path, 'calendar');
+      }
+      if (doc.viewMode === 'source') {
+        tabStore.toggleViewMode(doc.id, group);
+      }
     }
   }, []);
 
@@ -313,7 +351,7 @@ tags: [journal, quotidien]
         handleSaveActiveNote,
         handleOpenDailyNote,
         handlePackageContext,
-        handleHeaderViewChange,
+        handleOpenGlobalAgenda: openGlobalAgenda,
       }),
     [
       splitTabId,
@@ -325,7 +363,7 @@ tags: [journal, quotidien]
       handleSaveActiveNote,
       handleOpenDailyNote,
       handlePackageContext,
-      handleHeaderViewChange,
+      openGlobalAgenda,
     ]
   );
 
@@ -335,6 +373,12 @@ tags: [journal, quotidien]
     targetLine,
     onSave: handleSaveActiveNote,
     onSelectFile: handleSelectFile,
+    onOpenFileInNewTab: handleMiddleClickFile,
+    onOpenFileAtLine: (path: string, line: number) => {
+      setTargetLine(line);
+      void handleSelectFile(path, false);
+    },
+    readOnly: isZenMode,
   };
 
   return {
@@ -380,6 +424,11 @@ tags: [journal, quotidien]
     focusedTab,
     currentView,
     handleHeaderViewChange,
+    handleOpenGlobalAgenda,
+    openGlobalAgenda,
+    closeGlobalAgenda,
+    isGlobalAgendaOpen,
+    globalAgendaFocusDate,
     commands,
     documentPaneProps,
   };

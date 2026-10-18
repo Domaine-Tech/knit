@@ -6,9 +6,11 @@ import {
   computeTaskProgress,
   scanFrontmatterDecorations,
 } from './scanners/frontmatter';
+import { tryScanDetailsBlock } from './scanners/detailsBlock';
 import { tryScanTableBlock } from './scanners/tableBlock';
 import { tryScanFenceBlock } from './scanners/fenceBlock';
 import { scanInlineLine } from './scanners/inlineMarkup';
+import { isLivePreviewVisualLocked } from './visualLock';
 
 /**
  * Extension Obsidian-style Live Preview pour CodeMirror 6.
@@ -19,13 +21,17 @@ export function buildLivePreviewDecorations(state: EditorState): DecorationSet {
     const builder = new RangeSetBuilder<Decoration>();
     const doc = state.doc;
     const sel = state.selection.main;
+    // Mode lecture (Hover Preview + Zen) : ignorer le curseur → widgets toujours visibles
+    const visualLock = isLivePreviewVisualLocked(state);
+    const selFrom = visualLock ? -1 : sel.from;
+    const selTo = visualLock ? -1 : sel.to;
 
     const { fmStart, fmEnd } = detectFrontmatterRange(doc);
     const progress = computeTaskProgress(doc, fmStart, fmEnd);
 
     const lineDecorations: DecItem[] = [];
     const rangeDecorations: DecItem[] = [
-      ...scanFrontmatterDecorations(doc, sel.from, sel.to, fmStart, fmEnd, progress),
+      ...scanFrontmatterDecorations(doc, selFrom, selTo, fmStart, fmEnd, progress),
     ];
 
     let lineNum = 1;
@@ -39,9 +45,18 @@ export function buildLivePreviewDecorations(state: EditorState): DecorationSet {
 
       const line = doc.line(lineNum);
       const lineText = line.text;
-      const isCursorOnLine = sel.from <= line.to && sel.to >= line.from;
+      const isCursorOnLine = !visualLock && sel.from <= line.to && sel.to >= line.from;
 
-      const tableResult = tryScanTableBlock(doc, lineNum, sel.from, sel.to);
+      // details avant table/fence : un tableau peut vivre *dans* un <details>
+      const detailsResult = tryScanDetailsBlock(doc, lineNum, selFrom, selTo);
+      if (detailsResult.handled) {
+        lineDecorations.push(...detailsResult.lineDecorations);
+        rangeDecorations.push(...detailsResult.rangeDecorations);
+        lineNum = detailsResult.nextLine;
+        continue;
+      }
+
+      const tableResult = tryScanTableBlock(doc, lineNum, selFrom, selTo);
       if (tableResult.handled) {
         lineDecorations.push(...tableResult.lineDecorations);
         rangeDecorations.push(...tableResult.rangeDecorations);
@@ -49,7 +64,7 @@ export function buildLivePreviewDecorations(state: EditorState): DecorationSet {
         continue;
       }
 
-      const fenceResult = tryScanFenceBlock(doc, lineNum, sel.from, sel.to);
+      const fenceResult = tryScanFenceBlock(doc, lineNum, selFrom, selTo);
       if (fenceResult.handled) {
         lineDecorations.push(...fenceResult.lineDecorations);
         rangeDecorations.push(...fenceResult.rangeDecorations);

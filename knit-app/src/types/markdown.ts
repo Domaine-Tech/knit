@@ -67,3 +67,15 @@ export interface IndexedInlineTask {
   text: string;
   rawLine: string;
 }
+
+/** Cible WikiLink résolue (alias, chemin fichier, ancre optionnelle). */
+export interface ResolvedWikiLink {
+  /** Libellé affiché (alias ou titre dérivé). */
+  displayName: string;
+  /** Chemin relatif fichier (avec `.md` si note). */
+  filePath: string;
+  /** Cible brute sans alias (`Note#ancre` ou `Note`). */
+  target: string;
+  /** Fragment d'ancre sans `#`, si présent. */
+  anchor: string | null;
+}

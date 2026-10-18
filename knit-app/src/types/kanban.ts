@@ -2,14 +2,19 @@
  * Types relatifs aux tableaux Kanban et statuts de tâches Markdown
  */
 
+import type { RefObject } from 'react';
+
 export type TaskStatus = ' ' | '/' | 'x' | '-' | '?' | '>' | '!';
+
+/** Priorité inline Markdown (`!p1` … `!p3`) — partagée Kanban / Agenda. */
+export type TaskPriority = 'p1' | 'p2' | 'p3';
 
 export interface KanbanCard {
   id: string;
   title: string;
   completed: boolean;
   status: TaskStatus;
-  priority?: 'p1' | 'p2' | 'p3';
+  priority?: TaskPriority;
   rawText: string;
 }
 
@@ -31,7 +36,7 @@ export interface CardMetadata {
   cleanTitle: string;
   tags: string[];
   wikiLinks: string[];
-  priority?: 'p1' | 'p2' | 'p3';
+  priority?: TaskPriority;
   assignee?: string;
   dueDate?: string;
 }
@@ -76,5 +81,11 @@ export interface KanbanDragInfo {
 export interface KanbanDropSlot {
   columnId: string;
   index: number;
+}
+
+/** Options du hook `useKanbanDnD`. */
+export interface UseKanbanDnDOptions {
+  boardRef: RefObject<KanbanBoard>;
+  moveCard: (options: MoveCardOptions) => MoveCardResult;
 }
 

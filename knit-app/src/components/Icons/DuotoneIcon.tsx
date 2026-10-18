@@ -6,6 +6,7 @@ interface DuotoneIconProps {
   size?: number;
   className?: string;
   style?: React.CSSProperties;
+  title?: string;
 }
 
 export const DuotoneIcon: React.FC<DuotoneIconProps> = ({
@@ -13,6 +14,7 @@ export const DuotoneIcon: React.FC<DuotoneIconProps> = ({
   size = 18,
   className = '',
   style = {},
+  title,
 }) => {
   const primaryStroke = 'currentColor';
   const secondaryFill = 'var(--knit-primary)';
@@ -264,11 +266,37 @@ export const DuotoneIcon: React.FC<DuotoneIconProps> = ({
         );
 
       case 'plus':
+      case 'add':
         return (
           <>
-            <line x1="256" y1="112" x2="256" y2="400" stroke={primaryStroke} strokeWidth="36" strokeLinecap="round" />
-            <line x1="112" y1="256" x2="400" y2="256" stroke={primaryStroke} strokeWidth="36" strokeLinecap="round" />
+            <line x1="256" y1="112" x2="256" y2="400" stroke={primaryStroke} strokeWidth="42" strokeLinecap="round" />
+            <line x1="112" y1="256" x2="400" y2="256" stroke={primaryStroke} strokeWidth="42" strokeLinecap="round" />
           </>
+        );
+
+      case 'minus':
+        return (
+          <line
+            x1="112"
+            y1="256"
+            x2="400"
+            y2="256"
+            stroke={primaryStroke}
+            strokeWidth="42"
+            strokeLinecap="round"
+          />
+        );
+
+      case 'star':
+        return (
+          <polygon
+            points="256,48 317,172 454,192 355,288 378,424 256,360 134,424 157,288 58,192 195,172"
+            fill={secondaryFill}
+            fillOpacity="0.28"
+            stroke={primaryStroke}
+            strokeWidth="28"
+            strokeLinejoin="round"
+          />
         );
 
       case 'chevron-right':
@@ -866,6 +894,160 @@ export const DuotoneIcon: React.FC<DuotoneIconProps> = ({
           </g>
         );
 
+      case 'calendar':
+        return (
+          <>
+            <rect
+              x="80"
+              y="112"
+              width="352"
+              height="320"
+              rx="24"
+              fill={secondaryFill}
+              fillOpacity="0.2"
+              stroke={primaryStroke}
+              strokeWidth="28"
+            />
+            <path
+              d="M80 192 L432 192 M176 80 L176 144 M336 80 L336 144"
+              fill="none"
+              stroke={primaryStroke}
+              strokeWidth="28"
+              strokeLinecap="round"
+            />
+          </>
+        );
+
+      case 'canvas':
+        return (
+          <>
+            <rect
+              x="64"
+              y="64"
+              width="384"
+              height="384"
+              rx="16"
+              fill={secondaryFill}
+              fillOpacity="0.15"
+              stroke={primaryStroke}
+              strokeWidth="24"
+              strokeDasharray="36 28"
+            />
+            <rect
+              x="128"
+              y="144"
+              width="140"
+              height="100"
+              rx="12"
+              fill={secondaryFill}
+              fillOpacity="0.25"
+              stroke={primaryStroke}
+              strokeWidth="24"
+            />
+            <rect
+              x="280"
+              y="240"
+              width="140"
+              height="100"
+              rx="12"
+              fill={secondaryFill}
+              fillOpacity="0.25"
+              stroke={primaryStroke}
+              strokeWidth="24"
+            />
+          </>
+        );
+
+      case 'slides':
+        return (
+          <>
+            <rect
+              x="64"
+              y="112"
+              width="384"
+              height="256"
+              rx="20"
+              fill={secondaryFill}
+              fillOpacity="0.2"
+              stroke={primaryStroke}
+              strokeWidth="28"
+            />
+            <path
+              d="M160 416 L352 416"
+              fill="none"
+              stroke={primaryStroke}
+              strokeWidth="28"
+              strokeLinecap="round"
+            />
+          </>
+        );
+
+      case 'gallery':
+        return (
+          <>
+            <rect
+              x="64"
+              y="96"
+              width="160"
+              height="140"
+              rx="16"
+              fill={secondaryFill}
+              fillOpacity="0.2"
+              stroke={primaryStroke}
+              strokeWidth="26"
+            />
+            <rect
+              x="288"
+              y="96"
+              width="160"
+              height="140"
+              rx="16"
+              fill={secondaryFill}
+              fillOpacity="0.2"
+              stroke={primaryStroke}
+              strokeWidth="26"
+            />
+            <rect
+              x="64"
+              y="280"
+              width="160"
+              height="140"
+              rx="16"
+              fill={secondaryFill}
+              fillOpacity="0.2"
+              stroke={primaryStroke}
+              strokeWidth="26"
+            />
+            <rect
+              x="288"
+              y="280"
+              width="160"
+              height="140"
+              rx="16"
+              fill={secondaryFill}
+              fillOpacity="0.2"
+              stroke={primaryStroke}
+              strokeWidth="26"
+            />
+          </>
+        );
+
+      case 'graph':
+        return (
+          <>
+            <circle cx="140" cy="160" r="36" fill={secondaryFill} fillOpacity="0.25" stroke={primaryStroke} strokeWidth="24" />
+            <circle cx="372" cy="160" r="36" fill={secondaryFill} fillOpacity="0.25" stroke={primaryStroke} strokeWidth="24" />
+            <circle cx="256" cy="340" r="40" fill={secondaryFill} fillOpacity="0.25" stroke={primaryStroke} strokeWidth="24" />
+            <path
+              d="M170 180 L240 310 M342 180 L272 310 M176 160 L336 160"
+              fill="none"
+              stroke={primaryStroke}
+              strokeWidth="24"
+              strokeLinecap="round"
+            />
+          </>
+        );
+
       case 'bug':
         return (
           <>
@@ -945,6 +1127,7 @@ export const DuotoneIcon: React.FC<DuotoneIconProps> = ({
         ...style,
       }}
     >
+      {title ? <title>{title}</title> : null}
       {renderIconPaths()}
     </svg>
   );

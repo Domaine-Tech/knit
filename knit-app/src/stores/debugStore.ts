@@ -6,10 +6,13 @@ import type {
   VaultProfilingRecommendation,
   VaultProfilingReport,
   GlobalDebugReport,
-  EditorDebugReport,
+  DebugStatsKey,
 } from '../types';
+import { DEBUG_REPORT_SECTIONS } from '../types';
 
 type DebugListener = () => void;
+type StatsProvider = () => unknown;
+type StatsForKey<K extends DebugStatsKey> = GlobalDebugReport[K];
 
 class DebugStore {
   private _isActive: boolean = (() => {
@@ -26,10 +29,7 @@ class DebugStore {
   private _isBenchmarking: boolean = false;
   private _latestProfilingReport: VaultProfilingReport | null = null;
   private listeners: Set<DebugListener> = new Set();
-
-  private editorStatsProvider: (() => EditorDebugReport | null) | null = null;
-  private kanbanStatsProvider: (() => unknown) | null = null;
-  private tableStatsProvider: (() => unknown) | null = null;
+  private statsProviders = new Map<DebugStatsKey, StatsProvider>();
 
   constructor() {
     this.setupWindowBridge();
@@ -110,28 +110,21 @@ class DebugStore {
     }
   }
 
-  public registerEditorStats(provider: () => EditorDebugReport | null) {
-    this.editorStatsProvider = provider;
+  public registerStats<K extends DebugStatsKey>(
+    key: K,
+    provider: () => StatsForKey<K>
+  ): void {
+    this.statsProviders.set(key, provider as StatsProvider);
   }
 
-  public unregisterEditorStats() {
-    this.editorStatsProvider = null;
+  public unregisterStats(key: DebugStatsKey): void {
+    this.statsProviders.delete(key);
   }
 
-  public registerKanbanStats(provider: () => unknown) {
-    this.kanbanStatsProvider = provider;
-  }
-
-  public unregisterKanbanStats() {
-    this.kanbanStatsProvider = null;
-  }
-
-  public registerTableStats(provider: () => unknown) {
-    this.tableStatsProvider = provider;
-  }
-
-  public unregisterTableStats() {
-    this.tableStatsProvider = null;
+  private readStats<K extends DebugStatsKey>(key: K): StatsForKey<K> {
+    const provider = this.statsProviders.get(key);
+    if (!provider) return null as StatsForKey<K>;
+    return provider() as StatsForKey<K>;
   }
 
   /**
@@ -281,9 +274,15 @@ class DebugStore {
       timestamp: new Date().toISOString(),
       isDebugActive: this._isActive,
       activeView: this._activeView,
-      editor: this.editorStatsProvider ? this.editorStatsProvider() : null,
-      kanban: this.kanbanStatsProvider ? this.kanbanStatsProvider() : null,
-      table: this.tableStatsProvider ? this.tableStatsProvider() : null,
+      editor: this.readStats('editor'),
+      kanban: this.readStats('kanban'),
+      table: this.readStats('table'),
+      calendar: this.readStats('calendar'),
+      canvas: this.readStats('canvas'),
+      slides: this.readStats('slides'),
+      gallery: this.readStats('gallery'),
+      graph: this.readStats('graph'),
+      image: this.readStats('image'),
       profiler: this._latestProfilingReport,
     };
   }
@@ -333,24 +332,11 @@ class DebugStore {
         console.log(`Actif : ${report.isDebugActive ? 'OUI' : 'NON'}`);
         console.log(`Vue courante : ${report.activeView}`);
         console.log(`Horodatage : ${report.timestamp}`);
-        if (report.editor) {
-          console.group('Éditeur Markdown (CodeMirror 6)');
-          console.log(report.editor);
-          console.groupEnd();
-        }
-        if (report.kanban) {
-          console.group('Vue Kanban');
-          console.log(report.kanban);
-          console.groupEnd();
-        }
-        if (report.table) {
-          console.group('Vue Table');
-          console.log(report.table);
-          console.groupEnd();
-        }
-        if (report.profiler) {
-          console.group('Profilage Coffre & Indexation');
-          console.log(report.profiler);
+        for (const section of DEBUG_REPORT_SECTIONS) {
+          const data = report[section.key];
+          if (data == null) continue;
+          console.group(section.label);
+          console.log(data);
           console.groupEnd();
         }
         console.groupEnd();

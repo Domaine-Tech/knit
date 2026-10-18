@@ -108,7 +108,12 @@ button {
   outline: none;
 }
 
-/* Scrollbar sobre */
+/* Scrollbar sobre (source unique DA — WebKit + Firefox) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--knit-border) transparent;
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -158,3 +163,11 @@ button {
   z-index: 10;
 }
 
+/* === RESIZERS (Barres de séparation fluides Sidebar, Split & Panneaux) === */
+.knit-resizer-line {
+  pointer-events: none;
+}
+
+div:hover > .knit-resizer-line {
+  background-color: var(--knit-primary) !important;
+}

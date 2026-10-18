@@ -15,11 +15,25 @@ const MEDIA_EXTENSIONS = new Set([
   'ico',
 ]);
 
-const NOTE_EXTENSIONS = new Set(['md', 'markdown', 'txt']);
+/** Normalise les séparateurs Windows vers `/` et retire le slash initial. */
+export function normalizeRelPath(relPath: string): string {
+  return relPath.replace(/\\/g, '/').replace(/^\/+/, '');
+}
+
+/** Nom de fichier (dernier segment) d'un chemin relatif. */
+export function fileNameFromPath(relPath: string): string {
+  const normalized = normalizeRelPath(relPath);
+  return normalized.split('/').pop() || normalized;
+}
+
+/** Stem sans extension `.md` (titre dérivé du chemin). */
+export function fileStem(relPath: string): string {
+  return fileNameFromPath(relPath).replace(/\.md$/i, '');
+}
 
 /** Extension normalisée d'un chemin relatif (sans le point). */
 export function getPathExtension(relPath: string): string {
-  const name = relPath.replace(/\\/g, '/').split('/').pop() ?? '';
+  const name = fileNameFromPath(relPath);
   const dot = name.lastIndexOf('.');
   return dot >= 0 ? name.slice(dot + 1).toLowerCase() : '';
 }
@@ -27,13 +41,6 @@ export function getPathExtension(relPath: string): string {
 /** Médias coffre (`assets/`, collages) — non ouvrables comme note Markdown. */
 export function isMediaFilePath(relPath: string): boolean {
   return MEDIA_EXTENSIONS.has(getPathExtension(relPath));
-}
-
-/** Notes / textes éditables dans l'éditeur. */
-export function isNoteFilePath(relPath: string): boolean {
-  const ext = getPathExtension(relPath);
-  if (!ext) return relPath.replace(/\\/g, '/').split('/').pop()?.toLowerCase() === 'knit.md';
-  return NOTE_EXTENSIONS.has(ext);
 }
 
 /**

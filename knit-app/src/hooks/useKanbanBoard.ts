@@ -9,7 +9,12 @@ import type {
   MoveCardResult,
   TaskStatus,
 } from '../types';
-import { adaptCardStatusToColumn, parseKanbanMarkdown, serializeKanbanMarkdown } from '../utils';
+import {
+  adaptCardStatusToColumn,
+  fileStem,
+  parseKanbanMarkdown,
+  serializeKanbanMarkdown,
+} from '../utils';
 
 export function useKanbanBoard({
   activeFilePath,
@@ -37,7 +42,7 @@ export function useKanbanBoard({
   const currentPath = activeFilePath || (availableKanbans.length > 0 ? availableKanbans[0].path : null);
 
   const computeBoard = useCallback((content: string, path: string | null): KanbanBoard => {
-    const title = path ? path.split('/').pop()?.replace(/\.md$/, '') || 'Kanban' : 'Mon Kanban';
+    const title = path ? fileStem(path) || 'Kanban' : 'Mon Kanban';
     return parseKanbanMarkdown(content, title);
   }, []);
 

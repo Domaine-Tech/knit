@@ -9,9 +9,12 @@ import {
   buildConvertDocTypeMenuItem,
   buildCreateInFolderMenuItem,
   buildPathCopyMenuItem,
+  docTypeDescription,
+  docTypeToIconName,
   isMediaFilePath,
   isMiddleButton,
   preventMiddleCompass,
+  resolveFileDocType,
 } from '../../utils';
 
 interface TreeNodeProps {
@@ -241,11 +244,17 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
       ]);
     } else {
       const isMedia = isMediaFilePath(node.path);
+      const openTab =
+        tabStore.tabs.find((t) => t.path === node.path) ||
+        tabStore.group2Tabs.find((t) => t.path === node.path);
+      const docType = resolveFileDocType(node.path, openTab?.docType, vaultStore.getDocType(node.path));
+      const iconName = docTypeToIconName(docType);
+
       contextMenu.show(e, [
         {
           id: 'open-file',
           label: 'Ouvrir',
-          icon: isMedia ? 'image' : 'file-markdown',
+          icon: iconName,
           onClick: () => onSelectFile(node.path, false),
         },
         {
@@ -263,10 +272,7 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
                 onClick: () => vaultStore.togglePinNote(node.path),
               },
               { id: 'div-file-1', divider: true },
-              buildConvertDocTypeMenuItem(
-                node.path,
-                tabStore.tabs.find((t) => t.path === node.path)?.docType
-              ),
+              buildConvertDocTypeMenuItem(node.path, docType),
               { id: 'div-file-convert', divider: true },
             ]
           : [{ id: 'div-file-1', divider: true }]),
@@ -324,6 +330,12 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
         onAuxClick={handleAuxClick}
         onContextMenu={handleContextMenu}
         onKeyDown={handleKeyDown}
+        draggable={!node.is_dir}
+        onDragStart={(e) => {
+          e.dataTransfer.setData('text/plain', node.path);
+          e.dataTransfer.setData('application/knit-file', node.path);
+          e.dataTransfer.effectAllowed = 'copyMove';
+        }}
         onFocus={() => onSelectTreeNode?.(node.path, node.is_dir, node.name)}
         style={{
           display: 'flex',
@@ -375,27 +387,20 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
           <>
             <span style={{ width: 12 }} />
             {(() => {
-              const ext = (node.extension || node.name.split('.').pop() || '').toLowerCase();
-              const isMedia = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico'].includes(ext);
-              if (isMedia) {
-                return <DuotoneIcon name="image" size={14} style={{ color: 'var(--knit-primary)' }} />;
-              }
+              const openTab =
+                tabStore.tabs.find((t) => t.path === node.path) ||
+                tabStore.group2Tabs.find((t) => t.path === node.path);
+              const docType = resolveFileDocType(node.path, openTab?.docType, vaultStore.getDocType(node.path));
+              const iconName = docTypeToIconName(docType);
 
-              const docType =
-                tabStore.tabs.find((t) => t.path === node.path)?.docType ||
-                (node.name.toLowerCase().includes('kanban')
-                  ? 'kanban'
-                  : node.name.toLowerCase().includes('tableau') || node.name.toLowerCase().includes('table')
-                  ? 'table'
-                  : 'note');
-
-              if (docType === 'kanban') {
-                return <DuotoneIcon name="kanban" size={14} style={{ color: 'var(--knit-primary)' }} />;
-              }
-              if (docType === 'table') {
-                return <DuotoneIcon name="table" size={14} style={{ color: 'var(--knit-primary)' }} />;
-              }
-              return <DuotoneIcon name="file-markdown" size={14} />;
+              return (
+                <DuotoneIcon
+                  name={iconName}
+                  size={14}
+                  style={iconName !== 'file-markdown' ? { color: 'var(--knit-primary)' } : undefined}
+                  title={docTypeDescription(docType)}
+                />
+              );
             })()}
             {vaultStore.isPinned(node.path) && (
               <span style={{ display: 'inline-flex', alignItems: 'center' }} title="Note épinglée aux favoris">

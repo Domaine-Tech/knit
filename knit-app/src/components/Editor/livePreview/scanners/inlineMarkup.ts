@@ -1,11 +1,13 @@
 import type { Line, Text } from '@codemirror/state';
 import { Decoration } from '@codemirror/view';
 import type { TaskStatus } from '../../../../types';
+import { HTML_INLINE_TAG_RE } from '../../../../utils/htmlSanitize';
 import { CheckboxWidget } from '../widgets/checkboxWidget';
 import { PriorityWidget } from '../widgets/priorityWidget';
 import { DividerWidget } from '../widgets/dividerWidget';
 import { ImageCardWidget } from '../widgets/imageCardWidget';
 import { CalloutHeaderWidget } from '../widgets/calloutWidget';
+import { HtmlInlineWidget } from '../widgets/htmlInlineWidget';
 import { emptyReplace, type DecItem, type LineScanResult } from './types';
 
 /**
@@ -447,5 +449,26 @@ function scanInlineMarkup(
         deco: Decoration.mark({ class: 'knit-preview-tag' }),
       });
     }
+  }
+
+  // B-059 : HTML whitelist inline (details multi-ligne → detailsBlock.ts)
+  const htmlInlineRe = new RegExp(HTML_INLINE_TAG_RE.source, 'gi');
+  let hm: RegExpExecArray | null;
+  while ((hm = htmlInlineRe.exec(lineText)) !== null) {
+    const start = lineStart + hm.index;
+    const end = start + hm[0].length;
+    if (isOverlap(start, end)) continue;
+    occupiedRanges.push([start, end]);
+    const tag = (
+      hm[1] || (hm[0].toLowerCase().startsWith('<br') ? 'br' : 'span')
+    ).toLowerCase();
+    const inner = hm[2] ?? '';
+    rangeDecorations.push({
+      from: start,
+      to: end,
+      deco: Decoration.replace({
+        widget: new HtmlInlineWidget(tag, inner, hm[0]),
+      }),
+    });
   }
 }

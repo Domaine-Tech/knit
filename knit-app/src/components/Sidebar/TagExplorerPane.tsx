@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { vaultStore } from '../../stores/vaultStore';
+import { tabStore } from '../../stores/tabStore';
 import type { TagInfo } from '../../types';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
+import { docTypeToIconName, resolveFileDocType } from '../../utils';
+import { useDelayedHoverPreview } from '../../hooks';
 
 interface TagExplorerPaneProps {
   onSelectFile: (path: string) => void;
@@ -12,6 +15,7 @@ export const TagExplorerPane: React.FC<TagExplorerPaneProps> = ({ onSelectFile }
   const [isLoading, setIsLoading] = useState(true);
   const [filterText, setFilterText] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const hoverPreview = useDelayedHoverPreview(200);
 
   const loadTags = useCallback(async () => {
     try {
@@ -229,7 +233,10 @@ export const TagExplorerPane: React.FC<TagExplorerPaneProps> = ({ onSelectFile }
               return (
                 <div
                   key={fileRel}
-                  onClick={() => onSelectFile(fileRel)}
+                  onClick={() => {
+                    hoverPreview.cancel();
+                    onSelectFile(fileRel);
+                  }}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -241,12 +248,30 @@ export const TagExplorerPane: React.FC<TagExplorerPaneProps> = ({ onSelectFile }
                     color: 'var(--knit-text)',
                     transition: 'background var(--knit-duration-fast)',
                   }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.backgroundColor = 'var(--knit-surface-hover)')
-                  }
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--knit-surface-hover)';
+                    hoverPreview.schedule(fileRel, e.clientX, e.clientY);
+                  }}
+                  onMouseMove={(e) => hoverPreview.schedule(fileRel, e.clientX, e.clientY)}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    hoverPreview.cancel();
+                  }}
                 >
-                  <DuotoneIcon name="file-markdown" size={14} style={{ color: 'var(--knit-primary)' }} />
+                  {(() => {
+                    const openTab =
+                      tabStore.tabs.find((t) => t.path === fileRel) ||
+                      tabStore.group2Tabs.find((t) => t.path === fileRel);
+                    const docType = resolveFileDocType(fileRel, openTab?.docType, vaultStore.getDocType(fileRel));
+                    const iconName = docTypeToIconName(docType);
+                    return (
+                      <DuotoneIcon
+                        name={iconName}
+                        size={14}
+                        style={{ color: 'var(--knit-primary)' }}
+                      />
+                    );
+                  })()}
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {name}
                   </span>

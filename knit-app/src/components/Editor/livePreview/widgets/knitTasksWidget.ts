@@ -6,33 +6,9 @@ import {
   createDynamicBlockShell,
   focusBlockSource,
 } from '../../../../utils/dynamicBlockUtils';
+import { cycleTaskStatus, taskStatusLabel } from '../../../../utils/kanbanParser';
 import { parseBlockOptions } from '../../../../utils/queryEngine';
-
-function nextTaskStatus(current: string): string {
-  if (current === ' ') return '/';
-  if (current === '/') return 'x';
-  if (current === 'x') return ' ';
-  return ' ';
-}
-
-function statusLabel(status: string): string {
-  switch (status) {
-    case 'x':
-      return 'Fait';
-    case '/':
-      return 'En cours';
-    case '-':
-      return 'Annulé';
-    case '?':
-      return 'Question';
-    case '>':
-      return 'Reporté';
-    case '!':
-      return 'Urgent';
-    default:
-      return 'À faire';
-  }
-}
+import { bindHoverPreviewTarget, clearHoverPreview } from '../../../../utils';
 
 /**
  * Bloc dynamique knit-tasks : agrégateur transversal de cases - [ ] (B-031i)
@@ -43,6 +19,7 @@ export class KnitTasksWidget extends WidgetType {
   private from: number;
   private to: number;
   private indexVersion: number;
+  private ro?: ResizeObserver;
 
   constructor(code: string, from: number, to: number, indexVersion: number) {
     super();
@@ -65,6 +42,17 @@ export class KnitTasksWidget extends WidgetType {
     return 200;
   }
 
+  coordsAt(dom: HTMLElement): DOMRect | null {
+    return dom.getBoundingClientRect();
+  }
+
+  destroy() {
+    if (this.ro) {
+      this.ro.disconnect();
+      this.ro = undefined;
+    }
+  }
+
   toDOM(view: EditorView): HTMLElement {
     const options = parseBlockOptions(this.code);
     const fromFolder = typeof options.from === 'string' ? options.from : '';
@@ -73,7 +61,12 @@ export class KnitTasksWidget extends WidgetType {
     const groupBy =
       typeof options.group_by === 'string' ? options.group_by : 'file';
 
-    const container = createDynamicBlockShell('knit-tasks', this.from, view);
+    const { container, resizeObserver } = createDynamicBlockShell(
+      'knit-tasks',
+      this.from,
+      view
+    );
+    this.ro = resizeObserver;
     const body = document.createElement('div');
     body.className = 'knit-dynamic-body';
 
@@ -154,12 +147,14 @@ export class KnitTasksWidget extends WidgetType {
             header.className = 'knit-tasks-file knit-btn';
             header.textContent = path;
             header.setAttribute('data-tooltip', `Ouvrir ${path}`);
+            bindHoverPreviewTarget(header, path);
             header.addEventListener('mousedown', (e) => {
               if (e.button === 1) e.preventDefault();
             });
             header.addEventListener('click', async (e) => {
               e.preventDefault();
               e.stopPropagation();
+              clearHoverPreview(true);
               try {
                 const content = await vaultStore.readFile(path);
                 tabStore.openTab(path, false, content);
@@ -214,7 +209,7 @@ export class KnitTasksWidget extends WidgetType {
             ? 'done'
             : 'other';
     check.className = `knit-task-checkbox knit-tasks-check status-${statusClass}`;
-    check.setAttribute('data-tooltip', statusLabel(item.status));
+    check.setAttribute('data-tooltip', taskStatusLabel(item.status));
     if (item.status === 'x') {
       check.innerHTML =
         '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
@@ -231,7 +226,7 @@ export class KnitTasksWidget extends WidgetType {
     check.addEventListener('click', async (e) => {
       e.preventDefault();
       e.stopPropagation();
-      const next = nextTaskStatus(item.status);
+      const next = cycleTaskStatus(item.status);
       const ok = await vaultStore.toggleInlineTask(
         item.path,
         item.lineIndex,

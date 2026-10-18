@@ -1,30 +1,15 @@
 import { useState, useEffect, type FormEvent } from 'react';
-import type { FileNode } from '../types';
+import type {
+  FileNode,
+  RenameTarget,
+  SelectedTreeNode,
+  SidebarTab,
+  UseSidebarTreeOptions,
+} from '../types';
 import { vaultStore } from '../stores/vaultStore';
 import { toast } from '../stores/toastStore';
 import { tabStore } from '../stores/tabStore';
 import { historyStore } from '../stores/historyStore';
-
-export type SidebarTab = 'files' | 'search' | 'tags';
-
-export interface SelectedTreeNode {
-  path: string;
-  isDir: boolean;
-  name: string;
-}
-
-export interface RenameTarget {
-  oldPath: string;
-  newPath: string;
-}
-
-export interface UseSidebarTreeOptions {
-  files: FileNode[];
-  onSelectFile: (path: string, preview: boolean) => void;
-  onMiddleClickFile: (path: string) => void;
-  controlledSidebarTab?: SidebarTab;
-  onSidebarTabChange?: (tab: SidebarTab) => void;
-}
 
 function filterNodes(nodes: FileNode[], query: string): FileNode[] {
   if (!query.trim()) return nodes;
@@ -75,6 +60,21 @@ export function useSidebarTree(options: UseSidebarTreeOptions) {
   const [isAllExpanded, setIsAllExpanded] = useState(false);
   const [isPinnedExpanded, setIsPinnedExpanded] = useState(true);
   const [treeKey, setTreeKey] = useState(0);
+
+  const [, setIndexVersion] = useState(0);
+
+  useEffect(() => {
+    const unsubFm = vaultStore.subscribeFrontmatterIndex(() => {
+      setIndexVersion((v) => v + 1);
+    });
+    const unsubTabs = tabStore.subscribe(() => {
+      setIndexVersion((v) => v + 1);
+    });
+    return () => {
+      unsubFm();
+      unsubTabs();
+    };
+  }, []);
 
   useEffect(() => {
     const onReveal = (e: Event) => {

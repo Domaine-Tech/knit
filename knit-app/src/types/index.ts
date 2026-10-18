@@ -17,3 +17,7 @@ export * from './editor';
 export * from './debug';
 export * from './crdt';
 export * from './query';
+export * from './calendar';
+export * from './canvas';
+export * from './graph';
+export * from './gallery';

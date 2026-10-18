@@ -2,6 +2,8 @@
  * Types du moteur de requêtes Frontmatter & blocs dynamiques (Sprint 6bis)
  */
 
+import type { DocType } from './views';
+
 export type QuerySortDirection = 'asc' | 'desc';
 
 export interface QuerySortSpec {
@@ -29,7 +31,7 @@ export interface FrontmatterIndexEntry {
   path: string;
   name: string;
   title: string;
-  docType: string;
+  docType: DocType;
   mtime: number;
   fields: Record<string, string>;
 }
@@ -56,4 +58,10 @@ export interface InlineTaskItem {
   status: string;
   text: string;
   rawLine: string;
+}
+
+/** Coque DOM commune des blocs dynamiques knit-* (Live Preview). */
+export interface DynamicBlockShell {
+  container: HTMLElement;
+  resizeObserver: ResizeObserver;
 }

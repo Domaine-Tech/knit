@@ -9,6 +9,7 @@ import {
   formatRelativeMtime,
 } from '../../../../utils/dynamicBlockUtils';
 import { parseBlockOptions } from '../../../../utils/queryEngine';
+import { bindHoverPreviewTarget, clearHoverPreview } from '../../../../utils';
 
 async function openIndexedFile(path: string): Promise<void> {
   try {
@@ -21,17 +22,20 @@ async function openIndexedFile(path: string): Promise<void> {
 
 function bindFileOpenButton(btn: HTMLButtonElement, path: string): void {
   btn.setAttribute('data-tooltip', path);
+  bindHoverPreviewTarget(btn, path);
   btn.addEventListener('mousedown', (e) => {
     if (e.button === 1) e.preventDefault();
   });
   btn.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
+    clearHoverPreview(true);
     void openIndexedFile(path);
   });
   btn.addEventListener('auxclick', (e) => {
     if (e.button === 1) {
       e.preventDefault();
+      clearHoverPreview(true);
       void openIndexedFile(path);
     }
   });
@@ -64,6 +68,7 @@ export class KnitFilesWidget extends WidgetType {
   private from: number;
   private to: number;
   private indexVersion: number;
+  private ro?: ResizeObserver;
 
   constructor(code: string, from: number, to: number, indexVersion: number) {
     super();
@@ -86,6 +91,17 @@ export class KnitFilesWidget extends WidgetType {
     return 160;
   }
 
+  coordsAt(dom: HTMLElement): DOMRect | null {
+    return dom.getBoundingClientRect();
+  }
+
+  destroy() {
+    if (this.ro) {
+      this.ro.disconnect();
+      this.ro = undefined;
+    }
+  }
+
   toDOM(view: EditorView): HTMLElement {
     const options = parseBlockOptions(this.code);
     const folder = typeof options.folder === 'string' ? options.folder : '';
@@ -99,7 +115,12 @@ export class KnitFilesWidget extends WidgetType {
     const layout = typeof options.layout === 'string' ? options.layout : 'table';
 
     const entries = vaultStore.listIndexedFiles(folder, sort, limit);
-    const container = createDynamicBlockShell('knit-files', this.from, view);
+    const { container, resizeObserver } = createDynamicBlockShell(
+      'knit-files',
+      this.from,
+      view
+    );
+    this.ro = resizeObserver;
     const body = document.createElement('div');
     body.className = 'knit-dynamic-body';
 

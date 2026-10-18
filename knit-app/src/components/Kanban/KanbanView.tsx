@@ -1,15 +1,15 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { vaultStore } from '../../stores/vaultStore';
-import { slugify, copyTextWithToast } from '../../utils';
+import { copyDebugJson, copyTextWithToast, dumpDebugConsole, slugify } from '../../utils';
 import { COLUMN_ACCENT_COLORS } from '../../theme/theme';
 import type { KanbanBoard, KanbanColumn as KanbanColumnModel, KanbanCard as KanbanCardModel } from '../../types';
 import { toast } from '../../stores/toastStore';
-import { debugStore } from '../../stores/debugStore';
 import { KanbanDebugHUD } from './KanbanDebugHUD';
 import { KanbanToolbar } from './KanbanToolbar';
-import { KanbanColumn, KanbanAddColumn } from './KanbanColumn';
+import { KanbanColumn } from './KanbanColumn';
+import { KanbanAddColumn } from './KanbanAddColumn';
 import { KanbanCreateModal } from './KanbanCreateModal';
-import { useKanbanBoard, useKanbanDnD, useDebugMode } from '../../hooks';
+import { useKanbanBoard, useKanbanDnD, useDebugMode, useRegisterDebugStats } from '../../hooks';
 
 interface KanbanViewProps {
   activeFilePath?: string | null;
@@ -17,6 +17,10 @@ interface KanbanViewProps {
   onUpdateContent: (path: string, content: string) => void;
   onOpenFile: (path: string) => void;
   onSwitchToEditor?: () => void;
+  /** Mode lecture (Zen / Hover) : pas de DnD ni d'édition. */
+  readOnly?: boolean;
+  /** Hover Preview uniquement : masquer la toolbar (chrome compact). */
+  compactChrome?: boolean;
 }
 
 export const KanbanView: React.FC<KanbanViewProps> = ({
@@ -25,6 +29,8 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
   onUpdateContent,
   onOpenFile,
   onSwitchToEditor,
+  readOnly = false,
+  compactChrome = false,
 }) => {
   const {
     availableKanbans,
@@ -75,6 +81,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
   } = useKanbanDnD({ boardRef, moveCard });
 
   const handleAddColumnSubmit = (e: React.FormEvent) => {
+    if (readOnly) return;
     e.preventDefault();
     const title = newColumnTitle.trim();
     if (!title) {
@@ -92,6 +99,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
   };
 
   const handleRenameColumnSubmit = (columnId: string) => {
+    if (readOnly) return;
     const title = renamingColumnTitle.trim();
     if (!title) {
       setRenamingColumnId(null);
@@ -106,6 +114,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
   };
 
   const handleDeleteColumn = (columnId: string, columnTitle: string, cardCount: number) => {
+    if (readOnly) return;
     if (cardCount > 0) {
       if (!window.confirm(`Supprimer la colonne "${columnTitle}" et ses ${cardCount} tâche(s) ?`)) {
         return;
@@ -116,6 +125,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
   };
 
   const handleMoveColumn = (index: number, direction: 'left' | 'right') => {
+    if (readOnly) return;
     const newIndex = direction === 'left' ? index - 1 : index + 1;
     if (newIndex < 0 || newIndex >= board.columns.length) return;
     const newCols = [...board.columns];
@@ -195,18 +205,17 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
     [board]
   );
 
-  useEffect(() => {
-    debugStore.registerKanbanStats(() => ({
+  const kanbanDebugReport = useMemo(
+    () => ({
       path: currentPath,
       columnsCount: board.columns.length,
       totalCards,
       completedCount,
       columns: board.columns.map((c) => ({ id: c.id, title: c.title, cards: c.cards.length })),
-    }));
-    return () => {
-      debugStore.unregisterKanbanStats();
-    };
-  }, [currentPath, board, totalCards, completedCount]);
+    }),
+    [currentPath, board, totalCards, completedCount]
+  );
+  useRegisterDebugStats('kanban', kanbanDebugReport);
 
   return (
     <div
@@ -220,30 +229,36 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
         overflow: 'hidden',
       }}
     >
-      <KanbanToolbar
-        title={board.title}
-        columnCount={board.columns.length}
-        totalCards={totalCards}
-        currentPath={currentPath}
-        availableKanbans={availableKanbans}
-        isSwitcherOpen={isSwitcherOpen}
-        searchFilter={searchFilter}
-        onToggleSwitcher={() => setIsSwitcherOpen((prev) => !prev)}
-        onCloseSwitcher={() => setIsSwitcherOpen(false)}
-        onOpenFile={onOpenFile}
-        onRequestCreate={() => setIsNewKanbanModalOpen(true)}
-        onSearchChange={setSearchFilter}
-        onClearSearch={() => setSearchFilter('')}
-        onAddColumn={focusAddColumn}
-        onSwitchToEditor={onSwitchToEditor}
-      />
+      <div className={compactChrome ? 'knit-hover-chrome-hide' : undefined}>
+        <KanbanToolbar
+          title={board.title}
+          columnCount={board.columns.length}
+          totalCards={totalCards}
+          currentPath={currentPath}
+          availableKanbans={availableKanbans}
+          isSwitcherOpen={isSwitcherOpen}
+          searchFilter={searchFilter}
+          onToggleSwitcher={() => setIsSwitcherOpen((prev) => !prev)}
+          onCloseSwitcher={() => setIsSwitcherOpen(false)}
+          onOpenFile={onOpenFile}
+          onRequestCreate={() => setIsNewKanbanModalOpen(true)}
+          onSearchChange={setSearchFilter}
+          onClearSearch={() => setSearchFilter('')}
+          onAddColumn={readOnly ? () => undefined : focusAddColumn}
+          onSwitchToEditor={onSwitchToEditor}
+          readOnly={readOnly}
+        />
+      </div>
 
       <div
+        className={readOnly ? 'knit-view-readonly' : undefined}
         onDragEnter={(e) => {
+          if (readOnly) return;
           e.preventDefault();
           e.dataTransfer.dropEffect = 'move';
         }}
         onDragOver={(e) => {
+          if (readOnly) return;
           e.preventDefault();
           e.dataTransfer.dropEffect = 'move';
         }}
@@ -301,27 +316,29 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
             onEditingCardTextChange={setEditingCardText}
             onSaveCard={handleSaveCardEdit}
             onCancelEditCard={() => setEditingCardId(null)}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-            onDragOverColumn={handleDragOverColumn}
-            onCardDragOver={handleCardDragOver}
-            onDropOnCard={handleDropOnCard}
-            onDropOnColumn={handleDropOnColumn}
+            onDragStart={readOnly ? () => undefined : handleDragStart}
+            onDragEnd={readOnly ? () => undefined : handleDragEnd}
+            onDragOverColumn={readOnly ? () => undefined : handleDragOverColumn}
+            onCardDragOver={readOnly ? () => undefined : handleCardDragOver}
+            onDropOnCard={readOnly ? () => undefined : handleDropOnCard}
+            onDropOnColumn={readOnly ? () => undefined : handleDropOnColumn}
             onClearDropTarget={(columnId) => {
               if (dropTarget?.columnId === columnId) setDropTarget(null);
             }}
           />
         ))}
 
-        <KanbanAddColumn
-          isAdding={isAddingColumn}
-          title={newColumnTitle}
-          inputRef={addColumnInputRef}
-          onTitleChange={setNewColumnTitle}
-          onSubmit={handleAddColumnSubmit}
-          onCancel={() => setIsAddingColumn(false)}
-          onStart={focusAddColumn}
-        />
+        {!readOnly && (
+          <KanbanAddColumn
+            isAdding={isAddingColumn}
+            title={newColumnTitle}
+            inputRef={addColumnInputRef}
+            onTitleChange={setNewColumnTitle}
+            onSubmit={handleAddColumnSubmit}
+            onCancel={() => setIsAddingColumn(false)}
+            onStart={focusAddColumn}
+          />
+        )}
       </div>
 
       {isNewKanbanModalOpen && (
@@ -357,19 +374,13 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
             );
           }}
           onCopyJson={() => {
-            void copyTextWithToast(
-              JSON.stringify(board, null, 2),
-              'Structure JSON copiée',
-              'Le tableau Kanban a été copié.'
-            );
+            void copyDebugJson(board, 'Structure JSON copiée', 'Le tableau Kanban a été copié.');
           }}
           onDumpConsole={() => {
-            console.group('[KANBAN DEBUG INSPECTOR]');
-            console.log('Board structuré :', board);
-            console.log('Historique D&D :', dragLogsRef.current);
-            console.table(board.columns.map((c) => ({ id: c.id, title: c.title, cards: c.cards.length })));
-            console.groupEnd();
-            toast.info('Inspecteur Console', 'Données Kanban et historique D&D affichés dans la console (F12).');
+            dumpDebugConsole('KANBAN', board, dragLogsRef.current);
+            console.table(
+              board.columns.map((c) => ({ id: c.id, title: c.title, cards: c.cards.length }))
+            );
           }}
           onClose={toggleDebug}
         />

@@ -1,5 +1,6 @@
 import { WidgetType, type EditorView } from '@codemirror/view';
 import type { TaskStatus } from '../../../../types';
+import { cycleTaskStatus } from '../../../../utils/kanbanParser';
 
 /**
  * 1. Widget de case à cocher interactive avec les 7 statuts reconnus (B-054)
@@ -68,11 +69,7 @@ export class CheckboxWidget extends WidgetType {
       e.preventDefault();
       e.stopPropagation();
 
-      let nextStatus: TaskStatus = ' ';
-      if (this.status === ' ') nextStatus = '/';
-      else if (this.status === '/') nextStatus = 'x';
-      else if (this.status === 'x') nextStatus = ' ';
-      else nextStatus = ' ';
+      const nextStatus = cycleTaskStatus(this.status);
 
       view.dispatch({
         changes: { from: this.from, to: this.to, insert: `[${nextStatus}]` },

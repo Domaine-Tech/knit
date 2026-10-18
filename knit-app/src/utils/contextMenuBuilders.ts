@@ -1,4 +1,11 @@
-import type { ContextMenuItem, DocType } from '../types';
+import type {
+  CloseTabsMenuOptions,
+  ContextMenuItem,
+  CreateDocKind,
+  CreateInFolderMenuOptions,
+  DocType,
+  PathCopyMenuOptions,
+} from '../types';
 import {
   copyAbsolutePath,
   copyFileName,
@@ -8,22 +15,21 @@ import {
 } from './clipboardUtils';
 import { vaultStore } from '../stores/vaultStore';
 import { toast } from '../stores/toastStore';
+import {
+  CONVERTIBLE_DOC_TYPES,
+  defaultContentForDocType,
+  type ConvertibleDocType,
+} from './docTypeRegistry';
 
-/** Types Markdown convertibles via frontmatter `type:` (hors médias `image`). */
-export type ConvertibleDocType = Extract<DocType, 'note' | 'kanban' | 'table'>;
-
-const CONVERTIBLE_DOC_TYPES: ReadonlyArray<{
-  type: ConvertibleDocType;
-  label: string;
-  icon: ContextMenuItem['icon'];
-}> = [
-  { type: 'note', label: 'Note Markdown', icon: 'file-markdown' },
-  { type: 'kanban', label: 'Tableau Kanban', icon: 'kanban' },
-  { type: 'table', label: 'Vue Tableau', icon: 'table' },
-];
+export type {
+  CloseTabsMenuOptions,
+  CreateDocKind,
+  CreateInFolderMenuOptions,
+  PathCopyMenuOptions,
+};
 
 /**
- * Entrée unique « Changer le type » avec sous-menu (note / kanban / table).
+ * Entrée unique « Changer le type » avec sous-menu (tous les types du registre).
  */
 export function buildConvertDocTypeMenuItem(
   relPath: string,
@@ -46,22 +52,6 @@ export function buildConvertDocTypeMenuItem(
       };
     }),
   };
-}
-
-export interface PathCopyMenuOptions {
-  relPath: string;
-  absPath: string;
-  /** Nom affiché pour « Copier le nom ». Absent : l'entrée est omise. */
-  name?: string;
-  nameLabel?: string;
-  includeMarkdownLink?: boolean;
-  /** Libellé court dans le sous-menu (défaut dérivé de nameLabel). */
-  nameChildLabel?: string;
-  markdownAlias?: string;
-  /** Préfixe des identifiants, ex. `copy-` ou `copy-dir-`. */
-  idPrefix?: string;
-  /** Variante image : `![alias](path)` au lieu de `[alias](path)`. */
-  markdownAsImage?: boolean;
 }
 
 /**
@@ -137,21 +127,6 @@ export function buildPathCopyMenuItem(options: PathCopyMenuOptions): ContextMenu
   };
 }
 
-export interface CreateInFolderMenuOptions {
-  /** Dossier parent relatif (`''` = racine du coffre). */
-  parentDir: string;
-  /** Inclure « Nouveau dossier… » (défaut : true). */
-  includeFolder?: boolean;
-  /**
-   * Remplace le prompt pour la note (ex. saisie inline sidebar).
-   * Si fourni, `onCreated` n'est pas appelé pour ce chemin.
-   */
-  createNote?: () => void;
-  /** Raccourci affiché sur « Note Markdown… » (souvent Ctrl+N à la racine). */
-  noteShortcut?: string;
-  onCreated?: (relPath: string, kind: 'note' | 'kanban' | 'table' | 'dir') => void;
-}
-
 function joinVaultPath(parentDir: string, name: string): string {
   const base = parentDir.replace(/\\/g, '/').replace(/\/+$/, '');
   return base ? `${base}/${name}` : name;
@@ -165,7 +140,8 @@ function promptMarkdownName(title: string, defaultName: string): string | null {
 }
 
 /**
- * Entrée unique « Nouveau » avec sous-menu (note / kanban / table / dossier).
+ * Entrée unique « Nouveau » avec sous-menu (tous les types Doc-Driven + dossier).
+ * Types issus de `CONVERTIBLE_DOC_TYPES` (`docTypeRegistry.ts`).
  */
 export function buildCreateInFolderMenuItem(
   options: CreateInFolderMenuOptions
@@ -173,74 +149,42 @@ export function buildCreateInFolderMenuItem(
   const { parentDir, includeFolder = true, createNote, noteShortcut, onCreated } = options;
   const inLabel = parentDir ? ` dans ce dossier` : '';
 
-  const children: ContextMenuItem[] = [
-    {
-      id: 'new-note',
-      label: 'Note Markdown…',
-      icon: 'file-markdown',
-      shortcut: noteShortcut,
+  const children: ContextMenuItem[] = CONVERTIBLE_DOC_TYPES.map(
+    ({ type, label, icon, defaultFileName }) => ({
+      id: `new-${type}`,
+      label: `${label}…`,
+      icon,
+      shortcut: type === 'note' ? noteShortcut : undefined,
       onClick: () => {
-        if (createNote) {
+        if (type === 'note' && createNote) {
           createNote();
           return;
         }
+
         const cleanName = promptMarkdownName(
-          `Nouvelle note${inLabel} :`,
-          'nouvelle-note.md'
-        );
-        if (!cleanName) return;
-        const relPath = joinVaultPath(parentDir, cleanName);
-        void vaultStore
-          .createFile(relPath, `# ${cleanName.replace(/\.md$/, '')}\n\n`)
-          .then(() => {
-            toast.success('Note créée', relPath);
-            onCreated?.(relPath, 'note');
-          });
-      },
-    },
-    {
-      id: 'new-kanban',
-      label: 'Tableau Kanban…',
-      icon: 'kanban',
-      onClick: () => {
-        const cleanName = promptMarkdownName(
-          `Nouveau tableau Kanban${inLabel} :`,
-          'kanban.md'
-        );
-        if (!cleanName) return;
-        const relPath = joinVaultPath(parentDir, cleanName);
-        void vaultStore
-          .createKanbanFile(relPath, cleanName.replace(/\.md$/, ''))
-          .then((createdPath) => {
-            toast.success('Tableau Kanban créé', createdPath);
-            onCreated?.(createdPath, 'kanban');
-          });
-      },
-    },
-    {
-      id: 'new-table',
-      label: 'Vue Tableau…',
-      icon: 'table',
-      onClick: () => {
-        const cleanName = promptMarkdownName(
-          `Nouvelle vue Tableau${inLabel} :`,
-          'tableau.md'
+          `Nouveau — ${label}${inLabel} :`,
+          defaultFileName
         );
         if (!cleanName) return;
         const title = cleanName.replace(/\.md$/, '');
         const relPath = joinVaultPath(parentDir, cleanName);
-        void vaultStore
-          .createFile(
-            relPath,
-            `---\ntype: table\ntitle: "${title}"\n---\n\n# ${title}\n\n## À faire\n- [ ] Première ligne de données\n`
-          )
-          .then(() => {
-            toast.success('Vue Tableau créée', relPath);
-            onCreated?.(relPath, 'table');
+
+        if (type === 'kanban') {
+          void vaultStore.createKanbanFile(relPath, title).then((createdPath) => {
+            toast.success(`${label} créé`, createdPath);
+            onCreated?.(createdPath, type);
           });
+          return;
+        }
+
+        const content = defaultContentForDocType(type, title);
+        void vaultStore.createFile(relPath, content).then(() => {
+          toast.success(`${label} créé`, relPath);
+          onCreated?.(relPath, type);
+        });
       },
-    },
-  ];
+    })
+  );
 
   if (includeFolder) {
     children.push({
@@ -275,16 +219,6 @@ export function buildCreateInFolderMenuItems(
   options: CreateInFolderMenuOptions
 ): ContextMenuItem[] {
   return buildCreateInFolderMenuItem(options).children ?? [];
-}
-
-export interface CloseTabsMenuOptions {
-  tabId: string;
-  tabIndex: number;
-  tabsCount: number;
-  onClose: () => void;
-  onCloseOthers: () => void;
-  onCloseToRight: () => void;
-  onCloseAll: () => void;
 }
 
 /**

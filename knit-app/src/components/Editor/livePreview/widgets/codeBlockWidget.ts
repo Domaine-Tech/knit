@@ -1,5 +1,6 @@
 import { WidgetType, type EditorView } from '@codemirror/view';
 import { copyTextWithToast } from '../../../../utils';
+import { isLivePreviewVisualLocked } from '../visualLock';
 
 function formatLanguageName(raw: string): string {
   const lower = raw.trim().toLowerCase();
@@ -212,11 +213,12 @@ export class CodeBlockCardWidget extends WidgetType {
     pre.appendChild(codeEl);
     card.appendChild(pre);
 
-    // Déclencher le mode source au mousedown et au click
+    // Déclencher le mode source au mousedown et au click (sauf lecture verrouillée)
     const activateSource = (e: MouseEvent) => {
       if ((e.target as HTMLElement).closest('.knit-code-copy-btn')) return;
       e.preventDefault();
       e.stopPropagation();
+      if (isLivePreviewVisualLocked(view.state)) return;
 
       const rect = card.getBoundingClientRect();
       const relativeY = Math.max(0, e.clientY - rect.top - 24);

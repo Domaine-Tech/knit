@@ -1,18 +1,11 @@
-import { useCallback, useEffect, useRef, useState, type DragEvent as ReactDragEvent, type RefObject } from 'react';
+import { useCallback, useEffect, useRef, useState, type DragEvent as ReactDragEvent } from 'react';
 import type {
-  KanbanBoard,
   KanbanDragInfo,
   KanbanDropSlot,
   KanbanDragLog,
-  MoveCardOptions,
-  MoveCardResult,
+  UseKanbanDnDOptions,
 } from '../types';
 import { toast } from '../stores/toastStore';
-
-interface UseKanbanDnDOptions {
-  boardRef: RefObject<KanbanBoard>;
-  moveCard: (options: MoveCardOptions) => MoveCardResult;
-}
 
 export function useKanbanDnD({ boardRef, moveCard }: UseKanbanDnDOptions) {
   const [draggedCard, setDraggedCard] = useState<KanbanDragInfo | null>(null);

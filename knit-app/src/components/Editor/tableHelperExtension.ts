@@ -1,6 +1,7 @@
 import { EditorView, ViewPlugin, type ViewUpdate } from '@codemirror/view';
 import type { Extension } from '@codemirror/state';
 import {
+  findTableBounds,
   findTableDelimiterOffsets,
   formatTableColumns,
   mutateTableStructure,
@@ -22,22 +23,15 @@ function getTableAtCursor(view: EditorView): TableRange | null {
   const line = view.state.doc.lineAt(sel.from);
   if (!line.text.includes('|')) return null;
 
-  let startLine = line.number;
-  while (startLine > 1) {
-    const prev = view.state.doc.line(startLine - 1);
-    if (!prev.text.includes('|') || !prev.text.trim()) break;
-    startLine--;
+  const docLines: { number: number; text: string }[] = [];
+  for (let n = 1; n <= view.state.doc.lines; n++) {
+    docLines.push({ number: n, text: view.state.doc.line(n).text });
   }
 
-  let endLine = line.number;
-  while (endLine < view.state.doc.lines) {
-    const next = view.state.doc.line(endLine + 1);
-    if (!next.text.includes('|') || !next.text.trim()) break;
-    endLine++;
-  }
+  const bounds = findTableBounds(docLines, line.number);
+  if (!bounds) return null;
 
-  if (endLine - startLine < 1) return null;
-
+  const { start: startLine, end: endLine } = bounds;
   const from = view.state.doc.line(startLine).from;
   const to = view.state.doc.line(endLine).to;
 

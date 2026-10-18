@@ -256,7 +256,7 @@ class NetworkStore {
 
     if (isTauriEnvironment()) {
       try {
-        await invoke('stop_p2p_network');
+        await invoke<void>('stop_p2p_network');
       } catch (err) {
         console.warn('Erreur arrêt réseau:', err);
       }
@@ -311,7 +311,7 @@ class NetworkStore {
 
     try {
       const b64 = uint8ArrayToBase64(update);
-      await invoke('broadcast_yjs_update', { docId, updateBase64: b64 });
+      await invoke<void>('broadcast_yjs_update', { docId, updateBase64: b64 });
     } catch (err) {
       console.warn('Erreur broadcast Yjs update:', err);
     }
@@ -325,7 +325,7 @@ class NetworkStore {
 
     try {
       const b64 = uint8ArrayToBase64(awareness);
-      await invoke('broadcast_awareness', { docId, awarenessBase64: b64 });
+      await invoke<void>('broadcast_awareness', { docId, awarenessBase64: b64 });
     } catch (err) {
       console.warn('Erreur broadcast awareness:', err);
     }
@@ -401,6 +401,24 @@ class NetworkStore {
     }
   }
 
+  /** Identité P2P locale (commande IPC `get_local_peer_identity`). */
+  public async getLocalPeerIdentity(): Promise<PeerIdentity | null> {
+    if (!isTauriEnvironment()) {
+      return this.localIdentity;
+    }
+    try {
+      const identity = await invoke<PeerIdentity | null>('get_local_peer_identity');
+      if (identity) {
+        this.localIdentity = identity;
+        this.notify();
+      }
+      return identity;
+    } catch (err) {
+      console.warn('Erreur get_local_peer_identity:', err);
+      return this.localIdentity;
+    }
+  }
+
   /**
    * Charge un avatar (local ou de pair distant par hash) sous forme de data URL base64
    */
@@ -443,7 +461,7 @@ class NetworkStore {
     if (!isTauriEnvironment()) return;
 
     try {
-      await invoke('save_user_profile', { vaultPath, profile });
+      await invoke<void>('save_user_profile', { vaultPath, profile });
       toast.success('Profil utilisateur enregistré');
     } catch (err) {
       toast.error(`Erreur enregistrement profil: ${err}`);
@@ -553,7 +571,7 @@ class NetworkStore {
 
     try {
       const stateVectorBase64 = uint8ArrayToBase64(stateVector);
-      await invoke('send_p2p_sync_step1', { docId, stateVectorBase64 });
+      await invoke<void>('send_p2p_sync_step1', { docId, stateVectorBase64 });
     } catch (err) {
       console.warn('Erreur envoi SyncStep1:', err);
     }
@@ -567,7 +585,7 @@ class NetworkStore {
 
     try {
       const updateBase64 = uint8ArrayToBase64(update);
-      await invoke('send_p2p_sync_step2', { peerId, docId, updateBase64 });
+      await invoke<void>('send_p2p_sync_step2', { peerId, docId, updateBase64 });
     } catch (err) {
       console.warn('Erreur envoi SyncStep2:', err);
     }

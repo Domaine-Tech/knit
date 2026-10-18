@@ -1,13 +1,22 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { vaultStore } from '../../stores/vaultStore';
-import { flattenFileNodes } from '../../utils';
+import { tabStore } from '../../stores/tabStore';
+import { flattenFileNodes, docTypeToIconName, resolveFileDocType } from '../../utils';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
+import { useDelayedHoverPreview } from '../../hooks';
 import { BaseSearchModal } from './BaseSearchModal';
 
 interface QuickSwitcherModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelectFile: (path: string, inNewTab?: boolean) => void;
+}
+
+function quickSwitcherPreviewCoords(): { x: number; y: number } {
+  return {
+    x: Math.min(window.innerWidth - 400, window.innerWidth / 2 + 260),
+    y: Math.max(48, window.innerHeight * 0.22),
+  };
 }
 
 export const QuickSwitcherModal: React.FC<QuickSwitcherModalProps> = ({
@@ -17,6 +26,7 @@ export const QuickSwitcherModal: React.FC<QuickSwitcherModalProps> = ({
 }) => {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const hoverPreview = useDelayedHoverPreview(180);
 
   // Aplatit l'arborescence des fichiers pour la recherche rapide via treeUtils
   const allFiles = useMemo(() => {
@@ -32,11 +42,26 @@ export const QuickSwitcherModal: React.FC<QuickSwitcherModalProps> = ({
       .slice(0, 20);
   }, [allFiles, query]);
 
+  useEffect(() => {
+    if (!isOpen) {
+      hoverPreview.cancel(true);
+      return;
+    }
+    const target = matchingFiles[selectedIndex];
+    if (!target) {
+      hoverPreview.cancel(true);
+      return;
+    }
+    const { x, y } = quickSwitcherPreviewCoords();
+    hoverPreview.schedule(target.path, x, y);
+  }, [isOpen, selectedIndex, matchingFiles, hoverPreview]);
+
   const handleClose = useCallback(() => {
+    hoverPreview.cancel(true);
     setQuery('');
     setSelectedIndex(0);
     onClose();
-  }, [onClose]);
+  }, [hoverPreview, onClose]);
 
   const handleSelectCurrent = useCallback(() => {
     const target = matchingFiles[selectedIndex];
@@ -99,11 +124,24 @@ export const QuickSwitcherModal: React.FC<QuickSwitcherModalProps> = ({
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, overflow: 'hidden' }}>
-                <DuotoneIcon
-                  name="file-markdown"
-                  size={15}
-                  style={{ color: isSelected ? 'var(--knit-primary)' : 'var(--knit-text-secondary)' }}
-                />
+                {(() => {
+                  const openTab =
+                    tabStore.tabs.find((t) => t.path === f.path) ||
+                    tabStore.group2Tabs.find((t) => t.path === f.path);
+                  const docType = resolveFileDocType(f.path, openTab?.docType, vaultStore.getDocType(f.path));
+                  const iconName = docTypeToIconName(docType);
+                  return (
+                    <DuotoneIcon
+                      name={iconName}
+                      size={15}
+                      style={{
+                        color: iconName !== 'file-markdown' || isSelected
+                          ? 'var(--knit-primary)'
+                          : 'var(--knit-text-secondary)',
+                      }}
+                    />
+                  );
+                })()}
                 <span
                   style={{
                     fontSize: 13,

@@ -1,5 +1,5 @@
 import type { DocType, Tab } from '../types';
-import { detectDocType } from '../utils';
+import { detectDocType, fileNameFromPath } from '../utils';
 
 type TabListener = () => void;
 
@@ -140,7 +140,7 @@ class TabStore {
       return;
     }
 
-    const title = path.split('/').pop() || path;
+    const title = fileNameFromPath(path);
 
     // Remplacement d'aperçu au sein du groupe
     if (preview) {
@@ -434,7 +434,7 @@ class TabStore {
       if (tab.id === oldPath || tab.path === oldPath) {
         tab.id = newPath;
         tab.path = newPath;
-        tab.title = newPath.split('/').pop() || newPath;
+        tab.title = fileNameFromPath(newPath);
         tab.docType = detectDocType(tab.content, newPath);
         changed = true;
       } else if (tab.path.startsWith(`${oldPath}/`)) {
@@ -442,7 +442,7 @@ class TabStore {
         const updatedPath = `${newPath}/${sub}`;
         tab.id = updatedPath;
         tab.path = updatedPath;
-        tab.title = updatedPath.split('/').pop() || updatedPath;
+        tab.title = fileNameFromPath(updatedPath);
         tab.docType = detectDocType(tab.content, updatedPath);
         changed = true;
       }

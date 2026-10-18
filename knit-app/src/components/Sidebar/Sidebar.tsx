@@ -1,12 +1,17 @@
 import React from 'react';
-import type { FileNode } from '../../types';
+import type { FileNode, SidebarTab } from '../../types';
 import { useSidebarTree } from '../../hooks/useSidebarTree';
+import { useDelayedHoverPreview } from '../../hooks';
 import { TreeNode } from './TreeNode';
+import { SidebarPinnedSection } from './SidebarPinnedSection';
+import { SidebarCreateForm, SidebarRenameModal } from './SidebarCreateRenameForms';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { contextMenu } from '../../stores/contextMenuStore';
 
 import { GlobalSearchPane } from './GlobalSearchPane';
 import { TagExplorerPane } from './TagExplorerPane';
+import { MiniCalendarWidget } from '../Calendar/MiniCalendarWidget';
+import { CalendarSidebarPane } from './CalendarSidebarPane';
 import {
   buildCreateInFolderMenuItem,
   buildCreateInFolderMenuItems,
@@ -16,12 +21,13 @@ import {
 interface SidebarProps {
   files: FileNode[];
   activePath: string | null;
-  sidebarTab?: 'files' | 'search' | 'tags';
+  sidebarTab?: SidebarTab;
   width?: number;
-  onSidebarTabChange?: (tab: 'files' | 'search' | 'tags') => void;
+  onSidebarTabChange?: (tab: SidebarTab) => void;
   onSelectFile: (path: string, preview: boolean) => void;
   onMiddleClickFile: (path: string) => void;
   onOpenFileAtLine?: (path: string, line: number) => void;
+  onOpenGlobalAgenda?: (iso?: string) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -33,7 +39,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectFile,
   onMiddleClickFile,
   onOpenFileAtLine,
+  onOpenGlobalAgenda,
 }) => {
+  const pinnedHoverPreview = useDelayedHoverPreview(120);
   const {
     activeTab,
     setSidebarTab,
@@ -201,7 +209,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 })
               );
             }}
-            title="Créer un nouveau document (Note, Kanban...)"
+            data-tooltip="Créer un document (note, kanban, agenda, canvas…)"
             style={{
               padding: 4,
               borderRadius: 'var(--knit-radius-xs)',
@@ -310,6 +318,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <DuotoneIcon name="tag" size={13} />
           <span>Tags</span>
         </button>
+
+        <button
+          onClick={() => setSidebarTab('calendar')}
+          title="Agenda & Échéances"
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 4,
+            padding: '7px 0',
+            border: 'none',
+            borderBottom: activeTab === 'calendar' ? '2px solid var(--knit-primary)' : '2px solid transparent',
+            backgroundColor: 'transparent',
+            color: activeTab === 'calendar' ? 'var(--knit-primary)' : 'var(--knit-text-secondary)',
+            fontSize: 11,
+            fontWeight: activeTab === 'calendar' ? 600 : 500,
+            cursor: 'pointer',
+            transition: 'all var(--knit-duration-fast)',
+          }}
+        >
+          <DuotoneIcon name="calendar" size={13} />
+          <span>Agenda</span>
+        </button>
       </div>
 
       {activeTab === 'files' && (
@@ -360,25 +392,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </div>
 
-          {/* Formulaire de création rapide */}
-          {isCreatingFile && (
-            <form onSubmit={handleCreateFileSubmit} style={{ padding: '0 12px 8px 12px' }}>
-              <input
-                autoFocus
-                type="text"
-                className="knit-input"
-                placeholder="nom-note.md..."
-                value={newFileName}
-                onChange={(e) => setNewFileName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape') setIsCreatingFile(false);
-                }}
-                style={{
-                  width: '100%',
-                }}
-              />
-            </form>
-          )}
+          <SidebarCreateForm
+            isCreatingFile={isCreatingFile}
+            newFileName={newFileName}
+            setNewFileName={setNewFileName}
+            setIsCreatingFile={setIsCreatingFile}
+            onSubmit={handleCreateFileSubmit}
+          />
 
           {/* Liste de l'arborescence */}
           <div
@@ -405,97 +425,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
               outline: 'none',
             }}
           >
-            {/* Groupe Favoris / Épinglés */}
-            {pinnedNotes.length > 0 && filterText.trim().length === 0 && (
-              <div style={{ marginBottom: 8, paddingBottom: 6, borderBottom: '1px solid var(--knit-border)' }}>
-                <div
-                  onClick={() => setIsPinnedExpanded((prev) => !prev)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    padding: '3px 8px',
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: 'var(--knit-text-muted)',
-                    cursor: 'pointer',
-                    userSelect: 'none',
-                  }}
-                >
-                  <DuotoneIcon name={isPinnedExpanded ? 'chevron-down' : 'chevron-right'} size={11} />
-                  <DuotoneIcon name="pin" size={11} style={{ color: 'var(--knit-primary)' }} />
-                  <span>FAVORIS ({pinnedNotes.length})</span>
-                </div>
-
-                {isPinnedExpanded && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 1, marginTop: 2 }}>
-                    {pinnedNotes.map((path) => {
-                      const name = path.split('/').pop() || path;
-                      const isNodeActive = path === activePath;
-                      return (
-                        <div
-                          key={`pinned-${path}`}
-                          onClick={() => onSelectFile(path, false)}
-                          onMouseDown={(e) => {
-                            if (e.button === 1) e.preventDefault();
-                          }}
-                          onAuxClick={(e) => {
-                            if (e.button === 1) {
-                              e.preventDefault();
-                              onMiddleClickFile(path);
-                            }
-                          }}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 6,
-                            padding: '4px 8px 4px 18px',
-                            borderRadius: 'var(--knit-radius-sm)',
-                            backgroundColor: isNodeActive ? 'var(--knit-primary-alpha)' : 'transparent',
-                            color: isNodeActive ? 'var(--knit-primary)' : 'var(--knit-text)',
-                            cursor: 'pointer',
-                            fontSize: 13,
-                            fontWeight: isNodeActive ? 600 : 400,
-                            userSelect: 'none',
-                          }}
-                          onMouseEnter={(e) => {
-                            if (!isNodeActive) e.currentTarget.style.backgroundColor = 'var(--knit-surface-hover)';
-                          }}
-                          onMouseLeave={(e) => {
-                            if (!isNodeActive) e.currentTarget.style.backgroundColor = 'transparent';
-                          }}
-                        >
-                          <DuotoneIcon name="file-markdown" size={13} />
-                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                            {name}
-                          </span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              togglePinNote(path);
-                            }}
-                            title="Retirer des favoris"
-                            style={{
-                              background: 'none',
-                              border: 'none',
-                              color: 'var(--knit-text-muted)',
-                              cursor: 'pointer',
-                              padding: 2,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              borderRadius: 'var(--knit-radius-xs)',
-                            }}
-                          >
-                            <DuotoneIcon name="close" size={10} />
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
+            <SidebarPinnedSection
+              pinnedNotes={pinnedNotes}
+              isPinnedExpanded={isPinnedExpanded}
+              setIsPinnedExpanded={setIsPinnedExpanded}
+              activePath={activePath}
+              filterText={filterText}
+              onSelectFile={onSelectFile}
+              onMiddleClickFile={onMiddleClickFile}
+              togglePinNote={togglePinNote}
+              scheduleHover={pinnedHoverPreview.schedule}
+              cancelHover={pinnedHoverPreview.cancel}
+            />
 
             {filtered.length === 0 ? (
               <div
@@ -545,6 +486,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <TagExplorerPane onSelectFile={(p) => onSelectFile(p, false)} />
       )}
 
+      {activeTab === 'calendar' && (
+        <CalendarSidebarPane
+          onSelectFile={onSelectFile}
+          onOpenFileAtLine={onOpenFileAtLine}
+          onOpenGlobalAgenda={onOpenGlobalAgenda}
+        />
+      )}
+
+      {activeTab === 'files' && (
+        <MiniCalendarWidget
+          onSelectFile={onSelectFile}
+          onOpenGlobalAgenda={onOpenGlobalAgenda}
+        />
+      )}
+
       {/* Pied de sidebar : bouton ouvrir dossier */}
       <div
         style={{
@@ -577,78 +533,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
       </div>
 
-      {/* Boîte de dialogue modale de renommage avec refactoring de liens */}
-      {renameTarget && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.65)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999,
-            backdropFilter: 'blur(2px)',
-          }}
-          onClick={() => setRenameTarget(null)}
-        >
-          <div
-            style={{
-              backgroundColor: 'var(--knit-surface)',
-              border: '1px solid var(--knit-border)',
-              borderRadius: 'var(--knit-radius-md)',
-              padding: '20px 24px',
-              width: '440px',
-              maxWidth: '90vw',
-              boxShadow: 'var(--knit-shadow-lg)',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 style={{ margin: '0 0 8px', fontSize: '15px', color: 'var(--knit-text)' }}>
-              Renommer ou déplacer la note
-            </h3>
-            <p style={{ margin: '0 0 16px', fontSize: '12px', color: 'var(--knit-text-muted)', lineHeight: '1.5' }}>
-              Tous les liens Markdown et WikiLinks pointant vers cette note dans l'ensemble du coffre seront automatiquement recalculés et mis à jour.
-            </p>
-            <form onSubmit={handleRenameSubmit}>
-              <div style={{ marginBottom: 16 }}>
-                <label className="knit-label" style={{ marginBottom: 6, display: 'block' }}>
-                  Nouveau chemin / nom du fichier :
-                </label>
-                <input
-                  className="knit-input"
-                  autoFocus
-                  type="text"
-                  value={renameTarget.newPath}
-                  onChange={(e) => setRenameTarget({ ...renameTarget, newPath: e.target.value })}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Escape') setRenameTarget(null);
-                  }}
-                  style={{ width: '100%', fontFamily: 'var(--knit-font-mono)', fontSize: '13px' }}
-                />
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-                <button
-                  type="button"
-                  className="knit-btn"
-                  onClick={() => setRenameTarget(null)}
-                >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  className="knit-btn knit-btn-primary"
-                >
-                  Refactoriser & Renommer
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <SidebarRenameModal
+        renameTarget={renameTarget}
+        setRenameTarget={setRenameTarget}
+        onSubmit={handleRenameSubmit}
+      />
     </aside>
   );
 };

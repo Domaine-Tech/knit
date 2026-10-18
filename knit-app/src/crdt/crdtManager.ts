@@ -75,9 +75,10 @@ export class CRDTManager {
     if (!doc) {
       doc = new Y.Doc();
       this.docs.set(path, doc);
+      const createdDoc = doc;
 
       // Brancher la diffusion automatique des modifications locales vers les pairs P2P
-      doc.on('update', (update: Uint8Array, origin: unknown) => {
+      createdDoc.on('update', (update: Uint8Array, origin: unknown) => {
         if (origin !== 'p2p' && origin !== 'init' && origin !== 'snapshot-load') {
           networkStore.broadcastYjsUpdate(path, update);
 
@@ -85,7 +86,7 @@ export class CRDTManager {
           const currentOps = (this.opCounts.get(path) || 0) + 1;
           this.opCounts.set(path, currentOps);
           if (currentOps % 200 === 0) {
-            this.createSnapshot(path, doc!);
+            void this.createSnapshot(path, createdDoc);
           }
         }
       });
@@ -97,6 +98,21 @@ export class CRDTManager {
       }
     }
     return doc;
+  }
+
+  /** Liste les snapshots compactés d'un document (IPC `list_doc_snapshots`). */
+  public async listDocSnapshots(path: string): Promise<DocSnapshot[]> {
+    const vaultPath = vaultStore.vaultPath;
+    if (!vaultPath || !isTauriEnvironment()) return [];
+    try {
+      return await invoke<DocSnapshot[]>('list_doc_snapshots', {
+        vaultPath,
+        docId: path,
+      });
+    } catch (err) {
+      console.warn('Erreur list_doc_snapshots:', err);
+      return [];
+    }
   }
 
   /**
@@ -112,7 +128,7 @@ export class CRDTManager {
 
       const vaultPath = vaultStore.vaultPath;
       if (vaultPath && isTauriEnvironment()) {
-        await invoke('save_doc_snapshot', {
+        await invoke<void>('save_doc_snapshot', {
           vaultPath,
           docId: path,
           stateVectorBase64,
@@ -143,10 +159,11 @@ export class CRDTManager {
       }
 
       // Diffuser les mouvements de curseur locaux aux pairs
-      awareness.on('update', ({ added, updated, removed }: AwarenessChangeEvent, origin: unknown) => {
+      const createdAwareness = awareness;
+      createdAwareness.on('update', ({ added, updated, removed }: AwarenessChangeEvent, origin: unknown) => {
         if (origin !== 'p2p') {
           const changedClients = added.concat(updated, removed);
-          const update = encodeAwarenessUpdate(awareness!, changedClients);
+          const update = encodeAwarenessUpdate(createdAwareness, changedClients);
           networkStore.broadcastAwareness(path, update);
         }
       });
@@ -231,10 +248,11 @@ export class CRDTManager {
   }
 
   public subscribe(path: string, listener: (content: string) => void): () => void {
-    if (!this.fileObservers.has(path)) {
-      this.fileObservers.set(path, new Set());
+    let set = this.fileObservers.get(path);
+    if (!set) {
+      set = new Set();
+      this.fileObservers.set(path, set);
     }
-    const set = this.fileObservers.get(path)!;
     set.add(listener);
 
     const doc = this.getDoc(path);

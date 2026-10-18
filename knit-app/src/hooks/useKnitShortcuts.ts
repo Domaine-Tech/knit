@@ -15,6 +15,7 @@ export function useKnitShortcuts({
   handlePackageContext,
   handleSaveActiveNote,
   handleNewNote,
+  handleOpenGlobalAgenda,
 }: KnitShortcutsProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -34,14 +35,38 @@ export function useKnitShortcuts({
         return;
       }
 
-      // Mode Zen (Ctrl+Shift+F - US B-055)
+      // Mode Lecture / Zen (Ctrl+Shift+F - US B-055)
       if (isMod && e.shiftKey && e.key.toLowerCase() === 'f') {
         e.preventDefault();
         setIsZenMode((z) => {
           const next = !z;
-          toast.info(next ? 'Mode Zen activé (Ctrl+Shift+F pour quitter)' : 'Mode Zen désactivé');
+          toast.info(
+            next
+              ? 'Mode lecture activé — édition désactivée, liens au clic simple (Ctrl+Shift+F pour quitter)'
+              : 'Mode lecture désactivé'
+          );
           return next;
         });
+        return;
+      }
+
+      // Échap quitte le mode lecture (hors champs de saisie)
+      if (e.key === 'Escape' && !isMod) {
+        const tag = (e.target as HTMLElement | null)?.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement | null)?.isContentEditable) {
+          return;
+        }
+        setIsZenMode((z) => {
+          if (!z) return z;
+          toast.info('Mode lecture désactivé');
+          return false;
+        });
+      }
+
+      // Agenda Global (Ctrl+Shift+A) — modale, pas un onglet
+      if (isMod && e.shiftKey && e.key.toLowerCase() === 'a') {
+        e.preventDefault();
+        handleOpenGlobalAgenda?.();
         return;
       }
 
@@ -164,5 +189,6 @@ export function useKnitShortcuts({
     handlePackageContext,
     handleSaveActiveNote,
     handleNewNote,
+    handleOpenGlobalAgenda,
   ]);
 }

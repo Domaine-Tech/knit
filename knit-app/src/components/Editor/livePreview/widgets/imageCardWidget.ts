@@ -1,5 +1,6 @@
 import { WidgetType, type EditorView } from '@codemirror/view';
 import { resolveAssetUrl } from '../../../../utils/assetUrl';
+import { isLivePreviewVisualLocked } from '../visualLock';
 
 /**
  * 7. Widget d'affichage immersif d'images Markdown (![alt](url))
@@ -92,6 +93,7 @@ export class ImageCardWidget extends WidgetType {
     card.onclick = (e) => {
       e.preventDefault();
       e.stopPropagation();
+      if (isLivePreviewVisualLocked(view.state)) return;
       view.dispatch({
         selection: { anchor: this.from },
         scrollIntoView: true,

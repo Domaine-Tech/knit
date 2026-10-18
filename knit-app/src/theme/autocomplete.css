@@ -44,27 +44,14 @@
   max-height: 260px !important;
   overflow-y: auto !important;
   overflow-x: hidden !important;
-  scrollbar-width: thin;
-  scrollbar-color: var(--knit-border) transparent;
 }
 
-/* Scrollbar personnalisée */
+/* Exception volontaire : scrollbar 4px (plus fine) dans les tooltips d'autocomplétion.
+   Couleurs / track héritent de tokens.css (source unique DA). */
 .cm-tooltip.cm-tooltip-autocomplete > ul::-webkit-scrollbar,
 .knit-autocomplete-tooltip > ul::-webkit-scrollbar {
   width: 4px;
-}
-.cm-tooltip.cm-tooltip-autocomplete > ul::-webkit-scrollbar-track,
-.knit-autocomplete-tooltip > ul::-webkit-scrollbar-track {
-  background: transparent;
-}
-.cm-tooltip.cm-tooltip-autocomplete > ul::-webkit-scrollbar-thumb,
-.knit-autocomplete-tooltip > ul::-webkit-scrollbar-thumb {
-  background: var(--knit-border);
-  border-radius: 4px;
-}
-.cm-tooltip.cm-tooltip-autocomplete > ul::-webkit-scrollbar-thumb:hover,
-.knit-autocomplete-tooltip > ul::-webkit-scrollbar-thumb:hover {
-  background: var(--knit-text-muted);
+  height: 4px;
 }
 
 /* Ligne d'option standard (hauteur compacte, padding sobre) */

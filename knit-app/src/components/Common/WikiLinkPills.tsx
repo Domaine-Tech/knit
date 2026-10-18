@@ -1,5 +1,6 @@
 import React from 'react';
-import { resolveWikiLink } from '../../utils/markdownUtils';
+import { resolveWikiLink } from '../../utils';
+import { useDelayedHoverPreview } from '../../hooks';
 
 interface WikiLinkPillsProps {
   links: string[];
@@ -18,6 +19,8 @@ export const WikiLinkPills: React.FC<WikiLinkPillsProps> = ({
   onOpenFile,
   variant = 'kanban',
 }) => {
+  const hoverPreview = useDelayedHoverPreview(0);
+
   if (links.length === 0) return null;
 
   const isKanban = variant === 'kanban';
@@ -37,11 +40,15 @@ export const WikiLinkPills: React.FC<WikiLinkPillsProps> = ({
           <button
             key={link}
             type="button"
+            data-tooltip={`Ouvrir [[${displayName}]]`}
+            onMouseEnter={(e) => hoverPreview.schedule(filePath, e.clientX, e.clientY)}
+            onMouseMove={(e) => hoverPreview.schedule(filePath, e.clientX, e.clientY)}
+            onMouseLeave={() => hoverPreview.cancel()}
             onClick={(e) => {
               if (isKanban) e.stopPropagation();
+              hoverPreview.cancel(true);
               onOpenFile(filePath);
             }}
-            title={`Ouvrir la note [[${displayName}]] (Ctrl + Clic ou Clic)`}
             style={{
               display: isKanban ? 'inline-flex' : undefined,
               alignItems: isKanban ? 'center' : undefined,

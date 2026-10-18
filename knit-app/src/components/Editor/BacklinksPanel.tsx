@@ -2,6 +2,7 @@ import React from 'react';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { vaultStore } from '../../stores/vaultStore';
 import { tabStore } from '../../stores/tabStore';
+import { useDelayedHoverPreview } from '../../hooks';
 
 export interface BacklinksPanelProps {
   backlinks: string[];
@@ -10,14 +11,54 @@ export interface BacklinksPanelProps {
 
 /**
  * Inspecteur déroulant des rétroliens et mentions non liées (US B-053).
+ * Survol = Hover Preview (même bus `knit-hover-link` que l'éditeur / le graphe).
  */
 export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
   backlinks,
   unlinkedMentions,
 }) => {
+  const hoverPreview = useDelayedHoverPreview(0);
+
   const openNote = (relPath: string) => {
+    hoverPreview.cancel(true);
     vaultStore.readFile(relPath).then((c) => tabStore.openTab(relPath, false, c));
   };
+
+  const renderFileChip = (relPath: string, dashed: boolean) => (
+    <button
+      key={relPath}
+      type="button"
+      onClick={() => openNote(relPath)}
+      onMouseEnter={(e) =>
+        hoverPreview.schedule(relPath, e.clientX, e.clientY)
+      }
+      onMouseMove={(e) =>
+        hoverPreview.schedule(relPath, e.clientX, e.clientY)
+      }
+      onMouseLeave={() => hoverPreview.cancel()}
+      onMouseDown={(e) => {
+        if (e.button === 1) e.preventDefault();
+      }}
+      onAuxClick={(e) => {
+        if (e.button === 1) {
+          e.preventDefault();
+          openNote(relPath);
+        }
+      }}
+      style={{
+        padding: '2px 8px',
+        borderRadius: 'var(--knit-radius-xs)',
+        backgroundColor: 'var(--knit-surface-hover)',
+        border: dashed ? '1px dashed var(--knit-border)' : '1px solid var(--knit-border)',
+        color: dashed ? 'var(--knit-text-muted)' : 'var(--knit-primary)',
+        cursor: 'pointer',
+        fontSize: 11,
+        fontFamily: 'var(--knit-font-mono)',
+      }}
+    >
+      {relPath}
+    </button>
+  );
 
   return (
     <div
@@ -50,25 +91,7 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
           </div>
         ) : (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {backlinks.map((bl) => (
-              <button
-                key={bl}
-                type="button"
-                onClick={() => openNote(bl)}
-                style={{
-                  padding: '2px 8px',
-                  borderRadius: 'var(--knit-radius-xs)',
-                  backgroundColor: 'var(--knit-surface-hover)',
-                  border: '1px solid var(--knit-border)',
-                  color: 'var(--knit-primary)',
-                  cursor: 'pointer',
-                  fontSize: 11,
-                  fontFamily: 'var(--knit-font-mono)',
-                }}
-              >
-                {bl}
-              </button>
-            ))}
+            {backlinks.map((bl) => renderFileChip(bl, false))}
           </div>
         )}
       </div>
@@ -89,25 +112,7 @@ export const BacklinksPanel: React.FC<BacklinksPanelProps> = ({
             <span>Mentions non liées ({unlinkedMentions.length})</span>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {unlinkedMentions.map((um) => (
-              <button
-                key={um}
-                type="button"
-                onClick={() => openNote(um)}
-                style={{
-                  padding: '2px 8px',
-                  borderRadius: 'var(--knit-radius-xs)',
-                  backgroundColor: 'var(--knit-surface-hover)',
-                  border: '1px dashed var(--knit-border)',
-                  color: 'var(--knit-text-muted)',
-                  cursor: 'pointer',
-                  fontSize: 11,
-                  fontFamily: 'var(--knit-font-mono)',
-                }}
-              >
-                {um}
-              </button>
-            ))}
+            {unlinkedMentions.map((m) => renderFileChip(m, true))}
           </div>
         </div>
       )}

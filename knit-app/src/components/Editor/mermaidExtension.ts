@@ -6,6 +6,7 @@ import {
   type DecorationSet,
 } from '@codemirror/view';
 import mermaid from 'mermaid';
+import { isLivePreviewVisualLocked } from './livePreview/visualLock';
 import { getStoredHue, getStoredTheme } from '../../theme/theme';
 
 /**
@@ -135,10 +136,11 @@ class MermaidWidget extends WidgetType {
     svgSlot.style.cssText = 'width: 100%; display: flex; justify-content: center;';
     container.appendChild(svgSlot);
 
-    // Clic direct pour révéler le code et positionner le curseur
+    // Clic → mode source (sauf Hover Preview verrouillé en lecture visuelle)
     container.onclick = (e) => {
       e.preventDefault();
       e.stopPropagation();
+      if (isLivePreviewVisualLocked(view.state)) return;
       view.dispatch({
         selection: { anchor: Math.min(this.from + 10, this.to) },
         scrollIntoView: true,
@@ -231,7 +233,9 @@ function buildMermaidDecorations(state: EditorState): DecorationSet {
       const blockFrom = lineFrom.from;
       const blockTo = lineTo.to < doc.length ? lineTo.to + 1 : lineTo.to;
 
-      const isCursorInside = sel.to >= blockFrom && sel.from <= blockTo;
+      const visualLock = isLivePreviewVisualLocked(state);
+      const isCursorInside =
+        !visualLock && sel.to >= blockFrom && sel.from <= blockTo;
 
       if (!isCursorInside && blockFrom > lastFrom && blockFrom < blockTo) {
         try {

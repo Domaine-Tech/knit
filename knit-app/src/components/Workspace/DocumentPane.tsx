@@ -1,14 +1,11 @@
 import React from 'react';
-import { Editor } from '../Editor/Editor';
-import { KanbanView } from '../Kanban/KanbanView';
-import { TableView } from '../Table/TableView';
-import { ImageView } from '../Media/ImageView';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { ErrorBoundary } from '../Common/ErrorBoundary';
 import { vaultStore } from '../../stores/vaultStore';
 import { tabStore } from '../../stores/tabStore';
 import { toast } from '../../stores/toastStore';
 import type { Tab } from '../../types';
+import { DocTypeViewRouter } from './DocTypeViewRouter';
 
 export interface DocumentPaneProps {
   tab: Tab | undefined;
@@ -18,6 +15,11 @@ export interface DocumentPaneProps {
   targetLine: number | undefined;
   onSave: () => void;
   onSelectFile: (path: string, preview: boolean) => void;
+  /** Ctrl/Cmd+clic ou molette — nouvel onglet (souvent sans activer). */
+  onOpenFileInNewTab?: (path: string) => void;
+  onOpenFileAtLine?: (path: string, line: number) => void;
+  /** Mode Zen / lecture seule. */
+  readOnly?: boolean;
 }
 
 const EmptyDocumentState: React.FC = () => (
@@ -97,7 +99,7 @@ const EmptyDocumentState: React.FC = () => (
 );
 
 /**
- * Routage Doc-Driven Views : image | source | kanban | table | note visuelle.
+ * Routage Doc-Driven Views : délègue à DocTypeViewRouter (partagé avec Hover Preview).
  */
 export const DocumentPane: React.FC<DocumentPaneProps> = ({
   tab,
@@ -107,6 +109,9 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({
   targetLine,
   onSave,
   onSelectFile,
+  onOpenFileInNewTab,
+  onOpenFileAtLine,
+  readOnly = false,
 }) => {
   if (!tab) {
     return <EmptyDocumentState />;
@@ -115,88 +120,52 @@ export const DocumentPane: React.FC<DocumentPaneProps> = ({
   const initialLine =
     tab.id === (groupId === 2 ? activeGroup2TabId : activeTabId) ? targetLine : undefined;
 
-  let paneNode: React.ReactNode;
+  const openVaultFile = (path: string, line?: number, opts?: { newTab?: boolean }) => {
+    if (opts?.newTab && onOpenFileInNewTab) {
+      onOpenFileInNewTab(path);
+      return;
+    }
+    if (line != null && line > 0 && onOpenFileAtLine) {
+      onOpenFileAtLine(path, line);
+      return;
+    }
+    onSelectFile(path, false);
+  };
 
-  if (tab.docType === 'image') {
-    paneNode = <ImageView key={`${tab.id}-image-g${groupId}`} path={tab.path} />;
-  } else if (tab.viewMode === 'source') {
-    paneNode = (
-      <Editor
-        key={`${tab.id}-source-g${groupId}`}
-        path={tab.path}
-        content={tab.content}
-        isDirty={tab.isDirty}
-        viewMode="source"
-        initialLine={initialLine}
-        onChange={(newContent) => {
-          tabStore.updateContent(tab.id, newContent);
-        }}
-        onSave={onSave}
-        onNavigateFile={(targetPath) => onSelectFile(targetPath, false)}
-      />
-    );
-  } else if (tab.docType === 'kanban') {
-    paneNode = (
-      <KanbanView
-        key={`${tab.id}-kanban-g${groupId}`}
-        activeFilePath={tab.path}
-        activeFileContent={tab.content}
-        onUpdateContent={async (path, content) => {
-          try {
-            tabStore.updateContent(tab.id, content);
-            await vaultStore.writeFile(path || tab.path, content);
-          } catch (err: unknown) {
-            console.error('Erreur sauvegarde Kanban:', err);
-            toast.error('Erreur de sauvegarde', String(err));
-          }
-        }}
-        onOpenFile={(path) => onSelectFile(path, false)}
-        onSwitchToEditor={() => tabStore.toggleViewMode(tab.id, groupId)}
-      />
-    );
-  } else if (tab.docType === 'table') {
-    paneNode = (
-      <TableView
-        key={`${tab.id}-table-g${groupId}`}
-        activeFilePath={tab.path}
-        activeFileContent={tab.content}
-        onUpdateContent={async (path, content) => {
-          try {
-            tabStore.updateContent(tab.id, content);
-            await vaultStore.writeFile(path || tab.path, content);
-          } catch (err: unknown) {
-            console.error('Erreur sauvegarde Tableau:', err);
-            toast.error('Erreur de sauvegarde', String(err));
-          }
-        }}
-        onOpenFile={(path) => onSelectFile(path, false)}
-        onSwitchToEditor={() => tabStore.toggleViewMode(tab.id, groupId)}
-      />
-    );
-  } else {
-    paneNode = (
-      <Editor
-        key={`${tab.id}-visual-g${groupId}`}
-        path={tab.path}
-        content={tab.content}
-        isDirty={tab.isDirty}
-        viewMode="visual"
-        initialLine={initialLine}
-        onChange={(newContent) => {
-          tabStore.updateContent(tab.id, newContent);
-        }}
-        onSave={onSave}
-        onNavigateFile={(targetPath) => onSelectFile(targetPath, false)}
-      />
-    );
-  }
+  const persistContent = async (path: string, content: string) => {
+    try {
+      tabStore.updateContent(tab.id, content);
+      await vaultStore.writeFile(path || tab.path, content);
+    } catch (err: unknown) {
+      console.error('Erreur sauvegarde document:', err);
+      toast.error('Erreur de sauvegarde', String(err));
+    }
+  };
 
   return (
     <ErrorBoundary
       key={`${tab.id}-eb-g${groupId}`}
       fallbackTitle={`Erreur lors de l'affichage de ${tab.title}`}
     >
-      {paneNode}
+      <DocTypeViewRouter
+        key={`${tab.id}-${tab.docType}-${tab.viewMode}-g${groupId}-ro${readOnly ? 1 : 0}`}
+        path={tab.path}
+        content={tab.content}
+        docType={tab.docType}
+        mode="page"
+        readOnly={readOnly}
+        viewMode={tab.viewMode}
+        isDirty={tab.isDirty}
+        initialLine={initialLine}
+        onChange={(newContent) => {
+          tabStore.updateContent(tab.id, newContent);
+        }}
+        onSave={onSave}
+        onUpdateContent={persistContent}
+        onOpenFile={openVaultFile}
+        onSwitchToEditor={() => tabStore.toggleViewMode(tab.id, groupId)}
+        onNavigateFile={(targetPath) => onSelectFile(targetPath, false)}
+      />
     </ErrorBoundary>
   );
 };

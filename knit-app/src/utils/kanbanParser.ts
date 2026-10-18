@@ -64,6 +64,35 @@ export function normalizeTaskStatus(char: string): TaskStatus {
   }
 }
 
+/** Cycle Live Preview / knit-tasks : à faire → en cours → fait → à faire. */
+export function cycleTaskStatus(status: TaskStatus | string): TaskStatus {
+  const current = normalizeTaskStatus(status);
+  if (current === ' ') return '/';
+  if (current === '/') return 'x';
+  if (current === 'x') return ' ';
+  return ' ';
+}
+
+/** Libellé FR pour infobulle / UI d'un statut de tâche. */
+export function taskStatusLabel(status: TaskStatus | string): string {
+  switch (normalizeTaskStatus(status)) {
+    case 'x':
+      return 'Fait';
+    case '/':
+      return 'En cours';
+    case '-':
+      return 'Annulé';
+    case '?':
+      return 'Question';
+    case '>':
+      return 'Reporté';
+    case '!':
+      return 'Urgent';
+    default:
+      return 'À faire';
+  }
+}
+
 /**
  * Parse un document Markdown pour en extraire la structure du tableau Kanban
  */

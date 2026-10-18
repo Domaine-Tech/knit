@@ -67,7 +67,7 @@ export async function restoreTrash(ops: VaultOps, trashId: string): Promise<stri
 export async function commitTrash(ops: VaultOps, trashId: string): Promise<void> {
     if (!ops.currentVaultPath || !isTauriEnvironment()) return;
     try {
-      await invoke('commit_vault_trash', {
+      await invoke<void>('commit_vault_trash', {
         vaultPath: ops.currentVaultPath,
         trashId,
       });
@@ -103,7 +103,7 @@ export async function deletePath(ops: VaultOps, relPath: string): Promise<void> 
       return;
     }
 
-    await invoke('delete_vault_path', {
+    await invoke<void>('delete_vault_path', {
       vaultPath: ops.currentVaultPath,
       relPath,
     });

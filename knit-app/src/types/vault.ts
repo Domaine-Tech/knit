@@ -21,6 +21,19 @@ export interface FlattenedFile {
   parentDir: string;
 }
 
+/** Nœud sélectionné dans l'arborescence sidebar. */
+export interface SelectedTreeNode {
+  path: string;
+  isDir: boolean;
+  name: string;
+}
+
+/** Cible de renommage inline (sidebar). */
+export interface RenameTarget {
+  oldPath: string;
+  newPath: string;
+}
+
 export interface FrontmatterDoc {
   has_frontmatter: boolean;
   raw_frontmatter?: string;

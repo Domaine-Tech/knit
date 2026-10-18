@@ -35,6 +35,11 @@ import {
   togglePinNote,
   isPinned,
   getSuggestIndex,
+  getCalendarIndex,
+  updateCalendarEventDate,
+  toggleCalendarTask,
+  updateCalendarEventPriority,
+  addCalendarEvent,
   convertDocumentType,
   openExternalPath,
 } from './vaultQuery';
@@ -55,6 +60,8 @@ import type {
   QueryResult,
   FrontmatterIndexEntry,
   VaultOps,
+  DocType,
+  TaskPriority,
 } from '../types';
 
 type VaultListener = () => void;
@@ -280,7 +287,43 @@ class VaultStore {
     return getSuggestIndex(this.ops);
   }
 
-  public convertDocumentType(relPath: string, targetType: 'note' | 'kanban' | 'table'): Promise<void> {
+  public getCalendarIndex() {
+    return getCalendarIndex(this.ops);
+  }
+
+  public updateCalendarEventDate(
+    relPath: string,
+    sourceSpan: string,
+    newDate: string,
+    newStart?: string | null,
+    newEnd?: string | null
+  ) {
+    return updateCalendarEventDate(this.ops, relPath, sourceSpan, newDate, newStart, newEnd);
+  }
+
+  public toggleCalendarTask(relPath: string, lineNum: number, currentCompleted?: boolean) {
+    return toggleCalendarTask(this.ops, relPath, lineNum, currentCompleted);
+  }
+
+  public updateCalendarEventPriority(relPath: string, lineNum: number, newPriority: TaskPriority | null) {
+    return updateCalendarEventPriority(this.ops, relPath, lineNum, newPriority);
+  }
+
+  public addCalendarEvent(
+    relPath: string,
+    event: {
+      title: string;
+      date: string;
+      startTime?: string | null;
+      endTime?: string | null;
+      assignee?: string | null;
+      priority?: 'p1' | 'p2' | 'p3' | null;
+    }
+  ) {
+    return addCalendarEvent(this.ops, relPath, event);
+  }
+
+  public convertDocumentType(relPath: string, targetType: DocType): Promise<void> {
     return convertDocumentType(this.ops, relPath, targetType);
   }
 
@@ -303,6 +346,11 @@ class VaultStore {
 
   public rebuildFrontmatterIndex(): Promise<void> {
     return frontmatterIndex.rebuild(this.ops);
+  }
+
+  /** Retourne le type de document extrait par l'index Frontmatter pour un chemin relatif */
+  public getDocType(relPath: string): DocType | undefined {
+    return frontmatterIndex.get(relPath)?.docType;
   }
 
   public getFrontmatterIndexVersion(): number {

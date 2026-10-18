@@ -5,6 +5,8 @@ import { TabBar } from './components/Tabs/TabBar';
 import { DocumentPane } from './components/Workspace/DocumentPane';
 import { QuickSwitcherModal } from './components/Modal/QuickSwitcherModal';
 import { CommandPaletteModal } from './components/Modal/CommandPaletteModal';
+import { GlobalAgendaModal } from './components/Calendar/GlobalAgendaModal';
+import { HoverPreviewHost } from './components/Editor/HoverPreviewHost';
 import { ToastContainer } from './components/Toast/ToastContainer';
 import { ContextMenuContainer } from './components/ContextMenu/ContextMenuContainer';
 import { TooltipContainer } from './components/Tooltip/TooltipContainer';
@@ -48,13 +50,15 @@ export const App: React.FC = () => {
     handleMiddleClickFile,
     handleSaveActiveNote,
     handleNewNote,
-    handleNewKanban,
+    handleOpenGlobalAgenda,
+    openGlobalAgenda,
+    closeGlobalAgenda,
+    isGlobalAgendaOpen,
+    globalAgendaFocusDate,
     resolvedActiveTabId,
     resolvedGroup2TabId,
     activeTab,
     splitTab,
-    currentView,
-    handleHeaderViewChange,
     commands,
     documentPaneProps,
   } = shell;
@@ -87,8 +91,6 @@ export const App: React.FC = () => {
         <Header
           theme={theme}
           hue={hue}
-          currentView={currentView}
-          onViewChange={handleHeaderViewChange}
           onOpenQuickSwitcher={() => setIsQuickSwitcherOpen(true)}
           onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
           onThemeToggle={() => {
@@ -104,6 +106,8 @@ export const App: React.FC = () => {
           canSave={!!((focusedGroupId === 2 && isSplit ? splitTab : activeTab)?.isDirty)}
           isZenMode={isZenMode}
           onToggleZenMode={() => setIsZenMode((z) => !z)}
+          onOpenGlobalAgenda={handleOpenGlobalAgenda}
+          isGlobalAgendaOpen={isGlobalAgendaOpen}
         />
       </div>
 
@@ -125,6 +129,7 @@ export const App: React.FC = () => {
               setTargetLine(line);
               handleSelectFile(p, false);
             }}
+            onOpenGlobalAgenda={openGlobalAgenda}
           />
         )}
 
@@ -216,7 +221,6 @@ export const App: React.FC = () => {
                     isFocused={focusedGroupId === 1}
                     isSplit={true}
                     onNewNote={handleNewNote}
-                    onNewKanban={handleNewKanban}
                     onToggleSplit={() => tabStore.toggleSplit()}
                   />
                 </div>
@@ -297,7 +301,6 @@ export const App: React.FC = () => {
                     isFocused={focusedGroupId === 2}
                     isSplit={true}
                     onNewNote={handleNewNote}
-                    onNewKanban={handleNewKanban}
                     onCloseSplit={() => tabStore.closeSplit()}
                   />
                 </div>
@@ -327,7 +330,6 @@ export const App: React.FC = () => {
                   isFocused={false}
                   isSplit={false}
                   onNewNote={handleNewNote}
-                  onNewKanban={handleNewKanban}
                   onToggleSplit={() => tabStore.toggleSplit()}
                 />
               </div>
@@ -360,6 +362,24 @@ export const App: React.FC = () => {
         onClose={() => setIsCommandPaletteOpen(false)}
         commands={commands}
       />
+
+      {/* Agenda global du coffre (modale — pas un onglet fichier) */}
+      <GlobalAgendaModal
+        isOpen={isGlobalAgendaOpen}
+        onClose={closeGlobalAgenda}
+        initialDate={globalAgendaFocusDate}
+        onOpenFile={(path, line, opts) => {
+          if (line != null && line > 0) setTargetLine(line);
+          if (opts?.newTab) {
+            void handleMiddleClickFile(path);
+          } else {
+            void handleSelectFile(path, false);
+          }
+        }}
+      />
+
+      {/* Hover Preview global (Agenda, Canvas, recherche — hors Editor) */}
+      <HoverPreviewHost />
 
       {/* Notifications Toast */}
       <ToastContainer />

@@ -4,6 +4,7 @@ import { debugStore } from '../stores/debugStore';
 import { toast } from '../stores/toastStore';
 import { applyTheme } from '../theme/theme';
 import type { CommandItem, CommandRegistryOptions } from '../types';
+import { CONVERTIBLE_DOC_TYPES } from './docTypeRegistry';
 
 export function buildCommandList(opts: CommandRegistryOptions): CommandItem[] {
   const {
@@ -20,7 +21,7 @@ export function buildCommandList(opts: CommandRegistryOptions): CommandItem[] {
     handleSaveActiveNote,
     handleOpenDailyNote,
     handlePackageContext,
-    handleHeaderViewChange,
+    handleOpenGlobalAgenda,
   } = opts;
 
   return [
@@ -58,7 +59,9 @@ export function buildCommandList(opts: CommandRegistryOptions): CommandItem[] {
     },
     {
       id: 'cmd-zen-mode',
-      title: isZenMode ? 'Quitter le mode Zen' : 'Activer le mode Zen sans distraction',
+      title: isZenMode
+        ? 'Quitter le mode lecture'
+        : 'Activer le mode lecture (lecture seule, liens au clic simple)',
       category: 'Affichage',
       shortcut: 'Ctrl+Shift+F',
       icon: 'sun',
@@ -80,61 +83,33 @@ export function buildCommandList(opts: CommandRegistryOptions): CommandItem[] {
       icon: 'share',
       action: handlePackageContext,
     },
-    {
-      id: 'cmd-convert-kanban',
-      title: 'Convertir la note active en Tableau Kanban',
-      category: 'Document',
-      icon: 'kanban',
+    // Conversions Doc-Driven — générées depuis docTypeRegistry (source unique)
+    ...CONVERTIBLE_DOC_TYPES.map(({ type, label, icon }) => ({
+      id: `cmd-convert-${type}`,
+      title: `Convertir en ${label}`,
+      category: 'Document' as const,
+      icon,
+      shortcut: type === 'kanban' ? 'Ctrl+Shift+K' : undefined,
       action: () => {
-        if (activeTab) vaultStore.convertDocumentType(activeTab.path, 'kanban');
+        if (activeTab && activeTab.docType !== 'image') {
+          void vaultStore.convertDocumentType(activeTab.path, type);
+        }
       },
-    },
-    {
-      id: 'cmd-convert-table',
-      title: 'Convertir la note active en Vue Tableau',
-      category: 'Document',
-      icon: 'table',
-      action: () => {
-        if (activeTab) vaultStore.convertDocumentType(activeTab.path, 'table');
-      },
-    },
-    {
-      id: 'cmd-convert-note',
-      title: 'Convertir la vue active en Note Markdown standard',
-      category: 'Document',
-      icon: 'file-markdown',
-      action: () => {
-        if (activeTab) vaultStore.convertDocumentType(activeTab.path, 'note');
-      },
-    },
-    {
-      id: 'cmd-editor-view',
-      title: 'Afficher en mode Éditeur de note',
-      category: 'Vues',
-      icon: 'file-markdown',
-      action: () => handleHeaderViewChange('editor'),
-    },
-    {
-      id: 'cmd-kanban-view',
-      title: 'Afficher en mode Tableau Kanban',
-      category: 'Vues',
-      shortcut: 'Ctrl+Shift+K',
-      icon: 'kanban',
-      action: () => handleHeaderViewChange('kanban'),
-    },
-    {
-      id: 'cmd-table-view',
-      title: 'Afficher en mode Vue Tableau',
-      category: 'Vues',
-      icon: 'table',
-      action: () => handleHeaderViewChange('table'),
-    },
+    })),
     {
       id: 'cmd-new-kanban',
       title: 'Créer un nouveau tableau Kanban...',
       category: 'Fichier',
       icon: 'kanban',
       action: handleNewKanban,
+    },
+    {
+      id: 'cmd-global-agenda',
+      title: 'Ouvrir l\'Agenda Global du coffre',
+      category: 'Navigation',
+      shortcut: 'Ctrl+Shift+A',
+      icon: 'calendar',
+      action: () => handleOpenGlobalAgenda(),
     },
     {
       id: 'cmd-quick-switcher',
@@ -164,6 +139,20 @@ export function buildCommandList(opts: CommandRegistryOptions): CommandItem[] {
       category: 'Navigation',
       icon: 'tag',
       action: () => setSidebarTab('tags'),
+    },
+    {
+      id: 'cmd-sidebar-calendar',
+      title: 'Afficher l\'Agenda & les échéances dans la barre latérale',
+      category: 'Navigation',
+      icon: 'calendar',
+      action: () => setSidebarTab('calendar'),
+    },
+    {
+      id: 'cmd-open-agenda',
+      title: 'Ouvrir l\'Agenda global (modale)',
+      category: 'Affichage',
+      icon: 'calendar',
+      action: () => handleOpenGlobalAgenda(),
     },
     {
       id: 'cmd-save-note',

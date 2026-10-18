@@ -1,5 +1,5 @@
-import type { IconName, ThemeMode } from './ui';
-import type { Tab, AppViewMode } from './views';
+import type { IconName, SidebarTab, ThemeMode } from './ui';
+import type { Tab } from './views';
 
 /**
  * Types relatifs à la palette de commandes et au registre de commandes de Knit
@@ -21,14 +21,15 @@ export interface CommandRegistryOptions {
   theme: ThemeMode;
   setIsZenMode: (fn: (prev: boolean) => boolean) => void;
   setTheme: (theme: ThemeMode) => void;
-  setSidebarTab: (tab: 'files' | 'search' | 'tags') => void;
+  setSidebarTab: (tab: SidebarTab) => void;
   setIsQuickSwitcherOpen: (open: boolean) => void;
   handleNewNote: () => void;
   handleNewKanban: () => void;
   handleSaveActiveNote: () => void;
   handleOpenDailyNote: () => void;
   handlePackageContext: () => void;
-  handleHeaderViewChange: (view: AppViewMode) => void;
+  /** Ouvre la modale Agenda global (optionnellement sur une date ISO). */
+  handleOpenGlobalAgenda: (iso?: string) => void;
 }
 
 export interface KnitShortcutsProps {
@@ -39,4 +40,5 @@ export interface KnitShortcutsProps {
   handlePackageContext: () => void;
   handleSaveActiveNote: () => void;
   handleNewNote: () => void;
+  handleOpenGlobalAgenda?: () => void;
 }

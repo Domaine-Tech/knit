@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { vaultStore } from '../../stores/vaultStore';
 import type { FileSearchResult } from '../../types';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
+import { useDelayedHoverPreview } from '../../hooks';
 
 interface GlobalSearchPaneProps {
   onOpenFileAtLine: (path: string, line: number) => void;
@@ -14,6 +15,7 @@ export const GlobalSearchPane: React.FC<GlobalSearchPaneProps> = ({ onOpenFileAt
   const [expandedFiles, setExpandedFiles] = useState<Record<string, boolean>>({});
   const inputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hoverPreview = useDelayedHoverPreview(200);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -170,6 +172,13 @@ export const GlobalSearchPane: React.FC<GlobalSearchPaneProps> = ({ onOpenFileAt
                 {/* En-tête Fichier */}
                 <div
                   onClick={() => toggleFile(res.rel_path)}
+                  onMouseEnter={(e) =>
+                    hoverPreview.schedule(res.rel_path, e.clientX, e.clientY)
+                  }
+                  onMouseMove={(e) =>
+                    hoverPreview.schedule(res.rel_path, e.clientX, e.clientY)
+                  }
+                  onMouseLeave={() => hoverPreview.cancel()}
                   style={{
                     padding: '6px 10px',
                     display: 'flex',
@@ -195,7 +204,7 @@ export const GlobalSearchPane: React.FC<GlobalSearchPaneProps> = ({ onOpenFileAt
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
                       }}
-                      title={res.rel_path}
+                      data-tooltip={res.rel_path}
                     >
                       {res.file_name}
                     </span>
@@ -227,7 +236,10 @@ export const GlobalSearchPane: React.FC<GlobalSearchPaneProps> = ({ onOpenFileAt
                       return (
                         <div
                           key={`${res.rel_path}-${sIdx}`}
-                          onClick={() => onOpenFileAtLine(res.rel_path, snip.line_number)}
+                          onClick={() => {
+                            hoverPreview.cancel();
+                            onOpenFileAtLine(res.rel_path, snip.line_number);
+                          }}
                           style={{
                             padding: '6px 10px 6px 16px',
                             borderBottom:
@@ -239,12 +251,17 @@ export const GlobalSearchPane: React.FC<GlobalSearchPaneProps> = ({ onOpenFileAt
                             alignItems: 'baseline',
                             transition: 'background var(--knit-duration-fast)',
                           }}
-                          onMouseEnter={(e) =>
-                            (e.currentTarget.style.backgroundColor = 'var(--knit-surface-hover)')
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = 'var(--knit-surface-hover)';
+                            hoverPreview.schedule(res.rel_path, e.clientX, e.clientY);
+                          }}
+                          onMouseMove={(e) =>
+                            hoverPreview.schedule(res.rel_path, e.clientX, e.clientY)
                           }
-                          onMouseLeave={(e) =>
-                            (e.currentTarget.style.backgroundColor = 'transparent')
-                          }
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                            hoverPreview.cancel();
+                          }}
                         >
                           <span
                             style={{

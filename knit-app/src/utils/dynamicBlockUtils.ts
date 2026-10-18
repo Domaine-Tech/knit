@@ -3,7 +3,11 @@
  */
 
 import type { EditorView } from '@codemirror/view';
-import type { IconName } from '../types';
+import type { DynamicBlockShell } from '../types';
+import { docTypeToIconName } from './docTypeRegistry';
+import { isLivePreviewVisualLocked } from './livePreviewVisualLock';
+
+export type { DynamicBlockShell };
 
 export const KNIT_DYNAMIC_LANGS = new Set([
   'knit-toc',
@@ -14,15 +18,6 @@ export const KNIT_DYNAMIC_LANGS = new Set([
 
 export function isKnitDynamicLang(lang: string): boolean {
   return KNIT_DYNAMIC_LANGS.has(lang.trim().toLowerCase());
-}
-
-/** Icône Duotone (SVG pur) selon le type de document Frontmatter. */
-export function docTypeToIconName(docType: string): IconName {
-  const t = (docType || 'note').toLowerCase();
-  if (t === 'kanban') return 'kanban';
-  if (t === 'table') return 'table';
-  if (t === 'image') return 'image';
-  return 'file-markdown';
 }
 
 /**
@@ -164,6 +159,8 @@ export function createDocTypeIconSvg(docType: string, size = 14): SVGSVGElement 
 }
 
 export function focusBlockSource(view: EditorView, from: number): void {
+  // Mode lecture (Hover Preview + Zen) : rester en rendu immersif
+  if (isLivePreviewVisualLocked(view.state)) return;
   view.dispatch({
     selection: { anchor: from + 1 },
     scrollIntoView: true,
@@ -180,11 +177,14 @@ export function formatRelativeMtime(mtime: number): string {
   return new Date(mtime).toLocaleDateString('fr-FR');
 }
 
+/**
+ * Coque commune des blocs knit-* + ResizeObserver pour requestMeasure (pixel-perfect).
+ */
 export function createDynamicBlockShell(
   lang: string,
   from: number,
   view: EditorView
-): HTMLElement {
+): DynamicBlockShell {
   const container = document.createElement('div');
   container.className = `knit-dynamic-block knit-dynamic-${lang}`;
   container.setAttribute('data-tooltip', 'Cliquer pour éditer le bloc source');
@@ -203,7 +203,13 @@ export function createDynamicBlockShell(
   });
 
   container.appendChild(badge);
-  return container;
+
+  const resizeObserver = new ResizeObserver(() => {
+    view.requestMeasure();
+  });
+  resizeObserver.observe(container);
+
+  return { container, resizeObserver };
 }
 
 /**

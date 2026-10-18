@@ -4,8 +4,10 @@ import { historyStore } from './historyStore';
 import { tabStore } from './tabStore';
 import {
   detectDocType,
+  docTypeLabel,
   extractKanbanFiles,
   createDefaultKanbanMarkdown,
+  fileStem,
   isTauriEnvironment,
   slugify,
   copyTextWithToast,
@@ -21,7 +23,16 @@ import type {
   TagInfo,
   KanbanFileInfo,
   VaultOps,
+  DocType,
 } from '../types';
+
+export {
+  getCalendarIndex,
+  updateCalendarEventDate,
+  toggleCalendarTask,
+  updateCalendarEventPriority,
+  addCalendarEvent,
+} from './vaultCalendarOps';
 
 export async function parseFrontmatter(_ops: VaultOps, content: string): Promise<FrontmatterDoc> {
     if (!isTauriEnvironment()) {
@@ -134,7 +145,7 @@ export async function revealInExplorer(ops: VaultOps, relPath: string = ''): Pro
     }
 
     try {
-      await invoke('reveal_in_explorer', {
+      await invoke<void>('reveal_in_explorer', {
         vaultPath: ops.currentVaultPath,
         relPath,
       });
@@ -244,7 +255,7 @@ export async function updateTaskStatus(ops: VaultOps, relPath: string, newStatus
       return;
     }
 
-    await invoke('update_task_status', {
+    await invoke<void>('update_task_status', {
       vaultPath: ops.currentVaultPath,
       relPath,
       newStatus,
@@ -312,20 +323,26 @@ export async function createKanbanFile(ops: VaultOps,
     columns?: string[]
   ): Promise<string> {
     const cleanPath = relPath.endsWith('.md') ? relPath : `${relPath}.md`;
-    const defaultTitle = title || cleanPath.split('/').pop()?.replace(/\.md$/, '') || 'Kanban';
+    const defaultTitle = title || fileStem(cleanPath) || 'Kanban';
     const content = createDefaultKanbanMarkdown(defaultTitle, columns);
     await ops.createFile(cleanPath, content);
     return cleanPath;
   }
 
-export function getPinnedNotes(_ops: VaultOps): string[] {
-    try {
-      const data = localStorage.getItem('knit-pinned-notes');
-      return data ? JSON.parse(data) : [];
-    } catch {
-      return [];
-    }
+function parsePinnedNotesJson(raw: string | null): string[] {
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((item): item is string => typeof item === 'string');
+  } catch {
+    return [];
   }
+}
+
+export function getPinnedNotes(_ops: VaultOps): string[] {
+  return parsePinnedNotesJson(localStorage.getItem('knit-pinned-notes'));
+}
 
 export function togglePinNote(ops: VaultOps, relPath: string): void {
     const pinned = ops.getPinnedNotes();
@@ -406,10 +423,13 @@ export async function getSuggestIndex(ops: VaultOps): Promise<SuggestIndexData> 
     };
   }
 
-export async function convertDocumentType(ops: VaultOps, 
-    relPath: string,
-    targetType: 'note' | 'kanban' | 'table'
-  ): Promise<void> {
+export async function convertDocumentType(
+  ops: VaultOps,
+  relPath: string,
+  targetType: DocType
+): Promise<void> {
+    if (targetType === 'image') return;
+
     const originalContent = await ops.readFile(relPath);
     let newContent = originalContent;
 
@@ -448,6 +468,13 @@ export async function convertDocumentType(ops: VaultOps,
       }
     } else if (targetType === 'table') {
       newContent = await ops.updateFrontmatter(newContent, 'type', 'table');
+    } else if (
+      targetType === 'calendar' ||
+      targetType === 'canvas' ||
+      targetType === 'slides' ||
+      targetType === 'gallery'
+    ) {
+      newContent = await ops.updateFrontmatter(newContent, 'type', targetType);
     } else {
       newContent = await ops.updateFrontmatter(newContent, 'type', 'note');
     }
@@ -464,7 +491,7 @@ export async function convertDocumentType(ops: VaultOps,
 
     historyStore.push({
       id: `convert-${Date.now()}`,
-      description: `Conversion en ${targetType === 'kanban' ? 'Tableau Kanban' : targetType === 'table' ? 'Vue Tableau' : 'Note Markdown'}`,
+      description: `Conversion en ${docTypeLabel(targetType)}`,
       undo: async () => {
         await ops.writeFile(relPath, originalContent);
         if (tab) {
@@ -477,7 +504,7 @@ export async function convertDocumentType(ops: VaultOps,
 
     toast.undoable(
       'Type de document converti',
-      `Fichier configuré en ${targetType === 'kanban' ? 'Tableau Kanban' : targetType === 'table' ? 'Vue Tableau' : 'Note Markdown'}`,
+      `Fichier configuré en ${docTypeLabel(targetType)}`,
       async () => {
         await ops.writeFile(relPath, originalContent);
         if (tab) {
@@ -495,7 +522,7 @@ export async function openExternalPath(_ops: VaultOps, pathOrUrl: string): Promi
 
     if (isTauriEnvironment()) {
       try {
-        await invoke('open_external_path', { pathOrUrl: clean });
+        await invoke<void>('open_external_path', { pathOrUrl: clean });
         return;
       } catch (err) {
         console.warn('Erreur open_external_path :', err);

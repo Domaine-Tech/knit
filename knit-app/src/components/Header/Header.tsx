@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
-import type { ThemeMode, AppViewMode } from '../../types';
+import type { ThemeMode } from '../../types';
 import { ColorPickerPopover } from './ColorPickerPopover';
 import { contextMenu } from '../../stores/contextMenuStore';
 import { vaultStore } from '../../stores/vaultStore';
@@ -16,8 +16,6 @@ import { useDebugMode } from '../../hooks';
 interface HeaderProps {
   theme: ThemeMode;
   hue: number;
-  currentView: AppViewMode;
-  onViewChange: (view: AppViewMode) => void;
   onOpenQuickSwitcher: () => void;
   onOpenCommandPalette: () => void;
   onThemeToggle: () => void;
@@ -26,13 +24,13 @@ interface HeaderProps {
   canSave: boolean;
   isZenMode?: boolean;
   onToggleZenMode?: () => void;
+  onOpenGlobalAgenda?: () => void;
+  isGlobalAgendaOpen?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   theme,
   hue,
-  currentView,
-  onViewChange,
   onOpenQuickSwitcher,
   onOpenCommandPalette,
   onThemeToggle,
@@ -41,6 +39,8 @@ export const Header: React.FC<HeaderProps> = ({
   canSave,
   isZenMode = false,
   onToggleZenMode,
+  onOpenGlobalAgenda,
+  isGlobalAgendaOpen = false,
 }) => {
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
   const [isNetworkModalOpen, setIsNetworkModalOpen] = useState(false);
@@ -48,6 +48,12 @@ export const Header: React.FC<HeaderProps> = ({
   const [appVersion, setAppVersion] = useState(APP_VERSION);
   const [, setTick] = useState(0);
   const { isDebugActive } = useDebugMode();
+
+  const isAgendaActive = isGlobalAgendaOpen;
+
+  const handleOpenAgenda = () => {
+    onOpenGlobalAgenda?.();
+  };
 
   useEffect(() => {
     getAppVersion().then(setAppVersion);
@@ -157,87 +163,8 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* Sélecteur de vue centralisé (Éditeur, Kanban, Tableau) */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          backgroundColor: 'var(--knit-surface)',
-          border: '1px solid var(--knit-border)',
-          borderRadius: 'var(--knit-radius-sm)',
-          padding: 2,
-          gap: 2,
-        }}
-      >
-        <button
-          onClick={() => onViewChange('editor')}
-          data-tooltip="Éditeur de note Markdown"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 5,
-            padding: '3px 10px',
-            borderRadius: 'var(--knit-radius-xs)',
-            backgroundColor: currentView === 'editor' ? 'var(--knit-surface-hover)' : 'transparent',
-            border: 'none',
-            color: currentView === 'editor' ? 'var(--knit-primary)' : 'var(--knit-text-secondary)',
-            fontSize: 11,
-            fontWeight: currentView === 'editor' ? 600 : 500,
-            cursor: 'pointer',
-            transition: 'all var(--knit-duration-fast)',
-          }}
-        >
-          <DuotoneIcon name="file-markdown" size={12} />
-          <span>Éditeur</span>
-        </button>
-
-        <button
-          onClick={() => onViewChange('kanban')}
-          data-tooltip="Tableau Kanban des tâches"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 5,
-            padding: '3px 10px',
-            borderRadius: 'var(--knit-radius-xs)',
-            backgroundColor: currentView === 'kanban' ? 'var(--knit-surface-hover)' : 'transparent',
-            border: 'none',
-            color: currentView === 'kanban' ? 'var(--knit-primary)' : 'var(--knit-text-secondary)',
-            fontSize: 11,
-            fontWeight: currentView === 'kanban' ? 600 : 500,
-            cursor: 'pointer',
-            transition: 'all var(--knit-duration-fast)',
-          }}
-        >
-          <DuotoneIcon name="kanban" size={12} />
-          <span>Kanban</span>
-        </button>
-
-        <button
-          onClick={() => onViewChange('table')}
-          data-tooltip="Vue Tableau filtrable et triable"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 5,
-            padding: '3px 10px',
-            borderRadius: 'var(--knit-radius-xs)',
-            backgroundColor: currentView === 'table' ? 'var(--knit-surface-hover)' : 'transparent',
-            border: 'none',
-            color: currentView === 'table' ? 'var(--knit-primary)' : 'var(--knit-text-secondary)',
-            fontSize: 11,
-            fontWeight: currentView === 'table' ? 600 : 500,
-            cursor: 'pointer',
-            transition: 'all var(--knit-duration-fast)',
-          }}
-        >
-          <DuotoneIcon name="table" size={12} />
-          <span>Tableau</span>
-        </button>
-      </div>
-
       {/* Contrôles de droite : Outils et boutons de fenêtre */}
-      <div style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+      <div style={{ display: 'flex', alignItems: 'center', height: '100%', marginLeft: 'auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingRight: 8 }}>
         {/* Quick Switcher & Palette de commandes */}
         <button
@@ -290,7 +217,11 @@ export const Header: React.FC<HeaderProps> = ({
         {onToggleZenMode && (
           <button
             onClick={onToggleZenMode}
-            data-tooltip={isZenMode ? "Quitter le mode Zen (Ctrl+Shift+F)" : "Mode Zen sans distraction (Ctrl+Shift+F)"}
+            data-tooltip={
+              isZenMode
+                ? 'Quitter le mode lecture (Ctrl+Shift+F)'
+                : 'Mode lecture : focus + lecture seule, liens au clic simple (Ctrl+Shift+F)'
+            }
             data-shortcut="Ctrl+Shift+F"
             style={{
               display: 'flex',
@@ -307,9 +238,43 @@ export const Header: React.FC<HeaderProps> = ({
             }}
           >
             <DuotoneIcon name="sun" size={12} />
-            <span>Zen</span>
+            <span>Lecture</span>
           </button>
         )}
+
+        {/* Bouton Agenda Global */}
+        <button
+          onClick={handleOpenAgenda}
+          data-tooltip="Ouvrir l'Agenda Global du coffre (Ctrl+Shift+A)"
+          data-shortcut="Ctrl+Shift+A"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 5,
+            padding: '3px 8px',
+            borderRadius: 'var(--knit-radius-sm)',
+            backgroundColor: isAgendaActive ? 'var(--knit-primary-alpha)' : 'transparent',
+            border: isAgendaActive ? '1px solid var(--knit-primary)' : '1px solid var(--knit-border)',
+            color: isAgendaActive ? 'var(--knit-primary)' : 'var(--knit-text-secondary)',
+            fontSize: 11,
+            fontWeight: isAgendaActive ? 700 : 500,
+            cursor: 'pointer',
+            transition: 'all var(--knit-transition-fast)',
+          }}
+          onMouseEnter={(e) => {
+            if (!isAgendaActive) e.currentTarget.style.backgroundColor = 'var(--knit-surface-hover)';
+          }}
+          onMouseLeave={(e) => {
+            if (!isAgendaActive) e.currentTarget.style.backgroundColor = 'transparent';
+          }}
+        >
+          <DuotoneIcon
+            name="calendar"
+            size={12}
+            style={{ color: isAgendaActive ? 'var(--knit-primary)' : 'currentColor' }}
+          />
+          <span>Agenda</span>
+        </button>
 
         {/* Bouton Unique Global Debug (Ctrl+Alt+D) */}
         <button

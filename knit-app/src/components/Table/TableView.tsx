@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { copyTextWithToast } from '../../utils';
+import React, { useMemo, useState } from 'react';
+import { copyDebugJson, copyTextWithToast, dumpDebugConsole } from '../../utils';
 import type { KanbanCard, TableRowItem } from '../../types';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { WikiLinkPills, TagPills } from '../Common/WikiLinkPills';
 import { KnitSelect } from '../Form/KnitSelect';
 import { toast } from '../../stores/toastStore';
 import { contextMenu } from '../../stores/contextMenuStore';
-import { debugStore } from '../../stores/debugStore';
 import { TableDebugHUD } from './TableDebugHUD';
-import { useKanbanBoard, useDebugMode, useTableRows } from '../../hooks';
+import { TableToolbar } from './TableToolbar';
+import { TableAddTaskRow } from './TableAddTaskRow';
+import { useKanbanBoard, useDebugMode, useRegisterDebugStats, useTableRows } from '../../hooks';
 
 interface TableViewProps {
   activeFilePath?: string | null;
@@ -16,6 +17,10 @@ interface TableViewProps {
   onUpdateContent: (path: string, content: string) => void;
   onOpenFile: (path: string) => void;
   onSwitchToEditor?: () => void;
+  /** Mode lecture (Zen / Hover) : pas d'édition. */
+  readOnly?: boolean;
+  /** Hover Preview uniquement : masquer la toolbar. */
+  compactChrome?: boolean;
 }
 
 export const TableView: React.FC<TableViewProps> = ({
@@ -24,6 +29,8 @@ export const TableView: React.FC<TableViewProps> = ({
   onUpdateContent,
   onOpenFile,
   onSwitchToEditor,
+  readOnly = false,
+  compactChrome = false,
 }) => {
   const { availableKanbans, currentPath, board, toggleCard, deleteCard, addCard, moveCard } = useKanbanBoard({
     activeFilePath,
@@ -50,29 +57,28 @@ export const TableView: React.FC<TableViewProps> = ({
     handleToggleSort,
   } = useTableRows(board);
 
-  // Intégration Mode Debug Global (US B-054)
   const { isDebugActive, toggleDebug } = useDebugMode();
 
-  useEffect(() => {
-    debugStore.registerTableStats(() => ({
+  const tableDebugReport = useMemo(
+    () => ({
       path: currentPath,
       rowsCount: allRows.length,
       filteredCount: filteredAndSortedRows.length,
-      columns: ['Statut', 'Colonne', 'Tâche', 'Tags'],
+      columns: ['Statut', 'Colonne', 'Tâche', 'Tags'] as string[],
       sortField,
       sortOrder,
-    }));
-    return () => {
-      debugStore.unregisterTableStats();
-    };
-  }, [currentPath, allRows, filteredAndSortedRows, sortField, sortOrder]);
+    }),
+    [currentPath, allRows.length, filteredAndSortedRows.length, sortField, sortOrder]
+  );
+  useRegisterDebugStats('table', tableDebugReport);
 
   const handleToggleTaskCheckbox = (row: TableRowItem) => {
+    if (readOnly) return;
     toggleCard(row.columnId, row.id);
   };
 
   const handleMoveTaskColumn = (cardId: string, currentColumnId: string, targetColumnId: string) => {
-    if (currentColumnId === targetColumnId) return;
+    if (readOnly || currentColumnId === targetColumnId) return;
     const result = moveCard({ cardId, sourceColumnId: currentColumnId, targetColumnId });
     if (result.outcome === 'moved') {
       toast.success('Statut mis à jour', `Déplacé vers ${result.toColumn || 'colonne'}`);
@@ -80,6 +86,7 @@ export const TableView: React.FC<TableViewProps> = ({
   };
 
   const handleDeleteTask = (row: TableRowItem) => {
+    if (readOnly) return;
     deleteCard(row.columnId, row.id);
     toast.info('Tâche supprimée', row.title);
   };
@@ -151,279 +158,60 @@ export const TableView: React.FC<TableViewProps> = ({
 
   return (
     <div
+      className={readOnly ? 'knit-view-readonly' : undefined}
       style={{
-        flex: 1,
+        flex: readOnly ? 'none' : 1,
         display: 'flex',
         flexDirection: 'column',
-        height: '100%',
+        height: readOnly ? 'auto' : '100%',
+        minHeight: 0,
         backgroundColor: 'var(--knit-bg)',
-        overflow: 'hidden',
+        overflow: readOnly ? 'visible' : 'hidden',
       }}
     >
-      {/* Barre d'outils du Tableau */}
-      <div
-        style={{
-          padding: '10px 18px',
-          backgroundColor: 'var(--knit-surface)',
-          borderBottom: '1px solid var(--knit-border)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: 12,
+      <TableToolbar
+        board={board}
+        currentPath={currentPath}
+        availableKanbans={availableKanbans}
+        filteredCount={filteredAndSortedRows.length}
+        readOnly={readOnly}
+        compactChrome={compactChrome}
+        isSwitcherOpen={isSwitcherOpen}
+        setIsSwitcherOpen={setIsSwitcherOpen}
+        searchFilter={searchFilter}
+        setSearchFilter={setSearchFilter}
+        columnFilter={columnFilter}
+        setColumnFilter={setColumnFilter}
+        onOpenFile={onOpenFile}
+        onStartAddTask={() => {
+          setIsAddingTask(true);
+          setNewTaskColumnId(board.columns[0]?.id || '');
         }}
-      >
-        {/* Titre & Sélecteur de fichier */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, position: 'relative' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-            <DuotoneIcon name="table" size={20} style={{ color: 'var(--knit-primary)' }} />
-            <h2 style={{ fontSize: 15, fontWeight: 700, margin: 0, color: 'var(--knit-text)' }}>
-              {board.title || 'Vue Tableau'}
-            </h2>
-          </div>
+        onExportCSV={handleExportCSV}
+        onCopyMarkdownTable={handleCopyMarkdownTable}
+        onSwitchToEditor={onSwitchToEditor}
+      />
 
-          <button
-            onClick={() => setIsSwitcherOpen((prev) => !prev)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 5,
-              padding: '3px 8px',
-              borderRadius: 'var(--knit-radius-xs)',
-              backgroundColor: isSwitcherOpen ? 'var(--knit-surface-hover)' : 'transparent',
-              border: '1px solid var(--knit-border)',
-              fontSize: 11,
-              color: 'var(--knit-text-secondary)',
-              cursor: 'pointer',
-            }}
-          >
-            <span>{currentPath ? currentPath.split('/').pop() : 'Choisir...'}</span>
-            <DuotoneIcon name="chevron-down" size={11} />
-          </button>
-
-          {isSwitcherOpen && (
-            <div
-              style={{
-                position: 'absolute',
-                top: '100%',
-                left: 0,
-                marginTop: 6,
-                width: 240,
-                backgroundColor: 'var(--knit-surface)',
-                border: '1px solid var(--knit-border)',
-                borderRadius: 'var(--knit-radius-sm)',
-                boxShadow: 'var(--knit-shadow-lg)',
-                zIndex: 100,
-                padding: '4px 0',
-              }}
-            >
-              {availableKanbans.map((kb) => (
-                <button
-                  key={kb.path}
-                  onClick={() => {
-                    setIsSwitcherOpen(false);
-                    onOpenFile(kb.path);
-                  }}
-                  style={{
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '8px 12px',
-                    border: 'none',
-                    backgroundColor: kb.path === currentPath ? 'var(--knit-primary-alpha)' : 'transparent',
-                    color: kb.path === currentPath ? 'var(--knit-primary)' : 'var(--knit-text)',
-                    fontSize: 12,
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <DuotoneIcon name="kanban" size={13} />
-                  <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {kb.title}
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          <span
-            style={{
-              fontSize: 11,
-              color: 'var(--knit-text-muted)',
-              backgroundColor: 'var(--knit-surface-hover)',
-              padding: '2px 8px',
-              borderRadius: 'var(--knit-radius-xs)',
-            }}
-          >
-            {filteredAndSortedRows.length} ligne{filteredAndSortedRows.length > 1 ? 's' : ''}
-          </span>
-        </div>
-
-        {/* Contrôles de filtrage, Recherche & Exports */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          {/* Recherche rapide */}
-          <div className="knit-input-group" style={{ width: 190 }}>
-            <DuotoneIcon name="search" size={12} style={{ color: 'var(--knit-text-muted)' }} />
-            <input
-              type="text"
-              className="knit-input-seamless"
-              placeholder="Rechercher..."
-              value={searchFilter}
-              onChange={(e) => setSearchFilter(e.target.value)}
-              style={{ fontSize: 11, width: '100%' }}
-            />
-          </div>
-
-          {/* Filtre par Colonne */}
-          <KnitSelect
-            value={columnFilter}
-            onChange={setColumnFilter}
-            aria-label="Filtrer par colonne"
-            style={{ fontSize: 11, minWidth: 140 }}
-            options={[
-              { value: 'all', label: 'Toutes les colonnes' },
-              ...board.columns.map((col) => ({
-                value: col.id,
-                label: `${col.title} (${col.cards.length})`,
-              })),
-            ]}
-          />
-
-          {/* Bouton Ajouter Tâche */}
-          <button
-            onClick={() => {
-              setIsAddingTask(true);
-              setNewTaskColumnId(board.columns[0]?.id || '');
-            }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              padding: '4px 9px',
-              borderRadius: 'var(--knit-radius-sm)',
-              backgroundColor: 'var(--knit-surface)',
-              border: '1px solid var(--knit-border)',
-              color: 'var(--knit-text)',
-              fontSize: 11,
-              fontWeight: 500,
-              cursor: 'pointer',
-            }}
-          >
-            <DuotoneIcon name="plus" size={11} />
-            <span>Nouvelle tâche</span>
-          </button>
-
-          {/* Exports */}
-          <button
-            onClick={handleExportCSV}
-            title="Exporter la liste au format CSV"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              padding: '4px 8px',
-              borderRadius: 'var(--knit-radius-sm)',
-              backgroundColor: 'transparent',
-              border: '1px solid var(--knit-border)',
-              color: 'var(--knit-text-secondary)',
-              fontSize: 11,
-              cursor: 'pointer',
-            }}
-          >
-            <DuotoneIcon name="download" size={11} />
-            <span>CSV</span>
-          </button>
-
-          <button
-            onClick={handleCopyMarkdownTable}
-            title="Copier le tableau au format Markdown"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 4,
-              padding: '4px 8px',
-              borderRadius: 'var(--knit-radius-sm)',
-              backgroundColor: 'transparent',
-              border: '1px solid var(--knit-border)',
-              color: 'var(--knit-text-secondary)',
-              fontSize: 11,
-              cursor: 'pointer',
-            }}
-          >
-            <DuotoneIcon name="copy" size={11} />
-            <span>Tableau MD</span>
-          </button>
-
-          {onSwitchToEditor && (
-            <button
-              onClick={onSwitchToEditor}
-              title="Afficher et éditer le fichier Markdown source"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 4,
-                padding: '4px 8px',
-                borderRadius: 'var(--knit-radius-sm)',
-                backgroundColor: 'transparent',
-                border: '1px solid var(--knit-border)',
-                color: 'var(--knit-text-secondary)',
-                fontSize: 11,
-                cursor: 'pointer',
-              }}
-            >
-              <DuotoneIcon name="file-markdown" size={11} />
-              <span>Markdown</span>
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Formulaire modal ou inline d'ajout de tâche */}
       {isAddingTask && (
-        <form
+        <TableAddTaskRow
+          board={board}
+          newTaskTitle={newTaskTitle}
+          setNewTaskTitle={setNewTaskTitle}
+          newTaskColumnId={newTaskColumnId}
+          setNewTaskColumnId={setNewTaskColumnId}
           onSubmit={handleAddTaskSubmit}
-          style={{
-            padding: '10px 18px',
-            backgroundColor: 'var(--knit-surface-hover)',
-            borderBottom: '1px solid var(--knit-border)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-          }}
-        >
-          <KnitSelect
-            value={newTaskColumnId}
-            onChange={setNewTaskColumnId}
-            aria-label="Colonne de la nouvelle tâche"
-            style={{ fontSize: 12, minWidth: 140 }}
-            options={board.columns.map((c) => ({
-              value: c.id,
-              label: c.title,
-            }))}
-          />
-
-          <input
-            autoFocus
-            type="text"
-            className="knit-input"
-            placeholder="Titre de la tâche (ex: Spécifications [[Specs]] #projet)..."
-            value={newTaskTitle}
-            onChange={(e) => setNewTaskTitle(e.target.value)}
-            style={{ flex: 1, fontSize: 12 }}
-          />
-
-          <button type="submit" className="knit-btn knit-btn-primary" style={{ padding: '4px 12px', fontSize: 11 }}>
-            Ajouter
-          </button>
-          <button type="button" className="knit-btn" style={{ padding: '4px 10px', fontSize: 11 }} onClick={() => setIsAddingTask(false)}>
-            Annuler
-          </button>
-        </form>
+          onCancel={() => setIsAddingTask(false)}
+        />
       )}
 
       {/* Table principale */}
-      <div style={{ flex: 1, overflow: 'auto', padding: '12px 18px' }}>
+      <div
+        style={{
+          flex: readOnly ? 'none' : 1,
+          overflow: readOnly ? 'visible' : 'auto',
+          padding: readOnly ? '8px 10px' : '12px 18px',
+        }}
+      >
         <table
           style={{
             width: '100%',
@@ -598,18 +386,15 @@ export const TableView: React.FC<TableViewProps> = ({
           sortOrder={sortOrder}
           filePath={currentPath}
           onCopyJson={() => {
-            void copyTextWithToast(
-              JSON.stringify(filteredAndSortedRows, null, 2),
+            void copyDebugJson(
+              filteredAndSortedRows,
               'Données JSON copiées',
               `${filteredAndSortedRows.length} lignes copiées.`
             );
           }}
           onDumpConsole={() => {
-            console.group('[TABLE DEBUG]');
-            console.log('Lignes filtrées :', filteredAndSortedRows);
+            dumpDebugConsole('TABLE', filteredAndSortedRows);
             console.table(filteredAndSortedRows);
-            console.groupEnd();
-            toast.info('Inspecteur Console', 'Données de la table affichées dans la console (F12).');
           }}
           onClose={toggleDebug}
         />

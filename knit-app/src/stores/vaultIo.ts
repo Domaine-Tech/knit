@@ -77,8 +77,8 @@ async function setupWatcher(ops: VaultOps, path: string) {
 
     try {
       // Arrêt préventif de tout watcher précédent
-      await invoke('stop_vault_watcher').catch(() => {});
-      await invoke('start_vault_watcher', { vaultPath: path });
+      await invoke<void>('stop_vault_watcher').catch(() => {});
+      await invoke<void>('start_vault_watcher', { vaultPath: path });
 
       const u1 = await listen<{ path: string; content: string }>(
         'vault_file_changed',
@@ -210,7 +210,7 @@ export async function writeFile(ops: VaultOps, relPath: string, content: string)
       return;
     }
 
-    await invoke('write_vault_file', {
+    await invoke<void>('write_vault_file', {
       vaultPath: ops.currentVaultPath,
       relPath,
       content,
@@ -229,7 +229,7 @@ export async function createFile(ops: VaultOps, relPath: string, initialContent:
       return;
     }
 
-    await invoke('create_vault_file', {
+    await invoke<void>('create_vault_file', {
       vaultPath: ops.currentVaultPath,
       relPath,
       content: initialContent,
@@ -246,7 +246,7 @@ export async function createDir(ops: VaultOps, relPath: string): Promise<void> {
     }
 
     try {
-      await invoke('create_vault_dir', {
+      await invoke<void>('create_vault_dir', {
         vaultPath: ops.currentVaultPath,
         relPath,
       });

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { LivePreviewDebugStats, VaultProfilingRecommendation } from '../../types';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
+import { ViewDebugHUDShell } from '../Debug/ViewDebugHUDShell';
 import { toast } from '../../stores/toastStore';
 import { useDebugMode } from '../../hooks';
 import { copyTextWithToast } from '../../utils';
@@ -85,45 +86,41 @@ ${profilerReportText}
     }
   };
 
+  const geometryBadgeLabel = !stats
+    ? 'En attente…'
+    : hasErrors
+      ? `${mismatches.length} décalage(s)`
+      : 'Pixel-Perfect';
+
   return (
-    <div className="knit-live-debug-hud">
-      <div className="knit-debug-hud-header">
-        <div className="knit-debug-hud-title">
-          <DuotoneIcon name="bug" size={13} style={{ color: 'var(--knit-primary)' }} />
-          <span style={{ fontWeight: 700, letterSpacing: '-0.01em' }}>Mode Debug Global</span>
-
-          {stats && (
-            <span className={`knit-debug-hud-badge ${hasErrors ? 'is-error' : 'is-ok'}`}>
-              {hasErrors ? (
-                <>
-                  <DuotoneIcon name="close" size={11} style={{ color: '#EF4444' }} />
-                  <span>
-                    {mismatches.length} décalage{mismatches.length > 1 ? 's' : ''} (Max Δ :{' '}
-                    {mismatches[0]?.delta > 0 ? `+${mismatches[0]?.delta}` : mismatches[0]?.delta}px à L{mismatches[0]?.lineNum})
-                  </span>
-                </>
-              ) : (
-                <>
-                  <DuotoneIcon name="check" size={11} style={{ color: '#10B981' }} />
-                  <span>100% Pixel-Perfect (0 décalage)</span>
-                </>
-              )}
-            </span>
-          )}
-
-          {stats && (
-            <span style={{ fontSize: '11px', color: 'var(--knit-text-muted)', marginLeft: 4 }}>
-              ({stats.visibleLines} visibles / {stats.totalLines} lignes)
-            </span>
-          )}
-        </div>
-
-        <div className="knit-debug-hud-actions">
-          {/* Bouton Profilage Indexation */}
+    <ViewDebugHUDShell
+      title="Mode Debug Global"
+      badges={[
+        {
+          label: geometryBadgeLabel,
+          tone: !stats ? 'neutral' : hasErrors ? 'error' : 'ok',
+        },
+      ]}
+      meta={
+        stats ? (
+          <span style={{ fontSize: 11, color: 'var(--knit-text-muted)' }}>
+            {stats.visibleLines} visibles / {stats.totalLines} lignes
+            {hasErrors && mismatches[0]
+              ? ` | Max Δ ${mismatches[0].delta > 0 ? `+${mismatches[0].delta}` : mismatches[0].delta}px à L${mismatches[0].lineNum}`
+              : ''}
+          </span>
+        ) : undefined
+      }
+      onCopyJson={handleCopyReport}
+      onDumpConsole={handleDumpConsole}
+      onClose={onToggle}
+      extraActions={
+        <>
           <button
+            type="button"
             onClick={() => setActiveTab((t) => (t === 'profiler' ? 'none' : 'profiler'))}
             className={`knit-debug-btn ${activeTab === 'profiler' ? 'active' : ''}`}
-            title="Afficher les métriques de profilage pour grands coffres et partages réseau"
+            data-tooltip="Métriques de profilage coffre / réseau"
             style={{
               backgroundColor: activeTab === 'profiler' ? 'var(--knit-primary-alpha)' : undefined,
               borderColor: activeTab === 'profiler' ? 'var(--knit-primary)' : undefined,
@@ -133,12 +130,11 @@ ${profilerReportText}
             <DuotoneIcon name="sync" size={12} />
             <span>Profilage Index</span>
           </button>
-
-          {/* Bouton Détails lignes CodeMirror */}
           <button
+            type="button"
             onClick={() => setActiveTab((t) => (t === 'lines' ? 'none' : 'lines'))}
             className={`knit-debug-btn ${activeTab === 'lines' ? 'active' : ''}`}
-            title="Afficher/masquer la table détaillée des lignes"
+            data-tooltip="Table détaillée des lignes CodeMirror"
             style={{
               backgroundColor: activeTab === 'lines' ? 'var(--knit-primary-alpha)' : undefined,
               borderColor: activeTab === 'lines' ? 'var(--knit-primary)' : undefined,
@@ -148,46 +144,18 @@ ${profilerReportText}
             <DuotoneIcon name="table" size={12} />
             <span>Détails lignes</span>
           </button>
-
           <button
+            type="button"
             onClick={onRequestMeasure}
             className="knit-debug-btn"
-            title="Forcer un recalcul géométrique complet de CodeMirror"
+            data-tooltip="Forcer un recalcul géométrique CodeMirror"
           >
             <DuotoneIcon name="sync" size={12} />
             <span>Re-mesurer</span>
           </button>
-
-          <button
-            onClick={handleCopyReport}
-            className="knit-debug-btn"
-            title="Copier le rapport complet au format texte"
-          >
-            <DuotoneIcon name="command" size={12} />
-            <span>Copier rapport</span>
-          </button>
-
-          <button
-            onClick={handleDumpConsole}
-            className="knit-debug-btn"
-            title="Afficher console.table dans les DevTools"
-          >
-            <DuotoneIcon name="search" size={12} />
-            <span>Console</span>
-          </button>
-
-          <button
-            onClick={onToggle}
-            className="knit-debug-btn"
-            title="Fermer le mode debug (Ctrl+Alt+D)"
-            style={{ color: '#EF4444', borderColor: 'rgba(239, 68, 68, 0.4)' }}
-          >
-            <DuotoneIcon name="close" size={12} />
-            <span>Quitter</span>
-          </button>
-        </div>
-      </div>
-
+        </>
+      }
+    >
       {/* Onglet 1 : Profilage Indexation & Benchmark Réseau / Local */}
       {activeTab === 'profiler' && (
         <div className="knit-debug-hud-body" style={{ maxHeight: 320, overflowY: 'auto', padding: '12px 18px' }}>
@@ -366,6 +334,6 @@ ${profilerReportText}
           </table>
         </div>
       )}
-    </div>
+    </ViewDebugHUDShell>
   );
 };

@@ -1,4 +1,5 @@
 import { WidgetType, type EditorView } from '@codemirror/view';
+import { isLivePreviewVisualLocked } from '../visualLock';
 
 /**
  * 5. Carte de Propriétés Frontmatter YAML (Style Obsidian Properties)
@@ -136,6 +137,7 @@ export class FrontmatterPropertiesWidget extends WidgetType {
     const activateYaml = (e: MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
+      if (isLivePreviewVisualLocked(view.state)) return;
       view.dispatch({
         selection: { anchor: Math.min(this.from + 4, this.to) },
         scrollIntoView: true,

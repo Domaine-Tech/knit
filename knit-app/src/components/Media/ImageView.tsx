@@ -1,10 +1,13 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { resolveAssetUrl } from '../../utils/assetUrl';
 import { copyRelativePath, copyTextWithToast } from '../../utils/clipboardUtils';
-import { buildPathCopyMenuItem } from '../../utils';
+import { buildPathCopyMenuItem, copyDebugJson, dumpDebugConsole } from '../../utils';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { contextMenu } from '../../stores/contextMenuStore';
 import { vaultStore } from '../../stores/vaultStore';
+import { useDebugMode, useRegisterDebugStats } from '../../hooks';
+import type { ImageDebugReport } from '../../types';
+import { ImageDebugHUD } from './ImageDebugHUD';
 
 interface ImageViewProps {
   path: string;
@@ -16,10 +19,33 @@ interface ImageViewProps {
  */
 export const ImageView: React.FC<ImageViewProps> = ({ path }) => {
   const [failed, setFailed] = useState(false);
+  const [naturalWidth, setNaturalWidth] = useState<number | null>(null);
+  const [naturalHeight, setNaturalHeight] = useState<number | null>(null);
+  const { isDebugActive, toggleDebug } = useDebugMode();
   const fileName = path.replace(/\\/g, '/').split('/').pop() || path;
   const altBase = fileName.replace(/\.[^.]+$/, '') || fileName;
   const src = useMemo(() => resolveAssetUrl(path), [path]);
   const markdownLink = `![${altBase}](${path.replace(/\\/g, '/')})`;
+  const extension = (fileName.includes('.') ? fileName.split('.').pop() : '') || '';
+
+  useEffect(() => {
+    setFailed(false);
+    setNaturalWidth(null);
+    setNaturalHeight(null);
+  }, [path]);
+
+  const imageDebugReport = useMemo((): ImageDebugReport => {
+    return {
+      path: path.replace(/\\/g, '/'),
+      resolvedUrl: src,
+      failed,
+      naturalWidth,
+      naturalHeight,
+      extension: extension.toLowerCase(),
+    };
+  }, [path, src, failed, naturalWidth, naturalHeight, extension]);
+
+  useRegisterDebugStats('image', imageDebugReport);
 
   const handleCopyMarkdown = () => {
     void copyTextWithToast(markdownLink, 'Lien Markdown copié', markdownLink);
@@ -53,12 +79,17 @@ export const ImageView: React.FC<ImageViewProps> = ({ path }) => {
   };
 
   return (
-    <div className="knit-image-view" onContextMenu={handleContextMenu}>
+    <div className="knit-image-view" onContextMenu={handleContextMenu} style={{ position: 'relative' }}>
       <div className="knit-image-view-toolbar">
         <div className="knit-image-view-meta">
           <DuotoneIcon name="image" size={14} style={{ color: 'var(--knit-primary)' }} />
           <div className="knit-image-view-titles">
-            <span className="knit-image-view-name">{fileName}</span>
+            <span className="knit-image-view-name">
+              {fileName}
+              {isDebugActive && extension && (
+                <span className="knit-debug-view-badge">.{extension}</span>
+              )}
+            </span>
             <span className="knit-image-view-path">{path.replace(/\\/g, '/')}</span>
           </div>
         </div>
@@ -105,11 +136,33 @@ export const ImageView: React.FC<ImageViewProps> = ({ path }) => {
             className="knit-image-view-img"
             src={src}
             alt={altBase}
-            onError={() => setFailed(true)}
-            onLoad={() => setFailed(false)}
+            onError={() => {
+              setFailed(true);
+              setNaturalWidth(null);
+              setNaturalHeight(null);
+            }}
+            onLoad={(e) => {
+              setFailed(false);
+              const img = e.currentTarget;
+              setNaturalWidth(img.naturalWidth);
+              setNaturalHeight(img.naturalHeight);
+            }}
           />
         )}
       </div>
+
+      {isDebugActive && (
+        <ImageDebugHUD
+          report={imageDebugReport}
+          onCopyJson={() => {
+            void copyDebugJson(imageDebugReport, 'Rapport Image copié', path.replace(/\\/g, '/'));
+          }}
+          onDumpConsole={() => {
+            dumpDebugConsole('IMAGE', imageDebugReport);
+          }}
+          onClose={toggleDebug}
+        />
+      )}
     </div>
   );
 };

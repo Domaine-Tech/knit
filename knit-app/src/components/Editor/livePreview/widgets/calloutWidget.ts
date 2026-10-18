@@ -1,4 +1,5 @@
 import { WidgetType, type EditorView } from '@codemirror/view';
+import { isLivePreviewVisualLocked } from '../visualLock';
 
 function getCalloutIcon(type: string): string {
   switch (type) {
@@ -48,6 +49,7 @@ export class CalloutHeaderWidget extends WidgetType {
     header.appendChild(titleSpan);
 
     header.onclick = () => {
+      if (isLivePreviewVisualLocked(view.state)) return;
       view.dispatch({ selection: { anchor: this.from } });
       view.focus();
     };

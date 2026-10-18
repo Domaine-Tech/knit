@@ -7,7 +7,9 @@ import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import {
   buildCloseTabsMenuItems,
   buildConvertDocTypeMenuItem,
+  buildCreateInFolderMenuItems,
   buildPathCopyMenuItem,
+  docTypeToIconName,
   isMiddleButton,
   preventMiddleCompass,
 } from '../../utils';
@@ -19,7 +21,6 @@ interface TabBarProps {
   isFocused?: boolean;
   isSplit?: boolean;
   onNewNote?: () => void;
-  onNewKanban?: () => void;
   onToggleSplit?: () => void;
   onCloseSplit?: () => void;
 }
@@ -31,7 +32,6 @@ export const TabBar: React.FC<TabBarProps> = ({
   isFocused = false,
   isSplit = false,
   onNewNote,
-  onNewKanban,
   onToggleSplit,
   onCloseSplit,
 }) => {
@@ -58,16 +58,39 @@ export const TabBar: React.FC<TabBarProps> = ({
   };
 
   const getTabIcon = (tab: Tab) => {
-    if (tab.docType === 'kanban') {
-      return <DuotoneIcon name="kanban" size={14} style={{ color: 'var(--knit-primary)' }} />;
+    const icon = docTypeToIconName(tab.docType);
+    const colored =
+      tab.docType !== 'note' && tab.docType !== 'image'
+        ? ({ color: 'var(--knit-primary)' } as const)
+        : undefined;
+    return <DuotoneIcon name={icon} size={14} style={colored} />;
+  };
+
+  const openCreatedDoc = async (relPath: string, kind: string) => {
+    if (kind === 'dir') return;
+    try {
+      const content = await vaultStore.readFile(relPath);
+      tabStore.openTab(relPath, false, content);
+    } catch {
+      tabStore.openTab(relPath, false);
     }
-    if (tab.docType === 'table') {
-      return <DuotoneIcon name="table" size={14} style={{ color: 'var(--knit-primary)' }} />;
-    }
-    if (tab.docType === 'image') {
-      return <DuotoneIcon name="image" size={14} style={{ color: 'var(--knit-primary)' }} />;
-    }
-    return <DuotoneIcon name="file-markdown" size={14} />;
+  };
+
+  const showCreateDocMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    contextMenu.show(
+      e,
+      buildCreateInFolderMenuItems({
+        parentDir: '',
+        includeFolder: false,
+        noteShortcut: 'Ctrl+N',
+        createNote: onNewNote,
+        onCreated: (relPath, kind) => {
+          void openCreatedDoc(relPath, kind);
+        },
+      })
+    );
   };
 
   const handleTabContextMenu = (e: React.MouseEvent, tab: Tab, index: number) => {
@@ -143,62 +166,21 @@ export const TabBar: React.FC<TabBarProps> = ({
     ]);
   };
 
-  const handlePlusClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    contextMenu.show(e, [
-      {
-        id: 'new-note',
-        label: 'Nouvelle Note Markdown',
-        icon: 'file-markdown',
-        shortcut: 'Ctrl+N',
-        onClick: () => onNewNote?.(),
-      },
-      {
-        id: 'new-kanban',
-        label: 'Nouveau Tableau Kanban...',
-        icon: 'kanban',
-        onClick: () => onNewKanban?.(),
-      },
-      {
-        id: 'new-table',
-        label: 'Nouvelle Vue Tableau...',
-        icon: 'table',
-        onClick: async () => {
-          const name = window.prompt('Nom du nouveau tableau :', 'tableau.md');
-          if (name && name.trim()) {
-            const clean = name.trim().endsWith('.md') ? name.trim() : `${name.trim()}.md`;
-            await vaultStore.createFile(
-              clean,
-              `---\ntype: table\ntitle: "${clean.replace(/\.md$/, '')}"\n---\n\n# ${clean.replace(/\.md$/, '')}\n\n## À faire\n- [ ] Première ligne de données\n`
-            );
-            const content = await vaultStore.readFile(clean);
-            tabStore.openTab(clean, false, content);
-          }
-        },
-      },
-    ]);
-  };
-
   const handleBarContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
     contextMenu.show(e, [
-      {
-        id: 'new-note',
-        label: 'Nouvelle Note Markdown',
-        icon: 'file-markdown',
-        shortcut: 'Ctrl+N',
-        onClick: () => onNewNote?.(),
-      },
-      {
-        id: 'new-kanban',
-        label: 'Nouveau Tableau Kanban...',
-        icon: 'kanban',
-        onClick: () => onNewKanban?.(),
-      },
+      ...buildCreateInFolderMenuItems({
+        parentDir: '',
+        includeFolder: false,
+        noteShortcut: 'Ctrl+N',
+        createNote: onNewNote,
+        onCreated: (relPath, kind) => {
+          void openCreatedDoc(relPath, kind);
+        },
+      }),
+      { id: 'div-bar-create', divider: true },
       {
         id: 'reopen-closed',
         label: 'Rouvrir le dernier onglet fermé',
@@ -363,9 +345,9 @@ export const TabBar: React.FC<TabBarProps> = ({
         })}
 
         <button
-          onClick={handlePlusClick}
-          onContextMenu={handlePlusClick}
-          title="Nouveau document (+ menu de sélection)"
+          onClick={showCreateDocMenu}
+          onContextMenu={showCreateDocMenu}
+          data-tooltip="Nouveau document (tous les types)"
           style={{
             marginLeft: 4,
             padding: '4px 6px',
@@ -421,16 +403,7 @@ export const TabBar: React.FC<TabBarProps> = ({
               </>
             ) : (
               <>
-                <DuotoneIcon
-                  name={
-                    activeTab.docType === 'kanban'
-                      ? 'kanban'
-                      : activeTab.docType === 'table'
-                      ? 'table'
-                      : 'file-markdown'
-                  }
-                  size={12}
-                />
+                <DuotoneIcon name={docTypeToIconName(activeTab.docType)} size={12} />
                 <span>Rendu</span>
               </>
             )}

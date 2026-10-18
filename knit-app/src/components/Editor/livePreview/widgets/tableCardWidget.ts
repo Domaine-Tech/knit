@@ -1,5 +1,12 @@
 import { WidgetType, type EditorView } from '@codemirror/view';
-import { splitTableRow, renderSimpleMarkdown } from '../../../../utils';
+import {
+  clearHoverPreview,
+  dispatchHoverPreview,
+  renderSimpleMarkdown,
+  shouldNavigateOnLinkClick,
+  splitTableRow,
+} from '../../../../utils';
+import { isLivePreviewVisualLocked } from '../visualLock';
 
 /**
  * 6. Rendu immersif des Tableaux Markdown GFM (Table Card Widget)
@@ -109,7 +116,7 @@ export class TableCardWidget extends WidgetType {
     card.onclick = (e) => {
       // 1. Si Ctrl+Clic (ou Clic) sur un lien interne du tableau
       const linkEl = (e.target as HTMLElement).closest('[data-target]') as HTMLElement | null;
-      if (linkEl && (e.ctrlKey || e.metaKey)) {
+      if (linkEl && shouldNavigateOnLinkClick(e)) {
         e.preventDefault();
         e.stopPropagation();
         const targetUrl = linkEl.getAttribute('data-target');
@@ -124,9 +131,10 @@ export class TableCardWidget extends WidgetType {
         }
       }
 
-      // 2. Sinon : bascule vers la source du tableau à la ligne correspondante
+      // 2. Sinon : bascule vers la source du tableau (sauf lecture verrouillée)
       e.preventDefault();
       e.stopPropagation();
+      if (isLivePreviewVisualLocked(view.state)) return;
 
       const targetTr = (e.target as HTMLElement).closest('tr');
       const lineOffset = targetTr?.dataset.lineOffset ? parseInt(targetTr.dataset.lineOffset, 10) : 0;
@@ -152,30 +160,15 @@ export class TableCardWidget extends WidgetType {
       if (linkEl) {
         const targetUrl = linkEl.getAttribute('data-target');
         if (targetUrl) {
-          card.dispatchEvent(
-            new CustomEvent('knit-hover-link', {
-              bubbles: true,
-              detail: { target: targetUrl, x: e.clientX, y: e.clientY },
-            })
-          );
+          dispatchHoverPreview(targetUrl, e.clientX, e.clientY);
           return;
         }
       }
-      card.dispatchEvent(
-        new CustomEvent('knit-hover-link', {
-          bubbles: true,
-          detail: null,
-        })
-      );
+      clearHoverPreview();
     };
 
     card.onmouseleave = () => {
-      card.dispatchEvent(
-        new CustomEvent('knit-hover-link', {
-          bubbles: true,
-          detail: null,
-        })
-      );
+      clearHoverPreview();
     };
 
     return card;

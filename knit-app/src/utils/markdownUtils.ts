@@ -1,5 +1,8 @@
-import type { DocType, TableAlign } from '../types';
+import type { DocType, ResolvedWikiLink, TableAlign } from '../types';
 import { isMediaFilePath } from './treeUtils';
+import { escapeThenAllowlist } from './htmlSanitize';
+
+export type { ResolvedWikiLink };
 
 /**
  * Utilitaires universels de traitement Markdown pour Knit
@@ -154,18 +157,6 @@ export function findTableDelimiterOffsets(lineText: string): number[] {
   return offsets;
 }
 
-/** Cible WikiLink résolue (alias, chemin fichier, ancre optionnelle). */
-export interface ResolvedWikiLink {
-  /** Libellé affiché (alias ou titre dérivé). */
-  displayName: string;
-  /** Chemin relatif fichier (avec `.md` si note). */
-  filePath: string;
-  /** Cible brute sans alias (`Note#ancre` ou `Note`). */
-  target: string;
-  /** Fragment d'ancre sans `#`, si présent. */
-  anchor: string | null;
-}
-
 /**
  * Résout un WikiLink interne `[[cible|alias]]` / `[[cible#ancre]]` en cible navigable.
  * Ne gère pas les ancres locales pures `[[#titre]]` (filePath reste `#…`).
@@ -223,13 +214,23 @@ export function wikilinkDisplayLabel(target: string): string {
 }
 
 /**
- * Rendu simplifié d'éléments Markdown en HTML avec injection des attributs data-target
+ * Rendu simplifié d'éléments Markdown en HTML avec injection des attributs data-target.
+ * B-059 : conserve une whitelist HTML sécurisée (kbd, u, mark, sub, sup, br, details).
+ * Le code inline est protégé en premier pour ne jamais transformer `` `<kbd>` `` en balise vide.
  */
 export function renderSimpleMarkdown(raw: string): string {
-  let s = raw
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+  const codeSlots: string[] = [];
+  let s = raw.replace(/`([^`]+)`/g, (_, code: string) => {
+    const escaped = code
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    const idx = codeSlots.length;
+    codeSlots.push(escaped);
+    return `\u0000CODE${idx}\u0000`;
+  });
+
+  s = escapeThenAllowlist(s);
 
   s = s.replace(/!(p[1-3])\b/gi, (_, p) => {
     const pl = p.toLowerCase();
@@ -237,7 +238,6 @@ export function renderSimpleMarkdown(raw: string): string {
     return `<span class="knit-priority-badge knit-priority-${pl}">${label}</span>`;
   });
 
-  s = s.replace(/`([^`]+)`/g, '<code class="knit-preview-code">$1</code>');
   s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   s = s.replace(/\*([^*]+)\*/g, '<em>$1</em>');
   s = s.replace(/~~([^~]+)~~/g, '<span class="knit-preview-strikethrough">$1</span>');
@@ -264,83 +264,118 @@ export function renderSimpleMarkdown(raw: string): string {
   s = s.replace(/(?:^|\s)#([a-zA-Z0-9_\-/]+)/g, ' <span class="knit-preview-tag">#$1</span>');
   s = s.replace(/(?:^|\s)@([a-zA-Z0-9_\-.]+)/g, ' <span class="knit-preview-mention">@$1</span>');
 
+  s = s.replace(/\u0000CODE(\d+)\u0000/g, (_, n) => {
+    return `<code class="knit-preview-code">${codeSlots[Number(n)] || ''}</code>`;
+  });
+
   return s;
 }
 
 /**
- * Formate un extrait Markdown complet en HTML riche pour l'infobulle de survol (Hover Preview Tooltip),
- * en reproduisant le rendu du Live Preview au lieu d'afficher du Markdown brut.
+ * Rendu multi-lignes pour le corps d'un `<details>` (listes, tâches, tableaux GFM, paragraphes).
  */
-export function renderRichMarkdownPreview(raw: string): string {
-  if (!raw) return '<div style="color:var(--knit-text-muted);font-style:italic;">(Note vide)</div>';
+export function renderBlockMarkdown(raw: string): string {
+  if (!raw.trim()) return '';
 
-  let clean = raw;
-  // Nettoyage de l'en-tête frontmatter YAML si présent
-  if (clean.startsWith('---')) {
-    const endFm = clean.indexOf('\n---', 3);
-    if (endFm !== -1) {
-      clean = clean.slice(endFm + 4).trim();
-    }
-  }
+  const lines = raw.split(/\r?\n/);
+  const parts: string[] = [];
+  let i = 0;
 
-  const lines = clean.split(/\r?\n/).slice(0, 7);
-  const htmlParts: string[] = [];
-
-  for (const line of lines) {
+  while (i < lines.length) {
+    const line = lines[i];
     const trimmed = line.trim();
-    if (!trimmed) continue;
 
-    // Titres Markdown
-    const headingMatch = trimmed.match(/^(#{1,6})\s+(.*)$/);
-    if (headingMatch) {
-      const level = headingMatch[1].length;
-      const fontSize = level === 1 ? '13px' : '12px';
-      htmlParts.push(
-        `<div style="font-weight:700;font-size:${fontSize};color:var(--knit-text);margin:3px 0;display:flex;align-items:center;gap:6px;">
-          <span style="color:var(--knit-primary);opacity:0.8;">#</span>
-          <span>${renderSimpleMarkdown(headingMatch[2])}</span>
-        </div>`
-      );
+    if (!trimmed) {
+      i++;
       continue;
     }
 
-    // Listes de tâches (- [ ], - [x], etc.)
-    const taskMatch = trimmed.match(/^-\s*\[([ xX/\-?>!])\]\s*(.*)$/);
+    // Tableau GFM
+    if (/^\|.*\|$/.test(trimmed)) {
+      const tableLines: string[] = [];
+      while (i < lines.length && /^\s*\|.*\|\s*$/.test(lines[i])) {
+        tableLines.push(lines[i].trim());
+        i++;
+      }
+      if (tableLines.length >= 2) {
+        parts.push(renderGfmTableHtml(tableLines));
+      }
+      continue;
+    }
+
+    // Tâche
+    const taskMatch = trimmed.match(/^[-*]\s+\[([ xX/\-?>!])\]\s+(.*)$/);
     if (taskMatch) {
-      const isDone = taskMatch[1].toLowerCase() === 'x';
-      const checkSvg = isDone
-        ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>`
-        : `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"></rect></svg>`;
-      const style = isDone ? 'text-decoration:line-through;opacity:0.65;' : '';
-      htmlParts.push(
-        `<div style="display:flex;align-items:center;gap:6px;margin:2px 0;font-size:11.5px;${style}">
-          <span style="display:inline-flex;align-items:center;color:var(--knit-text-muted);">${checkSvg}</span>
-          <span>${renderSimpleMarkdown(taskMatch[2])}</span>
-        </div>`
+      const status = taskMatch[1];
+      const done = status.toLowerCase() === 'x';
+      const cancelled = status === '-';
+      const cls = done
+        ? 'is-done'
+        : cancelled
+          ? 'is-cancelled'
+          : status === '/'
+            ? 'is-progress'
+            : '';
+      parts.push(
+        `<div class="knit-html-details-task ${cls}"><span class="knit-html-details-check" aria-hidden="true"></span><span class="knit-html-details-task-text">${renderSimpleMarkdown(taskMatch[2])}</span></div>`
       );
+      i++;
       continue;
     }
 
-    // Puces normales (- ou *)
-    if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-      htmlParts.push(
-        `<div style="display:flex;align-items:baseline;gap:6px;margin:2px 0;font-size:11.5px;">
-          <span style="color:var(--knit-primary);font-size:10px;">•</span>
-          <span>${renderSimpleMarkdown(trimmed.slice(2))}</span>
-        </div>`
+    // Liste à puces
+    const bulletMatch = trimmed.match(/^[-*]\s+(.*)$/);
+    if (bulletMatch) {
+      parts.push(
+        `<div class="knit-html-details-li">• ${renderSimpleMarkdown(bulletMatch[1])}</div>`
       );
+      i++;
       continue;
     }
 
-    // Paragraphe classique
-    htmlParts.push(
-      `<div style="margin:2px 0;font-size:11.5px;line-height:1.45;color:var(--knit-text-secondary);">${renderSimpleMarkdown(trimmed)}</div>`
+    // Liste numérotée
+    const numMatch = trimmed.match(/^\d+\.\s+(.*)$/);
+    if (numMatch) {
+      parts.push(
+        `<div class="knit-html-details-li">${renderSimpleMarkdown(trimmed)}</div>`
+      );
+      i++;
+      continue;
+    }
+
+    parts.push(
+      `<div class="knit-html-details-p">${renderSimpleMarkdown(trimmed)}</div>`
     );
+    i++;
   }
 
-  return htmlParts.join('') || '<div style="color:var(--knit-text-muted);font-style:italic;">(Note vide)</div>';
+  return parts.join('');
 }
 
+function renderGfmTableHtml(tableLines: string[]): string {
+  const rows = tableLines.filter(
+    (l) => !/^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?\s*$/.test(l)
+  );
+  if (rows.length === 0) return '';
+
+  const headerCells = splitTableRow(rows[0]);
+  const bodyRows = rows.slice(1);
+
+  let html =
+    '<table class="knit-html-details-table"><thead><tr>' +
+    headerCells.map((c) => `<th>${renderSimpleMarkdown(c)}</th>`).join('') +
+    '</tr></thead><tbody>';
+
+  for (const row of bodyRows) {
+    const cells = splitTableRow(row);
+    html +=
+      '<tr>' +
+      cells.map((c) => `<td>${renderSimpleMarkdown(c)}</td>`).join('') +
+      '</tr>';
+  }
+  html += '</tbody></table>';
+  return html;
+}
 
 /**
  * Normalise un texte ou un titre de section en identifiant slug sécurisé (compatible GitHub/Obsidian)
@@ -504,8 +539,7 @@ export function mutateTableStructure(
 }
 
 /**
- * Détecte le type de document ('note' | 'kanban' | 'table' | 'image')
- * à partir du chemin (médias) et du contenu Markdown / frontmatter.
+ * Détecte le type de document Doc-Driven à partir du chemin et du frontmatter.
  */
 export function detectDocType(content: string, path: string): DocType {
   // Médias coffre (svg/png/…) : détection par extension, avant les heuristiques de chemin
@@ -513,6 +547,31 @@ export function detectDocType(content: string, path: string): DocType {
     return 'image';
   }
 
+  // 1. Analyse prioritaire du frontmatter YAML si le contenu est disponible
+  if (content) {
+    const fmMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+    if (fmMatch) {
+      const yaml = fmMatch[1].toLowerCase();
+      for (const line of yaml.split('\n')) {
+        const parts = line.split(':');
+        if (parts.length >= 2 && parts[0].trim() === 'type') {
+          const val = parts.slice(1).join(':').trim();
+          if (val.includes('kanban') || val.includes('board')) return 'kanban';
+          if (val.includes('table') || val.includes('tableau')) return 'table';
+          if (val.includes('calendar') || val.includes('agenda')) return 'calendar';
+          if (val.includes('canvas')) return 'canvas';
+          if (val.includes('slides') || val.includes('slide')) return 'slides';
+          if (val.includes('gallery') || val.includes('galerie')) return 'gallery';
+          if (val.includes('note')) return 'note';
+        }
+      }
+      if (yaml.includes('kanban: true') || yaml.includes('kanban-plugin:')) {
+        return 'kanban';
+      }
+    }
+  }
+
+  // 2. Heuristiques sur le nom du fichier ou extensions dédiées
   const lowerPath = path.toLowerCase();
   if (lowerPath.includes('kanban') || lowerPath.endsWith('.kanban.md')) {
     return 'kanban';
@@ -520,24 +579,49 @@ export function detectDocType(content: string, path: string): DocType {
   if (lowerPath.includes('tableau') || lowerPath.includes('table') || lowerPath.endsWith('.table.md')) {
     return 'table';
   }
-  if (!content) return 'note';
-
-  const fmMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  if (fmMatch) {
-    const yaml = fmMatch[1].toLowerCase();
-    for (const line of yaml.split('\n')) {
-      const parts = line.split(':');
-      if (parts.length >= 2 && parts[0].trim() === 'type') {
-        const val = parts.slice(1).join(':').trim();
-        if (val.includes('kanban') || val.includes('board')) return 'kanban';
-        if (val.includes('table') || val.includes('tableau')) return 'table';
-        if (val.includes('note')) return 'note';
-      }
-    }
-    if (yaml.includes('kanban: true') || yaml.includes('kanban-plugin:')) {
-      return 'kanban';
-    }
+  if (lowerPath.includes('calendar') || lowerPath.includes('agenda') || lowerPath.endsWith('.calendar.md')) {
+    return 'calendar';
   }
+  if (lowerPath.includes('canvas') || lowerPath.endsWith('.canvas.md')) {
+    return 'canvas';
+  }
+  if (
+    lowerPath.includes('slides') ||
+    lowerPath.includes('diaporama') ||
+    lowerPath.includes('slide') ||
+    lowerPath.endsWith('.slides.md')
+  ) {
+    return 'slides';
+  }
+  if (lowerPath.includes('gallery') || lowerPath.includes('galerie') || lowerPath.endsWith('.gallery.md')) {
+    return 'gallery';
+  }
+
   return 'note';
 }
+
+/**
+ * Résout le type de document effectif pour l'arborescence et l'interface :
+ * 1. Média coffre (extension image) -> 'image'
+ * 2. Onglet actif / ouvert dans tabStore -> docType temps réel
+ * 3. Type indexé en mémoire par l'index Frontmatter
+ * 4. Heuristiques sur le nom du fichier
+ */
+export function resolveFileDocType(
+  relPath: string,
+  openDocType?: DocType,
+  indexedDocType?: DocType | string
+): DocType {
+  if (isMediaFilePath(relPath)) {
+    return 'image';
+  }
+  if (openDocType) {
+    return openDocType;
+  }
+  if (indexedDocType && indexedDocType !== 'note') {
+    return detectDocType(`---\ntype: ${indexedDocType}\n---\n`, relPath);
+  }
+  return detectDocType('', relPath);
+}
+
 

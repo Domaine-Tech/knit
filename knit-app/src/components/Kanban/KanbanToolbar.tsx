@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import type { KanbanFileInfo } from '../../types';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
+import { useDelayedHoverPreview } from '../../hooks';
 
 interface KanbanToolbarProps {
   title: string;
@@ -18,6 +19,7 @@ interface KanbanToolbarProps {
   onClearSearch: () => void;
   onAddColumn: () => void;
   onSwitchToEditor?: () => void;
+  readOnly?: boolean;
 }
 
 export const KanbanToolbar: React.FC<KanbanToolbarProps> = ({
@@ -36,7 +38,14 @@ export const KanbanToolbar: React.FC<KanbanToolbarProps> = ({
   onClearSearch,
   onAddColumn,
   onSwitchToEditor,
+  readOnly = false,
 }) => {
+  const hoverPreview = useDelayedHoverPreview(120);
+
+  useEffect(() => {
+    if (!isSwitcherOpen) hoverPreview.cancel(true);
+  }, [isSwitcherOpen, hoverPreview]);
+
   return (
     <div
       style={{
@@ -70,7 +79,7 @@ export const KanbanToolbar: React.FC<KanbanToolbarProps> = ({
           type="button"
           className="knit-btn"
           onClick={onToggleSwitcher}
-          title="Changer de tableau Kanban ou en créer un nouveau"
+          data-tooltip="Changer de tableau Kanban ou en créer un nouveau"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -121,6 +130,7 @@ export const KanbanToolbar: React.FC<KanbanToolbarProps> = ({
                   key={kb.path}
                   type="button"
                   onClick={() => {
+                    hoverPreview.cancel(true);
                     onCloseSwitcher();
                     onOpenFile(kb.path);
                   }}
@@ -139,10 +149,19 @@ export const KanbanToolbar: React.FC<KanbanToolbarProps> = ({
                     cursor: 'pointer',
                   }}
                   onMouseEnter={(e) => {
-                    if (kb.path !== currentPath) e.currentTarget.style.backgroundColor = 'var(--knit-surface-hover)';
+                    if (kb.path !== currentPath) {
+                      e.currentTarget.style.backgroundColor = 'var(--knit-surface-hover)';
+                    }
+                    hoverPreview.schedule(kb.path, e.clientX, e.clientY);
+                  }}
+                  onMouseMove={(e) => {
+                    hoverPreview.schedule(kb.path, e.clientX, e.clientY);
                   }}
                   onMouseLeave={(e) => {
-                    if (kb.path !== currentPath) e.currentTarget.style.backgroundColor = 'transparent';
+                    if (kb.path !== currentPath) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }
+                    hoverPreview.cancel();
                   }}
                 >
                   <DuotoneIcon name="kanban" size={13} />
@@ -153,34 +172,36 @@ export const KanbanToolbar: React.FC<KanbanToolbarProps> = ({
                 </button>
               ))}
             </div>
-            <div style={{ borderTop: '1px solid var(--knit-border)', padding: '4px' }}>
-              <button
-                type="button"
-                onClick={() => {
-                  onCloseSwitcher();
-                  onRequestCreate();
-                }}
-                style={{
-                  width: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '6px 10px',
-                  borderRadius: 'var(--knit-radius-xs)',
-                  border: 'none',
-                  backgroundColor: 'transparent',
-                  color: 'var(--knit-primary)',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--knit-surface-hover)')}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-              >
-                <DuotoneIcon name="plus" size={12} />
-                <span>Nouveau tableau Kanban...</span>
-              </button>
-            </div>
+            {!readOnly && (
+              <div style={{ borderTop: '1px solid var(--knit-border)', padding: '4px' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onCloseSwitcher();
+                    onRequestCreate();
+                  }}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '6px 10px',
+                    borderRadius: 'var(--knit-radius-xs)',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    color: 'var(--knit-primary)',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--knit-surface-hover)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                >
+                  <DuotoneIcon name="plus" size={12} />
+                  <span>Nouveau tableau Kanban...</span>
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -225,16 +246,18 @@ export const KanbanToolbar: React.FC<KanbanToolbarProps> = ({
           )}
         </div>
 
-        <button
-          type="button"
-          className="knit-btn"
-          onClick={onAddColumn}
-          title="Ajouter une nouvelle colonne personnalisée au tableau"
-          style={{ gap: 5, fontSize: 12 }}
-        >
-          <DuotoneIcon name="plus" size={12} />
-          <span>Ajouter une colonne</span>
-        </button>
+        {!readOnly && (
+          <button
+            type="button"
+            className="knit-btn"
+            onClick={onAddColumn}
+            title="Ajouter une nouvelle colonne personnalisée au tableau"
+            style={{ gap: 5, fontSize: 12 }}
+          >
+            <DuotoneIcon name="plus" size={12} />
+            <span>Ajouter une colonne</span>
+          </button>
+        )}
 
         {onSwitchToEditor && (
           <button
