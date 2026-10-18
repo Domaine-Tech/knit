@@ -132,7 +132,42 @@ export function parseKanbanMarkdown(content: string, fallbackTitle: string = 'Ta
   const preambleLines: string[] = [];
   let foundFirstColumn = false;
 
-  let cardCounter = 0;
+  const usedColIds = new Set<string>();
+  const generateColId = (colTitle: string): string => {
+    const slug = colTitle
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'col';
+    let candidate = `col-${slug}`;
+    let counter = 2;
+    while (usedColIds.has(candidate)) {
+      candidate = `col-${slug}-${counter}`;
+      counter++;
+    }
+    usedColIds.add(candidate);
+    return candidate;
+  };
+
+  const usedCardIds = new Set<string>();
+  const generateCardId = (cardTitle: string): string => {
+    const slug = cardTitle
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 30) || 'card';
+    let candidate = `card-${slug}`;
+    let counter = 2;
+    while (usedCardIds.has(candidate)) {
+      candidate = `card-${slug}-${counter}`;
+      counter++;
+    }
+    usedCardIds.add(candidate);
+    return candidate;
+  };
 
   for (const rawLine of lines) {
     const trimmed = rawLine.trim();
@@ -142,7 +177,7 @@ export function parseKanbanMarkdown(content: string, fallbackTitle: string = 'Ta
     if (h2Match) {
       foundFirstColumn = true;
       const colTitle = h2Match[1].trim();
-      const colId = `col-${columns.length}-${colTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'col'}`;
+      const colId = generateColId(colTitle);
       const color = COLUMN_ACCENT_COLORS[columns.length % COLUMN_ACCENT_COLORS.length];
 
       currentColumn = {
@@ -165,7 +200,6 @@ export function parseKanbanMarkdown(content: string, fallbackTitle: string = 'Ta
       // Format 1 : - [ ] Tâche ou - [x] Tâche ou - [/] etc. (7 statuts)
       const checkMatch = trimmed.match(/^-\s*\[([ xX/?!>-])\]\s*(.*)$/);
       if (checkMatch) {
-        cardCounter++;
         const status = normalizeTaskStatus(checkMatch[1]);
         const completed = status === 'x';
         const cardTitle = checkMatch[2].trim() || 'Sans titre';
@@ -173,7 +207,7 @@ export function parseKanbanMarkdown(content: string, fallbackTitle: string = 'Ta
         const priority = priorityMatch ? (priorityMatch[1].toLowerCase() as 'p1' | 'p2' | 'p3') : undefined;
 
         currentColumn.cards.push({
-          id: `card-${cardCounter}-${Date.now().toString().slice(-4)}`,
+          id: generateCardId(cardTitle),
           title: cardTitle,
           completed,
           status,
@@ -186,13 +220,12 @@ export function parseKanbanMarkdown(content: string, fallbackTitle: string = 'Ta
       // Format 2 : Simple puce - Tâche ou * Tâche
       const bulletMatch = trimmed.match(/^[-*]\s+(.*)$/);
       if (bulletMatch) {
-        cardCounter++;
         const cardTitle = bulletMatch[1].trim() || 'Sans titre';
         const priorityMatch = cardTitle.match(/!(p[1-3])\b/i);
         const priority = priorityMatch ? (priorityMatch[1].toLowerCase() as 'p1' | 'p2' | 'p3') : undefined;
 
         currentColumn.cards.push({
-          id: `card-${cardCounter}-${Date.now().toString().slice(-4)}`,
+          id: generateCardId(cardTitle),
           title: cardTitle,
           completed: false,
           status: ' ',
@@ -207,9 +240,9 @@ export function parseKanbanMarkdown(content: string, fallbackTitle: string = 'Ta
   // Si aucune colonne n'a été détectée dans le document, initialiser des colonnes par défaut
   if (columns.length === 0) {
     columns.push(
-      { id: 'col-0-a-faire', title: 'À faire', color: 'var(--knit-text-secondary)', cards: [] },
-      { id: 'col-1-en-cours', title: 'En cours', color: 'var(--knit-primary)', cards: [] },
-      { id: 'col-2-termine', title: 'Terminé', color: '#10B981', cards: [] }
+      { id: 'col-a-faire', title: 'À faire', color: 'var(--knit-text-secondary)', cards: [] },
+      { id: 'col-en-cours', title: 'En cours', color: 'var(--knit-primary)', cards: [] },
+      { id: 'col-termine', title: 'Terminé', color: '#10B981', cards: [] }
     );
   }
 

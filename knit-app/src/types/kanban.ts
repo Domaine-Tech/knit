@@ -27,3 +27,9 @@ export interface KanbanBoard {
   columns: KanbanColumn[];
 }
 
+export interface UseKanbanBoardProps {
+  activeFilePath?: string | null;
+  activeFileContent?: string;
+  onUpdateContent: (path: string, content: string) => void;
+}
+

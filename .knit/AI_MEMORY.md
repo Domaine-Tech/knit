@@ -44,6 +44,9 @@
   * **Hooks React `src/hooks/`** : Isolation dédiée des custom hooks (`useKanbanBoard`, `useKnitShortcuts`, `useResizablePanels`).
   * **Utilitaires Partagés `src/utils/`** : Extraction de `treeUtils.ts` (recherche arborescente) et `domUtils.ts` (manipulation DOM) et hub de réexport `src/utils/index.ts`.
   * **Alignement & Référentiel** : Mise à jour de `docs/PROMPTS_IA.md` et `.agents/skills/prompts/SKILL.md` pour inclure formellement `src/hooks/` et la conformité de consommation des imports à 100%. 0 erreur linter (`oxlint`), 0 erreur TypeScript, 0 erreur Rust.
+- **[2026-10-18]** : **Stabilisation D&D Kanban (WebView2/Tauri) & Finalisation Refactorisation** :
+  * Désactivation de `dragDropEnabled` dans `tauri.conf.json` pour WebView2, IDs déterministes par slug (`kanbanParser.ts`), indicateur visuel de drop (`KanbanDropIndicator`), anti-écho file watcher (`internalSavedHashesRef`), HUD d'inspection D&D.
+  * Découplage de `useEditorLinks`, `useDebugMode`, `aiContextUtils`, `crdt/index.ts`, `theme.ts` et règle `tauri-testing.md`. 0 erreur linter/TS, 38/38 tests Rust.
 
 
 ## 4. Tâches Actives & Prochaines Priorités

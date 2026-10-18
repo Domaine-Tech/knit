@@ -4,7 +4,7 @@ import {
   parseCardMetadata,
   adaptCardStatusToColumn,
   COLUMN_ACCENT_COLORS,
-} from '../../utils/kanbanParser';
+} from '../../utils';
 import type {
   KanbanBoard,
   KanbanColumn,
@@ -14,8 +14,9 @@ import type {
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { toast } from '../../stores/toastStore';
 import { contextMenu } from '../../stores/contextMenuStore';
-import { debugStore, useDebugMode } from '../../stores/debugStore';
-import { KanbanDebugHUD } from './KanbanDebugHUD';
+import { debugStore } from '../../stores/debugStore';
+import { KanbanDebugHUD, type KanbanDragLog } from './KanbanDebugHUD';
+import { useKanbanBoard, useDebugMode } from '../../hooks';
 
 interface KanbanViewProps {
   activeFilePath?: string | null;
@@ -25,7 +26,42 @@ interface KanbanViewProps {
   onSwitchToEditor?: () => void;
 }
 
-import { useKanbanBoard } from '../../hooks';
+// Barre indicatrice d'insertion entre cartes élégante et sobre (style Linear/Notion, 0px layout shift)
+const KanbanDropIndicator: React.FC = () => (
+  <div
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      height: 4,
+      margin: '-2px 0',
+      pointerEvents: 'none',
+      position: 'relative',
+      zIndex: 10,
+    }}
+  >
+    <div
+      style={{
+        width: 8,
+        height: 8,
+        borderRadius: '50%',
+        backgroundColor: 'var(--knit-primary)',
+        boxShadow: '0 0 8px var(--knit-primary)',
+        flexShrink: 0,
+        marginLeft: 1,
+      }}
+    />
+    <div
+      style={{
+        flex: 1,
+        height: 2.5,
+        backgroundColor: 'var(--knit-primary)',
+        borderRadius: 2,
+        boxShadow: '0 0 8px var(--knit-primary)',
+        marginLeft: -1,
+      }}
+    />
+  </div>
+);
 
 export const KanbanView: React.FC<KanbanViewProps> = ({
   activeFilePath,
@@ -34,7 +70,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
   onOpenFile,
   onSwitchToEditor,
 }) => {
-  const { availableKanbans, currentPath, board, persistBoard } = useKanbanBoard({
+  const { availableKanbans, currentPath, board, boardRef, persistBoard } = useKanbanBoard({
     activeFilePath,
     activeFileContent,
     onUpdateContent,
@@ -68,9 +104,64 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
   const [newKanbanName, setNewKanbanName] = useState('');
   const [newKanbanFolder, setNewKanbanFolder] = useState('projet');
 
-  // Drag and Drop
+  // Drag and Drop : Modèle unifié par slot d'insertion (anti-clignotement et 0 layout shift)
   const [draggedCard, setDraggedCard] = useState<{ cardId: string; sourceColumnId: string } | null>(null);
-  const [dragOverColumnId, setDragOverColumnId] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<{ columnId: string; index: number } | null>(null);
+
+  const draggedCardRef = useRef<{ cardId: string; sourceColumnId: string } | null>(null);
+  const dropTargetRef = useRef<{ columnId: string; index: number } | null>(null);
+
+  // Journalisation télémétrique D&D pour le mode debug
+  const [dragLogs, setDragLogs] = useState<KanbanDragLog[]>([]);
+  const dragLogsRef = useRef<KanbanDragLog[]>([]);
+
+  const logDnD = useCallback((entry: KanbanDragLog) => {
+    dragLogsRef.current = [entry, ...dragLogsRef.current].slice(0, 30);
+    setDragLogs([...dragLogsRef.current]);
+
+    const color =
+      entry.action === 'reorder'
+        ? '#10B981'
+        : entry.action === 'move'
+        ? '#3B82F6'
+        : entry.action === 'no-op'
+        ? '#F59E0B'
+        : '#EF4444';
+
+    console.log(
+      `%c[Kanban D&D ${entry.time}] ${entry.action.toUpperCase()}%c ${entry.detail} (cardId: ${entry.cardId})`,
+      `background: ${color}; color: #000; font-weight: bold; padding: 2px 5px; border-radius: 3px;`,
+      'color: inherit; font-weight: normal;'
+    );
+  }, [setDragLogs]);
+
+  // Écouteurs globaux pour garantir zéro 'sens interdit' et réinitialisation propre
+  useEffect(() => {
+    const handleGlobalDragOver = (e: DragEvent) => {
+      if (draggedCardRef.current || e.dataTransfer?.types.includes('application/knit-card')) {
+        e.preventDefault();
+        if (e.dataTransfer) {
+          e.dataTransfer.dropEffect = 'move';
+        }
+      }
+    };
+
+    const handleGlobalDragEnd = () => {
+      draggedCardRef.current = null;
+      dropTargetRef.current = null;
+      setDraggedCard(null);
+      setDropTarget(null);
+    };
+
+    window.addEventListener('dragover', handleGlobalDragOver);
+    window.addEventListener('dragenter', handleGlobalDragOver);
+    window.addEventListener('dragend', handleGlobalDragEnd);
+    return () => {
+      window.removeEventListener('dragover', handleGlobalDragOver);
+      window.removeEventListener('dragenter', handleGlobalDragOver);
+      window.removeEventListener('dragend', handleGlobalDragEnd);
+    };
+  }, []);
 
   // Gestion de l'ajout d'une nouvelle colonne personnalisée
   const handleAddColumnSubmit = (e: React.FormEvent) => {
@@ -81,7 +172,8 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
       return;
     }
 
-    const newColId = `col-${board.columns.length}-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'col'}`;
+    const colSlug = title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'col';
+    const newColId = `col-${colSlug}`;
     const color = COLUMN_ACCENT_COLORS[board.columns.length % COLUMN_ACCENT_COLORS.length];
     const newCol: KanbanColumn = {
       id: newColId,
@@ -150,8 +242,9 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
         return;
       }
 
+      const baseSlug = title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30) || 'card';
       const newCard: KanbanCard = {
-        id: `card-${Date.now().toString().slice(-5)}`,
+        id: `card-${baseSlug}-${Date.now().toString().slice(-4)}`,
         title,
         completed: false,
         status: ' ',
@@ -229,50 +322,287 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
     toast.info('Tâche retirée', 'La tâche a été retirée du tableau');
   };
 
-  // Drag and Drop de cartes entre colonnes
+  // Drag and Drop de cartes entre colonnes et réordonnancement intra-colonne
+  // Drag and Drop de cartes entre colonnes et réordonnancement intra-colonne
   const handleDragStart = (e: React.DragEvent, columnId: string, cardId: string) => {
-    setDraggedCard({ cardId, sourceColumnId: columnId });
+    const info = { cardId, sourceColumnId: columnId };
+    draggedCardRef.current = info;
+    setDraggedCard(info);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', cardId);
+    e.dataTransfer.setData('application/knit-card', JSON.stringify(info));
   };
 
   const handleDragOverColumn = (e: React.DragEvent, columnId: string) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    if (dragOverColumnId !== columnId) {
-      setDragOverColumnId(columnId);
+
+    const col = boardRef.current.columns.find((c) => c.id === columnId);
+    if (!col || col.cards.length === 0) {
+      dropTargetRef.current = { columnId, index: 0 };
+      if (!dropTarget || dropTarget.columnId !== columnId || dropTarget.index !== 0) {
+        setDropTarget({ columnId, index: 0 });
+      }
+      return;
+    }
+
+    // Calcul universel et continu du slot d'insertion (gaps de 8px, padding, fond)
+    const colElement = e.currentTarget;
+    const cardElements = colElement.querySelectorAll<HTMLElement>('[data-knit-card]');
+    if (cardElements.length === 0) {
+      dropTargetRef.current = { columnId, index: 0 };
+      if (!dropTarget || dropTarget.columnId !== columnId || dropTarget.index !== 0) {
+        setDropTarget({ columnId, index: 0 });
+      }
+      return;
+    }
+
+    let targetIndex = cardElements.length;
+    for (let i = 0; i < cardElements.length; i++) {
+      const cardEl = cardElements[i];
+      const rect = cardEl.getBoundingClientRect();
+      const midpoint = rect.top + rect.height / 2;
+      if (e.clientY < midpoint) {
+        targetIndex = i;
+        break;
+      }
+    }
+
+    dropTargetRef.current = { columnId, index: targetIndex };
+    if (!dropTarget || dropTarget.columnId !== columnId || dropTarget.index !== targetIndex) {
+      setDropTarget({ columnId, index: targetIndex });
     }
   };
 
-  const handleDropOnColumn = (targetColumnId: string) => {
-    if (!draggedCard) return;
-    const { cardId, sourceColumnId } = draggedCard;
-    setDragOverColumnId(null);
+  const handleCardDragOver = (e: React.DragEvent, columnId: string, cardIndex: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+
+    // Détermination unifiée du slot d'insertion :
+    // Moitié supérieure de la carte -> slot cardIndex
+    // Moitié inférieure de la carte -> slot cardIndex + 1
+    const rect = e.currentTarget.getBoundingClientRect();
+    const midpoint = rect.top + rect.height / 2;
+    const targetIndex = e.clientY < midpoint ? cardIndex : cardIndex + 1;
+
+    dropTargetRef.current = { columnId, index: targetIndex };
+    if (!dropTarget || dropTarget.columnId !== columnId || dropTarget.index !== targetIndex) {
+      setDropTarget({ columnId, index: targetIndex });
+    }
+  };
+
+  const handleDragEnd = () => {
+    draggedCardRef.current = null;
+    dropTargetRef.current = null;
     setDraggedCard(null);
+    setDropTarget(null);
+  };
 
-    if (sourceColumnId === targetColumnId) return;
+  const executeCardDrop = useCallback(
+    (targetColumnId: string, targetSlotIndex: number) => {
+      const info = draggedCardRef.current || draggedCard;
+      draggedCardRef.current = null;
+      dropTargetRef.current = null;
+      setDraggedCard(null);
+      setDropTarget(null);
 
-    // Récupérer la carte source
-    const sourceCol = board.columns.find((c) => c.id === sourceColumnId);
-    const cardToMove = sourceCol?.cards.find((c) => c.id === cardId);
-    if (!cardToMove) return;
+      const now = new Date();
+      const timeStr = `${now.toTimeString().split(' ')[0]}.${now.getMilliseconds().toString().padStart(3, '0')}`;
 
-    // Colonne cible et adaptation bijective du statut (- [ ] -> - [/] -> - [x])
-    const targetCol = board.columns.find((c) => c.id === targetColumnId);
-    const updatedCard: KanbanCard = adaptCardStatusToColumn(cardToMove, targetCol?.title || '');
-
-    const updatedCols = board.columns.map((col) => {
-      if (col.id === sourceColumnId) {
-        return { ...col, cards: col.cards.filter((c) => c.id !== cardId) };
+      if (!info) {
+        logDnD({
+          id: `log-${Date.now()}`,
+          time: timeStr,
+          action: 'abort',
+          cardTitle: 'Inconnue',
+          cardId: 'none',
+          fromColumn: '?',
+          toColumn: targetColumnId,
+          fromIndex: -1,
+          toIndex: targetSlotIndex,
+          detail: 'Échec : métadonnées de carte introuvables lors du drop.',
+        });
+        return;
       }
-      if (col.id === targetColumnId) {
-        return { ...col, cards: [...col.cards, updatedCard] };
-      }
-      return col;
-    });
+      const { cardId, sourceColumnId } = info;
 
-    persistBoard({ ...board, columns: updatedCols });
-    toast.success('Tâche déplacée', `Déplacée vers "${targetCol?.title || 'nouvelle colonne'}"`);
+      const currentBoard = boardRef.current;
+      const sourceCol = currentBoard.columns.find((c) => c.id === sourceColumnId);
+      if (!sourceCol) {
+        logDnD({
+          id: `log-${Date.now()}`,
+          time: timeStr,
+          action: 'abort',
+          cardTitle: cardId,
+          cardId,
+          fromColumn: sourceColumnId,
+          toColumn: targetColumnId,
+          fromIndex: -1,
+          toIndex: targetSlotIndex,
+          detail: `Échec : colonne source "${sourceColumnId}" introuvable.`,
+        });
+        return;
+      }
+
+      const cardToMove = sourceCol.cards.find((c) => c.id === cardId);
+      if (!cardToMove) {
+        logDnD({
+          id: `log-${Date.now()}`,
+          time: timeStr,
+          action: 'abort',
+          cardTitle: cardId,
+          cardId,
+          fromColumn: sourceCol.title,
+          toColumn: targetColumnId,
+          fromIndex: -1,
+          toIndex: targetSlotIndex,
+          detail: `Échec : carte "${cardId}" introuvable dans "${sourceCol.title}".`,
+        });
+        return;
+      }
+
+      const targetCol = currentBoard.columns.find((c) => c.id === targetColumnId);
+      if (!targetCol) {
+        logDnD({
+          id: `log-${Date.now()}`,
+          time: timeStr,
+          action: 'abort',
+          cardTitle: cardToMove.title,
+          cardId,
+          fromColumn: sourceCol.title,
+          toColumn: targetColumnId,
+          fromIndex: -1,
+          toIndex: targetSlotIndex,
+          detail: `Échec : colonne cible "${targetColumnId}" introuvable.`,
+        });
+        return;
+      }
+
+      // 1. Réordonnancement au sein de la même colonne
+      if (sourceColumnId === targetColumnId) {
+        const sourceIndex = sourceCol.cards.findIndex((c) => c.id === cardId);
+        if (sourceIndex === -1) return;
+
+        let insertIndex = targetSlotIndex;
+
+        // Si l'index cible correspond à sa position actuelle (ou immédiatement après la carte elle-même)
+        if (insertIndex === sourceIndex || insertIndex === sourceIndex + 1) {
+          logDnD({
+            id: `log-${Date.now()}`,
+            time: timeStr,
+            action: 'no-op',
+            cardTitle: cardToMove.title,
+            cardId,
+            fromColumn: sourceCol.title,
+            toColumn: targetCol.title,
+            fromIndex: sourceIndex,
+            toIndex: targetSlotIndex,
+            detail: `Aucun changement : position identique (index ${sourceIndex} ➔ slot ${targetSlotIndex}).`,
+          });
+          return;
+        }
+
+        const cards = [...sourceCol.cards];
+        const [moved] = cards.splice(sourceIndex, 1);
+        if (sourceIndex < insertIndex) {
+          insertIndex -= 1;
+        }
+        cards.splice(insertIndex, 0, moved);
+
+        const updatedCols = currentBoard.columns.map((col) =>
+          col.id === sourceColumnId ? { ...col, cards } : col
+        );
+        const updatedBoard: KanbanBoard = { ...currentBoard, columns: updatedCols };
+        boardRef.current = updatedBoard;
+        persistBoard(updatedBoard);
+
+        logDnD({
+          id: `log-${Date.now()}`,
+          time: timeStr,
+          action: 'reorder',
+          cardTitle: moved.title,
+          cardId,
+          fromColumn: sourceCol.title,
+          toColumn: targetCol.title,
+          fromIndex: sourceIndex,
+          toIndex: insertIndex,
+          detail: `Réorganisation intra-colonne réussie : [${sourceIndex}] ➔ [${insertIndex}] dans "${sourceCol.title}".`,
+        });
+
+        toast.success('Tâche réordonnée', moved.title);
+        return;
+      }
+
+      // 2. Déplacement vers une autre colonne (avec statut adapté)
+      const sourceIndex = sourceCol.cards.findIndex((c) => c.id === cardId);
+      const updatedCard: KanbanCard = adaptCardStatusToColumn(cardToMove, targetCol.title || '');
+      const insertIndex = Math.max(0, Math.min(targetSlotIndex, targetCol.cards.length));
+
+      const updatedCols = currentBoard.columns.map((col) => {
+        if (col.id === sourceColumnId) {
+          return { ...col, cards: col.cards.filter((c) => c.id !== cardId) };
+        }
+        if (col.id === targetColumnId) {
+          const cards = [...col.cards];
+          cards.splice(insertIndex, 0, updatedCard);
+          return { ...col, cards };
+        }
+        return col;
+      });
+
+      const updatedBoard: KanbanBoard = { ...currentBoard, columns: updatedCols };
+      boardRef.current = updatedBoard;
+      persistBoard(updatedBoard);
+
+      logDnD({
+        id: `log-${Date.now()}`,
+        time: timeStr,
+        action: 'move',
+        cardTitle: cardToMove.title,
+        cardId,
+        fromColumn: sourceCol.title,
+        toColumn: targetCol.title,
+        fromIndex: sourceIndex,
+        toIndex: insertIndex,
+        detail: `Déplacement inter-colonnes réussi : "${sourceCol.title}" [${sourceIndex}] ➔ "${targetCol.title}" slot [${insertIndex}].`,
+      });
+
+      toast.success('Tâche déplacée', `Déplacée vers "${targetCol.title || 'nouvelle colonne'}"`);
+    },
+    [draggedCard, boardRef, persistBoard, logDnD]
+  );
+
+  const handleDropOnCard = (e: React.DragEvent, columnId: string, cardIndex: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const midpoint = rect.top + rect.height / 2;
+    const targetIndex = e.clientY < midpoint ? cardIndex : cardIndex + 1;
+    executeCardDrop(columnId, targetIndex);
+  };
+
+  const handleDropOnColumn = (e: React.DragEvent, targetColumnId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    let targetIndex: number;
+    if (dropTargetRef.current && dropTargetRef.current.columnId === targetColumnId) {
+      targetIndex = dropTargetRef.current.index;
+    } else {
+      const cardElements = e.currentTarget.querySelectorAll<HTMLElement>('[data-knit-card]');
+      targetIndex = cardElements.length;
+      for (let i = 0; i < cardElements.length; i++) {
+        const rect = cardElements[i].getBoundingClientRect();
+        const midpoint = rect.top + rect.height / 2;
+        if (e.clientY < midpoint) {
+          targetIndex = i;
+          break;
+        }
+      }
+    }
+
+    executeCardDrop(targetColumnId, targetIndex);
   };
 
   // Création d'un nouveau fichier Kanban
@@ -326,6 +656,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
   return (
     <div
       style={{
+        position: 'relative',
         flex: 1,
         display: 'flex',
         flexDirection: 'column',
@@ -584,6 +915,14 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
 
       {/* Conteneur horizontal des colonnes Kanban */}
       <div
+        onDragEnter={(e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+        }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+        }}
         style={{
           flex: 1,
           display: 'flex',
@@ -595,7 +934,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
         }}
       >
         {board.columns.map((column, colIdx) => {
-          const isOver = dragOverColumnId === column.id;
+          const isOver = dropTarget?.columnId === column.id;
           const matchingCards = column.cards.filter((card) => {
             if (!filterQuery) return true;
             return card.title.toLowerCase().includes(filterQuery);
@@ -604,8 +943,19 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
           return (
             <div
               key={column.id}
+              onDragEnter={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+              }}
               onDragOver={(e) => handleDragOverColumn(e, column.id)}
-              onDrop={() => handleDropOnColumn(column.id)}
+              onDragLeave={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                  if (dropTarget?.columnId === column.id) {
+                    setDropTarget(null);
+                  }
+                }
+              }}
+              onDrop={(e) => handleDropOnColumn(e, column.id)}
               style={{
                 width: 300,
                 minWidth: 300,
@@ -788,6 +1138,12 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
 
               {/* Liste des cartes déplaçables */}
               <div
+                onDragEnter={(e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = 'move';
+                }}
+                onDragOver={(e) => handleDragOverColumn(e, column.id)}
+                onDrop={(e) => handleDropOnColumn(e, column.id)}
                 style={{
                   flex: 1,
                   padding: '8px 10px',
@@ -798,196 +1154,281 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
                   minHeight: 120,
                 }}
               >
-                {matchingCards.map((card) => {
-                  const meta = parseCardMetadata(card.title);
-                  const isEditing = editingCardId === card.id;
+                {/* Zone de drop visuelle pour colonne vide */}
+                {matchingCards.length === 0 && dropTarget?.columnId === column.id && draggedCard && (
+                  <div
+                    style={{
+                      padding: '20px 12px',
+                      border: '2px dashed var(--knit-primary)',
+                      borderRadius: 'var(--knit-radius-sm)',
+                      backgroundColor: 'rgba(234, 179, 8, 0.05)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 6,
+                      color: 'var(--knit-primary)',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      pointerEvents: 'none',
+                    }}
+                  >
+                    <DuotoneIcon name="plus" size={16} />
+                    <span>Déposer la tâche ici</span>
+                  </div>
+                )}
+
+                {(() => {
+                  const isSameColumn = draggedCard?.sourceColumnId === column.id;
+                  const sourceIndex = isSameColumn
+                    ? column.cards.findIndex((c) => c.id === draggedCard?.cardId)
+                    : -1;
+                  const isSelfDrop =
+                    isSameColumn &&
+                    (dropTarget?.index === sourceIndex || dropTarget?.index === sourceIndex + 1);
+                  const shouldShowIndicator =
+                    dropTarget?.columnId === column.id && !isSelfDrop && Boolean(draggedCard);
 
                   return (
-                    <div
-                      key={card.id}
-                      draggable={!isEditing}
-                      onDragStart={(e) => handleDragStart(e, column.id, card.id)}
-                      style={{
-                        padding: '9px 11px',
-                        backgroundColor: 'var(--knit-bg)',
-                        border: '1px solid var(--knit-border)',
-                        borderRadius: 'var(--knit-radius-sm)',
-                        boxShadow: 'var(--knit-shadow-xs)',
-                        cursor: isEditing ? 'default' : 'grab',
-                        transition: 'border-color var(--knit-duration-fast)',
-                        position: 'relative',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = 'var(--knit-border-hover)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = 'var(--knit-border)';
-                      }}
-                    >
-                      {isEditing ? (
-                        <div>
-                          <textarea
-                            autoFocus
-                            className="knit-input"
-                            value={editingCardText}
-                            onChange={(e) => setEditingCardText(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' && !e.shiftKey) {
+                    <>
+                      {matchingCards.map((card, cardIdx) => {
+                        const meta = parseCardMetadata(card.title);
+                        const isEditing = editingCardId === card.id;
+                        const isDragged = draggedCard?.cardId === card.id;
+
+                        return (
+                          <React.Fragment key={card.id}>
+                            {/* Indicateur d'insertion au-dessus de la carte (slot cardIdx) */}
+                            {shouldShowIndicator && dropTarget?.index === cardIdx && (
+                              <KanbanDropIndicator />
+                            )}
+
+                            <div
+                              data-knit-card="true"
+                              draggable={!isEditing}
+                              onDragStart={(e) => handleDragStart(e, column.id, card.id)}
+                              onDragEnd={handleDragEnd}
+                              onDragEnter={(e) => {
                                 e.preventDefault();
-                                handleSaveCardEdit(column.id, card.id);
-                              }
-                              if (e.key === 'Escape') setEditingCardId(null);
-                            }}
-                            style={{
-                              width: '100%',
-                              minHeight: 50,
-                              fontSize: 12,
-                              resize: 'vertical',
-                              marginBottom: 6,
-                            }}
-                          />
-                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
-                            <button
-                              type="button"
-                              className="knit-btn"
-                              style={{ padding: '2px 8px', fontSize: 11 }}
-                              onClick={() => setEditingCardId(null)}
-                            >
-                              Annuler
-                            </button>
-                            <button
-                              type="button"
-                              className="knit-btn knit-btn-primary"
-                              style={{ padding: '2px 8px', fontSize: 11 }}
-                              onClick={() => handleSaveCardEdit(column.id, card.id)}
-                            >
-                              Enregistrer
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                            {/* Case à cocher */}
-                            <input
-                              type="checkbox"
-                              checked={card.completed}
-                              onChange={() => handleToggleCardCheckbox(column.id, card.id)}
-                              style={{
-                                marginTop: 3,
-                                cursor: 'pointer',
-                                accentColor: 'var(--knit-primary)',
+                                e.dataTransfer.dropEffect = 'move';
                               }}
-                            />
-
-                            {/* Titre et contenu de la carte */}
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <span
-                                onDoubleClick={() => {
-                                  setEditingCardId(card.id);
-                                  setEditingCardText(card.title);
-                                }}
-                                style={{
-                                  fontSize: 13,
-                                  lineHeight: 1.4,
-                                  color: card.completed ? 'var(--knit-text-muted)' : 'var(--knit-text)',
-                                  textDecoration: card.completed ? 'line-through' : 'none',
-                                  wordBreak: 'break-word',
-                                  cursor: 'text',
-                                }}
-                              >
-                                {meta.cleanTitle}
-                              </span>
-
-                              {/* WikiLinks cliquables */}
-                              {meta.wikiLinks.length > 0 && (
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 5 }}>
-                                  {meta.wikiLinks.map((link) => {
-                                    const [target, alias] = link.split('|');
-                                    const targetClean = target.trim();
-                                    const displayName = (alias || targetClean).trim();
-                                    const filePath = targetClean.endsWith('.md') ? targetClean : `${targetClean}.md`;
-                                    return (
-                                      <button
-                                        key={link}
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          onOpenFile(filePath);
-                                        }}
-                                        title={`Ouvrir la note [[${displayName}]] (Ctrl + Clic ou Clic)`}
-                                        style={{
-                                          display: 'inline-flex',
-                                          alignItems: 'center',
-                                          gap: 3,
-                                          padding: '1px 6px',
-                                          borderRadius: 4,
-                                          backgroundColor: 'var(--knit-primary-alpha)',
-                                          border: '1px solid var(--knit-primary)',
-                                          color: 'var(--knit-primary)',
-                                          fontSize: 11,
-                                          cursor: 'pointer',
-                                        }}
-                                      >
-                                        <span>[[{displayName}]]</span>
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              )}
-
-                              {/* Tags pills */}
-                              {meta.tags.length > 0 && (
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 5 }}>
-                                  {meta.tags.map((tag) => (
-                                    <span
-                                      key={tag}
-                                      style={{
-                                        fontSize: 10,
-                                        padding: '1px 5px',
-                                        borderRadius: 3,
-                                        backgroundColor: 'var(--knit-surface-hover)',
-                                        color: 'var(--knit-text-secondary)',
-                                        border: '1px solid var(--knit-border)',
+                              onDragOver={(e) => handleCardDragOver(e, column.id, cardIdx)}
+                              onDrop={(e) => handleDropOnCard(e, column.id, cardIdx)}
+                              style={{
+                                padding: '9px 11px',
+                                backgroundColor: 'var(--knit-bg)',
+                                border: '1px solid var(--knit-border)',
+                                borderRadius: 'var(--knit-radius-sm)',
+                                boxShadow: 'var(--knit-shadow-xs)',
+                                cursor: isEditing ? 'default' : 'grab',
+                                opacity: isDragged ? 0.35 : 1,
+                                transition:
+                                  'border-color var(--knit-duration-fast), opacity var(--knit-duration-fast)',
+                                position: 'relative',
+                                overflow: 'visible',
+                                userSelect: isEditing ? 'text' : 'none',
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.borderColor = 'var(--knit-border-hover)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.borderColor = 'var(--knit-border)';
+                              }}
+                            >
+                              <div style={{ pointerEvents: draggedCard ? 'none' : 'auto' }}>
+                                {isEditing ? (
+                                  <div>
+                                    <textarea
+                                      autoFocus
+                                      className="knit-input"
+                                      value={editingCardText}
+                                      onChange={(e) => setEditingCardText(e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                          e.preventDefault();
+                                          handleSaveCardEdit(column.id, card.id);
+                                        }
+                                        if (e.key === 'Escape') setEditingCardId(null);
                                       }}
-                                    >
-                                      #{tag}
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
+                                      style={{
+                                        width: '100%',
+                                        minHeight: 50,
+                                        fontSize: 12,
+                                        resize: 'vertical',
+                                        marginBottom: 6,
+                                      }}
+                                    />
+                                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
+                                      <button
+                                        type="button"
+                                        className="knit-btn"
+                                        style={{ padding: '2px 8px', fontSize: 11 }}
+                                        onClick={() => setEditingCardId(null)}
+                                      >
+                                        Annuler
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="knit-btn knit-btn-primary"
+                                        style={{ padding: '2px 8px', fontSize: 11 }}
+                                        onClick={() => handleSaveCardEdit(column.id, card.id)}
+                                      >
+                                        Enregistrer
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div>
+                                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                                      {/* Case à cocher */}
+                                      <input
+                                        type="checkbox"
+                                        checked={card.completed}
+                                        onChange={() => handleToggleCardCheckbox(column.id, card.id)}
+                                        style={{
+                                          marginTop: 3,
+                                          cursor: 'pointer',
+                                          accentColor: 'var(--knit-primary)',
+                                        }}
+                                      />
 
-                              {isDebugActive && (
-                                <div style={{ marginTop: 4 }}>
-                                  <span className="knit-debug-kanban-card-badge">
-                                    #{card.id.slice(-6)}
-                                  </span>
-                                </div>
-                              )}
+                                      {/* Titre et contenu de la carte */}
+                                      <div style={{ flex: 1, minWidth: 0 }}>
+                                        <span
+                                          onDoubleClick={() => {
+                                            setEditingCardId(card.id);
+                                            setEditingCardText(card.title);
+                                          }}
+                                          style={{
+                                            fontSize: 13,
+                                            lineHeight: 1.4,
+                                            color: card.completed
+                                              ? 'var(--knit-text-muted)'
+                                              : 'var(--knit-text)',
+                                            textDecoration: card.completed ? 'line-through' : 'none',
+                                            wordBreak: 'break-word',
+                                            cursor: isEditing ? 'text' : 'grab',
+                                            userSelect: isEditing ? 'text' : 'none',
+                                          }}
+                                        >
+                                          {meta.cleanTitle}
+                                        </span>
+
+                                        {/* WikiLinks cliquables */}
+                                        {meta.wikiLinks.length > 0 && (
+                                          <div
+                                            style={{
+                                              display: 'flex',
+                                              flexWrap: 'wrap',
+                                              gap: 4,
+                                              marginTop: 5,
+                                            }}
+                                          >
+                                            {meta.wikiLinks.map((link) => {
+                                              const [target, alias] = link.split('|');
+                                              const targetClean = target.trim();
+                                              const displayName = (alias || targetClean).trim();
+                                              const filePath = targetClean.endsWith('.md')
+                                                ? targetClean
+                                                : `${targetClean}.md`;
+                                              return (
+                                                <button
+                                                  key={link}
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onOpenFile(filePath);
+                                                  }}
+                                                  title={`Ouvrir la note [[${displayName}]] (Ctrl + Clic ou Clic)`}
+                                                  style={{
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: 3,
+                                                    padding: '1px 6px',
+                                                    borderRadius: 4,
+                                                    backgroundColor: 'var(--knit-primary-alpha)',
+                                                    border: '1px solid var(--knit-primary)',
+                                                    color: 'var(--knit-primary)',
+                                                    fontSize: 11,
+                                                    cursor: 'pointer',
+                                                  }}
+                                                >
+                                                  <span>[[{displayName}]]</span>
+                                                </button>
+                                              );
+                                            })}
+                                          </div>
+                                        )}
+
+                                        {/* Tags pills */}
+                                        {meta.tags.length > 0 && (
+                                          <div
+                                            style={{
+                                              display: 'flex',
+                                              flexWrap: 'wrap',
+                                              gap: 4,
+                                              marginTop: 5,
+                                            }}
+                                          >
+                                            {meta.tags.map((tag) => (
+                                              <span
+                                                key={tag}
+                                                style={{
+                                                  fontSize: 10,
+                                                  padding: '1px 5px',
+                                                  borderRadius: 3,
+                                                  backgroundColor: 'var(--knit-surface-hover)',
+                                                  color: 'var(--knit-text-secondary)',
+                                                  border: '1px solid var(--knit-border)',
+                                                }}
+                                              >
+                                                #{tag}
+                                              </span>
+                                            ))}
+                                          </div>
+                                        )}
+
+                                        {isDebugActive && (
+                                          <div style={{ marginTop: 4 }}>
+                                            <span className="knit-debug-kanban-card-badge">
+                                              #{card.id.slice(-6)}
+                                            </span>
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      {/* Bouton supprimer carte */}
+                                      <button
+                                        onClick={() => handleDeleteCard(column.id, card.id)}
+                                        title="Retirer la tâche"
+                                        style={{
+                                          background: 'none',
+                                          border: 'none',
+                                          color: 'var(--knit-text-muted)',
+                                          padding: 2,
+                                          cursor: 'pointer',
+                                          opacity: 0.6,
+                                        }}
+                                        onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+                                        onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.6')}
+                                      >
+                                        <DuotoneIcon name="close" size={11} />
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
                             </div>
+                          </React.Fragment>
+                        );
+                      })}
 
-                            {/* Bouton supprimer carte */}
-                            <button
-                              onClick={() => handleDeleteCard(column.id, card.id)}
-                              title="Retirer la tâche"
-                              style={{
-                                background: 'none',
-                                border: 'none',
-                                color: 'var(--knit-text-muted)',
-                                padding: 2,
-                                cursor: 'pointer',
-                                opacity: 0.6,
-                              }}
-                              onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-                              onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.6')}
-                            >
-                              <DuotoneIcon name="close" size={11} />
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                      {/* Indicateur d'insertion en bas de la colonne (slot matchingCards.length) */}
+                      {shouldShowIndicator &&
+                        dropTarget?.index === matchingCards.length &&
+                        matchingCards.length > 0 && <KanbanDropIndicator />}
+                    </>
                   );
-                })}
+                })()}
 
                 {/* Formulaire inline d'ajout de carte */}
                 {addingCardInColumnId === column.id ? (
@@ -1253,17 +1694,32 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
           cardsCount={totalCards}
           completedCount={completedCount}
           filePath={currentPath}
+          dragLogs={dragLogs}
+          onClearLogs={() => {
+            dragLogsRef.current = [];
+            setDragLogs([]);
+          }}
+          onCopyLogs={() => {
+            const lines = dragLogs.map(
+              (l) => `[${l.time}] [${l.action.toUpperCase()}] ${l.detail} (carte: "${l.cardTitle}" | id: ${l.cardId})`
+            );
+            const text = lines.join('\n');
+            navigator.clipboard.writeText(text || 'Aucun événement D&D enregistré.').then(() => {
+              toast.success('Logs D&D copiés', `${dragLogs.length} événement(s) copié(s) dans le presse-papier.`);
+            });
+          }}
           onCopyJson={() => {
             navigator.clipboard.writeText(JSON.stringify(board, null, 2)).then(() => {
               toast.success('Structure JSON copiée', 'Le tableau Kanban a été copié.');
             });
           }}
           onDumpConsole={() => {
-            console.group('[KANBAN DEBUG]');
-            console.log('Board :', board);
+            console.group('[KANBAN DEBUG INSPECTOR]');
+            console.log('Board structuré :', board);
+            console.log('Historique D&D :', dragLogsRef.current);
             console.table(board.columns.map((c) => ({ id: c.id, title: c.title, cards: c.cards.length })));
             console.groupEnd();
-            toast.info('Inspecteur Console', 'Données Kanban affichées dans la console (F12).');
+            toast.info('Inspecteur Console', 'Données Kanban et historique D&D affichés dans la console (F12).');
           }}
           onClose={toggleDebug}
         />

@@ -19,25 +19,25 @@ Vous pouvez a tout moment basculer en mode source (`</>`) avec `Ctrl+E` pour con
 ## A cadrer
 
 - [ ] Rediger les specifications du protocole mobile P2P !p2 @Alex @2026-11-01
-- [ ] Etudier l'integration d'un explorateur de graphe de notes !p3 #recherche
-- [ ] Definir les profils de chiffrement de bout en bout pour Iroh Blobs !p1 @Thomas
+- [/] Etudier l'integration d'un explorateur de graphe de notes !p3 #recherche
+- [/] Rendu dynamique des blocs de code avec bouton Copier !p2 #editor
 
 ## En cours
 
-- [/] Synchronisation Live Preview dans CodeMirror 6 !p1 @Sublix #ui/editor
-- [/] Rendu dynamique des blocs de code avec bouton Copier !p2 #editor
-- [ ] Optimisation de la memoire sur les tres longs fichiers Markdown !p2
+- [/] Optimisation de la memoire sur les tres longs fichiers Markdown !p2
+- [/] Validation des calculs de hauteur sur documents de plus de 2000 lignes !p1
+- [/] Definir les profils de chiffrement de bout en bout pour Iroh Blobs !p1 @Thomas
 
 ## En revue
 
-- [?] Validation des calculs de hauteur sur documents de plus de 2000 lignes !p1
-- [ ] Test croise de compatibilite avec Obsidian et VS Code !p3 @vault
 - [ ] Relecture de la documentation de specification Markdown !p2
+- [ ] Neutralisation des marges asymetriques sur les titres !p1
+- [ ] Test croise de compatibilite avec Obsidian et VS Code !p3 @vault
 
 ## Termine
 
-- [x] Resolution du decalage de gouttiere cause par les tableaux !p1 #bugfix
-- [x] Neutralisation des marges asymetriques sur les titres !p1
-- [x] Support des 7 statuts de taches standardises B-054 !p2
+- [x] Synchronisation Live Preview dans CodeMirror 6 !p1 @Sublix #ui/editor
 - [x] Mise en place de la triple garde WriteGuard anti-boucle !p1 @Thomas
+- [x] Resolution du decalage de gouttiere cause par les tableaux !p1 #bugfix
+- [x] Support des 7 statuts de taches standardises B-054 !p2
 
