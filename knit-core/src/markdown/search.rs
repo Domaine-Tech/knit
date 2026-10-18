@@ -1,12 +1,11 @@
-use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
-use walkdir::WalkDir;
 
 use crate::error::{KnitError, Result};
 use crate::markdown::frontmatter::parse_frontmatter;
-use crate::vault::tree::normalize_rel_path;
+use crate::markdown::patterns::INLINE_TAG_RE;
+use crate::vault::walk::iter_vault_md_files;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct SearchSnippet {
@@ -74,51 +73,16 @@ pub fn search_vault(vault_root: &Path, raw_query: &str) -> Result<Vec<FileSearch
     }
 
     let mut results = Vec::new();
-    let inline_tag_re = Regex::new(r"(?:^|\s)#([a-zA-Z0-9_\-\/]+)").unwrap();
 
-    for entry in WalkDir::new(vault_root)
-        .follow_links(false)
-        .into_iter()
-        .filter_entry(|e| {
-            if e.depth() == 0 {
-                return true;
-            }
-            let name = e.file_name().to_string_lossy();
-            !name.starts_with('.') && name != "target" && name != "node_modules" && name != "dist"
-        })
-    {
-        let entry = match entry {
-            Ok(e) => e,
-            Err(_) => continue,
-        };
-
-        if !entry.file_type().is_file() {
-            continue;
-        }
-
-        let path = entry.path();
-        let name = entry.file_name().to_string_lossy().to_string();
-
-        let ext = path.extension().map(|e| e.to_string_lossy().to_lowercase());
-        let is_md = ext.as_deref() == Some("md") || ext.as_deref() == Some("markdown") || name == "KNIT.md";
-
-        if !is_md {
-            continue;
-        }
-
-        let rel_path = match path.strip_prefix(vault_root) {
-            Ok(p) => normalize_rel_path(p),
-            Err(_) => normalize_rel_path(path),
-        };
-
+    for md in iter_vault_md_files(vault_root, true) {
         // Filtre de chemin `path:...`
         if let Some(ref path_sub) = filter.path_filter {
-            if !rel_path.to_lowercase().contains(path_sub) {
+            if !md.rel_path.to_lowercase().contains(path_sub) {
                 continue;
             }
         }
 
-        let content = match fs::read_to_string(path) {
+        let content = match fs::read_to_string(&md.path) {
             Ok(c) => c,
             Err(_) => continue,
         };
@@ -138,7 +102,7 @@ pub fn search_vault(vault_root: &Path, raw_query: &str) -> Result<Vec<FileSearch
                 }
             }
 
-            for cap in inline_tag_re.captures_iter(&content) {
+            for cap in INLINE_TAG_RE.captures_iter(&content) {
                 if let Some(m) = cap.get(1) {
                     file_tags.push(m.as_str().to_lowercase());
                 }
@@ -153,8 +117,8 @@ pub fn search_vault(vault_root: &Path, raw_query: &str) -> Result<Vec<FileSearch
         // on retourne le fichier avec un snippet d'en-tête
         if term.is_empty() {
             results.push(FileSearchResult {
-                rel_path: rel_path.clone(),
-                file_name: name,
+                rel_path: md.rel_path.clone(),
+                file_name: md.file_name,
                 total_matches: 1,
                 snippets: vec![SearchSnippet {
                     line_number: 1,
@@ -196,8 +160,8 @@ pub fn search_vault(vault_root: &Path, raw_query: &str) -> Result<Vec<FileSearch
 
         if total_matches > 0 {
             results.push(FileSearchResult {
-                rel_path,
-                file_name: name,
+                rel_path: md.rel_path,
+                file_name: md.file_name,
                 total_matches,
                 snippets,
             });

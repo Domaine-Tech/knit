@@ -47,6 +47,8 @@
 - **[2026-10-18]** : **Stabilisation D&D Kanban (WebView2/Tauri) & Finalisation Refactorisation** :
   * Désactivation de `dragDropEnabled` dans `tauri.conf.json` pour WebView2, IDs déterministes par slug (`kanbanParser.ts`), indicateur visuel de drop (`KanbanDropIndicator`), anti-écho file watcher (`internalSavedHashesRef`), HUD d'inspection D&D.
   * Découplage de `useEditorLinks`, `useDebugMode`, `aiContextUtils`, `crdt/index.ts`, `theme.ts` et règle `tauri-testing.md`. 0 erreur linter/TS, 38/38 tests Rust.
+- **[2026-10-18]** : **Prompt 9 (écarts résiduels)** : `KanbanDragLog`, `CardMetadata`, `SnapshotAuthor`, `PeerProfileSummary` et `KeymapCallbacks` dans `src/types/` ; slug unique via `slugify` ; `dateUtils.ts` ; `COLUMN_ACCENT_COLORS` dans `theme.ts`. `tsc -b`, oxlint et `cargo check` OK.
+- **[2026-10-18]** : **Prompt 1 (2e passe)** : Lots 1–2 déjà en place (mutations `useKanbanBoard`, `WikiLinkPills`, menus chemins, Kanban découpé, Live Preview widgets, `vaultStore` modulaire). Lot 3 Rust : `vault/walk.rs` + `markdown/patterns.rs` (LazyLock), `count_links_to_target` (backlinks sans faux rename), IPC `commands/{vault,watcher,network,markdown}.rs` + helper `ipc()`, `network/{session,heartbeat,broadcast}.rs`. 38/38 tests, `tsc`/oxlint/`cargo check` OK.
 
 
 ## 4. Tâches Actives & Prochaines Priorités

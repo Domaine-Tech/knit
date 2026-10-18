@@ -1,10 +1,10 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
-use walkdir::WalkDir;
 
 use crate::error::{KnitError, Result};
-use crate::vault::tree::normalize_rel_path;
+use crate::markdown::patterns::{MDLINK_RE, WIKILINK_RE};
+use crate::vault::walk::iter_vault_md_files;
 use crate::watcher::guard::WriteGuard;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
@@ -111,8 +111,7 @@ pub fn refactor_links_in_content(
         .unwrap_or_default();
 
     // 1. Détection & remplacement des WikiLinks : [[cible]] ou [[cible|alias]]
-    let wikilink_re = regex::Regex::new(r"\[\[([^\]|]+)(?:\|([^\]]+))?\]\]").unwrap();
-    let intermediate = wikilink_re.replace_all(content, |caps: &regex::Captures| {
+    let intermediate = WIKILINK_RE.replace_all(content, |caps: &regex::Captures| {
         let target = caps.get(1).unwrap().as_str().trim();
         let alias = caps.get(2).map(|m| m.as_str());
 
@@ -152,8 +151,7 @@ pub fn refactor_links_in_content(
     });
 
     // 2. Détection & remplacement des liens Markdown : [Label](cible) ou ![Alt](cible) avec titre optionnel
-    let mdlink_re = regex::Regex::new(r#"(!?\[[^\]]*\])\(([^)\s]+)(?:\s+("[^"]*"|'[^']*'))?\)"#).unwrap();
-    let final_content = mdlink_re.replace_all(&intermediate, |caps: &regex::Captures| {
+    let final_content = MDLINK_RE.replace_all(&intermediate, |caps: &regex::Captures| {
         let label_part = caps.get(1).unwrap().as_str();
         let raw_target = caps.get(2).unwrap().as_str().trim();
         let title_part = caps.get(3).map(|m| m.as_str());
@@ -202,6 +200,13 @@ pub fn refactor_links_in_content(
     (final_content.into_owned(), links_count)
 }
 
+/// Compte les liens (WikiLink + Markdown) pointant vers `target_rel` sans intention de rename.
+pub fn count_links_to_target(content: &str, current_file_rel: &str, target_rel: &str) -> usize {
+    // Même cible en entrée/sortie : le contenu est réécrit à l'identique, seul le compteur importe.
+    let (_, count) = refactor_links_in_content(content, current_file_rel, target_rel, target_rel);
+    count
+}
+
 /// Refactorise tous les liens pointant vers `old_rel_path` dans tout le coffre-fort
 pub fn refactor_links_in_vault(
     vault_root: &Path,
@@ -214,61 +219,29 @@ pub fn refactor_links_in_vault(
         .canonicalize()
         .unwrap_or_else(|_| vault_root.to_path_buf());
 
-    for entry in WalkDir::new(&canonical_root)
-        .into_iter()
-        .filter_entry(|e| {
-            if e.depth() == 0 {
-                return true;
-            }
-            let name = e.file_name().to_string_lossy();
-            !name.starts_with('.')
-                && name != "target"
-                && name != "node_modules"
-                && name != "dist"
-        })
-    {
-        let entry = match entry {
-            Ok(e) => e,
-            Err(_) => continue,
-        };
-
-        if !entry.file_type().is_file() {
-            continue;
-        }
-
-        let path = entry.path();
-        let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
-        if ext != "md" && ext != "markdown" {
-            continue;
-        }
-
+    for md in iter_vault_md_files(&canonical_root, false) {
         report.files_scanned += 1;
 
-        let rel_path = match path.strip_prefix(&canonical_root) {
-            Ok(p) => normalize_rel_path(p),
-            Err(_) => continue,
-        };
-
-        let content = match fs::read_to_string(path) {
+        let content = match fs::read_to_string(&md.path) {
             Ok(c) => c,
             Err(_) => continue,
         };
 
         let (new_content, links_modified) =
-            refactor_links_in_content(&content, &rel_path, old_rel_path, new_rel_path);
+            refactor_links_in_content(&content, &md.rel_path, old_rel_path, new_rel_path);
 
         if links_modified > 0 {
             // Écriture protégée par le WriteGuard pour ne pas déclencher de rebond
-            guard.begin_write(path, new_content.as_bytes());
-            if let Err(e) = fs::write(path, new_content.as_bytes()) {
-                guard.end_write(path);
+            guard.begin_write(&md.path, new_content.as_bytes());
+            if let Err(e) = fs::write(&md.path, new_content.as_bytes()) {
+                guard.end_write(&md.path);
                 return Err(KnitError::Io(e));
             }
-            guard.end_write(path);
+            guard.end_write(&md.path);
 
             report.files_modified += 1;
             report.links_updated += links_modified;
-            report.modified_files.push(rel_path);
+            report.modified_files.push(md.rel_path);
         }
     }
 
@@ -283,54 +256,18 @@ pub fn find_backlinks_in_vault(vault_root: &Path, target_rel_path: &str) -> Resu
         .canonicalize()
         .unwrap_or_else(|_| vault_root.to_path_buf());
 
-    let _target_stem = Path::new(&norm_target)
-        .file_stem()
-        .map(|s| s.to_string_lossy().to_string())
-        .unwrap_or_default();
-
-    for entry in WalkDir::new(&canonical_root)
-        .into_iter()
-        .filter_entry(|e| {
-            if e.depth() == 0 {
-                return true;
-            }
-            let name = e.file_name().to_string_lossy();
-            !name.starts_with('.') && name != "target" && name != "node_modules"
-        })
-    {
-        let entry = match entry {
-            Ok(e) => e,
-            Err(_) => continue,
-        };
-
-        if !entry.file_type().is_file() {
+    for md in iter_vault_md_files(&canonical_root, false) {
+        if md.rel_path == norm_target {
             continue;
         }
 
-        let path = entry.path();
-        let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
-        if ext != "md" && ext != "markdown" {
-            continue;
-        }
-
-        let rel_path = match path.strip_prefix(&canonical_root) {
-            Ok(p) => normalize_rel_path(p),
-            Err(_) => continue,
-        };
-
-        if rel_path == norm_target {
-            continue;
-        }
-
-        let content = match fs::read_to_string(path) {
+        let content = match fs::read_to_string(&md.path) {
             Ok(c) => c,
             Err(_) => continue,
         };
 
-        let (_, count) =
-            refactor_links_in_content(&content, &rel_path, &norm_target, "__test_target__");
-        if count > 0 {
-            backlinks.push(rel_path);
+        if count_links_to_target(&content, &md.rel_path, &norm_target) > 0 {
+            backlinks.push(md.rel_path);
         }
     }
 

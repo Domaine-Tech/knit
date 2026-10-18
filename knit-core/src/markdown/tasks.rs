@@ -1,11 +1,11 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
-use walkdir::WalkDir;
 
 use crate::error::{KnitError, Result};
 use crate::markdown::frontmatter::{parse_frontmatter, update_frontmatter_field};
-use crate::vault::tree::{normalize_rel_path, resolve_safe_path, write_file_content_with_guard};
+use crate::vault::tree::{resolve_safe_path, write_file_content_with_guard};
+use crate::vault::walk::iter_vault_md_files;
 use crate::watcher::guard::WriteGuard;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -30,42 +30,8 @@ pub fn collect_vault_tasks(vault_root: &Path) -> Result<Vec<TaskCard>> {
 
     let mut tasks = Vec::new();
 
-    for entry in WalkDir::new(vault_root)
-        .follow_links(false)
-        .into_iter()
-        .filter_entry(|e| {
-            if e.depth() == 0 {
-                return true;
-            }
-            let name = e.file_name().to_string_lossy();
-            !name.starts_with('.') && name != "target" && name != "node_modules" && name != "dist"
-        })
-    {
-        let entry = match entry {
-            Ok(e) => e,
-            Err(_) => continue,
-        };
-
-        if !entry.file_type().is_file() {
-            continue;
-        }
-
-        let path = entry.path();
-        let name = entry.file_name().to_string_lossy().to_string();
-
-        let ext = path.extension().map(|e| e.to_string_lossy().to_lowercase());
-        let is_md = ext.as_deref() == Some("md") || ext.as_deref() == Some("markdown");
-
-        if !is_md {
-            continue;
-        }
-
-        let rel_path = match path.strip_prefix(vault_root) {
-            Ok(p) => normalize_rel_path(p),
-            Err(_) => normalize_rel_path(path),
-        };
-
-        let content = match fs::read_to_string(path) {
+    for md in iter_vault_md_files(vault_root, false) {
+        let content = match fs::read_to_string(&md.path) {
             Ok(c) => c,
             Err(_) => continue,
         };
@@ -75,7 +41,8 @@ pub fn collect_vault_tasks(vault_root: &Path) -> Result<Vec<TaskCard>> {
         // Si le fichier possède un champ `statut` ou `type: tache` ou est dans `projet/taches`
         let has_status = fm.fields.contains_key("statut");
         let is_task_type = fm.fields.get("type").map(|t| t == "tache").unwrap_or(false);
-        let in_taches_dir = rel_path.starts_with("projet/taches") || rel_path.contains("/taches/");
+        let in_taches_dir =
+            md.rel_path.starts_with("projet/taches") || md.rel_path.contains("/taches/");
 
         if !has_status && !is_task_type && !in_taches_dir {
             continue;
@@ -89,7 +56,7 @@ pub fn collect_vault_tasks(vault_root: &Path) -> Result<Vec<TaskCard>> {
             .to_lowercase();
 
         let id = fm.fields.get("id").cloned().unwrap_or_else(|| {
-            Path::new(&name)
+            Path::new(&md.file_name)
                 .file_stem()
                 .map(|s| s.to_string_lossy().to_string())
                 .unwrap_or_else(|| "task".to_string())
@@ -108,7 +75,7 @@ pub fn collect_vault_tasks(vault_root: &Path) -> Result<Vec<TaskCard>> {
                 }
             }
             extracted.unwrap_or_else(|| {
-                Path::new(&name)
+                Path::new(&md.file_name)
                     .file_stem()
                     .map(|s| s.to_string_lossy().to_string())
                     .unwrap_or_else(|| "Tâche sans titre".to_string())
@@ -141,7 +108,7 @@ pub fn collect_vault_tasks(vault_root: &Path) -> Result<Vec<TaskCard>> {
             .join(" ");
 
         tasks.push(TaskCard {
-            rel_path,
+            rel_path: md.rel_path,
             id,
             titre,
             statut,

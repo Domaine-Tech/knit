@@ -2,11 +2,11 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
-use walkdir::WalkDir;
 
 use crate::error::{KnitError, Result};
 use crate::markdown::frontmatter::parse_frontmatter;
-use crate::vault::tree::normalize_rel_path;
+use crate::markdown::patterns::INLINE_TAG_RE;
+use crate::vault::walk::iter_vault_md_files;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct HeadingItem {
@@ -142,51 +142,18 @@ pub fn build_suggest_index(vault_root: &Path) -> Result<SuggestIndexData> {
     let mut all_headings = Vec::new();
     let mut tag_counts: HashMap<String, usize> = HashMap::new();
 
-    let tag_re = regex::Regex::new(r"(?:^|\s)#([a-zA-Z0-9_\-\/]+)").unwrap();
-
-    for entry in WalkDir::new(vault_root)
-        .follow_links(false)
-        .into_iter()
-        .filter_entry(|e| {
-            if e.depth() == 0 {
-                return true;
-            }
-            let name = e.file_name().to_string_lossy();
-            !name.starts_with('.') && name != "target" && name != "node_modules" && name != "dist"
-        })
-    {
-        let entry = match entry {
-            Ok(e) => e,
-            Err(_) => continue,
-        };
-
-        if !entry.file_type().is_file() {
-            continue;
-        }
-
-        let path = entry.path();
-        let ext = path.extension().map(|e| e.to_string_lossy().to_lowercase());
-        let is_md = ext.as_deref() == Some("md") || ext.as_deref() == Some("markdown");
-        if !is_md {
-            continue;
-        }
-
-        let rel_path = match path.strip_prefix(vault_root) {
-            Ok(p) => normalize_rel_path(p),
-            Err(_) => normalize_rel_path(path),
-        };
-
-        let content = match fs::read_to_string(path) {
+    for md in iter_vault_md_files(vault_root, false) {
+        let content = match fs::read_to_string(&md.path) {
             Ok(c) => c,
             Err(_) => continue,
         };
 
-        let doc_type = detect_doc_type(&content, &rel_path);
+        let doc_type = detect_doc_type(&content, &md.rel_path);
         let fm = parse_frontmatter(&content);
 
         // Titre : frontmatter title / titre, ou 1er H1, ou nom de fichier
         let mut title = fm.fields.get("title").or_else(|| fm.fields.get("titre")).cloned();
-        let headings = extract_headings_from_content(&rel_path, &content);
+        let headings = extract_headings_from_content(&md.rel_path, &content);
 
         if title.is_none() {
             for h in &headings {
@@ -197,15 +164,15 @@ pub fn build_suggest_index(vault_root: &Path) -> Result<SuggestIndexData> {
             }
         }
 
-        let file_stem = Path::new(&rel_path)
+        let file_stem = Path::new(&md.rel_path)
             .file_stem()
             .map(|s| s.to_string_lossy().to_string())
-            .unwrap_or_else(|| rel_path.clone());
+            .unwrap_or_else(|| md.rel_path.clone());
 
         let final_title = title.unwrap_or(file_stem);
 
         docs.push(SuggestDocItem {
-            rel_path: rel_path.clone(),
+            rel_path: md.rel_path.clone(),
             title: final_title,
             doc_type,
         });
@@ -224,7 +191,7 @@ pub fn build_suggest_index(vault_root: &Path) -> Result<SuggestIndexData> {
         }
 
         // Tags inline dans le body
-        for cap in tag_re.captures_iter(&fm.body) {
+        for cap in INLINE_TAG_RE.captures_iter(&fm.body) {
             if let Some(tag_match) = cap.get(1) {
                 let tag = tag_match.as_str().to_string();
                 *tag_counts.entry(tag).or_insert(0) += 1;

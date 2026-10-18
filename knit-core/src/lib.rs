@@ -6,9 +6,9 @@ pub mod watcher;
 
 pub use error::{KnitError, Result};
 pub use markdown::{
-    compute_relative_path, find_backlinks_in_vault, get_frontmatter_field, parse_frontmatter,
-    refactor_links_in_content, refactor_links_in_vault, update_frontmatter_field, FrontmatterDoc,
-    LinkRefactorReport,
+    compute_relative_path, count_links_to_target, find_backlinks_in_vault, get_frontmatter_field,
+    parse_frontmatter, refactor_links_in_content, refactor_links_in_vault, update_frontmatter_field,
+    FrontmatterDoc, LinkRefactorReport,
 };
 pub use network::{
     compute_blake3_hash, create_invitation, handle_blob_request, store_verified_blob,

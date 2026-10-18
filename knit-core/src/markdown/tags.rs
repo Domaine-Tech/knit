@@ -1,13 +1,12 @@
-use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
-use walkdir::WalkDir;
 
 use crate::error::{KnitError, Result};
 use crate::markdown::frontmatter::parse_frontmatter;
-use crate::vault::tree::normalize_rel_path;
+use crate::markdown::patterns::INLINE_TAG_RE;
+use crate::vault::walk::iter_vault_md_files;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct TagInfo {
@@ -23,44 +22,9 @@ pub fn collect_vault_tags(vault_root: &Path) -> Result<Vec<TagInfo>> {
     }
 
     let mut tag_map: HashMap<String, HashSet<String>> = HashMap::new();
-    let inline_tag_re = Regex::new(r"(?:^|[\s(])#([a-zA-Z0-9_\-\/]+)").unwrap();
 
-    for entry in WalkDir::new(vault_root)
-        .follow_links(false)
-        .into_iter()
-        .filter_entry(|e| {
-            if e.depth() == 0 {
-                return true;
-            }
-            let name = e.file_name().to_string_lossy();
-            !name.starts_with('.') && name != "target" && name != "node_modules" && name != "dist"
-        })
-    {
-        let entry = match entry {
-            Ok(e) => e,
-            Err(_) => continue,
-        };
-
-        if !entry.file_type().is_file() {
-            continue;
-        }
-
-        let path = entry.path();
-        let name = entry.file_name().to_string_lossy().to_string();
-
-        let ext = path.extension().map(|e| e.to_string_lossy().to_lowercase());
-        let is_md = ext.as_deref() == Some("md") || ext.as_deref() == Some("markdown") || name == "KNIT.md";
-
-        if !is_md {
-            continue;
-        }
-
-        let rel_path = match path.strip_prefix(vault_root) {
-            Ok(p) => normalize_rel_path(p),
-            Err(_) => normalize_rel_path(path),
-        };
-
-        let content = match fs::read_to_string(path) {
+    for md in iter_vault_md_files(vault_root, true) {
+        let content = match fs::read_to_string(&md.path) {
             Ok(c) => c,
             Err(_) => continue,
         };
@@ -75,7 +39,7 @@ pub fn collect_vault_tags(vault_root: &Path) -> Result<Vec<TagInfo>> {
                     tag_map
                         .entry(st)
                         .or_default()
-                        .insert(rel_path.clone());
+                        .insert(md.rel_path.clone());
                 }
             }
         }
@@ -92,14 +56,14 @@ pub fn collect_vault_tags(vault_root: &Path) -> Result<Vec<TagInfo>> {
                 }
             }
 
-            for cap in inline_tag_re.captures_iter(line) {
+            for cap in INLINE_TAG_RE.captures_iter(line) {
                 if let Some(m) = cap.get(1) {
                     let tag = m.as_str().to_lowercase();
                     if !tag.is_empty() && !tag.chars().all(|c| c.is_ascii_digit()) {
                         tag_map
                             .entry(tag)
                             .or_default()
-                            .insert(rel_path.clone());
+                            .insert(md.rel_path.clone());
                     }
                 }
             }
