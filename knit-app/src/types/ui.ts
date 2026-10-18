@@ -79,3 +79,9 @@ export interface ComputedPosition {
   top: number;
   placement: 'top' | 'bottom' | 'left' | 'right';
 }
+
+/** Option d'une liste déroulante Knit (React + DOM). */
+export interface KnitSelectOption {
+  value: string;
+  label: string;
+}

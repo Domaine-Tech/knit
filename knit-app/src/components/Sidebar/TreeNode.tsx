@@ -10,6 +10,8 @@ import {
   buildCreateInFolderMenuItem,
   buildPathCopyMenuItem,
   isMediaFilePath,
+  isMiddleButton,
+  preventMiddleCompass,
 } from '../../utils';
 
 interface TreeNodeProps {
@@ -106,15 +108,10 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
     ? node.path === selectedPath
     : (!node.is_dir && node.path === activePath);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button === 1) {
-      // Empêche l'icône de défilement automatique (compass scroll wheel) du navigateur
-      e.preventDefault();
-    }
-  };
+  const handleMouseDown = preventMiddleCompass;
 
   const handleAuxClick = (e: React.MouseEvent) => {
-    if (!node.is_dir && e.button === 1) {
+    if (!node.is_dir && isMiddleButton(e)) {
       // Clic molette sur fichier -> ouvrir en nouvel onglet permanent en arrière-plan (une seule fois)
       e.preventDefault();
       e.stopPropagation();

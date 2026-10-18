@@ -1,4 +1,4 @@
-import type { DocType } from '../types';
+import type { DocType, TableAlign } from '../types';
 import { isMediaFilePath } from './treeUtils';
 
 /**
@@ -154,6 +154,74 @@ export function findTableDelimiterOffsets(lineText: string): number[] {
   return offsets;
 }
 
+/** Cible WikiLink résolue (alias, chemin fichier, ancre optionnelle). */
+export interface ResolvedWikiLink {
+  /** Libellé affiché (alias ou titre dérivé). */
+  displayName: string;
+  /** Chemin relatif fichier (avec `.md` si note). */
+  filePath: string;
+  /** Cible brute sans alias (`Note#ancre` ou `Note`). */
+  target: string;
+  /** Fragment d'ancre sans `#`, si présent. */
+  anchor: string | null;
+}
+
+/**
+ * Résout un WikiLink interne `[[cible|alias]]` / `[[cible#ancre]]` en cible navigable.
+ * Ne gère pas les ancres locales pures `[[#titre]]` (filePath reste `#…`).
+ */
+export function resolveWikiLink(link: string): ResolvedWikiLink {
+  const raw = link.trim();
+  const pipeIdx = raw.indexOf('|');
+  const targetPart = (pipeIdx >= 0 ? raw.slice(0, pipeIdx) : raw).trim();
+  const alias = pipeIdx >= 0 ? raw.slice(pipeIdx + 1).trim() : '';
+
+  const hashIdx = targetPart.indexOf('#');
+  const pathPart = hashIdx >= 0 ? targetPart.slice(0, hashIdx).trim() : targetPart;
+  const anchor = hashIdx >= 0 ? targetPart.slice(hashIdx + 1).trim() || null : null;
+
+  let filePath = pathPart;
+  if (filePath && !filePath.startsWith('#') && !/\.[a-z0-9]+$/i.test(filePath)) {
+    filePath = `${filePath}.md`;
+  }
+  if (!filePath && anchor) {
+    filePath = `#${anchor}`;
+  }
+
+  const displayName = alias || wikilinkDisplayLabel(targetPart);
+
+  return {
+    displayName,
+    filePath,
+    target: targetPart,
+    anchor,
+  };
+}
+
+/**
+ * Libellé d'affichage d'un WikiLink sans alias.
+ * Sépare chemin et ancre avant tout `split('/')` pour ne pas casser
+ * les titres du type `[[note.md#9. Images (assets/)]]` (sinon seul `)` reste).
+ */
+export function wikilinkDisplayLabel(target: string): string {
+  const trimmed = target.trim();
+  const hashIdx = trimmed.indexOf('#');
+  const pathPart = hashIdx >= 0 ? trimmed.slice(0, hashIdx) : trimmed;
+  const anchorPart = hashIdx >= 0 ? trimmed.slice(hashIdx + 1).trim() : '';
+
+  const base =
+    pathPart
+      .replace(/\.md$/i, '')
+      .replace(/\\/g, '/')
+      .split('/')
+      .filter(Boolean)
+      .pop() || pathPart.replace(/\.md$/i, '') || trimmed;
+
+  if (!pathPart && anchorPart) return anchorPart;
+  if (anchorPart) return `${base} › ${anchorPart}`;
+  return base;
+}
+
 /**
  * Rendu simplifié d'éléments Markdown en HTML avec injection des attributs data-target
  */
@@ -179,11 +247,11 @@ export function renderSimpleMarkdown(raw: string): string {
     return `<span class="knit-preview-wikilink" data-target="${target.trim()}">${alias.trim()}</span>`;
   });
 
-  // WikiLink simple : [[cible]]
+  // WikiLink simple : [[cible]] / [[cible#ancre]]
   s = s.replace(/\[\[([^\]\r\n]+)\]\]/g, (_, target) => {
     const cleanTarget = target.trim();
-    const clean = cleanTarget.replace(/\.md$/, '').split('/').pop() || cleanTarget;
-    return `<span class="knit-preview-wikilink" data-target="${cleanTarget}">${clean}</span>`;
+    const label = wikilinkDisplayLabel(cleanTarget);
+    return `<span class="knit-preview-wikilink" data-target="${cleanTarget}">${label}</span>`;
   });
 
   // Liens Markdown classiques : [label](url)
@@ -285,8 +353,6 @@ export function slugify(text: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 }
-
-export type TableAlign = 'left' | 'center' | 'right';
 
 function padCell(text: string, width: number, align: TableAlign): string {
   const t = text.trim();

@@ -1,58 +1,31 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React from 'react';
 import { Header } from './components/Header/Header';
 import { Sidebar } from './components/Sidebar/Sidebar';
 import { TabBar } from './components/Tabs/TabBar';
-import { Editor } from './components/Editor/Editor';
-import { KanbanView } from './components/Kanban/KanbanView';
-import { TableView } from './components/Table/TableView';
-import { ImageView } from './components/Media/ImageView';
+import { DocumentPane } from './components/Workspace/DocumentPane';
 import { QuickSwitcherModal } from './components/Modal/QuickSwitcherModal';
 import { CommandPaletteModal } from './components/Modal/CommandPaletteModal';
 import { ToastContainer } from './components/Toast/ToastContainer';
 import { ContextMenuContainer } from './components/ContextMenu/ContextMenuContainer';
 import { TooltipContainer } from './components/Tooltip/TooltipContainer';
-import type {
-  AppViewMode,
-  CommandItem,
-  ThemeMode,
-  FileNode,
-  Tab,
-} from './types';
-import {
-  getStoredTheme,
-  getStoredHue,
-  applyTheme,
-  applyHue,
-} from './theme/theme';
-import { vaultStore } from './stores/vaultStore';
+import { applyTheme, applyHue } from './theme/theme';
 import { tabStore } from './stores/tabStore';
-import { toast } from './stores/toastStore';
-import { DuotoneIcon } from './components/Icons/DuotoneIcon';
-import { ErrorBoundary } from './components/Common/ErrorBoundary';
-import { debugStore } from './stores/debugStore';
-import { useResizablePanels, useKnitShortcuts } from './hooks';
-import {
-  buildCommandList,
-  APP_VERSION,
-  packageContextForAI,
-  formatIsoDate,
-  isMediaFilePath,
-} from './utils';
+import { useAppShell } from './hooks';
 
 export const App: React.FC = () => {
-  const [theme, setTheme] = useState<ThemeMode>(getStoredTheme);
-  const [hue, setHue] = useState<number>(getStoredHue);
-  const [files, setFiles] = useState<FileNode[]>(vaultStore.files);
-  const [tabs, setTabs] = useState<Tab[]>(tabStore.tabs);
-  const [group2Tabs, setGroup2Tabs] = useState<Tab[]>(tabStore.group2Tabs);
-  const [activeTabId, setActiveTabId] = useState<string | null>(tabStore.activeTabId);
-  const [activeGroup2TabId, setActiveGroup2TabId] = useState<string | null>(tabStore.activeGroup2TabId);
-  const [focusedGroupId, setFocusedGroupId] = useState<1 | 2>(tabStore.activeGroupId);
-  const [isSplit, setIsSplit] = useState<boolean>(tabStore.isSplit);
-  const [splitTabId, setSplitTabId] = useState<string | null>(tabStore.splitTabId);
-
-  // Redimensionnement dynamique de l'arborescence et Split View via hook dédié
+  const shell = useAppShell();
   const {
+    theme,
+    setTheme,
+    hue,
+    setHue,
+    files,
+    tabs,
+    group2Tabs,
+    activeTabId,
+    activeGroup2TabId,
+    focusedGroupId,
+    isSplit,
     sidebarWidth,
     isDraggingSidebar,
     handleSidebarResizeStart,
@@ -62,458 +35,29 @@ export const App: React.FC = () => {
     splitContainerRef,
     handleSplitResizeStart,
     resetSplitRatio,
-  } = useResizablePanels();
-
-  // Mode Zen (Ctrl+Shift+F)
-  const [isZenMode, setIsZenMode] = useState(false);
-
-  // Modales Sprint 5 & 6
-  const [isQuickSwitcherOpen, setIsQuickSwitcherOpen] = useState(false);
-  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
-
-  // Onglet Sidebar (Notes, Recherche, Tags)
-  const [sidebarTab, setSidebarTab] = useState<'files' | 'search' | 'tags'>('files');
-
-  // Ligne cible pour le saut de ligne depuis la recherche globale
-  const [targetLine, setTargetLine] = useState<number | undefined>(undefined);
-
-  // Initialisation du thème au montage
-  useEffect(() => {
-    applyTheme(theme);
-    applyHue(hue);
-  }, [theme, hue]);
-
-  // Souscriptions aux stores
-  useEffect(() => {
-    const unsubVault = vaultStore.subscribe(() => {
-      setFiles([...vaultStore.files]);
-    });
-    const unsubTabs = tabStore.subscribe(() => {
-      setTabs([...tabStore.tabs]);
-      setGroup2Tabs([...tabStore.group2Tabs]);
-      setActiveTabId(tabStore.activeTabId);
-      setActiveGroup2TabId(tabStore.activeGroup2TabId);
-      setFocusedGroupId(tabStore.activeGroupId);
-      setIsSplit(tabStore.isSplit);
-      setSplitTabId(tabStore.splitTabId);
-    });
-
-    return () => {
-      unsubVault();
-      unsubTabs();
-    };
-  }, []);
-
-  // Ouvre par défaut accueil.md au démarrage si aucun onglet
-  useEffect(() => {
-    if (tabStore.tabs.length === 0) {
-      vaultStore.readFile('accueil.md').then((content) => {
-        tabStore.openTab('accueil.md', false, content);
-      }).catch(() => {
-        // Ignorer si pas dispo
-      });
-    }
-  }, []);
-
-  // Synchronise le type de vue active dans le debugStore
-  useEffect(() => {
-    const active = (tabStore.activeGroupId === 2 && tabStore.isSplit) ? tabStore.splitTab : tabStore.activeTab;
-    if (active) {
-      if (active.docType === 'kanban') debugStore.setActiveView('kanban');
-      else if (active.docType === 'table') debugStore.setActiveView('table');
-      else if (active.docType === 'image') debugStore.setActiveView('image');
-      else debugStore.setActiveView('editor');
-    }
-  }, [activeTabId, activeGroup2TabId, focusedGroupId, isSplit]);
-
-  const handleSelectFile = useCallback(async (path: string, preview: boolean) => {
-    try {
-      if (isMediaFilePath(path)) {
-        // Vue Image : pas de lecture binaire comme Markdown
-        tabStore.openTab(path, preview, '', true, 'image');
-        return;
-      }
-      const content = await vaultStore.readFile(path);
-      tabStore.openTab(path, preview, content);
-    } catch (err: unknown) {
-      toast.error('Erreur de lecture', String(err));
-    }
-  }, []);
-
-  const handleMiddleClickFile = useCallback(async (path: string) => {
-    try {
-      if (isMediaFilePath(path)) {
-        tabStore.openTab(path, false, '', false, 'image');
-        toast.info('Onglet média ouvert en arrière-plan', path);
-        return;
-      }
-      const content = await vaultStore.readFile(path);
-      // Ouvre en arrière-plan (activate = false)
-      tabStore.openTab(path, false, content, false);
-      toast.info('Onglet ouvert en arrière-plan', path);
-    } catch (err: unknown) {
-      toast.error('Erreur de lecture', String(err));
-    }
-  }, []);
-
-  const handleSaveActiveNote = useCallback(async () => {
-    const active = (tabStore.activeGroupId === 2 && tabStore.isSplit) ? tabStore.splitTab : tabStore.activeTab;
-    if (!active) return;
-
-    try {
-      await vaultStore.writeFile(active.path, active.content);
-      tabStore.markClean(active.id);
-      toast.success('Document enregistré', active.path);
-    } catch (err: unknown) {
-      toast.error("Erreur lors de l'enregistrement", String(err));
-    }
-  }, []);
-
-  const handleNewNote = useCallback(async () => {
-    const name = `note-${Date.now().toString().slice(-4)}.md`;
-    try {
-      await vaultStore.createFile(name, `# Nouvelle note\n\n`);
-      const content = await vaultStore.readFile(name);
-      tabStore.openTab(name, false, content);
-      toast.success('Note créée', name);
-    } catch (err: unknown) {
-      toast.error('Erreur', String(err));
-    }
-  }, []);
-
-  const handleNewKanban = useCallback(async () => {
-    const name = window.prompt('Nom du nouveau tableau Kanban :', 'kanban.md');
-    if (name && name.trim()) {
-      const clean = name.trim().endsWith('.md') ? name.trim() : `${name.trim()}.md`;
-      try {
-        const createdPath = await vaultStore.createKanbanFile(clean, clean.replace(/\.md$/, ''));
-        const content = await vaultStore.readFile(createdPath);
-        tabStore.openTab(createdPath, false, content);
-        toast.success('Tableau Kanban créé', createdPath);
-      } catch (err: unknown) {
-        toast.error('Erreur de création Kanban', String(err));
-      }
-    }
-  }, []);
-
-  // Note Quotidienne (Ctrl+Shift+J ou Alt+D - US B-053)
-  const handleOpenDailyNote = useCallback(async () => {
-    const now = new Date();
-    const dateStr = formatIsoDate(now);
-    const relativePath = `journal/${dateStr}.md`;
-
-    try {
-      const existing = await vaultStore.readFile(relativePath).catch(() => null);
-      if (existing !== null) {
-        tabStore.openTab(relativePath, false, existing);
-        toast.info('Note quotidienne ouverte', relativePath);
-      } else {
-        const template = `---
-title: Journal du ${dateStr}
-date: ${dateStr}
-type: note
-tags: [journal, quotidien]
----
-
-# Journal du ${dateStr}
-
-## Objectifs de la journée
-- [ ] 
-
-## Notes & Réflexions
-
-## Idées & Découvertes
-
-`;
-        await vaultStore.createFile(relativePath, template);
-        const content = await vaultStore.readFile(relativePath);
-        tabStore.openTab(relativePath, false, content);
-        toast.success('Note quotidienne créée', relativePath);
-      }
-    } catch (err: unknown) {
-      toast.error('Erreur journal', String(err));
-    }
-  }, []);
-
-  // Générateur de contexte IA (Ctrl+Shift+C - US B-045)
-  const handlePackageContext = useCallback(() => {
-    const active = (tabStore.activeGroupId === 2 && tabStore.isSplit) ? tabStore.splitTab : tabStore.activeTab;
-    if (!active) {
-      toast.info('Aucun document actif à packager');
-      return;
-    }
-    packageContextForAI(active.path, active.content);
-  }, []);
-
-  // Écouteur global des raccourcis clavier via hook modulaire
-  useKnitShortcuts({
-    setIsQuickSwitcherOpen,
-    setIsCommandPaletteOpen,
+    isZenMode,
     setIsZenMode,
-    handleOpenDailyNote,
-    handlePackageContext,
+    isQuickSwitcherOpen,
+    setIsQuickSwitcherOpen,
+    isCommandPaletteOpen,
+    setIsCommandPaletteOpen,
+    sidebarTab,
+    setSidebarTab,
+    setTargetLine,
+    handleSelectFile,
+    handleMiddleClickFile,
     handleSaveActiveNote,
     handleNewNote,
-  });
-
-  // Désactivation globale du menu contextuel natif du navigateur / webview
-  useEffect(() => {
-    const handleGlobalContextMenu = (e: MouseEvent) => {
-      e.preventDefault();
-    };
-    window.addEventListener('contextmenu', handleGlobalContextMenu);
-    return () => window.removeEventListener('contextmenu', handleGlobalContextMenu);
-  }, []);
-
-  // Dérivation résiliente des onglets actifs : ne peut jamais être désynchronisé ou null si des onglets existent
-  const resolvedActiveTabId = useMemo(() => {
-    if (activeTabId && tabs.some((t) => t.id === activeTabId)) return activeTabId;
-    return tabs.length > 0 ? tabs[0].id : null;
-  }, [tabs, activeTabId]);
-
-  const resolvedGroup2TabId = useMemo(() => {
-    if (activeGroup2TabId && group2Tabs.some((t) => t.id === activeGroup2TabId)) return activeGroup2TabId;
-    return group2Tabs.length > 0 ? group2Tabs[0].id : null;
-  }, [group2Tabs, activeGroup2TabId]);
-
-  const activeTab = useMemo(() => {
-    return tabs.find((t) => t.id === resolvedActiveTabId);
-  }, [tabs, resolvedActiveTabId]);
-
-  const splitTab = useMemo(() => {
-    return group2Tabs.find((t) => t.id === resolvedGroup2TabId);
-  }, [group2Tabs, resolvedGroup2TabId]);
-
-  const focusedTab = (focusedGroupId === 2 && isSplit) ? splitTab : activeTab;
-
-  // Vue déduite dynamiquement du document actif (Doc-Driven Views)
-  const currentView: AppViewMode = useMemo(() => {
-    const doc = focusedTab || activeTab;
-    if (!doc) return 'editor';
-    if (doc.docType === 'image') return 'image';
-    if (doc.viewMode === 'source') return 'editor';
-    return doc.docType === 'note' ? 'editor' : doc.docType;
-  }, [focusedTab, activeTab]);
-
-  const handleHeaderViewChange = useCallback(async (view: AppViewMode) => {
-    const doc = (tabStore.activeGroupId === 2 && tabStore.isSplit) ? tabStore.splitTab : tabStore.activeTab;
-    if (!doc) return;
-    // Les médias n'ont pas de conversion de type Markdown
-    if (doc.docType === 'image' || view === 'image') return;
-    const group = (tabStore.activeGroupId === 2 && tabStore.isSplit) ? 2 : 1;
-    if (view === 'editor') {
-      if (doc.viewMode === 'source') {
-        tabStore.toggleViewMode(doc.id, group);
-      } else if (doc.docType !== 'note') {
-        await vaultStore.convertDocumentType(doc.path, 'note');
-      }
-    } else if (view === 'kanban') {
-      if (doc.docType !== 'kanban') {
-        await vaultStore.convertDocumentType(doc.path, 'kanban');
-      }
-      if (doc.viewMode === 'source') {
-        tabStore.toggleViewMode(doc.id, group);
-      }
-    } else if (view === 'table') {
-      if (doc.docType !== 'table') {
-        await vaultStore.convertDocumentType(doc.path, 'table');
-      }
-      if (doc.viewMode === 'source') {
-        tabStore.toggleViewMode(doc.id, group);
-      }
-    }
-  }, []);
-
-  // Synchronise le titre de la barre de fenêtre avec la note active et la version du projet
-  useEffect(() => {
-    const current = focusedTab || activeTab;
-    if (current) {
-      document.title = `${current.title}${current.isDirty ? ' •' : ''} — Knit v${APP_VERSION}`;
-    } else {
-      document.title = `Knit — v${APP_VERSION}`;
-    }
-  }, [activeTab, focusedTab]);
-
-  // Commandes pour la palette de commandes (Ctrl+P) via registre extrait
-  const commands: CommandItem[] = useMemo(
-    () =>
-      buildCommandList({
-        splitTabId,
-        activeTab,
-        isZenMode,
-        theme,
-        setIsZenMode,
-        setTheme,
-        setSidebarTab,
-        setIsQuickSwitcherOpen,
-        handleNewNote,
-        handleNewKanban,
-        handleSaveActiveNote,
-        handleOpenDailyNote,
-        handlePackageContext,
-        handleHeaderViewChange,
-      }),
-    [
-      splitTabId,
-      activeTab,
-      isZenMode,
-      theme,
-      handleNewNote,
-      handleNewKanban,
-      handleSaveActiveNote,
-      handleOpenDailyNote,
-      handlePackageContext,
-      handleHeaderViewChange,
-    ]
-  );
-
-  // Rendu modulaire d'un panneau de document (Doc-Driven Views)
-  const renderDocumentPane = (tab: Tab | undefined, groupId: 1 | 2 = 1) => {
-    if (!tab) {
-      return (
-        <div
-          style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'var(--knit-text-muted)',
-            gap: 16,
-            padding: 32,
-          }}
-        >
-          <div
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: '50%',
-              backgroundColor: 'var(--knit-surface-hover)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <DuotoneIcon name="file-markdown" size={28} />
-          </div>
-
-          <div style={{ textAlign: 'center' }}>
-            <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--knit-text)', marginBottom: 6 }}>
-              Aucun document ouvert
-            </h3>
-            <p style={{ fontSize: 13, maxWidth: 360, lineHeight: 1.5 }}>
-              Sélectionnez un fichier dans la barre latérale ou créez une nouvelle note avec <kbd style={{ padding: '2px 6px', background: 'var(--knit-surface-hover)', border: '1px solid var(--knit-border)', borderRadius: 4, fontFamily: 'var(--knit-font-mono)' }}>Ctrl+N</kbd>.
-            </p>
-          </div>
-
-          <div
-            style={{
-              display: 'flex',
-              gap: 12,
-              marginTop: 10,
-              fontSize: 12,
-              color: 'var(--knit-text-secondary)',
-            }}
-          >
-            <div><kbd>Ctrl+O</kbd> Sauter à...</div>
-            <div>•</div>
-            <div><kbd>Ctrl+P</kbd> Commandes</div>
-            <div>•</div>
-            <div><kbd>Ctrl+\</kbd> Scinder vue</div>
-            <div>•</div>
-            <div><kbd>Ctrl+Shift+J</kbd> Note du jour</div>
-          </div>
-        </div>
-      );
-    }
-
-    let paneNode: React.ReactNode;
-
-    // 0. Médias coffre : toujours la vue Image (pas de mode source Markdown)
-    if (tab.docType === 'image') {
-      paneNode = <ImageView key={`${tab.id}-image-g${groupId}`} path={tab.path} />;
-    } else if (tab.viewMode === 'source') {
-      // 1. Mode source brut universel (Ctrl+E - US B-030d)
-      paneNode = (
-        <Editor
-          key={`${tab.id}-source-g${groupId}`}
-          path={tab.path}
-          content={tab.content}
-          isDirty={tab.isDirty}
-          viewMode="source"
-          initialLine={tab.id === (groupId === 2 ? activeGroup2TabId : activeTabId) ? targetLine : undefined}
-          onChange={(newContent) => {
-            tabStore.updateContent(tab.id, newContent);
-          }}
-          onSave={handleSaveActiveNote}
-          onNavigateFile={(targetPath) => handleSelectFile(targetPath, false)}
-        />
-      );
-    } else if (tab.docType === 'kanban') {
-      // 2. Vue Kanban automatique si type: kanban dans le frontmatter
-      paneNode = (
-        <KanbanView
-          key={`${tab.id}-kanban-g${groupId}`}
-          activeFilePath={tab.path}
-          activeFileContent={tab.content}
-          onUpdateContent={async (path, content) => {
-            try {
-              tabStore.updateContent(tab.id, content);
-              await vaultStore.writeFile(path || tab.path, content);
-            } catch (err: unknown) {
-              console.error('Erreur sauvegarde Kanban:', err);
-              toast.error('Erreur de sauvegarde', String(err));
-            }
-          }}
-          onOpenFile={(path) => handleSelectFile(path, false)}
-          onSwitchToEditor={() => tabStore.toggleViewMode(tab.id, groupId)}
-        />
-      );
-    } else if (tab.docType === 'table') {
-      // 3. Vue Table automatique si type: table dans le frontmatter
-      paneNode = (
-        <TableView
-          key={`${tab.id}-table-g${groupId}`}
-          activeFilePath={tab.path}
-          activeFileContent={tab.content}
-          onUpdateContent={async (path, content) => {
-            try {
-              tabStore.updateContent(tab.id, content);
-              await vaultStore.writeFile(path || tab.path, content);
-            } catch (err: unknown) {
-              console.error('Erreur sauvegarde Tableau:', err);
-              toast.error('Erreur de sauvegarde', String(err));
-            }
-          }}
-          onOpenFile={(path) => handleSelectFile(path, false)}
-          onSwitchToEditor={() => tabStore.toggleViewMode(tab.id, groupId)}
-        />
-      );
-    } else {
-      // 4. Par défaut : Note Markdown en vue visuelle riche (Mermaid, Live Preview, Autocomplete)
-      paneNode = (
-        <Editor
-          key={`${tab.id}-visual-g${groupId}`}
-          path={tab.path}
-          content={tab.content}
-          isDirty={tab.isDirty}
-          viewMode="visual"
-          initialLine={tab.id === (groupId === 2 ? activeGroup2TabId : activeTabId) ? targetLine : undefined}
-          onChange={(newContent) => {
-            tabStore.updateContent(tab.id, newContent);
-          }}
-          onSave={handleSaveActiveNote}
-          onNavigateFile={(targetPath) => handleSelectFile(targetPath, false)}
-        />
-      );
-    }
-
-    return (
-      <ErrorBoundary key={`${tab.id}-eb-g${groupId}`} fallbackTitle={`Erreur lors de l'affichage de ${tab.title}`}>
-        {paneNode}
-      </ErrorBoundary>
-    );
-  };
+    handleNewKanban,
+    resolvedActiveTabId,
+    resolvedGroup2TabId,
+    activeTab,
+    splitTab,
+    currentView,
+    handleHeaderViewChange,
+    commands,
+    documentPaneProps,
+  } = shell;
 
   return (
     <div
@@ -677,7 +221,7 @@ tags: [journal, quotidien]
                   />
                 </div>
                 <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                  {renderDocumentPane(activeTab, 1)}
+                  <DocumentPane tab={activeTab} groupId={1} {...documentPaneProps} />
                 </div>
               </div>
 
@@ -758,7 +302,7 @@ tags: [journal, quotidien]
                   />
                 </div>
                 <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                  {renderDocumentPane(splitTab, 2)}
+                  <DocumentPane tab={splitTab} groupId={2} {...documentPaneProps} />
                 </div>
               </div>
             </>
@@ -788,7 +332,7 @@ tags: [journal, quotidien]
                 />
               </div>
               <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                {renderDocumentPane(activeTab, 1)}
+                <DocumentPane tab={activeTab} groupId={1} {...documentPaneProps} />
               </div>
             </div>
           )}

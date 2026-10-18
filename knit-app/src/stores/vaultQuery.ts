@@ -1,4 +1,3 @@
-import type { VaultOps } from './vaultOps';
 import { invoke } from '@tauri-apps/api/core';
 import { toast } from './toastStore';
 import { historyStore } from './historyStore';
@@ -9,6 +8,7 @@ import {
   createDefaultKanbanMarkdown,
   isTauriEnvironment,
   slugify,
+  copyTextWithToast,
 } from '../utils';
 import type {
   HeadingItem,
@@ -20,6 +20,7 @@ import type {
   TaskCard,
   TagInfo,
   KanbanFileInfo,
+  VaultOps,
 } from '../types';
 
 export async function parseFrontmatter(_ops: VaultOps, content: string): Promise<FrontmatterDoc> {
@@ -128,8 +129,7 @@ export async function revealInExplorer(ops: VaultOps, relPath: string = ''): Pro
     const fullPath = ops.getAbsolutePath(relPath);
 
     if (!isTauriEnvironment()) {
-      await navigator.clipboard.writeText(fullPath);
-      toast.info('Chemin copié (mode démo web)', fullPath);
+      await copyTextWithToast(fullPath, 'Chemin copié (mode démo web)', fullPath);
       return;
     }
 

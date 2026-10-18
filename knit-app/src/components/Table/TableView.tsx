@@ -1,13 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import {
-  parseCardMetadata,
-} from '../../utils';
-import type {
-  KanbanCard,
-  TableRowItem,
-  SortField,
-  SortOrder,
-} from '../../types';
+import React, { useState, useEffect } from 'react';
+import { copyTextWithToast } from '../../utils';
+import type { KanbanCard, TableRowItem } from '../../types';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { WikiLinkPills, TagPills } from '../Common/WikiLinkPills';
 import { KnitSelect } from '../Form/KnitSelect';
@@ -15,7 +8,7 @@ import { toast } from '../../stores/toastStore';
 import { contextMenu } from '../../stores/contextMenuStore';
 import { debugStore } from '../../stores/debugStore';
 import { TableDebugHUD } from './TableDebugHUD';
-import { useKanbanBoard, useDebugMode } from '../../hooks';
+import { useKanbanBoard, useDebugMode, useTableRows } from '../../hooks';
 
 interface TableViewProps {
   activeFilePath?: string | null;
@@ -40,72 +33,22 @@ export const TableView: React.FC<TableViewProps> = ({
 
   const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
 
-  const [searchFilter, setSearchFilter] = useState('');
-  const [columnFilter, setColumnFilter] = useState<string>('all');
-  const [sortField, setSortField] = useState<SortField>('column');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
-
   // Formulaire d'ajout rapide de tâche dans le tableau
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskColumnId, setNewTaskColumnId] = useState('');
 
-  // Aplatissement des cartes en lignes de tableau
-  const allRows: TableRowItem[] = useMemo(() => {
-    const rows: TableRowItem[] = [];
-    for (const col of board.columns) {
-      for (const card of col.cards) {
-        const meta = parseCardMetadata(card.title);
-        rows.push({
-          id: card.id,
-          columnId: col.id,
-          columnTitle: col.title,
-          columnColor: col.color,
-          title: meta.cleanTitle,
-          completed: card.completed,
-          tags: meta.tags,
-          wikiLinks: meta.wikiLinks,
-        });
-      }
-    }
-    return rows;
-  }, [board]);
-
-  // Filtrage et Tri en direct
-  const filteredAndSortedRows = useMemo(() => {
-    const q = searchFilter.toLowerCase().trim();
-
-    return allRows
-      .filter((row) => {
-        if (columnFilter !== 'all' && row.columnId !== columnFilter) {
-          return false;
-        }
-        if (q && !row.title.toLowerCase().includes(q) && !row.columnTitle.toLowerCase().includes(q)) {
-          return false;
-        }
-        return true;
-      })
-      .sort((a, b) => {
-        let cmp = 0;
-        if (sortField === 'column') {
-          cmp = a.columnTitle.localeCompare(b.columnTitle);
-        } else if (sortField === 'title') {
-          cmp = a.title.localeCompare(b.title);
-        } else if (sortField === 'completed') {
-          cmp = Number(a.completed) - Number(b.completed);
-        }
-        return sortOrder === 'asc' ? cmp : -cmp;
-      });
-  }, [allRows, columnFilter, searchFilter, sortField, sortOrder]);
-
-  const handleToggleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortField(field);
-      setSortOrder('asc');
-    }
-  };
+  const {
+    allRows,
+    filteredAndSortedRows,
+    searchFilter,
+    setSearchFilter,
+    columnFilter,
+    setColumnFilter,
+    sortField,
+    sortOrder,
+    handleToggleSort,
+  } = useTableRows(board);
 
   // Intégration Mode Debug Global (US B-054)
   const { isDebugActive, toggleDebug } = useDebugMode();
@@ -203,8 +146,7 @@ export const TableView: React.FC<TableViewProps> = ({
       md += `| ${r.columnTitle} | ${r.title} | ${r.completed ? '[x]' : '[ ]'} | ${r.tags.map((t) => `#${t}`).join(' ')} |\n`;
     }
 
-    navigator.clipboard.writeText(md);
-    toast.success('Tableau Markdown copié', 'Presse-papier mis à jour');
+    void copyTextWithToast(md, 'Tableau Markdown copié', 'Presse-papier mis à jour');
   };
 
   return (
@@ -656,9 +598,11 @@ export const TableView: React.FC<TableViewProps> = ({
           sortOrder={sortOrder}
           filePath={currentPath}
           onCopyJson={() => {
-            navigator.clipboard.writeText(JSON.stringify(filteredAndSortedRows, null, 2)).then(() => {
-              toast.success('Données JSON copiées', `${filteredAndSortedRows.length} lignes copiées.`);
-            });
+            void copyTextWithToast(
+              JSON.stringify(filteredAndSortedRows, null, 2),
+              'Données JSON copiées',
+              `${filteredAndSortedRows.length} lignes copiées.`
+            );
           }}
           onDumpConsole={() => {
             console.group('[TABLE DEBUG]');

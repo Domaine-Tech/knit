@@ -1,3 +1,8 @@
+/**
+ * Moteur CRDT Yjs (documents, Awareness, snapshots).
+ * Frontière : `networkStore` gère uniquement le transport IPC / Base64 (broadcast, sync steps) ;
+ * toute mutation Y.Doc / Y.Text / Awareness passe par ce manager.
+ */
 import * as Y from 'yjs';
 import diff from 'fast-diff';
 import { Awareness, encodeAwarenessUpdate, applyAwarenessUpdate } from 'y-protocols/awareness';

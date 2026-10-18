@@ -1,4 +1,3 @@
-import type { VaultOps } from './vaultOps';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { toast } from './toastStore';
@@ -8,7 +7,7 @@ import { networkStore } from './networkStore';
 import { frontmatterIndex } from './frontmatterIndex';
 import { isTauriEnvironment } from '../utils/env';
 import { DEMO_FILES, DEMO_CONTENTS, DEMO_ASSET_URLS } from './demoVaultLoader';
-import type { FileNode, LinkRefactorReport } from '../types';
+import type { FileNode, LinkRefactorReport, VaultOps } from '../types';
 
 /** Coffre démo mémoire (pas un chemin disque réel). */
 function isVirtualDemoVault(ops: VaultOps): boolean {

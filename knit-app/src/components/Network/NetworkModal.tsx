@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { networkStore } from '../../stores/networkStore';
-import { toast } from '../../stores/toastStore';
+import React from 'react';
+import { useNetworkSession } from '../../hooks/useNetworkSession';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { ProfileModal } from '../Profile/ProfileModal';
 
@@ -10,51 +9,26 @@ interface NetworkModalProps {
 }
 
 export const NetworkModal: React.FC<NetworkModalProps> = ({ isOpen, onClose }) => {
-  const [invitationInput, setInvitationInput] = useState('');
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [, setTick] = useState(0);
-
-  useEffect(() => {
-    return networkStore.subscribe(() => {
-      setTick((t) => t + 1);
-    });
-  }, []);
+  const {
+    invitationInput,
+    setInvitationInput,
+    isConnecting,
+    isProfileOpen,
+    openProfile,
+    closeProfile,
+    localId,
+    myCode,
+    peers,
+    lanPeers,
+    isNetworkActive,
+    avatarDataUrl,
+    currentProfile,
+    peerAvatarDataUrls,
+    handleCopyCode,
+    handleConnect,
+  } = useNetworkSession();
 
   if (!isOpen) return null;
-
-  const localId = networkStore.localIdentity;
-  const myCode = networkStore.invitationCode || '';
-  const peers = networkStore.connectedPeers;
-  const lanPeers = networkStore.discoveredLanPeers;
-
-  const handleCopyCode = async () => {
-    if (!myCode) return;
-    try {
-      await navigator.clipboard.writeText(myCode);
-      toast.success("Code d'invitation copié dans le presse-papier !");
-    } catch {
-      toast.error('Échec de la copie');
-    }
-  };
-
-  const handleConnect = async (codeToUse?: string) => {
-    const code = (codeToUse || invitationInput).trim();
-    if (!code) {
-      toast.warning("Veuillez saisir un code d'invitation knit://join/...");
-      return;
-    }
-
-    setIsConnecting(true);
-    try {
-      await networkStore.connectPeer(code);
-      setInvitationInput('');
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsConnecting(false);
-    }
-  };
 
   return (
     <div
@@ -104,8 +78,8 @@ export const NetworkModal: React.FC<NetworkModalProps> = ({ isOpen, onClose }) =
                 width: 10,
                 height: 10,
                 borderRadius: '50%',
-                backgroundColor: networkStore.isNetworkActive ? '#10B981' : 'var(--knit-text-muted)',
-                boxShadow: networkStore.isNetworkActive ? '0 0 8px #10B981' : 'none',
+                backgroundColor: isNetworkActive ? '#10B981' : 'var(--knit-text-muted)',
+                boxShadow: isNetworkActive ? '0 0 8px #10B981' : 'none',
               }}
             />
             <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--knit-text)' }}>
@@ -136,9 +110,9 @@ export const NetworkModal: React.FC<NetworkModalProps> = ({ isOpen, onClose }) =
                 border: '1px solid var(--knit-border)',
               }}
             >
-              {networkStore.avatarDataUrl ? (
+              {avatarDataUrl ? (
                 <img
-                  src={networkStore.avatarDataUrl}
+                  src={avatarDataUrl}
                   alt={localId.display_name}
                   style={{
                     width: 38,
@@ -172,10 +146,10 @@ export const NetworkModal: React.FC<NetworkModalProps> = ({ isOpen, onClose }) =
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--knit-text)' }}>
-                    {networkStore.currentProfile?.display_name || localId.display_name}
+                    {currentProfile?.display_name || localId.display_name}
                   </span>
                   <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--knit-text-muted)' }}>(Vous)</span>
-                  {networkStore.currentProfile?.role && (
+                  {currentProfile?.role && (
                     <span
                       style={{
                         fontSize: 10,
@@ -186,10 +160,10 @@ export const NetworkModal: React.FC<NetworkModalProps> = ({ isOpen, onClose }) =
                         color: 'var(--knit-text-secondary)',
                       }}
                     >
-                      {networkStore.currentProfile.role}
+                      {currentProfile.role}
                     </span>
                   )}
-                  {networkStore.currentProfile && !networkStore.currentProfile.share_email_p2p && (
+                  {currentProfile && !currentProfile.share_email_p2p && (
                     <span
                       style={{
                         fontSize: 10,
@@ -208,9 +182,9 @@ export const NetworkModal: React.FC<NetworkModalProps> = ({ isOpen, onClose }) =
                   )}
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--knit-text-muted)', marginTop: 2 }}>
-                  {networkStore.currentProfile?.status_message || 'En rédaction'}
-                  {networkStore.currentProfile?.email && networkStore.currentProfile.share_email_p2p && (
-                    <span style={{ marginLeft: 8 }}>• {networkStore.currentProfile.email}</span>
+                  {currentProfile?.status_message || 'En rédaction'}
+                  {currentProfile?.email && currentProfile.share_email_p2p && (
+                    <span style={{ marginLeft: 8 }}>• {currentProfile.email}</span>
                   )}
                 </div>
                 <div
@@ -232,7 +206,7 @@ export const NetworkModal: React.FC<NetworkModalProps> = ({ isOpen, onClose }) =
               <button
                 type="button"
                 className="knit-btn"
-                onClick={() => setIsProfileOpen(true)}
+                onClick={openProfile}
                 style={{ fontSize: 11, padding: '3px 8px', gap: 4, flexShrink: 0 }}
               >
                 <DuotoneIcon name="user" size={12} />
@@ -415,9 +389,9 @@ export const NetworkModal: React.FC<NetworkModalProps> = ({ isOpen, onClose }) =
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                      {networkStore.peerAvatarDataUrls.get(peer.peer_id) ? (
+                      {peerAvatarDataUrls.get(peer.peer_id) ? (
                         <img
-                          src={networkStore.peerAvatarDataUrls.get(peer.peer_id)}
+                          src={peerAvatarDataUrls.get(peer.peer_id)}
                           alt={peer.display_name}
                           style={{
                             width: 32,
@@ -537,7 +511,7 @@ export const NetworkModal: React.FC<NetworkModalProps> = ({ isOpen, onClose }) =
         </div>
       </div>
 
-      <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
+      <ProfileModal isOpen={isProfileOpen} onClose={closeProfile} />
     </div>
   );
 };

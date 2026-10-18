@@ -3,10 +3,8 @@
  * Remplace les <select> natifs dont le popup OS n'est pas stylable.
  */
 
-export interface KnitSelectOption {
-  value: string;
-  label: string;
-}
+import type { KnitSelectOption } from '../types';
+import { preventMiddleCompass } from './domUtils';
 
 export interface KnitSelectDomOptions {
   value: string;
@@ -197,7 +195,7 @@ export function createKnitSelectDom(opts: KnitSelectDomOptions): HTMLElement {
   };
 
   trigger.addEventListener('mousedown', (e) => {
-    if (e.button === 1) e.preventDefault();
+    preventMiddleCompass(e);
     stop(e);
   });
   trigger.addEventListener('click', (e) => {
@@ -215,8 +213,4 @@ export function createKnitSelectDom(opts: KnitSelectDomOptions): HTMLElement {
   };
 
   return root;
-}
-
-export function closeAllKnitSelectMenus(): void {
-  closeOpenMenu();
 }

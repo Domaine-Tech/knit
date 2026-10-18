@@ -3,10 +3,15 @@
  * Alimenté au chargement du coffre et invalidé sur write / reload.
  */
 
-import type { FrontmatterIndexEntry, QueryFilter, QueryResult } from '../types';
+import type {
+  FrontmatterIndexEntry,
+  IndexedInlineTask,
+  QueryFilter,
+  QueryResult,
+  VaultOps,
+} from '../types';
 import { findFileMtimeMs, getFlatFiles } from '../utils';
 import { runQuery, listFolderEntries } from '../utils/queryEngine';
-import type { VaultOps } from './vaultOps';
 
 const TASK_LINE_RE = /^(\s*[-*]\s*)\[([ xX/\-?>!])\](\s+)(.*)$/;
 
@@ -38,14 +43,6 @@ function resolveEntryMtime(
   if (previous && Number.isFinite(previous.mtime)) return previous.mtime;
 
   return Date.now();
-}
-
-export interface IndexedInlineTask {
-  path: string;
-  lineIndex: number;
-  status: string;
-  text: string;
-  rawLine: string;
 }
 
 class FrontmatterIndex {

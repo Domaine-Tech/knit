@@ -68,3 +68,13 @@ export interface MoveCardResult {
   toIndex: number;
 }
 
+export interface KanbanDragInfo {
+  cardId: string;
+  sourceColumnId: string;
+}
+
+export interface KanbanDropSlot {
+  columnId: string;
+  index: number;
+}
+

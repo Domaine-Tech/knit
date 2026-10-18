@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { vaultStore } from '../../stores/vaultStore';
-import { slugify } from '../../utils';
+import { slugify, copyTextWithToast } from '../../utils';
 import { COLUMN_ACCENT_COLORS } from '../../theme/theme';
 import type { KanbanBoard, KanbanColumn as KanbanColumnModel, KanbanCard as KanbanCardModel } from '../../types';
 import { toast } from '../../stores/toastStore';
@@ -350,14 +350,18 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
             const lines = dragLogs.map(
               (l) => `[${l.time}] [${l.action.toUpperCase()}] ${l.detail} (carte: "${l.cardTitle}" | id: ${l.cardId})`
             );
-            navigator.clipboard.writeText(lines.join('\n') || 'Aucun événement D&D enregistré.').then(() => {
-              toast.success('Logs D&D copiés', `${dragLogs.length} événement(s) copié(s) dans le presse-papier.`);
-            });
+            void copyTextWithToast(
+              lines.join('\n') || 'Aucun événement D&D enregistré.',
+              'Logs D&D copiés',
+              `${dragLogs.length} événement(s) copié(s) dans le presse-papier.`
+            );
           }}
           onCopyJson={() => {
-            navigator.clipboard.writeText(JSON.stringify(board, null, 2)).then(() => {
-              toast.success('Structure JSON copiée', 'Le tableau Kanban a été copié.');
-            });
+            void copyTextWithToast(
+              JSON.stringify(board, null, 2),
+              'Structure JSON copiée',
+              'Le tableau Kanban a été copié.'
+            );
           }}
           onDumpConsole={() => {
             console.group('[KANBAN DEBUG INSPECTOR]');

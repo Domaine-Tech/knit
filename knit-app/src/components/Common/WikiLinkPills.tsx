@@ -1,4 +1,5 @@
 import React from 'react';
+import { resolveWikiLink } from '../../utils/markdownUtils';
 
 interface WikiLinkPillsProps {
   links: string[];
@@ -10,14 +11,6 @@ interface WikiLinkPillsProps {
 interface TagPillsProps {
   tags: string[];
   variant?: 'kanban' | 'table';
-}
-
-function resolveWikiTarget(link: string): { displayName: string; filePath: string } {
-  const [target, alias] = link.split('|');
-  const targetClean = target.trim();
-  const displayName = (alias || targetClean).trim();
-  const filePath = targetClean.endsWith('.md') ? targetClean : `${targetClean}.md`;
-  return { displayName, filePath };
 }
 
 export const WikiLinkPills: React.FC<WikiLinkPillsProps> = ({
@@ -39,7 +32,7 @@ export const WikiLinkPills: React.FC<WikiLinkPillsProps> = ({
       }}
     >
       {links.map((link) => {
-        const { displayName, filePath } = resolveWikiTarget(link);
+        const { displayName, filePath } = resolveWikiLink(link);
         return (
           <button
             key={link}

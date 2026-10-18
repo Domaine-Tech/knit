@@ -137,14 +137,6 @@ export function buildPathCopyMenuItem(options: PathCopyMenuOptions): ContextMenu
   };
 }
 
-/**
- * @deprecated Préférer `buildPathCopyMenuItem` (entrée unique + sous-menu).
- * Conservé pour compatibilité : renvoie un tableau d'une entrée.
- */
-export function buildPathCopyMenuItems(options: PathCopyMenuOptions): ContextMenuItem[] {
-  return [buildPathCopyMenuItem(options)];
-}
-
 export interface CreateInFolderMenuOptions {
   /** Dossier parent relatif (`''` = racine du coffre). */
   parentDir: string;

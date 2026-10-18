@@ -1,10 +1,7 @@
 import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-
-export interface KnitSelectOption {
-  value: string;
-  label: string;
-}
+import type { KnitSelectOption } from '../../types';
+import { preventMiddleCompass } from '../../utils/domUtils';
 
 export interface KnitSelectProps {
   value: string;
@@ -157,7 +154,7 @@ export const KnitSelect: React.FC<KnitSelectProps> = ({
         aria-label={ariaLabel}
         disabled={disabled}
         onMouseDown={(e) => {
-          if (e.button === 1) e.preventDefault();
+          preventMiddleCompass(e);
         }}
         onClick={() => {
           if (open) close();

@@ -15,3 +15,6 @@ export interface TableRowItem {
 
 export type SortField = 'column' | 'title' | 'completed';
 export type SortOrder = 'asc' | 'desc';
+
+/** Alignement d'une colonne de tableau Markdown GFM. */
+export type TableAlign = 'left' | 'center' | 'right';

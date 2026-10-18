@@ -8,6 +8,8 @@ import {
   buildCloseTabsMenuItems,
   buildConvertDocTypeMenuItem,
   buildPathCopyMenuItem,
+  isMiddleButton,
+  preventMiddleCompass,
 } from '../../utils';
 
 interface TabBarProps {
@@ -38,11 +40,7 @@ export const TabBar: React.FC<TabBarProps> = ({
   const activeTab = tabs.find((t) => t.id === activeTabId);
 
   // Empêche l'icône de scroll compass sur clic molette (la fermeture est gérée par onAuxClick)
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button === 1) {
-      e.preventDefault();
-    }
-  };
+  const handleMouseDown = preventMiddleCompass;
 
   const handleDragStart = (index: number) => {
     setDraggedIndex(index);
@@ -273,7 +271,7 @@ export const TabBar: React.FC<TabBarProps> = ({
               onMouseDown={handleMouseDown}
               onContextMenu={(e) => handleTabContextMenu(e, tab, index)}
               onAuxClick={(e) => {
-                if (e.button === 1) {
+                if (isMiddleButton(e)) {
                   e.preventDefault();
                   e.stopPropagation();
                   tabStore.closeTab(tab.id, groupId);

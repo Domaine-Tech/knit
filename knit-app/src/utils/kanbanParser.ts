@@ -14,35 +14,6 @@ import { slugify } from './markdownUtils';
 import { COLUMN_ACCENT_COLORS } from '../theme/theme';
 
 /**
- * Détecte si un contenu Markdown ou un chemin est déclaré comme un Kanban
- */
-export function isKanbanContent(content: string, path?: string): boolean {
-  if (path && (path.endsWith('.kanban.md') || path.toLowerCase().includes('kanban'))) {
-    return true;
-  }
-  if (!content) return false;
-
-  const fmMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  if (fmMatch) {
-    const yaml = fmMatch[1].toLowerCase();
-    if (
-      yaml.includes('type: kanban') ||
-      yaml.includes('type: tableau') ||
-      yaml.includes('type: board') ||
-      yaml.includes('kanban: true') ||
-      yaml.includes('kanban-plugin:')
-    ) {
-      return true;
-    }
-  }
-
-  // Si le document possède au moins 2 titres ## et des items de liste - [ ]
-  const h2Count = (content.match(/^##\s+/gm) || []).length;
-  const taskCount = (content.match(/^-\s*\[[ xX/?!>-]\]/gm) || []).length;
-  return h2Count >= 2 && taskCount >= 1;
-}
-
-/**
  * Crée le contenu Markdown d'un nouveau tableau Kanban vierge ou pré-rempli
  */
 export function createDefaultKanbanMarkdown(

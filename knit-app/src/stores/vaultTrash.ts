@@ -1,8 +1,7 @@
-import type { VaultOps } from './vaultOps';
 import { invoke } from '@tauri-apps/api/core';
 import { crdtManager } from '../crdt';
 import { isTauriEnvironment } from '../utils';
-import type { TrashRecord } from '../types';
+import type { TrashRecord, VaultOps } from '../types';
 
 export async function trashPath(ops: VaultOps, relPath: string): Promise<TrashRecord> {
     if (!ops.currentVaultPath) {

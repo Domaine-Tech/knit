@@ -162,7 +162,7 @@ export const TooltipContainer: React.FC = () => {
         left: -9999,
         top: -9999,
         opacity: 0,
-        zIndex: 11000,
+        zIndex: 100050,
         pointerEvents: 'none',
         display: 'inline-flex',
         alignItems: 'center',

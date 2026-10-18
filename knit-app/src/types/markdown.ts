@@ -58,3 +58,12 @@ export interface TagInfo {
   count: number;
   files: string[];
 }
+
+/** Tâche checkbox indexée dans le corps Markdown (hors frontmatter). */
+export interface IndexedInlineTask {
+  path: string;
+  lineIndex: number;
+  status: string;
+  text: string;
+  rawLine: string;
+}

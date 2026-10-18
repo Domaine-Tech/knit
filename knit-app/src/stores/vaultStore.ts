@@ -1,7 +1,6 @@
 import type { UnlistenFn } from '@tauri-apps/api/event';
 import { isTauriEnvironment } from '../utils/env';
 import { DEMO_FILES, DEMO_CONTENTS, DEMO_ASSET_URLS } from './demoVaultLoader';
-import type { VaultOps } from './vaultOps';
 import {
   pickAndOpenVault,
   openVault,
@@ -55,6 +54,7 @@ import type {
   QueryFilter,
   QueryResult,
   FrontmatterIndexEntry,
+  VaultOps,
 } from '../types';
 
 type VaultListener = () => void;

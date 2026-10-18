@@ -1,16 +1,13 @@
 import { useCallback, useEffect, useRef, useState, type DragEvent as ReactDragEvent, type RefObject } from 'react';
-import type { KanbanBoard, KanbanDragLog, MoveCardOptions, MoveCardResult } from '../types';
+import type {
+  KanbanBoard,
+  KanbanDragInfo,
+  KanbanDropSlot,
+  KanbanDragLog,
+  MoveCardOptions,
+  MoveCardResult,
+} from '../types';
 import { toast } from '../stores/toastStore';
-
-export interface KanbanDragInfo {
-  cardId: string;
-  sourceColumnId: string;
-}
-
-export interface KanbanDropSlot {
-  columnId: string;
-  index: number;
-}
 
 interface UseKanbanDnDOptions {
   boardRef: RefObject<KanbanBoard>;

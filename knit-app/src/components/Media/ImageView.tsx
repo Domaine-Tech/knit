@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { resolveAssetUrl } from '../../utils/assetUrl';
-import { copyTextWithToast } from '../../utils/clipboardUtils';
+import { copyRelativePath, copyTextWithToast } from '../../utils/clipboardUtils';
 import { buildPathCopyMenuItem } from '../../utils';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { contextMenu } from '../../stores/contextMenuStore';

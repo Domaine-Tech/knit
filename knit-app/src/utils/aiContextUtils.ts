@@ -1,5 +1,5 @@
 import { vaultStore } from '../stores/vaultStore';
-import { toast } from '../stores/toastStore';
+import { copyTextWithToast } from './clipboardUtils';
 
 /**
  * Utilitaires de préparation et d'exportation de contexte pour assistants et modèles IA
@@ -62,12 +62,11 @@ export async function packageContextForAI(
 
   xml += `</document>`;
 
-  try {
-    await navigator.clipboard.writeText(xml);
-    toast.success('Contexte IA copié (Ctrl+Shift+C)', 'Format balisé <document> prêt pour Claude/ChatGPT');
-  } catch {
-    toast.error('Erreur presse-papier', 'Impossible de copier le contexte');
-  }
+  await copyTextWithToast(
+    xml,
+    'Contexte IA copié (Ctrl+Shift+C)',
+    'Format balisé <document> prêt pour Claude/ChatGPT'
+  );
 
   return xml;
 }

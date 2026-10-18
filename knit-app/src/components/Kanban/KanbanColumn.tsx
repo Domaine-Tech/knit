@@ -3,7 +3,7 @@ import type { KanbanCard as KanbanCardModel, KanbanColumn as KanbanColumnModel }
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { contextMenu } from '../../stores/contextMenuStore';
 import { KanbanCard } from './KanbanCard';
-import type { KanbanDragInfo, KanbanDropSlot } from '../../hooks/useKanbanDnD';
+import type { KanbanDragInfo, KanbanDropSlot } from '../../types';
 
 const KanbanDropIndicator: React.FC = () => (
   <div

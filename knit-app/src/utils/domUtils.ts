@@ -4,6 +4,22 @@ import type { ComputedPosition } from '../types';
  * Utilitaires universels d'interaction DOM et calculs de disposition (layout) pour Knit
  */
 
+/** Bouton molette (auxiliaire) — constante partagée pour les handlers souris. */
+export const MIDDLE_BUTTON = 1;
+
+/** Empêche le curseur « boussole » navigateur sur clic molette (`mousedown` uniquement). */
+export function preventMiddleCompass(e: {
+  button: number;
+  preventDefault: () => void;
+}): void {
+  if (e.button === MIDDLE_BUTTON) e.preventDefault();
+}
+
+/** Vrai si l'événement concerne le bouton molette. */
+export function isMiddleButton(e: { button: number }): boolean {
+  return e.button === MIDDLE_BUTTON;
+}
+
 /**
  * Calcule une position intelligente pour le tooltip garantissant :
  * 1. Zéro débordement hors de l'écran (left >= padX et right <= window.innerWidth - padX).

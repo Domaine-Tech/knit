@@ -1,18 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import type { FileNode } from '../../types';
-import { vaultStore } from '../../stores/vaultStore';
+import { useSidebarTree } from '../../hooks/useSidebarTree';
 import { TreeNode } from './TreeNode';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
-import { toast } from '../../stores/toastStore';
 import { contextMenu } from '../../stores/contextMenuStore';
-import { tabStore } from '../../stores/tabStore';
-import { historyStore } from '../../stores/historyStore';
 
 import { GlobalSearchPane } from './GlobalSearchPane';
 import { TagExplorerPane } from './TagExplorerPane';
 import {
   buildCreateInFolderMenuItem,
   buildCreateInFolderMenuItems,
+  copyTextWithToast,
 } from '../../utils';
 
 interface SidebarProps {
@@ -36,172 +34,54 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onMiddleClickFile,
   onOpenFileAtLine,
 }) => {
-  const [internalSidebarTab, setInternalSidebarTab] = useState<'files' | 'search' | 'tags'>('files');
-  const activeTab = controlledSidebarTab || internalSidebarTab;
-
-  const handleSetSidebarTab = (tab: 'files' | 'search' | 'tags') => {
-    setInternalSidebarTab(tab);
-    if (onSidebarTabChange) onSidebarTabChange(tab);
-  };
-  const [filterText, setFilterText] = useState('');
-  const [isCreatingFile, setIsCreatingFile] = useState(false);
-  const [newFileName, setNewFileName] = useState('');
-  const [renameTarget, setRenameTarget] = useState<{ oldPath: string; newPath: string } | null>(null);
-  const [selectedNode, setSelectedNode] = useState<{ path: string; isDir: boolean; name: string } | null>(null);
-  const [isAllExpanded, setIsAllExpanded] = useState(false);
-  const [isPinnedExpanded, setIsPinnedExpanded] = useState(true);
-  const [treeKey, setTreeKey] = useState(0);
-
-  useEffect(() => {
-    const onReveal = (e: Event) => {
-      const custom = e as CustomEvent<{ path: string; isDir: boolean }>;
-      if (custom.detail?.path) {
-        setInternalSidebarTab('files');
-        setSelectedNode({
-          path: custom.detail.path,
-          isDir: custom.detail.isDir,
-          name: custom.detail.path.split('/').pop() || custom.detail.path,
-        });
-        setTimeout(() => {
-          const el = document.querySelector(`[data-tree-path="${custom.detail.path}"]`);
-          el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-        }, 120);
-      }
-    };
-    window.addEventListener('knit-reveal-in-tree', onReveal);
-    return () => {
-      window.removeEventListener('knit-reveal-in-tree', onReveal);
-    };
-  }, []);
-
-  const handleToggleExpandAll = () => {
-    setIsAllExpanded((prev) => !prev);
-    setTreeKey((k) => k + 1);
-  };
-
-  const filterNodes = (nodes: FileNode[], query: string): FileNode[] => {
-    if (!query.trim()) return nodes;
-    const lower = query.toLowerCase();
-
-    return nodes
-      .map((node) => {
-        if (node.is_dir) {
-          const matchingChildren = filterNodes(node.children, query);
-          if (matchingChildren.length > 0) {
-            return { ...node, children: matchingChildren };
-          }
-          if (node.name.toLowerCase().includes(lower)) {
-            return node;
-          }
-          return null;
-        } else {
-          return node.name.toLowerCase().includes(lower) ? node : null;
-        }
-      })
-      .filter((n): n is FileNode => n !== null);
-  };
-
-  const handleCreateFileSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const name = newFileName.trim();
-    if (!name) {
-      setIsCreatingFile(false);
-      return;
-    }
-
-    const relPath = name.endsWith('.md') ? name : `${name}.md`;
-    try {
-      await vaultStore.createFile(relPath, `# ${name.replace('.md', '')}\n\n`);
-      setNewFileName('');
-      setIsCreatingFile(false);
-      onSelectFile(relPath, false);
-      toast.success('Fichier créé', relPath);
-    } catch (err: unknown) {
-      toast.error('Erreur de création', String(err));
-    }
-  };
-
-  const handleRenameSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!renameTarget) return;
-    const { oldPath, newPath } = renameTarget;
-    const cleanNew = newPath.trim();
-    if (!cleanNew || cleanNew === oldPath) {
-      setRenameTarget(null);
-      return;
-    }
-
-    try {
-      const report = await vaultStore.renameFile(oldPath, cleanNew);
-      tabStore.renameTab(oldPath, cleanNew);
-      setRenameTarget(null);
-      toast.success(
-        'Fichier renommé & liens refactorisés',
-        `${report.links_updated} lien(s) mis à jour dans ${report.files_modified} fichier(s)`
-      );
-    } catch (err: unknown) {
-      toast.error('Erreur lors du renommage', String(err));
-    }
-  };
-
-  const handleDelete = async (path: string, isDir: boolean, name: string) => {
-    try {
-      const trashRecord = await vaultStore.trashPath(path);
-      tabStore.closeTabsForPath(path);
-
-      let commitTimer: number | null = window.setTimeout(async () => {
-        commitTimer = null;
-        historyStore.remove(`trash-${trashRecord.trash_id}`);
-        await vaultStore.commitTrash(trashRecord.trash_id);
-      }, 8000);
-
-      const doUndo = async () => {
-        if (commitTimer) {
-          clearTimeout(commitTimer);
-          commitTimer = null;
-        }
-        historyStore.remove(`trash-${trashRecord.trash_id}`);
-        await vaultStore.restoreTrash(trashRecord.trash_id);
-        if (!isDir) {
-          tabStore.openTab(path, false);
-        }
-        toast.success(
-          isDir ? 'Dossier restauré' : 'Note restaurée',
-          `"${name}" a été restauré`
-        );
-      };
-
-      historyStore.push({
-        id: `trash-${trashRecord.trash_id}`,
-        description: `Suppression de ${name}`,
-        undo: doUndo,
-      });
-
-      toast.undoable(
-        isDir ? 'Dossier supprimé' : 'Note supprimée',
-        `"${name}" déplacé vers la corbeille`,
-        () => {
-          doUndo();
-        },
-        8000
-      );
-    } catch (err: unknown) {
-      toast.error('Erreur de suppression', String(err));
-    }
-  };
-
+  const {
+    activeTab,
+    setSidebarTab,
+    filterText,
+    setFilterText,
+    filtered,
+    isCreatingFile,
+    setIsCreatingFile,
+    newFileName,
+    setNewFileName,
+    startCreatingFile,
+    handleCreateFileSubmit,
+    renameTarget,
+    setRenameTarget,
+    startRename,
+    handleRenameSubmit,
+    selectedNode,
+    selectTreeNode,
+    isAllExpanded,
+    treeKey,
+    handleToggleExpandAll,
+    isPinnedExpanded,
+    setIsPinnedExpanded,
+    pinnedNotes,
+    togglePinNote,
+    handleDelete,
+    vaultRoot,
+    vaultDisplayName,
+    reloadTree,
+    pickAndOpenVault,
+    revealVaultInExplorer,
+  } = useSidebarTree({
+    files,
+    onSelectFile,
+    onMiddleClickFile,
+    controlledSidebarTab,
+    onSidebarTabChange,
+  });
 
   const handleSidebarContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
-    const vaultRoot = vaultStore.currentVaultPath || '';
-
     contextMenu.show(e, [
       buildCreateInFolderMenuItem({
         parentDir: '',
         noteShortcut: 'Ctrl+N',
-        createNote: () => setIsCreatingFile(true),
+        createNote: startCreatingFile,
         onCreated: (relPath, kind) => {
           if (kind !== 'dir') {
             onSelectFile(relPath, false);
@@ -219,7 +99,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         id: 'reload-tree',
         label: "Actualiser l'arborescence",
         icon: 'sync',
-        onClick: () => vaultStore.reloadTree(),
+        onClick: reloadTree,
       },
       { id: 'div-sidebar-2', divider: true },
       ...(vaultRoot
@@ -228,17 +108,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
               id: 'reveal-vault',
               label: "Révéler le coffre dans l'explorateur",
               icon: 'external-link' as const,
-              onClick: () => {
-                vaultStore.revealInExplorer('');
-              },
+              onClick: revealVaultInExplorer,
             },
             {
               id: 'copy-vault-path',
               label: 'Copier le chemin du coffre',
               icon: 'copy' as const,
               onClick: () => {
-                navigator.clipboard.writeText(vaultRoot);
-                toast.info('Chemin du coffre copié', vaultRoot);
+                void copyTextWithToast(vaultRoot, 'Chemin du coffre copié', vaultRoot);
               },
             },
             { id: 'div-sidebar-3', divider: true },
@@ -248,12 +125,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
         id: 'open-vault',
         label: 'Ouvrir un coffre-fort...',
         icon: 'folder-open',
-        onClick: () => vaultStore.pickAndOpenVault(),
+        onClick: pickAndOpenVault,
       },
     ]);
   };
-
-  const filtered = filterNodes(files, filterText);
 
   return (
     <aside
@@ -292,7 +167,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               whiteSpace: 'nowrap',
             }}
           >
-            {vaultStore.currentVaultPath?.split(/[/\\]/).pop() || 'Coffre-fort'}
+            {vaultDisplayName}
           </span>
         </div>
 
@@ -317,7 +192,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 buildCreateInFolderMenuItems({
                   parentDir: '',
                   noteShortcut: 'Ctrl+N',
-                  createNote: () => setIsCreatingFile(true),
+                  createNote: startCreatingFile,
                   onCreated: (relPath, kind) => {
                     if (kind !== 'dir') {
                       onSelectFile(relPath, false);
@@ -338,7 +213,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <DuotoneIcon name="plus" size={14} />
           </button>
           <button
-            onClick={() => vaultStore.reloadTree()}
+            onClick={reloadTree}
             title="Actualiser l'arborescence"
             style={{
               padding: 4,
@@ -365,7 +240,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         }}
       >
         <button
-          onClick={() => handleSetSidebarTab('files')}
+          onClick={() => setSidebarTab('files')}
           title="Explorateur de notes"
           style={{
             flex: 1,
@@ -389,7 +264,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
 
         <button
-          onClick={() => handleSetSidebarTab('search')}
+          onClick={() => setSidebarTab('search')}
           title="Recherche globale dans tout le coffre (Ctrl+Shift+F)"
           style={{
             flex: 1,
@@ -413,7 +288,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
 
         <button
-          onClick={() => handleSetSidebarTab('tags')}
+          onClick={() => setSidebarTab('tags')}
           title="Explorateur de tags"
           style={{
             flex: 1,
@@ -531,98 +406,96 @@ export const Sidebar: React.FC<SidebarProps> = ({
             }}
           >
             {/* Groupe Favoris / Épinglés */}
-            {(() => {
-              const pinnedNotes = vaultStore.getPinnedNotes();
-              if (pinnedNotes.length === 0 || filterText.trim().length > 0) return null;
+            {pinnedNotes.length > 0 && filterText.trim().length === 0 && (
+              <div style={{ marginBottom: 8, paddingBottom: 6, borderBottom: '1px solid var(--knit-border)' }}>
+                <div
+                  onClick={() => setIsPinnedExpanded((prev) => !prev)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '3px 8px',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: 'var(--knit-text-muted)',
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                  }}
+                >
+                  <DuotoneIcon name={isPinnedExpanded ? 'chevron-down' : 'chevron-right'} size={11} />
+                  <DuotoneIcon name="pin" size={11} style={{ color: 'var(--knit-primary)' }} />
+                  <span>FAVORIS ({pinnedNotes.length})</span>
+                </div>
 
-              return (
-                <div style={{ marginBottom: 8, paddingBottom: 6, borderBottom: '1px solid var(--knit-border)' }}>
-                  <div
-                    onClick={() => setIsPinnedExpanded((prev) => !prev)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      padding: '3px 8px',
-                      fontSize: 11,
-                      fontWeight: 600,
-                      color: 'var(--knit-text-muted)',
-                      cursor: 'pointer',
-                      userSelect: 'none',
-                    }}
-                  >
-                    <DuotoneIcon name={isPinnedExpanded ? 'chevron-down' : 'chevron-right'} size={11} />
-                    <DuotoneIcon name="pin" size={11} style={{ color: 'var(--knit-primary)' }} />
-                    <span>FAVORIS ({pinnedNotes.length})</span>
-                  </div>
-
-                  {isPinnedExpanded && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 1, marginTop: 2 }}>
-                      {pinnedNotes.map((path) => {
-                        const name = path.split('/').pop() || path;
-                        const isNodeActive = path === activePath;
-                        return (
-                          <div
-                            key={`pinned-${path}`}
-                            onClick={() => onSelectFile(path, false)}
-                            onAuxClick={(e) => {
-                              if (e.button === 1) {
-                                e.preventDefault();
-                                onMiddleClickFile(path);
-                              }
+                {isPinnedExpanded && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 1, marginTop: 2 }}>
+                    {pinnedNotes.map((path) => {
+                      const name = path.split('/').pop() || path;
+                      const isNodeActive = path === activePath;
+                      return (
+                        <div
+                          key={`pinned-${path}`}
+                          onClick={() => onSelectFile(path, false)}
+                          onMouseDown={(e) => {
+                            if (e.button === 1) e.preventDefault();
+                          }}
+                          onAuxClick={(e) => {
+                            if (e.button === 1) {
+                              e.preventDefault();
+                              onMiddleClickFile(path);
+                            }
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            padding: '4px 8px 4px 18px',
+                            borderRadius: 'var(--knit-radius-sm)',
+                            backgroundColor: isNodeActive ? 'var(--knit-primary-alpha)' : 'transparent',
+                            color: isNodeActive ? 'var(--knit-primary)' : 'var(--knit-text)',
+                            cursor: 'pointer',
+                            fontSize: 13,
+                            fontWeight: isNodeActive ? 600 : 400,
+                            userSelect: 'none',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isNodeActive) e.currentTarget.style.backgroundColor = 'var(--knit-surface-hover)';
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isNodeActive) e.currentTarget.style.backgroundColor = 'transparent';
+                          }}
+                        >
+                          <DuotoneIcon name="file-markdown" size={13} />
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                            {name}
+                          </span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              togglePinNote(path);
                             }}
+                            title="Retirer des favoris"
                             style={{
+                              background: 'none',
+                              border: 'none',
+                              color: 'var(--knit-text-muted)',
+                              cursor: 'pointer',
+                              padding: 2,
                               display: 'flex',
                               alignItems: 'center',
-                              gap: 6,
-                              padding: '4px 8px 4px 18px',
-                              borderRadius: 'var(--knit-radius-sm)',
-                              backgroundColor: isNodeActive ? 'var(--knit-primary-alpha)' : 'transparent',
-                              color: isNodeActive ? 'var(--knit-primary)' : 'var(--knit-text)',
-                              cursor: 'pointer',
-                              fontSize: 13,
-                              fontWeight: isNodeActive ? 600 : 400,
-                              userSelect: 'none',
-                            }}
-                            onMouseEnter={(e) => {
-                              if (!isNodeActive) e.currentTarget.style.backgroundColor = 'var(--knit-surface-hover)';
-                            }}
-                            onMouseLeave={(e) => {
-                              if (!isNodeActive) e.currentTarget.style.backgroundColor = 'transparent';
+                              justifyContent: 'center',
+                              borderRadius: 'var(--knit-radius-xs)',
                             }}
                           >
-                            <DuotoneIcon name="file-markdown" size={13} />
-                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                              {name}
-                            </span>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                vaultStore.togglePinNote(path);
-                              }}
-                              title="Retirer des favoris"
-                              style={{
-                                background: 'none',
-                                border: 'none',
-                                color: 'var(--knit-text-muted)',
-                                cursor: 'pointer',
-                                padding: 2,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                borderRadius: 'var(--knit-radius-xs)',
-                              }}
-                            >
-                              <DuotoneIcon name="close" size={10} />
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
+                            <DuotoneIcon name="close" size={10} />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
 
             {filtered.length === 0 ? (
               <div
@@ -642,11 +515,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   node={node}
                   activePath={activePath}
                   selectedPath={selectedNode?.path ?? activePath}
-                  onSelectTreeNode={(path, isDir, name) => setSelectedNode({ path, isDir, name })}
+                  onSelectTreeNode={selectTreeNode}
                   onSelectFile={onSelectFile}
                   onMiddleClickFile={onMiddleClickFile}
-                  onRenameFile={(path) => setRenameTarget({ oldPath: path, newPath: path })}
-                  onDeletePath={(path, isDir, name) => handleDelete(path, isDir, name)}
+                  onRenameFile={startRename}
+                  onDeletePath={handleDelete}
                   defaultExpanded={isAllExpanded || Boolean(filterText.trim())}
                   searchQuery={filterText.trim()}
                 />
@@ -680,7 +553,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         }}
       >
         <button
-          onClick={() => vaultStore.pickAndOpenVault()}
+          onClick={pickAndOpenVault}
           style={{
             width: '100%',
             display: 'flex',
