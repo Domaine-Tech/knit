@@ -1,3 +1,4 @@
+pub mod calendar;
 pub mod frontmatter;
 pub mod links;
 pub mod patterns;
@@ -6,6 +7,9 @@ pub mod suggest;
 pub mod tags;
 pub mod tasks;
 
+pub use calendar::{
+    build_calendar_index, update_calendar_event_date, CalendarEvent, CalendarIndexData,
+};
 pub use frontmatter::{get_frontmatter_field, parse_frontmatter, update_frontmatter_field, FrontmatterDoc};
 pub use links::{
     compute_relative_path, count_links_to_target, find_backlinks_in_vault, refactor_links_in_content,

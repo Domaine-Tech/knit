@@ -52,6 +52,8 @@ pub fn run() {
             update_task_status,
             get_vault_tags,
             get_suggest_index,
+            get_calendar_index,
+            update_calendar_event_date,
             open_external_path,
         ])
         .run(tauri::generate_context!())

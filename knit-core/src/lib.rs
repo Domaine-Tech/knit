@@ -6,8 +6,9 @@ pub mod watcher;
 
 pub use error::{KnitError, Result};
 pub use markdown::{
-    compute_relative_path, count_links_to_target, find_backlinks_in_vault, get_frontmatter_field,
-    parse_frontmatter, refactor_links_in_content, refactor_links_in_vault, update_frontmatter_field,
+    build_calendar_index, compute_relative_path, count_links_to_target, find_backlinks_in_vault,
+    get_frontmatter_field, parse_frontmatter, refactor_links_in_content, refactor_links_in_vault,
+    update_calendar_event_date, update_frontmatter_field, CalendarEvent, CalendarIndexData,
     FrontmatterDoc, LinkRefactorReport,
 };
 pub use network::{
@@ -153,8 +154,8 @@ mod tests {
         vault::tree::create_dir(vault_root, ".cursor").expect("create .cursor dir");
         vault::tree::create_file(vault_root, ".cursor/rule.md", None).expect("create inside .cursor");
 
-        // Fichier binaire ignoré
-        std::fs::write(vault_root.join("image.png"), b"binary").expect("write image.png");
+        // Fichier binaire non supporté ignoré (hors médias du coffre)
+        std::fs::write(vault_root.join("archive.zip"), b"binary").expect("write archive.zip");
 
         let tree = vault::tree::read_vault_tree(vault_root).expect("read tree");
         let names: Vec<String> = tree.into_iter().map(|n| n.name).collect();
@@ -164,7 +165,7 @@ mod tests {
         assert!(!names.contains(&".knitshare".to_string()));
         assert!(!names.contains(&".gitignore".to_string()));
         assert!(!names.contains(&".cursor".to_string()));
-        assert!(!names.contains(&"image.png".to_string()));
+        assert!(!names.contains(&"archive.zip".to_string()));
     }
 
     #[test]

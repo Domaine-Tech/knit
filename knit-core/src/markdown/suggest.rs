@@ -68,6 +68,18 @@ pub fn detect_doc_type(content: &str, rel_path: &str) -> String {
         if t.contains("table") || t.contains("tableau") {
             return "table".to_string();
         }
+        if t.contains("calendar") || t.contains("agenda") {
+            return "calendar".to_string();
+        }
+        if t.contains("canvas") {
+            return "canvas".to_string();
+        }
+        if t.contains("slides") || t.contains("slide") {
+            return "slides".to_string();
+        }
+        if t.contains("gallery") || t.contains("galerie") {
+            return "gallery".to_string();
+        }
     }
 
     // Heuristique de contenu : titres H2 avec cases à cocher -> kanban
