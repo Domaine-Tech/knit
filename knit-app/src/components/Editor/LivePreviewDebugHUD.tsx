@@ -3,6 +3,7 @@ import type { LivePreviewDebugStats, VaultProfilingRecommendation } from '../../
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { toast } from '../../stores/toastStore';
 import { useDebugMode } from '../../hooks';
+import { copyTextWithToast } from '../../utils';
 
 interface LivePreviewDebugHUDProps {
   stats: LivePreviewDebugStats | null;
@@ -60,9 +61,11 @@ ${linesReport}
 ${profilerReportText}
 `;
 
-    navigator.clipboard.writeText(fullReport).then(() => {
-      toast.success('Rapport copié', 'Le rapport géométrique et de profilage complet a été copié.');
-    });
+    void copyTextWithToast(
+      fullReport,
+      'Rapport copié',
+      'Le rapport géométrique et de profilage complet a été copié.'
+    );
   };
 
   const handleDumpConsole = () => {

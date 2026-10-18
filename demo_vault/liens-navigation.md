@@ -61,7 +61,7 @@ Cliquez sur l'ancre ci-dessous pour tester le defilement automatique :
 > Information contextuelle sur la navigation : tous les liens internes sont resolus de maniere relative. Exemple WikiLink : [[accueil.md|Retour a l'accueil]].
 
 > [!TIP]
-> Pour tester le Hover Preview, survolez [[live-preview.md|la demo Live Preview]] sans cliquer. Utilisez ensuite **Ctrl + Clic** pour ouvrir l'onglet.
+> Pour tester le Hover Preview, survolez [[live-preview.md|la demo Live Preview]] sans cliquer. Maintenez **Ctrl** (ou Cmd) pour figer l'apercu et scroller dedans. Utilisez ensuite **Ctrl + Clic** pour ouvrir l'onglet.
 
 > [!WARNING]
 > Un lien vers une note absente comme [[wiki/note-fantome]] propose la creation. Verifiez aussi les URLs externes : [Tauri](https://tauri.app).

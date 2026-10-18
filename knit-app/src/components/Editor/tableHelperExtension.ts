@@ -5,8 +5,8 @@ import {
   formatTableColumns,
   mutateTableStructure,
   splitTableRow,
-  type TableAlign,
 } from '../../utils/markdownUtils';
+import type { TableAlign } from '../../types';
 
 interface TableRange {
   from: number;

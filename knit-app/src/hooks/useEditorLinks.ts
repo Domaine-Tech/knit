@@ -7,21 +7,212 @@ import { renderRichMarkdownPreview, findVaultNode, slugify, scrollHeadingIntoVie
 import type { HoverPreviewData, UseEditorLinksProps } from '../types';
 
 /**
- * Hook gérant la navigation au clic/survol sur les liens Markdown/WikiLinks et l'infobulle d'aperçu
+ * Hook gérant la navigation au clic/survol sur les liens Markdown/WikiLinks et l'infobulle d'aperçu.
+ * Maintenir Ctrl/Cmd fige l'aperçu (pointer-events + scroll) sans quitter le document.
  */
+type HoverPreviewPayload = Omit<HoverPreviewData, 'x' | 'y'>;
+
+async function resolveHoverPreviewPayload(cleanTarget: string): Promise<HoverPreviewPayload | null> {
+  if (!cleanTarget) return null;
+
+  if (/^https?:\/\//i.test(cleanTarget) || /^mailto:/i.test(cleanTarget)) {
+    return {
+      target: cleanTarget,
+      htmlSnippet: `
+        <div style="font-weight:600;color:var(--knit-primary);margin-bottom:2px;">Lien Web externe</div>
+        <div style="color:var(--knit-text-secondary);font-size:11px;">Ctrl + Clic pour ouvrir dans le navigateur par défaut</div>
+      `,
+      icon: 'external-link',
+    };
+  }
+
+  const isAnchorOnly = cleanTarget.startsWith('#') || cleanTarget.startsWith('[[#');
+  if (isAnchorOnly) {
+    const anchorClean = cleanTarget.replace(/^\[\[/, '').replace(/\]\]$/, '').trim();
+    return {
+      target: anchorClean,
+      htmlSnippet: `
+        <div style="font-weight:600;color:var(--knit-primary);margin-bottom:2px;">Ancre de section interne</div>
+        <div style="color:var(--knit-text-secondary);font-size:11px;">Ctrl + Clic pour faire défiler la note jusqu'à cette section</div>
+      `,
+      icon: 'link',
+    };
+  }
+
+  const [filePartRaw] = cleanTarget.split('#');
+  const filePart = filePartRaw.replace(/^\[\[/, '').replace(/\]\]$/, '').split('|')[0].trim();
+  const vaultNode = findVaultNode(filePart, vaultStore.files);
+
+  const isFolder = filePart.endsWith('/') || filePart.endsWith('\\') || Boolean(vaultNode?.is_dir);
+  if (isFolder) {
+    const isVaultFolder = Boolean(vaultNode?.is_dir);
+    return {
+      target: cleanTarget,
+      htmlSnippet: `
+        <div style="font-weight:600;color:var(--knit-primary);margin-bottom:2px;">${isVaultFolder ? 'Dossier du coffre-fort' : 'Dossier local'}</div>
+        <div style="color:var(--knit-text-secondary);font-size:11px;">Ctrl + Clic pour ${isVaultFolder ? "déplier et sélectionner dans l'arborescence" : "ouvrir dans l'explorateur système"}</div>
+      `,
+      icon: 'folder',
+    };
+  }
+
+  const hasNonMdExt =
+    /\.(docx|doc|xlsx|xls|pptx|ppt|pdf|zip|rar|7z|png|jpg|jpeg|gif|svg|mp4|mp3|wav|txt|csv|exe|ps1|sh)$/i.test(
+      filePart
+    );
+  if (hasNonMdExt && (!vaultNode || !vaultNode.path.endsWith('.md'))) {
+    const ext = filePart.split('.').pop()?.toUpperCase() || 'DOCUMENT';
+    return {
+      target: cleanTarget,
+      htmlSnippet: `
+        <div style="font-weight:600;color:var(--knit-primary);margin-bottom:2px;">Fichier externe (${ext})</div>
+        <div style="color:var(--knit-text-secondary);font-size:11px;">Ctrl + Clic pour ouvrir avec l'application système par défaut</div>
+      `,
+      icon: 'file-text',
+    };
+  }
+
+  if (vaultNode && !vaultNode.is_dir) {
+    try {
+      const content = await vaultStore.readFile(vaultNode.path);
+      return {
+        target: vaultNode.path,
+        htmlSnippet: renderRichMarkdownPreview(content),
+        icon: 'file-markdown',
+      };
+    } catch {
+      return {
+        target: vaultNode.path,
+        htmlSnippet: `
+          <div style="font-weight:600;color:var(--knit-primary);margin-bottom:2px;">Note du coffre-fort</div>
+          <div style="color:var(--knit-text-secondary);font-size:11px;">Ctrl + Clic pour ouvrir dans un onglet Knit</div>
+        `,
+        icon: 'file-markdown',
+      };
+    }
+  }
+
+  return {
+    target: cleanTarget,
+    htmlSnippet: `
+      <div style="font-weight:600;color:var(--knit-primary);margin-bottom:2px;">Nouvelle note</div>
+      <div style="color:var(--knit-text-secondary);font-size:11px;">Ctrl + Clic pour créer et éditer cette note dans le coffre</div>
+    `,
+    icon: 'file-markdown',
+  };
+}
+
+function clampPreviewPosition(clientX: number, clientY: number): { x: number; y: number } {
+  const clampX = Math.min(Math.max(12, clientX + 12), window.innerWidth - 380);
+  const clampY =
+    clientY + 22 + 180 > window.innerHeight
+      ? Math.max(12, clientY - 180)
+      : clientY + 18;
+  return { x: clampX, y: clampY };
+}
+
 export function useEditorLinks({ path, viewRef, editorRef }: UseEditorLinksProps) {
   const [hoverPreview, setHoverPreview] = useState<HoverPreviewData | null>(null);
+  const [nestedHoverPreview, setNestedHoverPreview] = useState<HoverPreviewData | null>(null);
+  const [isPreviewPinned, setIsPreviewPinned] = useState(false);
   const hoverTargetRef = useRef<string | null>(null);
+  const nestedTargetRef = useRef<string | null>(null);
+  const isPreviewPinnedRef = useRef(false);
+  const previewHoveredRef = useRef(false);
+  const hoverPreviewVisibleRef = useRef(false);
+  const modKeyHeldRef = useRef(false);
 
-  const hideHoverPreview = useCallback(() => {
+  useEffect(() => {
+    isPreviewPinnedRef.current = isPreviewPinned;
+  }, [isPreviewPinned]);
+
+  useEffect(() => {
+    hoverPreviewVisibleRef.current = hoverPreview !== null;
+  }, [hoverPreview]);
+
+  const hideNestedHoverPreview = useCallback(() => {
+    nestedTargetRef.current = null;
+    setNestedHoverPreview(null);
+  }, []);
+
+  const hideHoverPreview = useCallback((force = false) => {
+    if (isPreviewPinnedRef.current && !force) return;
     hoverTargetRef.current = null;
+    previewHoveredRef.current = false;
+    setIsPreviewPinned(false);
+    isPreviewPinnedRef.current = false;
     setHoverPreview(null);
+    nestedTargetRef.current = null;
+    setNestedHoverPreview(null);
   }, []);
 
   const hideHoverPreviewRef = useRef(hideHoverPreview);
   useEffect(() => {
     hideHoverPreviewRef.current = hideHoverPreview;
   }, [hideHoverPreview]);
+
+  const setPreviewHovered = useCallback((hovered: boolean) => {
+    previewHoveredRef.current = hovered;
+    if (!hovered && !isPreviewPinnedRef.current) {
+      hideHoverPreviewRef.current(false);
+    }
+  }, []);
+
+  const pinPreview = useCallback(() => {
+    if (!hoverPreviewVisibleRef.current) return;
+    isPreviewPinnedRef.current = true;
+    setIsPreviewPinned(true);
+  }, []);
+
+  const unpinPreview = useCallback(() => {
+    if (!isPreviewPinnedRef.current) return;
+    isPreviewPinnedRef.current = false;
+    setIsPreviewPinned(false);
+    nestedTargetRef.current = null;
+    setNestedHoverPreview(null);
+    if (!previewHoveredRef.current) {
+      hideHoverPreviewRef.current(true);
+    }
+  }, []);
+
+  // Ctrl/Cmd : figer / défiger ; Escape : forcer la fermeture
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        hideHoverPreviewRef.current(true);
+        return;
+      }
+      if (e.ctrlKey || e.metaKey) {
+        modKeyHeldRef.current = true;
+        if (hoverPreviewVisibleRef.current) {
+          pinPreview();
+        }
+      }
+    };
+
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'Control' || e.key === 'Meta') {
+        modKeyHeldRef.current = false;
+        unpinPreview();
+      } else if (!e.ctrlKey && !e.metaKey) {
+        modKeyHeldRef.current = false;
+      }
+    };
+
+    const onBlur = () => {
+      modKeyHeldRef.current = false;
+      unpinPreview();
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', onBlur);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', onBlur);
+    };
+  }, [pinPreview, unpinPreview]);
 
   // Gestionnaire unifié de navigation par lien (ancre interne #, fichier local, ou URL web)
   const handleNavigateLink = useCallback(async (target: string, view?: EditorView) => {
@@ -195,8 +386,20 @@ export function useEditorLinks({ path, viewRef, editorRef }: UseEditorLinksProps
     handleNavigateLinkRef.current = handleNavigateLink;
   }, [handleNavigateLink]);
 
+  const publishHoverPreview = useCallback((data: HoverPreviewData) => {
+    hoverPreviewVisibleRef.current = true;
+    setHoverPreview(data);
+    if (modKeyHeldRef.current) {
+      isPreviewPinnedRef.current = true;
+      setIsPreviewPinned(true);
+    }
+  }, []);
+
   const showHoverPreview = useCallback(
     async (rawTarget: string, clientX: number, clientY: number) => {
+      // Position figée en mode pinned (évite que l'infobulle suive le curseur)
+      if (isPreviewPinnedRef.current) return;
+
       const cleanTarget = rawTarget.trim();
       if (!cleanTarget) {
         hideHoverPreview();
@@ -204,135 +407,56 @@ export function useEditorLinks({ path, viewRef, editorRef }: UseEditorLinksProps
       }
 
       hoverTargetRef.current = cleanTarget;
-
-      // Positionnement avec contrainte d'écran (évite tout débordement)
-      const clampX = Math.min(Math.max(12, clientX + 12), window.innerWidth - 380);
-      const clampY =
-        clientY + 22 + 180 > window.innerHeight
-          ? Math.max(12, clientY - 180)
-          : clientY + 18;
-
-      // 1. Lien Web externe
-      if (/^https?:\/\//i.test(cleanTarget) || /^mailto:/i.test(cleanTarget)) {
-        setHoverPreview({
-          x: clampX,
-          y: clampY,
-          target: cleanTarget,
-          htmlSnippet: `
-            <div style="font-weight:600;color:var(--knit-primary);margin-bottom:2px;">Lien Web externe</div>
-            <div style="color:var(--knit-text-secondary);font-size:11px;">Ctrl + Clic pour ouvrir dans le navigateur par défaut</div>
-          `,
-          icon: 'external-link',
-        });
-        return;
-      }
-
-      // 2. Ancre de section interne (ex: #section ou [[#section]])
-      const isAnchorOnly = cleanTarget.startsWith('#') || cleanTarget.startsWith('[[#');
-      if (isAnchorOnly) {
-        const anchorClean = cleanTarget.replace(/^\[\[/, '').replace(/\]\]$/, '').trim();
-        setHoverPreview({
-          x: clampX,
-          y: clampY,
-          target: anchorClean,
-          htmlSnippet: `
-            <div style="font-weight:600;color:var(--knit-primary);margin-bottom:2px;">Ancre de section interne</div>
-            <div style="color:var(--knit-text-secondary);font-size:11px;">Ctrl + Clic pour faire défiler la note jusqu'à cette section</div>
-          `,
-          icon: 'link',
-        });
-        return;
-      }
-
-      // Découpage cible et ancre
-      const [filePartRaw] = cleanTarget.split('#');
-      const filePart = filePartRaw.replace(/^\[\[/, '').replace(/\]\]$/, '').split('|')[0].trim();
-      const vaultNode = findVaultNode(filePart, vaultStore.files);
-
-      // 3. Dossier
-      const isFolder = filePart.endsWith('/') || filePart.endsWith('\\') || Boolean(vaultNode?.is_dir);
-      if (isFolder) {
-        const isVaultFolder = Boolean(vaultNode?.is_dir);
-        setHoverPreview({
-          x: clampX,
-          y: clampY,
-          target: cleanTarget,
-          htmlSnippet: `
-            <div style="font-weight:600;color:var(--knit-primary);margin-bottom:2px;">${isVaultFolder ? 'Dossier du coffre-fort' : 'Dossier local'}</div>
-            <div style="color:var(--knit-text-secondary);font-size:11px;">Ctrl + Clic pour ${isVaultFolder ? "déplier et sélectionner dans l'arborescence" : "ouvrir dans l'explorateur système"}</div>
-          `,
-          icon: 'folder',
-        });
-        return;
-      }
-
-      // 4. Fichier externe hors Markdown
-      const hasNonMdExt = /\.(docx|doc|xlsx|xls|pptx|ppt|pdf|zip|rar|7z|png|jpg|jpeg|gif|svg|mp4|mp3|wav|txt|csv|exe|ps1|sh)$/i.test(filePart);
-      if (hasNonMdExt && (!vaultNode || !vaultNode.path.endsWith('.md'))) {
-        const ext = filePart.split('.').pop()?.toUpperCase() || 'DOCUMENT';
-        setHoverPreview({
-          x: clampX,
-          y: clampY,
-          target: cleanTarget,
-          htmlSnippet: `
-            <div style="font-weight:600;color:var(--knit-primary);margin-bottom:2px;">Fichier externe (${ext})</div>
-            <div style="color:var(--knit-text-secondary);font-size:11px;">Ctrl + Clic pour ouvrir avec l'application système par défaut</div>
-          `,
-          icon: 'file-text',
-        });
-        return;
-      }
-
-      // 5. Note Markdown existante dans le coffre-fort
-      if (vaultNode && !vaultNode.is_dir) {
-        try {
-          const content = await vaultStore.readFile(vaultNode.path);
-          if (hoverTargetRef.current !== cleanTarget) return;
-
-          const htmlSnippet = renderRichMarkdownPreview(content);
-          setHoverPreview({
-            x: clampX,
-            y: clampY,
-            target: vaultNode.path,
-            htmlSnippet,
-            icon: 'file-markdown',
-          });
-        } catch {
-          if (hoverTargetRef.current === cleanTarget) {
-            setHoverPreview({
-              x: clampX,
-              y: clampY,
-              target: vaultNode.path,
-              htmlSnippet: `
-                <div style="font-weight:600;color:var(--knit-primary);margin-bottom:2px;">Note du coffre-fort</div>
-                <div style="color:var(--knit-text-secondary);font-size:11px;">Ctrl + Clic pour ouvrir dans un onglet Knit</div>
-              `,
-              icon: 'file-markdown',
-            });
-          }
-        }
-        return;
-      }
-
-      // 6. Nouvelle note à créer
-      setHoverPreview({
-        x: clampX,
-        y: clampY,
-        target: cleanTarget,
-        htmlSnippet: `
-          <div style="font-weight:600;color:var(--knit-primary);margin-bottom:2px;">Nouvelle note</div>
-          <div style="color:var(--knit-text-secondary);font-size:11px;">Ctrl + Clic pour créer et éditer cette note dans le coffre</div>
-        `,
-        icon: 'file-markdown',
-      });
+      const { x, y } = clampPreviewPosition(clientX, clientY);
+      const payload = await resolveHoverPreviewPayload(cleanTarget);
+      if (!payload || hoverTargetRef.current !== cleanTarget) return;
+      publishHoverPreview({ ...payload, x, y });
     },
-    [hideHoverPreview]
+    [hideHoverPreview, publishHoverPreview]
+  );
+
+  /** Aperçu secondaire (non figé) au survol d'un lien dans la prévisualisation figée. */
+  const showNestedHoverPreview = useCallback(
+    async (rawTarget: string, clientX: number, clientY: number) => {
+      if (!isPreviewPinnedRef.current) return;
+
+      const cleanTarget = rawTarget.trim();
+      if (!cleanTarget) {
+        hideNestedHoverPreview();
+        return;
+      }
+
+      // Évite de redoubler l'aperçu principal
+      if (hoverTargetRef.current && cleanTarget === hoverTargetRef.current) {
+        hideNestedHoverPreview();
+        return;
+      }
+
+      const { x, y } = clampPreviewPosition(clientX + 28, clientY + 8);
+
+      // Même cible : repositionne seulement (pas de relecture disque)
+      if (nestedTargetRef.current === cleanTarget) {
+        setNestedHoverPreview((prev) => (prev ? { ...prev, x, y } : prev));
+        return;
+      }
+
+      nestedTargetRef.current = cleanTarget;
+      const payload = await resolveHoverPreviewPayload(cleanTarget);
+      if (!payload || nestedTargetRef.current !== cleanTarget) return;
+      setNestedHoverPreview({ ...payload, x, y });
+    },
+    [hideNestedHoverPreview]
   );
 
   const showHoverPreviewRef = useRef(showHoverPreview);
   useEffect(() => {
     showHoverPreviewRef.current = showHoverPreview;
   }, [showHoverPreview]);
+
+  const showNestedHoverPreviewRef = useRef(showNestedHoverPreview);
+  useEffect(() => {
+    showNestedHoverPreviewRef.current = showNestedHoverPreview;
+  }, [showNestedHoverPreview]);
 
   // Écouteurs d'événements pour les widgets DOM (ex: Tables Markdown, liens personnalisés)
   useEffect(() => {
@@ -354,23 +478,33 @@ export function useEditorLinks({ path, viewRef, editorRef }: UseEditorLinksProps
       }
     };
 
+    const onEditorMouseLeave = () => {
+      hideHoverPreviewRef.current(false);
+    };
+
     el.addEventListener('knit-navigate-link', onKnitNav);
     el.addEventListener('knit-hover-link', onKnitHover);
-    el.addEventListener('mouseleave', hideHoverPreview);
+    el.addEventListener('mouseleave', onEditorMouseLeave);
     window.addEventListener('knit-hover-link', onKnitHover);
     window.addEventListener('knit-navigate-link', onKnitNav);
 
     return () => {
       el.removeEventListener('knit-navigate-link', onKnitNav);
       el.removeEventListener('knit-hover-link', onKnitHover);
-      el.removeEventListener('mouseleave', hideHoverPreview);
+      el.removeEventListener('mouseleave', onEditorMouseLeave);
       window.removeEventListener('knit-hover-link', onKnitHover);
       window.removeEventListener('knit-navigate-link', onKnitNav);
     };
-  }, [editorRef, viewRef, hideHoverPreview]);
+  }, [editorRef, viewRef]);
 
   return {
     hoverPreview,
+    nestedHoverPreview,
+    isPreviewPinned,
+    isPreviewPinnedRef,
+    setPreviewHovered,
+    showNestedHoverPreview,
+    hideNestedHoverPreview,
     handleNavigateLink,
     handleNavigateLinkRef,
     showHoverPreview,

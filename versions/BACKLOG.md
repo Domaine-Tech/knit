@@ -155,6 +155,7 @@
 |---|---|---|---|---|
 | B-047a | Toolbar tableaux : alignement G/C/D sur la **colonne sous curseur** (avec badge Col. X/Y) | 🟡 | ✅ | Sprint 6bis |
 | B-057 | Unifier l'index Frontmatter TS avec `KnitSuggestIndex` Rust (éviter double scan à long terme) | 🟠 | 💡 | — |
+| B-058 | Extraire `useSidebarTree` / `useNetworkSession` (découplage P2 Prompt 9 — Sidebar ~743 L, NetworkModal ~521 L) | 🟡 | ✅ | Prompt 1 |
 
 ### Sprint 6ter — Vues Immersives (Canvas, Calendrier & Diaporama)
 
@@ -165,6 +166,7 @@
 | B-031c | Vue Diaporama / Présentation (`type: slides`, séparateur `---`, mode plein écran) | 🟡 | 📋 | Sprint 6ter |
 | B-031d | Vue Galerie / Database (`type: gallery`, cartes visuelles avec bannière et métadonnées) | 🟡 | 📋 | Sprint 6ter |
 | B-049 | Vue Graphe Local Interactive (Local Graph View 2D basé sur WikiLinks & Backlinks) | 🟠 | 📋 | Sprint 6ter |
+| B-059 | Support sécurisé du HTML standardisé en Live Preview & Rendu (Whitelist inline : `<kbd>`, `<u>`, `<mark>`, `<sub>`, `<sup>`, `<br>` ; Blocs repliables : `<details>`/`<summary>` ; Sanitizer strict anti-XSS) | 🟡 | 📋 | Sprint 6ter |
 
 ---
 

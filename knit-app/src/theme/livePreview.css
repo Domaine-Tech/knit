@@ -160,6 +160,18 @@
   border-bottom-color: var(--knit-primary);
 }
 
+/* Hover Preview figé (Ctrl) : liens cliquables dans le portal */
+.knit-floating-hover-preview.is-pinned .knit-preview-link,
+.knit-floating-hover-preview.is-pinned .knit-preview-wikilink,
+.knit-floating-hover-preview.is-pinned [data-target] {
+  cursor: pointer;
+}
+
+.knit-floating-hover-preview.is-pinned .knit-preview-link:hover,
+.knit-floating-hover-preview.is-pinned .knit-preview-wikilink:hover {
+  background-color: var(--knit-primary-alpha);
+}
+
 /* Mode Ctrl+Clic actif sur les liens (style Obsidian & VS Code) */
 .knit-ctrl-active .knit-preview-link,
 .knit-ctrl-active .knit-preview-wikilink,

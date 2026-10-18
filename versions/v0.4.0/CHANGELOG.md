@@ -42,6 +42,10 @@
   - Cartes visuelles avec bannières d'images et métadonnées frontmatter.
 - **Vue Graphe Local Interactive 2D (B-049)** :
   - Exploration visuelle des connexions WikiLinks/Backlinks sous forme de réseau de force interactif.
+- **Support sécurisé du HTML standardisé en Live Preview & Rendu (B-059)** :
+  - Rendu inline enrichi masqué hors curseur : touches clavier `<kbd>`, texte souligné `<u>`, surlignage `<mark>`, indices/exposants `<sub>`/`<sup>`, saut de ligne forcé `<br>`.
+  - Blocs interactifs repliables : accordéons natifs `<details>` et `<summary>`.
+  - Sanitizer strict neutralisant toute tentative d'injection XSS (`<script>`, `<iframe>`, handlers `on*`) pour garantir l'intégrité locale et collaborative P2P.
 
 ---
 

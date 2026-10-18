@@ -1,7 +1,7 @@
 import { WidgetType, type EditorView } from '@codemirror/view';
 import { vaultStore } from '../../../../stores/vaultStore';
 import { tabStore } from '../../../../stores/tabStore';
-import type { IndexedInlineTask } from '../../../../stores/frontmatterIndex';
+import type { IndexedInlineTask } from '../../../../types';
 import {
   createDynamicBlockShell,
   focusBlockSource,

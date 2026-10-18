@@ -1,4 +1,5 @@
 import { WidgetType, type EditorView } from '@codemirror/view';
+import { copyTextWithToast } from '../../../../utils';
 
 function formatLanguageName(raw: string): string {
   const lower = raw.trim().toLowerCase();
@@ -175,7 +176,7 @@ export class CodeBlockCardWidget extends WidgetType {
       e.preventDefault();
       e.stopPropagation();
       try {
-        await navigator.clipboard.writeText(this.code);
+        await copyTextWithToast(this.code, 'Code copié');
         copyBtn.classList.add('copied');
         copyBtn.innerHTML = `
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">

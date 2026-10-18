@@ -18,16 +18,14 @@
 - **ADR-08** : Zéro-Émoji UI. **ADR-09 (B-056)** : Debug global unique Header + HUD LP.
 
 ## 3. Historique Récent
-- **[2026-10-18]** : Vue Image : clic tree média → onglet `docType: image` / `ImageView` (pas de lecture binaire MD).
-- **[2026-10-18]** : Tree : médias `assets/` visibles (`tree.rs`) ; SVG schema sans chars de contrôle.
-- **[2026-10-18]** : Fix LP mermaid : sauter tout le fence dans `buildDecorations` (sinon fermeture avalait image + knit-toc).
-- **[2026-10-18]** : Clôture Sprint 6bis & UX (Prompt 10) : B-047a + micro-jauge `knit-tasks` ; runtime 0.3.0.
-- **[2026-10-18]** : `KnitSelect` custom — plus de `<select>` natifs (`forms.css`).
-- **[2026-10-17]** : B-056 debug ; Prompts 1–11 ; types `src/types/`.
+- **[2026-10-18]** : Prompt 1 complet : WriteGuard create/delete/trash/restore/rename ; `preventMiddleCompass` ; `resolveWikiLink` ; path/watcher unifiés ; B-058 hooks ; Editor → Chrome/Hover/contextMenu (~321 L).
+- **[2026-10-18]** : Hover Preview : maintien Ctrl/Cmd fige l'infobulle (pointer-events + scroll interne).
+- **[2026-10-18]** : Prompt 9 : types → `src/types/` ; hooks `useAppShell` / `useTableRows` ; CRDT frontière.
+- **[2026-10-18]** : Vue Image + clôture Sprint 6bis ; runtime 0.3.0.
 
 ## 4. Tâches Actives
-- [x] Sprint 5 / 6 / 6bis clôturés (dont B-047 / B-047a).
+- [x] Sprint 5 / 6 / 6bis clôturés.
+- [x] Prompt 1 (Lots 1–3 + Editor chrome) + Prompt 9 + B-058.
 - [ ] **Sprint 6ter** (v0.4.0) : B-031a Agenda & Calendrier Global.
-- [ ] Suivi 💡 : B-057 (index FM Rust unifié).
-- [ ] **B-043a** (Sprint 7) : Playbook exploitation IA à l'init coffre — doc only backlog, pas de code avant sprint.
-
+- [ ] Suivi 💡 : B-057 (index FM Rust).
+- [ ] **B-043a** (Sprint 7) : Playbook exploitation IA — backlog only.
