@@ -1,4 +1,5 @@
 import React from 'react';
+import { KnitSelect } from '../Form/KnitSelect';
 
 interface KanbanCreateModalProps {
   name: string;
@@ -71,17 +72,18 @@ export const KanbanCreateModal: React.FC<KanbanCreateModalProps> = ({
             <label className="knit-label" style={{ marginBottom: 4, display: 'block' }}>
               Dossier de destination :
             </label>
-            <select
-              className="knit-select"
+            <KnitSelect
               value={folder}
-              onChange={(e) => onFolderChange(e.target.value)}
+              onChange={onFolderChange}
+              aria-label="Dossier de destination"
               style={{ width: '100%', fontSize: 12 }}
-            >
-              <option value="projet">projet/</option>
-              <option value="perso">perso/</option>
-              <option value="equipe">equipe/</option>
-              <option value="">(Racine du coffre)</option>
-            </select>
+              options={[
+                { value: 'projet', label: 'projet/' },
+                { value: 'perso', label: 'perso/' },
+                { value: 'equipe', label: 'equipe/' },
+                { value: '', label: '(Racine du coffre)' },
+              ]}
+            />
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
             <button type="button" className="knit-btn" onClick={onClose}>

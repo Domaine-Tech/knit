@@ -1,4 +1,5 @@
 import { WidgetType, type EditorView } from '@codemirror/view';
+import { resolveAssetUrl } from '../../../../utils/assetUrl';
 
 /**
  * 7. Widget d'affichage immersif d'images Markdown (![alt](url))
@@ -55,7 +56,7 @@ export class ImageCardWidget extends WidgetType {
     const img = document.createElement('img');
     img.className = 'knit-preview-img';
     img.alt = this.alt;
-    img.src = this.url;
+    img.src = resolveAssetUrl(this.url);
     img.loading = 'lazy';
 
     img.onload = () => {

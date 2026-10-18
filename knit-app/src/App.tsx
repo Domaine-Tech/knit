@@ -5,6 +5,7 @@ import { TabBar } from './components/Tabs/TabBar';
 import { Editor } from './components/Editor/Editor';
 import { KanbanView } from './components/Kanban/KanbanView';
 import { TableView } from './components/Table/TableView';
+import { ImageView } from './components/Media/ImageView';
 import { QuickSwitcherModal } from './components/Modal/QuickSwitcherModal';
 import { CommandPaletteModal } from './components/Modal/CommandPaletteModal';
 import { ToastContainer } from './components/Toast/ToastContainer';
@@ -30,7 +31,13 @@ import { DuotoneIcon } from './components/Icons/DuotoneIcon';
 import { ErrorBoundary } from './components/Common/ErrorBoundary';
 import { debugStore } from './stores/debugStore';
 import { useResizablePanels, useKnitShortcuts } from './hooks';
-import { buildCommandList, APP_VERSION, packageContextForAI, formatIsoDate } from './utils';
+import {
+  buildCommandList,
+  APP_VERSION,
+  packageContextForAI,
+  formatIsoDate,
+  isMediaFilePath,
+} from './utils';
 
 export const App: React.FC = () => {
   const [theme, setTheme] = useState<ThemeMode>(getStoredTheme);
@@ -114,12 +121,18 @@ export const App: React.FC = () => {
     if (active) {
       if (active.docType === 'kanban') debugStore.setActiveView('kanban');
       else if (active.docType === 'table') debugStore.setActiveView('table');
+      else if (active.docType === 'image') debugStore.setActiveView('image');
       else debugStore.setActiveView('editor');
     }
   }, [activeTabId, activeGroup2TabId, focusedGroupId, isSplit]);
 
   const handleSelectFile = useCallback(async (path: string, preview: boolean) => {
     try {
+      if (isMediaFilePath(path)) {
+        // Vue Image : pas de lecture binaire comme Markdown
+        tabStore.openTab(path, preview, '', true, 'image');
+        return;
+      }
       const content = await vaultStore.readFile(path);
       tabStore.openTab(path, preview, content);
     } catch (err: unknown) {
@@ -129,6 +142,11 @@ export const App: React.FC = () => {
 
   const handleMiddleClickFile = useCallback(async (path: string) => {
     try {
+      if (isMediaFilePath(path)) {
+        tabStore.openTab(path, false, '', false, 'image');
+        toast.info('Onglet média ouvert en arrière-plan', path);
+        return;
+      }
       const content = await vaultStore.readFile(path);
       // Ouvre en arrière-plan (activate = false)
       tabStore.openTab(path, false, content, false);
@@ -272,6 +290,7 @@ tags: [journal, quotidien]
   const currentView: AppViewMode = useMemo(() => {
     const doc = focusedTab || activeTab;
     if (!doc) return 'editor';
+    if (doc.docType === 'image') return 'image';
     if (doc.viewMode === 'source') return 'editor';
     return doc.docType === 'note' ? 'editor' : doc.docType;
   }, [focusedTab, activeTab]);
@@ -279,6 +298,8 @@ tags: [journal, quotidien]
   const handleHeaderViewChange = useCallback(async (view: AppViewMode) => {
     const doc = (tabStore.activeGroupId === 2 && tabStore.isSplit) ? tabStore.splitTab : tabStore.activeTab;
     if (!doc) return;
+    // Les médias n'ont pas de conversion de type Markdown
+    if (doc.docType === 'image' || view === 'image') return;
     const group = (tabStore.activeGroupId === 2 && tabStore.isSplit) ? 2 : 1;
     if (view === 'editor') {
       if (doc.viewMode === 'source') {
@@ -408,8 +429,11 @@ tags: [journal, quotidien]
 
     let paneNode: React.ReactNode;
 
-    // 1. Si en mode source brut universel (Ctrl+E - US B-030d)
-    if (tab.viewMode === 'source') {
+    // 0. Médias coffre : toujours la vue Image (pas de mode source Markdown)
+    if (tab.docType === 'image') {
+      paneNode = <ImageView key={`${tab.id}-image-g${groupId}`} path={tab.path} />;
+    } else if (tab.viewMode === 'source') {
+      // 1. Mode source brut universel (Ctrl+E - US B-030d)
       paneNode = (
         <Editor
           key={`${tab.id}-source-g${groupId}`}

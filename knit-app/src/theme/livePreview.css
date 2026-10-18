@@ -937,3 +937,300 @@
   color: var(--knit-text-muted);
   word-break: break-all;
 }
+
+/* --------------------------------------------------------------------------
+   Blocs dynamiques knit-toc / knit-files / knit-query / knit-tasks (Sprint 6bis)
+   -------------------------------------------------------------------------- */
+.knit-dynamic-block {
+  position: relative;
+  margin: 8px 0;
+  padding: 12px 14px 14px;
+  background: var(--knit-surface);
+  border: 1px solid var(--knit-border);
+  border-radius: var(--knit-radius-md);
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.knit-dynamic-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--knit-text-muted);
+  background: var(--knit-surface-hover);
+  border: 1px solid var(--knit-border-subtle);
+  border-radius: var(--knit-radius-sm);
+  padding: 2px 8px;
+  cursor: pointer;
+}
+
+.knit-dynamic-badge:hover {
+  color: var(--knit-primary);
+  border-color: var(--knit-primary);
+}
+
+.knit-dynamic-title {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--knit-text);
+  margin-bottom: 10px;
+  padding-right: 72px;
+}
+
+.knit-dynamic-empty {
+  margin: 0;
+  font-size: 12px;
+  color: var(--knit-text-muted);
+}
+
+.knit-dynamic-body {
+  font-size: 13px;
+  color: var(--knit-text);
+}
+
+.knit-dynamic-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.knit-dynamic-table th,
+.knit-dynamic-table td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--knit-border-subtle);
+  vertical-align: middle;
+}
+
+.knit-dynamic-table th {
+  font-weight: 650;
+  color: var(--knit-text-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.knit-dynamic-table tbody tr:hover {
+  background: var(--knit-surface-hover);
+}
+
+.knit-files-link,
+.knit-toc-link,
+.knit-tasks-file {
+  background: transparent;
+  border: none;
+  color: var(--knit-primary);
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+}
+
+.knit-files-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.knit-files-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.knit-files-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.knit-files-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--knit-text-muted);
+  font-size: 12px;
+}
+
+.knit-files-link:hover,
+.knit-toc-link:hover,
+.knit-tasks-file:hover {
+  text-decoration: underline;
+}
+
+.knit-files-link:hover .knit-files-title {
+  text-decoration: underline;
+}
+
+.knit-toc-list,
+.knit-files-list,
+.knit-tasks-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.knit-toc-item {
+  margin: 2px 0;
+}
+
+.knit-files-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--knit-border-subtle);
+}
+
+.knit-files-meta {
+  font-size: 11px;
+  color: var(--knit-text-muted);
+  flex-shrink: 0;
+}
+
+.knit-tasks-group {
+  margin-bottom: 12px;
+}
+
+.knit-tasks-file {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--knit-text-muted);
+}
+
+.knit-tasks-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.knit-tasks-check {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  border: 1.5px solid var(--knit-border);
+  border-radius: 3px;
+  background: var(--knit-surface);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.knit-tasks-check.status-done {
+  background: var(--knit-primary);
+  border-color: var(--knit-primary);
+  color: #fff;
+}
+
+.knit-tasks-check.status-progress {
+  border-color: var(--knit-primary);
+  color: var(--knit-primary);
+  background: var(--knit-primary-alpha);
+}
+
+.knit-tasks-text {
+  flex: 1;
+  line-height: 1.4;
+}
+
+.knit-query-status {
+  min-width: 110px;
+  width: 100%;
+}
+
+.knit-query-status .knit-select-trigger {
+  height: 26px !important;
+  font-size: 11px !important;
+  padding: 0 6px 0 8px !important;
+}
+
+/* Mini-toolbar tableaux GFM (B-047) */
+.cm-editor {
+  position: relative;
+}
+
+.knit-table-toolbar {
+  position: absolute;
+  z-index: 40;
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--knit-surface);
+  border: 1px solid var(--knit-border);
+  border-radius: var(--knit-radius-sm);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.knit-table-toolbar .knit-btn {
+  font-size: 11px;
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+
+.knit-table-toolbar-col {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--knit-primary);
+  background: var(--knit-surface-hover);
+  border: 1px solid var(--knit-border-subtle);
+  border-radius: var(--knit-radius-sm);
+  padding: 2px 6px;
+  margin-right: 2px;
+  white-space: nowrap;
+}
+
+/* Titre et micro-jauge de progression knit-tasks (Sprint 6bis UX) */
+.knit-dynamic-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding-right: 76px;
+}
+
+.knit-dynamic-title-row .knit-dynamic-title {
+  margin-bottom: 0;
+  padding-right: 0;
+}
+
+.knit-tasks-progress-badge {
+  font-size: 11px;
+  font-weight: 550;
+  color: var(--knit-text-muted);
+  background: var(--knit-surface-hover);
+  border: 1px solid var(--knit-border-subtle);
+  border-radius: var(--knit-radius-sm);
+  padding: 1px 7px;
+  white-space: nowrap;
+}
+
+.knit-tasks-progress-track {
+  width: 100%;
+  height: 3px;
+  background: var(--knit-border-subtle);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.knit-tasks-progress-bar {
+  height: 100%;
+  background: var(--knit-primary);
+  border-radius: 2px;
+  transition: width 200ms ease;
+}
+

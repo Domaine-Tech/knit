@@ -5,7 +5,9 @@ import { vaultStore } from '../../stores/vaultStore';
 import { contextMenu } from '../../stores/contextMenuStore';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import {
-  buildPathCopyMenuItems,
+  buildCloseTabsMenuItems,
+  buildConvertDocTypeMenuItem,
+  buildPathCopyMenuItem,
 } from '../../utils';
 
 interface TabBarProps {
@@ -64,6 +66,9 @@ export const TabBar: React.FC<TabBarProps> = ({
     if (tab.docType === 'table') {
       return <DuotoneIcon name="table" size={14} style={{ color: 'var(--knit-primary)' }} />;
     }
+    if (tab.docType === 'image') {
+      return <DuotoneIcon name="image" size={14} style={{ color: 'var(--knit-primary)' }} />;
+    }
     return <DuotoneIcon name="file-markdown" size={14} />;
   };
 
@@ -72,35 +77,23 @@ export const TabBar: React.FC<TabBarProps> = ({
     e.stopPropagation();
 
     const absPath = vaultStore.getAbsolutePath(tab.path);
+    const isImageTab = tab.docType === 'image';
 
     contextMenu.show(e, [
-      {
-        id: 'toggle-view-mode',
-        label: tab.viewMode === 'visual' ? 'Basculer en Code Source brut' : 'Basculer en Rendu Visuel',
-        icon: 'command',
-        shortcut: 'Ctrl+E',
-        onClick: () => tabStore.toggleViewMode(tab.id),
-      },
-      { id: 'div-tab-mode', divider: true },
-      {
-        id: 'convert-to-note',
-        label: tab.docType === 'note' ? 'Note Markdown (Actif)' : 'Convertir en Note Markdown',
-        icon: 'file-markdown',
-        onClick: () => vaultStore.convertDocumentType(tab.path, 'note'),
-      },
-      {
-        id: 'convert-to-kanban',
-        label: tab.docType === 'kanban' ? 'Tableau Kanban (Actif)' : 'Convertir en Tableau Kanban',
-        icon: 'kanban',
-        onClick: () => vaultStore.convertDocumentType(tab.path, 'kanban'),
-      },
-      {
-        id: 'convert-to-table',
-        label: tab.docType === 'table' ? 'Vue Tableau (Actif)' : 'Convertir en Vue Tableau',
-        icon: 'table',
-        onClick: () => vaultStore.convertDocumentType(tab.path, 'table'),
-      },
-      { id: 'div-tab-convert', divider: true },
+      ...(!isImageTab
+        ? [
+            {
+              id: 'toggle-view-mode',
+              label: tab.viewMode === 'visual' ? 'Basculer en Code Source brut' : 'Basculer en Rendu Visuel',
+              icon: 'command' as const,
+              shortcut: 'Ctrl+E',
+              onClick: () => tabStore.toggleViewMode(tab.id),
+            },
+            { id: 'div-tab-mode', divider: true },
+            buildConvertDocTypeMenuItem(tab.path, tab.docType),
+            { id: 'div-tab-convert', divider: true },
+          ]
+        : []),
       {
         id: 'split-view',
         label: 'Scinder la vue côte à côte',
@@ -115,41 +108,15 @@ export const TabBar: React.FC<TabBarProps> = ({
         onClick: () => tabStore.pinTab(tab.id),
       },
       { id: 'div-tab-pin', divider: true },
-      {
-        id: 'close',
-        label: 'Fermer',
-        icon: 'close',
-        shortcut: 'Ctrl+W',
-        onClick: () => tabStore.closeTab(tab.id),
-      },
-      ...(tabs.length > 1
-        ? [
-            {
-              id: 'close-others',
-              label: 'Fermer les autres onglets',
-              onClick: () => tabStore.closeOtherTabs(tab.id),
-            },
-          ]
-        : []),
-      ...(index < tabs.length - 1
-        ? [
-            {
-              id: 'close-to-right',
-              label: 'Fermer les onglets à droite',
-              onClick: () => tabStore.closeTabsToTheRight(tab.id),
-            },
-          ]
-        : []),
-      ...(tabs.length > 1
-        ? [
-            {
-              id: 'close-all',
-              label: 'Fermer tous les onglets',
-              danger: true,
-              onClick: () => tabStore.closeAllTabs(),
-            },
-          ]
-        : []),
+      ...buildCloseTabsMenuItems({
+        tabId: tab.id,
+        tabIndex: index,
+        tabsCount: tabs.length,
+        onClose: () => tabStore.closeTab(tab.id),
+        onCloseOthers: () => tabStore.closeOtherTabs(tab.id),
+        onCloseToRight: () => tabStore.closeTabsToTheRight(tab.id),
+        onCloseAll: () => tabStore.closeAllTabs(),
+      }),
       { id: 'div-tab-1', divider: true },
       {
         id: 'reveal-file',
@@ -160,11 +127,13 @@ export const TabBar: React.FC<TabBarProps> = ({
         },
       },
       { id: 'div-tab-2', divider: true },
-      ...buildPathCopyMenuItems({
+      buildPathCopyMenuItem({
         relPath: tab.path,
         absPath,
         name: tab.title,
+        nameChildLabel: 'Nom du fichier',
         markdownAlias: tab.title,
+        markdownAsImage: isImageTab,
       }),
       { id: 'div-tab-3', divider: true },
       {
@@ -421,7 +390,7 @@ export const TabBar: React.FC<TabBarProps> = ({
 
       {/* Zone droite : Bouton universel Source </> ↔ Rendu et Split View */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-        {activeTab && (
+        {activeTab && activeTab.docType !== 'image' && (
           <button
             onClick={() => tabStore.toggleViewMode(activeTab.id, groupId)}
             data-tooltip={

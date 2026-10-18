@@ -10,6 +10,10 @@ import { historyStore } from '../../stores/historyStore';
 
 import { GlobalSearchPane } from './GlobalSearchPane';
 import { TagExplorerPane } from './TagExplorerPane';
+import {
+  buildCreateInFolderMenuItem,
+  buildCreateInFolderMenuItems,
+} from '../../utils';
 
 interface SidebarProps {
   files: FileNode[];
@@ -194,41 +198,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const vaultRoot = vaultStore.currentVaultPath || '';
 
     contextMenu.show(e, [
-      {
-        id: 'new-file',
-        label: 'Nouvelle note .md',
-        icon: 'plus',
-        shortcut: 'Ctrl+N',
-        onClick: () => setIsCreatingFile(true),
-      },
-      {
-        id: 'new-kanban',
-        label: 'Nouveau tableau Kanban...',
-        icon: 'kanban' as const,
-        onClick: () => {
-          const kbName = window.prompt('Nom du nouveau tableau Kanban :', 'kanban.md');
-          if (kbName && kbName.trim()) {
-            const clean = kbName.trim().endsWith('.md') ? kbName.trim() : `${kbName.trim()}.md`;
-            vaultStore.createKanbanFile(clean, clean.replace(/\.md$/, '')).then((path) => {
-              onSelectFile(path, false);
-              toast.success('Tableau Kanban créé', path);
-            });
+      buildCreateInFolderMenuItem({
+        parentDir: '',
+        noteShortcut: 'Ctrl+N',
+        createNote: () => setIsCreatingFile(true),
+        onCreated: (relPath, kind) => {
+          if (kind !== 'dir') {
+            onSelectFile(relPath, false);
           }
         },
-      },
-      {
-        id: 'new-root-folder',
-        label: 'Nouveau dossier...',
-        icon: 'folder-plus',
-        onClick: () => {
-          const dirName = window.prompt('Nom du nouveau dossier :', 'nouveau-dossier');
-          if (dirName && dirName.trim()) {
-            vaultStore.createDir(dirName.trim()).then(() => {
-              toast.success('Dossier créé', dirName.trim());
-            });
-          }
-        },
-      },
+      }),
       { id: 'div-sidebar-1', divider: true },
       {
         id: 'toggle-all',
@@ -333,30 +312,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
           <button
             onClick={(e) => {
-              contextMenu.show(e, [
-                {
-                  id: 'new-md-note',
-                  label: 'Nouvelle note Markdown',
-                  icon: 'file-markdown' as const,
-                  shortcut: 'Ctrl+N',
-                  onClick: () => setIsCreatingFile(true),
-                },
-                {
-                  id: 'new-kb-note',
-                  label: 'Nouveau tableau Kanban...',
-                  icon: 'kanban' as const,
-                  onClick: () => {
-                    const kbName = window.prompt('Nom du nouveau tableau Kanban :', 'kanban.md');
-                    if (kbName && kbName.trim()) {
-                      const clean = kbName.trim().endsWith('.md') ? kbName.trim() : `${kbName.trim()}.md`;
-                      vaultStore.createKanbanFile(clean, clean.replace(/\.md$/, '')).then((path) => {
-                        onSelectFile(path, false);
-                        toast.success('Tableau Kanban créé', path);
-                      });
+              contextMenu.show(
+                e,
+                buildCreateInFolderMenuItems({
+                  parentDir: '',
+                  noteShortcut: 'Ctrl+N',
+                  createNote: () => setIsCreatingFile(true),
+                  onCreated: (relPath, kind) => {
+                    if (kind !== 'dir') {
+                      onSelectFile(relPath, false);
                     }
                   },
-                },
-              ]);
+                })
+              );
             }}
             title="Créer un nouveau document (Note, Kanban...)"
             style={{

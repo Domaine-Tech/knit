@@ -5,9 +5,16 @@ import { toast } from './toastStore';
 import { crdtManager } from '../crdt';
 import { tabStore } from './tabStore';
 import { networkStore } from './networkStore';
-import { isTauriEnvironment } from '../utils';
-import { DEMO_FILES } from './demoVaultLoader';
+import { frontmatterIndex } from './frontmatterIndex';
+import { isTauriEnvironment } from '../utils/env';
+import { DEMO_FILES, DEMO_CONTENTS, DEMO_ASSET_URLS } from './demoVaultLoader';
 import type { FileNode, LinkRefactorReport } from '../types';
+
+/** Coffre démo mémoire (pas un chemin disque réel). */
+function isVirtualDemoVault(ops: VaultOps): boolean {
+  const path = ops.currentVaultPath;
+  return !path || path === 'Knit Demo Vault' || path === 'Knit Workspace (Web Dev)';
+}
 
 export async function pickAndOpenVault(ops: VaultOps): Promise<boolean> {
     if (!isTauriEnvironment()) {
@@ -43,6 +50,7 @@ export async function openVault(ops: VaultOps, path: string): Promise<void> {
     // Initialisation ou redémarrage du watcher FS natif
     await setupWatcher(ops, path);
     await ops.reloadTree();
+    void frontmatterIndex.rebuild(ops);
 
     // Démarrage du réseau P2P Iroh & mDNS
     networkStore.startNetwork(path).catch((err) => {
@@ -95,6 +103,7 @@ async function setupWatcher(ops: VaultOps, path: string) {
               tab.isDirty = false;
             }
           }
+          void frontmatterIndex.upsert(ops, relPath);
           ops.notify();
         }
       );
@@ -103,6 +112,7 @@ async function setupWatcher(ops: VaultOps, path: string) {
         const { path: relPath } = event.payload;
         delete ops.localContents[relPath];
         crdtManager.removeDoc(relPath);
+        frontmatterIndex.remove(relPath);
 
         const fileName = relPath.split('/').pop() || relPath;
         const tab = tabStore.tabs.find((t) => t.path === relPath);
@@ -114,7 +124,7 @@ async function setupWatcher(ops: VaultOps, path: string) {
       });
 
       const u3 = await listen('vault_tree_changed', () => {
-        ops.reloadTree();
+        void ops.reloadTree().then(() => frontmatterIndex.rebuild(ops));
       });
 
       ops.unlistenFns.push(u1, u2, u3);
@@ -126,9 +136,12 @@ async function setupWatcher(ops: VaultOps, path: string) {
 export async function reloadTree(ops: VaultOps): Promise<void> {
     if (!ops.currentVaultPath) return;
 
-    if (!isTauriEnvironment()) {
+    if (!isTauriEnvironment() || isVirtualDemoVault(ops)) {
       ops.files = [...DEMO_FILES];
+      // Resync contenus / assets démo (après HMR éventuel)
+      Object.assign(ops.localContents, DEMO_CONTENTS, DEMO_ASSET_URLS);
       ops.notify();
+      void frontmatterIndex.rebuild(ops);
       return;
     }
 
@@ -140,6 +153,7 @@ export async function reloadTree(ops: VaultOps): Promise<void> {
       });
       ops.files = nodes;
       ops.error = null;
+      void frontmatterIndex.rebuild(ops);
     } catch (err: unknown) {
       ops.error = String(err);
     } finally {
@@ -149,7 +163,17 @@ export async function reloadTree(ops: VaultOps): Promise<void> {
   }
 
 export async function readFile(ops: VaultOps, relPath: string): Promise<string> {
-    if (!isTauriEnvironment()) {
+    if (!isTauriEnvironment() || isVirtualDemoVault(ops)) {
+      const tab = tabStore.tabs.find((t) => t.path === relPath);
+      // Ne pas écraser une édition locale non sauvegardée
+      if (tab?.isDirty && relPath in ops.localContents) {
+        return ops.localContents[relPath];
+      }
+      if (relPath in DEMO_CONTENTS) {
+        const fresh = DEMO_CONTENTS[relPath];
+        ops.localContents[relPath] = fresh;
+        return fresh;
+      }
       if (relPath in ops.localContents) {
         return ops.localContents[relPath];
       }
@@ -181,8 +205,9 @@ export async function writeFile(ops: VaultOps, relPath: string, content: string)
 
     ops.localContents[relPath] = content;
 
-    if (!isTauriEnvironment()) {
+    if (!isTauriEnvironment() || isVirtualDemoVault(ops)) {
       tabStore.markClean(relPath);
+      void frontmatterIndex.upsert(ops, relPath);
       return;
     }
 
@@ -193,6 +218,7 @@ export async function writeFile(ops: VaultOps, relPath: string, content: string)
     });
 
     tabStore.markClean(relPath);
+    void frontmatterIndex.upsert(ops, relPath);
   }
 
 export async function createFile(ops: VaultOps, relPath: string, initialContent: string = ''): Promise<void> {

@@ -1,4 +1,5 @@
 import type { DocType } from '../types';
+import { isMediaFilePath } from './treeUtils';
 
 /**
  * Utilitaires universels de traitement Markdown pour Knit
@@ -285,10 +286,167 @@ export function slugify(text: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
+export type TableAlign = 'left' | 'center' | 'right';
+
+function padCell(text: string, width: number, align: TableAlign): string {
+  const t = text.trim();
+  const pad = Math.max(0, width - t.length);
+  if (align === 'right') return ' '.repeat(pad) + t;
+  if (align === 'center') {
+    const left = Math.floor(pad / 2);
+    return ' '.repeat(left) + t + ' '.repeat(pad - left);
+  }
+  return t + ' '.repeat(pad);
+}
+
+function alignMarker(align: TableAlign, width: number): string {
+  const w = Math.max(3, width);
+  if (align === 'center') return `:${'-'.repeat(w - 2)}:`;
+  if (align === 'right') return `${'-'.repeat(w - 1)}:`;
+  return '-'.repeat(w);
+}
+
 /**
- * Détecte le type de document ('note' | 'kanban' | 'table') à partir du contenu Markdown et du chemin de fichier
+ * Réaligne / padde les colonnes d'un tableau GFM sans altérer le texte libre des cellules (B-047).
+ */
+export function formatTableColumns(tableText: string): string {
+  const rawLines = tableText.split(/\r?\n/);
+  const lines = rawLines.filter((l) => l.trim().length > 0);
+  if (lines.length < 2) return tableText;
+
+  const rows = lines.map((l) => splitTableRow(l));
+  const colCount = Math.max(...rows.map((r) => r.length));
+  if (colCount === 0) return tableText;
+
+  const normalized = rows.map((r) => {
+    const copy = [...r];
+    while (copy.length < colCount) copy.push('');
+    return copy.slice(0, colCount);
+  });
+
+  const alignments: TableAlign[] = normalized[1].map((cell) => {
+    const d = cell.trim();
+    const left = d.startsWith(':');
+    const right = d.endsWith(':');
+    if (left && right) return 'center';
+    if (right) return 'right';
+    return 'left';
+  });
+
+  const widths = Array.from({ length: colCount }, (_, i) => {
+    let max = 3;
+    for (let r = 0; r < normalized.length; r++) {
+      if (r === 1) continue;
+      max = Math.max(max, normalized[r][i].trim().length);
+    }
+    return max;
+  });
+
+  const out: string[] = [];
+  for (let r = 0; r < normalized.length; r++) {
+    if (r === 1) {
+      const cells = alignments.map((a, i) => alignMarker(a, widths[i]));
+      out.push(`| ${cells.join(' | ')} |`);
+    } else {
+      const cells = normalized[r].map((c, i) => padCell(c, widths[i], alignments[i]));
+      out.push(`| ${cells.join(' | ')} |`);
+    }
+  }
+  return out.join('\n');
+}
+
+/** Bornes d'un tableau GFM contenant la ligne `lineNumber` (1-based). */
+export function findTableBounds(
+  docLines: { number: number; text: string }[],
+  lineNumber: number
+): { start: number; end: number } | null {
+  const line = docLines.find((l) => l.number === lineNumber);
+  if (!line || !line.text.includes('|')) return null;
+
+  let start = lineNumber;
+  while (start > 1) {
+    const prev = docLines.find((l) => l.number === start - 1);
+    if (!prev || !prev.text.includes('|') || !prev.text.trim()) break;
+    start--;
+  }
+
+  let end = lineNumber;
+  const max = Math.max(...docLines.map((l) => l.number));
+  while (end < max) {
+    const next = docLines.find((l) => l.number === end + 1);
+    if (!next || !next.text.includes('|') || !next.text.trim()) break;
+    end++;
+  }
+
+  if (end - start < 1) return null;
+  return { start, end };
+}
+
+export function mutateTableStructure(
+  tableText: string,
+  action:
+    | { type: 'add-row' }
+    | { type: 'add-column' }
+    | { type: 'delete-row'; rowIndex: number }
+    | { type: 'delete-column'; colIndex: number }
+    | { type: 'set-align'; colIndex: number; align: TableAlign }
+    | { type: 'delete-table' }
+): string | null {
+  if (action.type === 'delete-table') return '';
+
+  const lines = tableText.split(/\r?\n/).filter((l) => l.trim().length > 0);
+  if (lines.length < 2) return null;
+
+  const rows = lines.map((l) => splitTableRow(l));
+  const colCount = Math.max(...rows.map((r) => r.length));
+  const normalized = rows.map((r) => {
+    const copy = [...r];
+    while (copy.length < colCount) copy.push('');
+    return copy.slice(0, colCount);
+  });
+
+  if (action.type === 'add-row') {
+    normalized.push(Array(colCount).fill(''));
+  } else if (action.type === 'add-column') {
+    for (let i = 0; i < normalized.length; i++) {
+      if (i === 1) normalized[i].push('---');
+      else if (i === 0) normalized[i].push('Colonne');
+      else normalized[i].push('');
+    }
+  } else if (action.type === 'delete-row') {
+    if (action.rowIndex <= 1 || action.rowIndex >= normalized.length) return null;
+    normalized.splice(action.rowIndex, 1);
+  } else if (action.type === 'delete-column') {
+    if (colCount <= 1 || action.colIndex < 0 || action.colIndex >= colCount) return null;
+    for (const row of normalized) {
+      row.splice(action.colIndex, 1);
+    }
+  } else if (action.type === 'set-align') {
+    if (action.colIndex < 0 || action.colIndex >= colCount) return null;
+    const markers: Record<TableAlign, string> = {
+      left: '---',
+      center: ':---:',
+      right: '---:',
+    };
+    normalized[1][action.colIndex] = markers[action.align];
+  }
+
+  const rebuilt = normalized
+    .map((cells) => `| ${cells.map((c) => c.trim()).join(' | ')} |`)
+    .join('\n');
+  return formatTableColumns(rebuilt);
+}
+
+/**
+ * Détecte le type de document ('note' | 'kanban' | 'table' | 'image')
+ * à partir du chemin (médias) et du contenu Markdown / frontmatter.
  */
 export function detectDocType(content: string, path: string): DocType {
+  // Médias coffre (svg/png/…) : détection par extension, avant les heuristiques de chemin
+  if (isMediaFilePath(path)) {
+    return 'image';
+  }
+
   const lowerPath = path.toLowerCase();
   if (lowerPath.includes('kanban') || lowerPath.endsWith('.kanban.md')) {
     return 'kanban';

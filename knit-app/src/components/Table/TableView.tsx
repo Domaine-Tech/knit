@@ -10,6 +10,7 @@ import type {
 } from '../../types';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { WikiLinkPills, TagPills } from '../Common/WikiLinkPills';
+import { KnitSelect } from '../Form/KnitSelect';
 import { toast } from '../../stores/toastStore';
 import { contextMenu } from '../../stores/contextMenuStore';
 import { debugStore } from '../../stores/debugStore';
@@ -333,19 +334,19 @@ export const TableView: React.FC<TableViewProps> = ({
           </div>
 
           {/* Filtre par Colonne */}
-          <select
-            className="knit-select"
+          <KnitSelect
             value={columnFilter}
-            onChange={(e) => setColumnFilter(e.target.value)}
+            onChange={setColumnFilter}
+            aria-label="Filtrer par colonne"
             style={{ fontSize: 11, minWidth: 140 }}
-          >
-            <option value="all">Toutes les colonnes</option>
-            {board.columns.map((col) => (
-              <option key={col.id} value={col.id}>
-                {col.title} ({col.cards.length})
-              </option>
-            ))}
-          </select>
+            options={[
+              { value: 'all', label: 'Toutes les colonnes' },
+              ...board.columns.map((col) => ({
+                value: col.id,
+                label: `${col.title} (${col.cards.length})`,
+              })),
+            ]}
+          />
 
           {/* Bouton Ajouter Tâche */}
           <button
@@ -449,18 +450,16 @@ export const TableView: React.FC<TableViewProps> = ({
             gap: 10,
           }}
         >
-          <select
-            className="knit-select"
+          <KnitSelect
             value={newTaskColumnId}
-            onChange={(e) => setNewTaskColumnId(e.target.value)}
+            onChange={setNewTaskColumnId}
+            aria-label="Colonne de la nouvelle tâche"
             style={{ fontSize: 12, minWidth: 140 }}
-          >
-            {board.columns.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.title}
-              </option>
-            ))}
-          </select>
+            options={board.columns.map((c) => ({
+              value: c.id,
+              label: c.title,
+            }))}
+          />
 
           <input
             autoFocus
@@ -579,18 +578,19 @@ export const TableView: React.FC<TableViewProps> = ({
 
                   {/* Colonne / Statut avec sélecteur direct */}
                   <td style={{ padding: '8px 12px', verticalAlign: 'middle' }}>
-                    <select
-                      className="knit-select"
+                    <KnitSelect
                       value={row.columnId}
-                      onChange={(e) => handleMoveTaskColumn(row.id, row.columnId, e.target.value)}
-                      style={{ height: 26, fontSize: 11, padding: '0 24px 0 8px' }}
-                    >
-                      {board.columns.map((col) => (
-                        <option key={col.id} value={col.id}>
-                          {col.title}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(nextCol) =>
+                        handleMoveTaskColumn(row.id, row.columnId, nextCol)
+                      }
+                      aria-label="Colonne / statut"
+                      style={{ fontSize: 11, minWidth: 120 }}
+                      className="knit-table-status-select"
+                      options={board.columns.map((col) => ({
+                        value: col.id,
+                        label: col.title,
+                      }))}
+                    />
                   </td>
 
                   {/* Titre & WikiLinks */}

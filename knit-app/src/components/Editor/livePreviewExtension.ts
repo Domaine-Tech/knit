@@ -1,6 +1,10 @@
-import { StateField, type Extension } from '@codemirror/state';
-import { EditorView, type DecorationSet } from '@codemirror/view';
+import { StateEffect, StateField, type Extension } from '@codemirror/state';
+import { EditorView, ViewPlugin, type DecorationSet } from '@codemirror/view';
 import { buildLivePreviewDecorations } from './livePreview/buildDecorations';
+import { vaultStore } from '../../stores/vaultStore';
+
+/** Force le recalcul des widgets knit-* quand l'index Frontmatter change */
+export const refreshDynamicBlocksEffect = StateEffect.define<null>();
 
 export function createLivePreviewPlugin(): Extension {
   const field = StateField.define<DecorationSet>({
@@ -8,7 +12,11 @@ export function createLivePreviewPlugin(): Extension {
       return buildLivePreviewDecorations(state);
     },
     update(decorations, tr) {
-      if (tr.docChanged || tr.selection) {
+      const needsRebuild =
+        tr.docChanged ||
+        tr.selection ||
+        tr.effects.some((e) => e.is(refreshDynamicBlocksEffect));
+      if (needsRebuild) {
         return buildLivePreviewDecorations(tr.state);
       }
       return decorations.map(tr.changes);
@@ -22,5 +30,21 @@ export function createLivePreviewPlugin(): Extension {
     }
   });
 
-  return [field, measureListener];
+  const indexSync = ViewPlugin.fromClass(
+    class {
+      private unsub: () => void;
+
+      constructor(view: EditorView) {
+        this.unsub = vaultStore.subscribeFrontmatterIndex(() => {
+          view.dispatch({ effects: refreshDynamicBlocksEffect.of(null) });
+        });
+      }
+
+      destroy() {
+        this.unsub();
+      }
+    }
+  );
+
+  return [field, measureListener, indexSync];
 }

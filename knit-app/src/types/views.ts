@@ -2,11 +2,11 @@
  * Types relatifs aux onglets, modes de rendu et vues Doc-Driven
  */
 
-export type DocType = 'note' | 'kanban' | 'table';
+export type DocType = 'note' | 'kanban' | 'table' | 'image';
 
 export type ViewMode = 'visual' | 'source';
 
-export type AppViewMode = 'editor' | 'kanban' | 'table';
+export type AppViewMode = 'editor' | 'kanban' | 'table' | 'image';
 
 export interface Tab {
   id: string; // Rel path

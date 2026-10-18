@@ -85,6 +85,33 @@ export const DuotoneIcon: React.FC<DuotoneIconProps> = ({
           </>
         );
 
+      case 'image':
+        return (
+          <>
+            <rect
+              x="64"
+              y="96"
+              width="384"
+              height="320"
+              rx="40"
+              fill={secondaryFill}
+              fillOpacity="0.18"
+              stroke={primaryStroke}
+              strokeWidth="28"
+              strokeLinejoin="round"
+            />
+            <circle cx="176" cy="208" r="36" fill={secondaryFill} fillOpacity="0.35" stroke={primaryStroke} strokeWidth="24" />
+            <polyline
+              points="96 352 192 272 256 320 320 248 416 352"
+              fill="none"
+              stroke={primaryStroke}
+              strokeWidth="28"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </>
+        );
+
       case 'search':
         return (
           <>

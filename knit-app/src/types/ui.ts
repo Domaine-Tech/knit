@@ -7,6 +7,7 @@ export type IconName =
   | 'folder-open'
   | 'file-text'
   | 'file-markdown'
+  | 'image'
   | 'search'
   | 'close'
   | 'save'

@@ -16,3 +16,4 @@ export * from './table';
 export * from './editor';
 export * from './debug';
 export * from './crdt';
+export * from './query';

@@ -8,6 +8,8 @@ export interface FileNode {
   path: string;
   is_dir: boolean;
   extension?: string;
+  /** Horodatage de modification FS (ms epoch), fourni par le scan Rust ou le mode démo. */
+  mtime_ms?: number;
   children: FileNode[];
 }
 

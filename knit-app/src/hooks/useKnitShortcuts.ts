@@ -54,6 +54,11 @@ export function useKnitShortcuts({
 
       // Bascule universelle Source </> ↔ Rendu (Ctrl+E - US B-030d)
       if (isMod && !e.shiftKey && e.key.toLowerCase() === 'e') {
+        const active =
+          tabStore.activeGroupId === 2 && tabStore.isSplit
+            ? tabStore.splitTab
+            : tabStore.activeTab;
+        if (active?.docType === 'image') return;
         e.preventDefault();
         tabStore.toggleViewMode();
         return;
@@ -88,7 +93,7 @@ export function useKnitShortcuts({
       // Raccourci Kanban rapide (Ctrl+Shift+K)
       if (isMod && e.shiftKey && e.key.toLowerCase() === 'k') {
         e.preventDefault();
-        if (tabStore.activeTab) {
+        if (tabStore.activeTab && tabStore.activeTab.docType !== 'image') {
           const nextType = tabStore.activeTab.docType === 'kanban' ? 'note' : 'kanban';
           vaultStore.convertDocumentType(tabStore.activeTab.path, nextType);
         }

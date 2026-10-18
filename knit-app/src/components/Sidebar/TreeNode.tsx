@@ -3,11 +3,13 @@ import type { FileNode } from '../../types';
 import { vaultStore } from '../../stores/vaultStore';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { contextMenu } from '../../stores/contextMenuStore';
-import { toast } from '../../stores/toastStore';
 import { networkStore } from '../../stores/networkStore';
 import { tabStore } from '../../stores/tabStore';
 import {
-  buildPathCopyMenuItems,
+  buildConvertDocTypeMenuItem,
+  buildCreateInFolderMenuItem,
+  buildPathCopyMenuItem,
+  isMediaFilePath,
 } from '../../utils';
 
 interface TreeNodeProps {
@@ -75,11 +77,14 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
   searchQuery = '',
 }) => {
   // Par défaut sur les gros coffres, les dossiers commencent FERMÉS
-  // Sauf si le fichier actif ou sélectionné se trouve dans ce sous-dossier,
+  // Sauf si un fichier/dossier actif ou sélectionné est un *descendant*
+  // (pas le dossier lui-même — sinon focus+clic ouvre puis referme instantanément),
   // ou si "Déplier tout" est actif, ou si une recherche est en cours
   const isAncestorOfActive = Boolean(
-    (activePath && node.is_dir && (activePath === node.path || activePath.startsWith(node.path + '/'))) ||
-    (selectedPath && node.is_dir && (selectedPath === node.path || selectedPath.startsWith(node.path + '/')))
+    node.is_dir && (
+      (activePath && activePath.startsWith(node.path + '/')) ||
+      (selectedPath && selectedPath.startsWith(node.path + '/'))
+    )
   );
 
   const isSearchActive = Boolean(searchQuery && searchQuery.trim().length > 0);
@@ -121,7 +126,13 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
     e.stopPropagation();
     onSelectTreeNode?.(node.path, node.is_dir, node.name);
     if (node.is_dir) {
-      setIsManualOpen(!isOpen);
+      // Basculer depuis l'état précédent (évite la course focus→sélection→re-render→clic)
+      setIsManualOpen((prev) => {
+        const currentlyOpen = prev !== null
+          ? prev
+          : Boolean(defaultExpanded || isAncestorOfActive || isSearchActive);
+        return !currentlyOpen;
+      });
     } else {
       // Simple clic -> aperçu
       onSelectFile(node.path, true);
@@ -140,7 +151,12 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
       e.preventDefault();
       e.stopPropagation();
       if (node.is_dir) {
-        setIsManualOpen(!isOpen);
+        setIsManualOpen((prev) => {
+          const currentlyOpen = prev !== null
+            ? prev
+            : Boolean(defaultExpanded || isAncestorOfActive || isSearchActive);
+          return !currentlyOpen;
+        });
       } else {
         onSelectFile(node.path, false);
       }
@@ -177,55 +193,15 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
           onClick: () => setIsManualOpen(!isOpen),
         },
         { id: 'div-dir-1', divider: true },
-        {
-          id: 'new-file-in-dir',
-          label: 'Nouveau fichier dans ce dossier...',
-          icon: 'plus',
-          onClick: () => {
-            const fileName = window.prompt(`Nouveau fichier dans "${node.name}" :`, 'nouvelle-note.md');
-            if (fileName && fileName.trim()) {
-              const cleanName = fileName.trim().endsWith('.md') ? fileName.trim() : `${fileName.trim()}.md`;
-              const relPath = `${node.path}/${cleanName}`;
-              vaultStore.createFile(relPath, `# ${cleanName.replace(/\.md$/, '')}\n\n`).then(() => {
-                onSelectFile(relPath, false);
-                setIsManualOpen(true);
-                toast.success('Note créée', relPath);
-              });
+        buildCreateInFolderMenuItem({
+          parentDir: node.path,
+          onCreated: (relPath, kind) => {
+            setIsManualOpen(true);
+            if (kind !== 'dir') {
+              onSelectFile(relPath, false);
             }
           },
-        },
-        {
-          id: 'new-kanban-in-dir',
-          label: 'Nouveau tableau Kanban...',
-          icon: 'kanban' as const,
-          onClick: () => {
-            const kbName = window.prompt(`Nom du nouveau tableau Kanban dans "${node.name}" :`, 'kanban.md');
-            if (kbName && kbName.trim()) {
-              const cleanName = kbName.trim().endsWith('.md') ? kbName.trim() : `${kbName.trim()}.md`;
-              const relPath = `${node.path}/${cleanName}`;
-              vaultStore.createKanbanFile(relPath, cleanName.replace(/\.md$/, '')).then(() => {
-                onSelectFile(relPath, false);
-                setIsManualOpen(true);
-                toast.success('Tableau Kanban créé', relPath);
-              });
-            }
-          },
-        },
-        {
-          id: 'new-dir-in-dir',
-          label: 'Nouveau dossier...',
-          icon: 'folder-plus',
-          onClick: () => {
-            const dirName = window.prompt(`Nouveau sous-dossier dans "${node.name}" :`, 'nouveau-dossier');
-            if (dirName && dirName.trim()) {
-              const relPath = `${node.path}/${dirName.trim()}`;
-              vaultStore.createDir(relPath).then(() => {
-                setIsManualOpen(true);
-                toast.success('Dossier créé', relPath);
-              });
-            }
-          },
-        },
+        }),
         { id: 'div-dir-2', divider: true },
         {
           id: 'rename-dir',
@@ -245,11 +221,12 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
           },
         },
         { id: 'div-dir-3', divider: true },
-        ...buildPathCopyMenuItems({
+        buildPathCopyMenuItem({
           relPath: node.path,
           absPath,
           name: node.name,
           nameLabel: 'Copier le nom du dossier',
+          nameChildLabel: 'Nom du dossier',
           includeMarkdownLink: false,
           idPrefix: 'copy-dir-',
         }),
@@ -266,11 +243,12 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
         },
       ]);
     } else {
+      const isMedia = isMediaFilePath(node.path);
       contextMenu.show(e, [
         {
           id: 'open-file',
           label: 'Ouvrir',
-          icon: 'file-markdown',
+          icon: isMedia ? 'image' : 'file-markdown',
           onClick: () => onSelectFile(node.path, false),
         },
         {
@@ -279,32 +257,22 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
           icon: 'external-link',
           onClick: () => onMiddleClickFile(node.path),
         },
-        {
-          id: 'toggle-pin',
-          label: vaultStore.isPinned(node.path) ? 'Détacher des favoris' : 'Épingler aux favoris',
-          icon: 'pin',
-          onClick: () => vaultStore.togglePinNote(node.path),
-        },
-        { id: 'div-file-1', divider: true },
-        {
-          id: 'convert-to-note',
-          label: 'Changer le type : Note Markdown',
-          icon: 'file-markdown',
-          onClick: () => vaultStore.convertDocumentType(node.path, 'note'),
-        },
-        {
-          id: 'convert-to-kanban',
-          label: 'Changer le type : Tableau Kanban',
-          icon: 'kanban',
-          onClick: () => vaultStore.convertDocumentType(node.path, 'kanban'),
-        },
-        {
-          id: 'convert-to-table',
-          label: 'Changer le type : Vue Tableau',
-          icon: 'table',
-          onClick: () => vaultStore.convertDocumentType(node.path, 'table'),
-        },
-        { id: 'div-file-convert', divider: true },
+        ...(!isMedia
+          ? [
+              {
+                id: 'toggle-pin',
+                label: vaultStore.isPinned(node.path) ? 'Détacher des favoris' : 'Épingler aux favoris',
+                icon: 'pin' as const,
+                onClick: () => vaultStore.togglePinNote(node.path),
+              },
+              { id: 'div-file-1', divider: true },
+              buildConvertDocTypeMenuItem(
+                node.path,
+                tabStore.tabs.find((t) => t.path === node.path)?.docType
+              ),
+              { id: 'div-file-convert', divider: true },
+            ]
+          : [{ id: 'div-file-1', divider: true }]),
         {
           id: 'rename-file',
           label: 'Renommer / Déplacer...',
@@ -323,16 +291,18 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
           },
         },
         { id: 'div-file-2', divider: true },
-        ...buildPathCopyMenuItems({
+        buildPathCopyMenuItem({
           relPath: node.path,
           absPath,
           name: node.name,
+          nameChildLabel: 'Nom du fichier',
           markdownAlias: node.name,
+          markdownAsImage: isMedia,
         }),
         { id: 'div-file-delete', divider: true },
         {
           id: 'delete-file',
-          label: 'Supprimer la note...',
+          label: isMedia ? 'Supprimer le média...' : 'Supprimer la note...',
           icon: 'trash',
           shortcut: 'Suppr',
           danger: true,
@@ -408,6 +378,12 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
           <>
             <span style={{ width: 12 }} />
             {(() => {
+              const ext = (node.extension || node.name.split('.').pop() || '').toLowerCase();
+              const isMedia = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico'].includes(ext);
+              if (isMedia) {
+                return <DuotoneIcon name="image" size={14} style={{ color: 'var(--knit-primary)' }} />;
+              }
+
               const docType =
                 tabStore.tabs.find((t) => t.path === node.path)?.docType ||
                 (node.name.toLowerCase().includes('kanban')

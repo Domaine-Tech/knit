@@ -12,6 +12,8 @@ export interface ContextMenuItem {
   danger?: boolean;
   disabled?: boolean;
   divider?: boolean;
+  /** Sous-menu déroulant (flyout au survol). */
+  children?: ContextMenuItem[];
   onClick?: () => void;
 }
 

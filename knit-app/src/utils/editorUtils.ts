@@ -1,8 +1,28 @@
-import type { EditorView } from '@codemirror/view';
+import { EditorView } from '@codemirror/view';
 
 /**
  * Utilitaires universels pour CodeMirror 6 et inspection du curseur
  */
+
+/** Marge haute (px) pour que le titre d'ancre ne colle pas au bord du viewport. */
+const HEADING_SCROLL_Y_MARGIN = 24;
+
+/**
+ * Place le curseur sur une position (titre / ancre) et scrolle de façon
+ * à afficher cette ligne en haut du viewport, afin que le contenu sous le
+ * titre soit immédiatement visible — contrairement à `scrollIntoView: true`
+ * (stratégie « nearest ») qui laisse souvent le titre en bas de l'écran.
+ */
+export function scrollHeadingIntoView(view: EditorView, pos: number): void {
+  view.dispatch({
+    selection: { anchor: pos },
+    effects: EditorView.scrollIntoView(pos, {
+      y: 'start',
+      yMargin: HEADING_SCROLL_Y_MARGIN,
+    }),
+  });
+  view.focus();
+}
 
 /**
  * Détecte l'URL ou la cible de lien (WikiLink, lien Markdown, URL brute, chemin local) sous les coordonnées du curseur

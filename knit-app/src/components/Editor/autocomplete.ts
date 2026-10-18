@@ -428,6 +428,26 @@ export function createKnitAutocompletion(sources: AutocompleteSourceProps) {
               template: '| Colonne 1 | Colonne 2 | Statut |\n|---|---|---|\n| Élément A | Donnée 1 | En cours |\n| Élément B | Donnée 2 | Terminé |\n\n',
             },
             {
+              label: '/sommaire',
+              detail: 'Sommaire dynamique (knit-toc)',
+              template: '```knit-toc\ndepth: 3\ncollapsible: true\n```\n',
+            },
+            {
+              label: '/fichiers',
+              detail: 'Index de fichiers (knit-files)',
+              template: '```knit-files\nfolder: ""\nsort: updated desc\nlimit: 10\nlayout: table\n```\n',
+            },
+            {
+              label: '/requete',
+              detail: 'Requête Frontmatter (knit-query)',
+              template: '```knit-query\nfrom: ""\nwhere: statut != "termine"\nsort: priorite desc\ncolumns: [titre, statut, priorite, path]\n```\n',
+            },
+            {
+              label: '/taches-globales',
+              detail: 'Agrégateur de tâches (knit-tasks)',
+              template: '```knit-tasks\nfrom: ""\nstatus: todo\ngroup_by: file\n```\n',
+            },
+            {
               label: '/code',
               detail: 'Bloc de code Markdown',
               template: '```typescript\n// Code ici\n```\n',

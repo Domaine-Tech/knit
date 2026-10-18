@@ -81,7 +81,150 @@ input.knit-input-seamless:focus {
   box-shadow: 0 0 0 2px var(--knit-primary-alpha) !important;
 }
 
-/* === 1bis. SÉLECTEURS ET LISTES DÉROULANTES (SELECT & DROPDOWN) === */
+/* === 1bis. SÉLECTEURS CUSTOM (KnitSelect) — DA menus contextuels ===
+   Les <select> natifs ont un popup OS non stylable : on utilise
+   .knit-select-root / .knit-select-trigger / .knit-select-menu partout.
+   ================================================================== */
+
+.knit-select-root {
+  position: relative;
+  display: inline-flex;
+  vertical-align: middle;
+  max-width: 100%;
+}
+
+.knit-select-trigger {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  width: 100% !important;
+  height: 28px !important;
+  padding: 0 8px 0 10px !important;
+  border-radius: var(--knit-radius-sm) !important;
+  border: 1px solid var(--knit-border) !important;
+  background-color: var(--knit-surface) !important;
+  color: var(--knit-text) !important;
+  font-size: 12px !important;
+  font-family: inherit !important;
+  font-weight: 500 !important;
+  line-height: 1 !important;
+  outline: none !important;
+  cursor: pointer !important;
+  box-shadow: none !important;
+  transition: border-color var(--knit-transition-fast),
+              background-color var(--knit-transition-fast),
+              box-shadow var(--knit-transition-fast);
+}
+
+.knit-select-trigger:hover:not(:disabled) {
+  border-color: var(--knit-text-muted) !important;
+  background-color: var(--knit-surface-hover) !important;
+}
+
+.knit-select-trigger:focus-visible,
+.knit-select-root.is-open .knit-select-trigger {
+  border-color: var(--knit-primary) !important;
+  box-shadow: 0 0 0 2px var(--knit-primary-alpha) !important;
+  background-color: var(--knit-surface) !important;
+}
+
+.knit-select-trigger:disabled {
+  opacity: 0.5 !important;
+  cursor: default !important;
+}
+
+.knit-select-value {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.knit-select-chevron {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--knit-text-muted);
+  transition: transform var(--knit-transition-fast), color var(--knit-transition-fast);
+}
+
+.knit-select-root.is-open .knit-select-chevron {
+  transform: rotate(180deg);
+  color: var(--knit-primary);
+}
+
+/* Menu flottant (portail body) — même langage que ContextMenu */
+.knit-select-menu {
+  position: fixed;
+  z-index: 10000;
+  max-height: 280px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 5px;
+  background-color: var(--knit-surface);
+  border: 1px solid var(--knit-border);
+  border-radius: var(--knit-radius-md);
+  box-shadow: var(--knit-shadow-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: knitSelectFadeIn 90ms ease-out;
+}
+
+@keyframes knitSelectFadeIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.knit-select-option {
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  padding: 6px 10px !important;
+  border: none !important;
+  border-radius: var(--knit-radius-sm) !important;
+  background: transparent !important;
+  color: var(--knit-text) !important;
+  font-size: 12px !important;
+  font-family: inherit !important;
+  font-weight: 500 !important;
+  text-align: left !important;
+  cursor: pointer !important;
+  outline: none !important;
+  box-shadow: none !important;
+  transition: background var(--knit-transition-fast), color var(--knit-transition-fast);
+}
+
+.knit-select-option:hover,
+.knit-select-option.is-active {
+  background-color: var(--knit-surface-hover) !important;
+  color: var(--knit-text) !important;
+}
+
+.knit-select-option.is-selected {
+  background-color: var(--knit-primary-alpha) !important;
+  color: var(--knit-primary) !important;
+  font-weight: 600 !important;
+}
+
+.knit-select-option.is-selected.is-active,
+.knit-select-option.is-selected:hover {
+  background-color: var(--knit-primary-alpha) !important;
+  color: var(--knit-primary) !important;
+}
+
+/* Variante compacte (cellules de tableau) */
+.knit-table-status-select .knit-select-trigger {
+  height: 26px !important;
+  font-size: 11px !important;
+  padding: 0 6px 0 8px !important;
+}
+
+/* Fallback natif (legacy) — trigger uniquement ; le popup OS reste non stylable */
 select,
 .knit-select,
 select.knit-input {
@@ -121,13 +264,6 @@ select.knit-input:focus {
   border-color: var(--knit-primary) !important;
   box-shadow: 0 0 0 2px var(--knit-primary-alpha) !important;
   background-color: var(--knit-surface) !important;
-}
-
-select option,
-.knit-select option {
-  background-color: var(--knit-surface) !important;
-  color: var(--knit-text) !important;
-  padding: 6px 10px !important;
 }
 
 /* === 1ter. ZONES DE TEXTE MULTILIGNES (TEXTAREA) === */

@@ -11,7 +11,21 @@ pub struct FileNode {
     pub path: String,
     pub is_dir: bool,
     pub extension: Option<String>,
+    /// Horodatage de modification FS en millisecondes epoch (fichiers uniquement).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mtime_ms: Option<u64>,
     pub children: Vec<FileNode>,
+}
+
+fn file_mtime_ms(path: &Path) -> Option<u64> {
+    path.metadata().ok().and_then(|meta| {
+        meta.modified().ok().and_then(|modified| {
+            modified
+                .duration_since(std::time::UNIX_EPOCH)
+                .ok()
+                .map(|d| d.as_millis() as u64)
+        })
+    })
 }
 
 /// Normalise un chemin pour l'affichage et les identifiants multiplateformes (barres obliques '/')
@@ -74,6 +88,33 @@ pub fn resolve_safe_path(vault_root: &Path, rel_path: &str) -> Result<PathBuf> {
     }
 }
 
+/// Extensions de notes / textes visibles dans l'arborescence.
+fn is_text_note_ext(ext: &str) -> bool {
+    matches!(
+        ext.to_ascii_lowercase().as_str(),
+        "md" | "markdown" | "txt"
+    )
+}
+
+/// Extensions médias synchronisées via Iroh Blobs (`assets/`, collages, etc.).
+fn is_media_ext(ext: &str) -> bool {
+    matches!(
+        ext.to_ascii_lowercase().as_str(),
+        "png" | "jpg" | "jpeg" | "gif" | "webp" | "svg" | "bmp" | "ico"
+    )
+}
+
+/// Fichier affiché dans le tree (notes Markdown + médias coffre).
+fn is_vault_visible_file(name: &str, ext: Option<&str>) -> bool {
+    if name.eq_ignore_ascii_case("KNIT.md") {
+        return true;
+    }
+    match ext {
+        Some(e) if is_text_note_ext(e) || is_media_ext(e) => true,
+        _ => false,
+    }
+}
+
 /// Lit l'arborescence récursive d'un dossier de coffre-fort
 pub fn read_vault_tree(vault_path: &Path) -> Result<Vec<FileNode>> {
     if !vault_path.exists() || !vault_path.is_dir() {
@@ -119,24 +160,20 @@ fn read_dir_recursive(vault_root: &Path, current_dir: &Path) -> Result<Vec<FileN
                 path: rel_path,
                 is_dir: true,
                 extension: None,
+                mtime_ms: None,
                 children,
             });
         } else if file_type.is_file() {
             let ext = path.extension().map(|e| e.to_string_lossy().to_string());
-            // Nous affichons les fichiers Markdown .md, .markdown, .txt et les fichiers autorisés comme KNIT.md
-            let is_md_or_text = ext
-                .as_ref()
-                .map(|e| e.eq_ignore_ascii_case("md") || e.eq_ignore_ascii_case("markdown") || e.eq_ignore_ascii_case("txt"))
-                .unwrap_or(false)
-                || name == "KNIT.md";
-
-            if is_md_or_text {
+            // Notes Markdown + médias du coffre (`assets/` : svg, png, …)
+            if is_vault_visible_file(&name, ext.as_deref()) {
                 entries.push(FileNode {
                     id: rel_path.clone(),
                     name,
                     path: rel_path,
                     is_dir: false,
                     extension: ext,
+                    mtime_ms: file_mtime_ms(&path),
                     children: Vec::new(),
                 });
             }
@@ -530,5 +567,54 @@ pub fn rename_file_and_refactor(
     // Refactorise automatiquement tous les liens dans le coffre
     let report = crate::markdown::refactor_links_in_vault(vault_root, old_rel_path, new_rel_path, guard)?;
     Ok(report)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn temp_vault(label: &str) -> PathBuf {
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0);
+        let dir = std::env::temp_dir().join(format!("knit-tree-{}-{}", label, nanos));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).expect("temp vault");
+        dir
+    }
+
+    #[test]
+    fn tree_includes_markdown_and_media_under_assets() {
+        let root = temp_vault("media");
+        fs::create_dir_all(root.join("assets")).unwrap();
+        fs::write(root.join("note.md"), "# hi\n").unwrap();
+        fs::write(root.join("assets").join("logo.svg"), "<svg></svg>").unwrap();
+        fs::write(root.join("assets").join("shot.png"), [0u8; 8]).unwrap();
+        fs::write(root.join("secret.bin"), [1u8; 4]).unwrap();
+
+        let tree = read_vault_tree(&root).expect("tree");
+        let names: Vec<&str> = tree.iter().map(|n| n.name.as_str()).collect();
+        assert!(names.contains(&"note.md"));
+        assert!(names.contains(&"assets"));
+        assert!(!names.contains(&"secret.bin"));
+
+        let assets = tree.iter().find(|n| n.name == "assets").expect("assets dir");
+        let media: Vec<&str> = assets.children.iter().map(|c| c.name.as_str()).collect();
+        assert!(media.contains(&"logo.svg"));
+        assert!(media.contains(&"shot.png"));
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn visible_file_helpers() {
+        assert!(is_vault_visible_file("x.md", Some("md")));
+        assert!(is_vault_visible_file("a.SVG", Some("SVG")));
+        assert!(is_vault_visible_file("KNIT.md", None));
+        assert!(!is_vault_visible_file("x.exe", Some("exe")));
+    }
 }
 

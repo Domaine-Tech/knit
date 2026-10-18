@@ -4,6 +4,58 @@ import type { FileNode, FlattenedFile, KanbanFileInfo } from '../types';
  * Utilitaires universels de parcours et manipulation de l'arborescence de fichiers de Knit
  */
 
+const MEDIA_EXTENSIONS = new Set([
+  'png',
+  'jpg',
+  'jpeg',
+  'gif',
+  'webp',
+  'svg',
+  'bmp',
+  'ico',
+]);
+
+const NOTE_EXTENSIONS = new Set(['md', 'markdown', 'txt']);
+
+/** Extension normalisée d'un chemin relatif (sans le point). */
+export function getPathExtension(relPath: string): string {
+  const name = relPath.replace(/\\/g, '/').split('/').pop() ?? '';
+  const dot = name.lastIndexOf('.');
+  return dot >= 0 ? name.slice(dot + 1).toLowerCase() : '';
+}
+
+/** Médias coffre (`assets/`, collages) — non ouvrables comme note Markdown. */
+export function isMediaFilePath(relPath: string): boolean {
+  return MEDIA_EXTENSIONS.has(getPathExtension(relPath));
+}
+
+/** Notes / textes éditables dans l'éditeur. */
+export function isNoteFilePath(relPath: string): boolean {
+  const ext = getPathExtension(relPath);
+  if (!ext) return relPath.replace(/\\/g, '/').split('/').pop()?.toLowerCase() === 'knit.md';
+  return NOTE_EXTENSIONS.has(ext);
+}
+
+/**
+ * Retourne le mtime_ms d'un fichier s'il est présent dans l'arborescence.
+ */
+export function findFileMtimeMs(nodes: FileNode[], relPath: string): number | undefined {
+  const key = relPath.replace(/\\/g, '/');
+  const walk = (items: FileNode[]): number | undefined => {
+    for (const item of items) {
+      if (!item.is_dir && item.path.replace(/\\/g, '/') === key) {
+        return typeof item.mtime_ms === 'number' ? item.mtime_ms : undefined;
+      }
+      if (item.is_dir && item.children?.length) {
+        const found = walk(item.children);
+        if (found !== undefined) return found;
+      }
+    }
+    return undefined;
+  };
+  return walk(nodes);
+}
+
 /**
  * Recherche récursive d'un nœud dans l'arborescence du coffre à partir d'une cible WikiLink
  */

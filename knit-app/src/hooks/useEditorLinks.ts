@@ -3,7 +3,7 @@ import type { EditorView } from '@codemirror/view';
 import { vaultStore } from '../stores/vaultStore';
 import { tabStore } from '../stores/tabStore';
 import { toast } from '../stores/toastStore';
-import { renderRichMarkdownPreview, findVaultNode, slugify } from '../utils';
+import { renderRichMarkdownPreview, findVaultNode, slugify, scrollHeadingIntoView } from '../utils';
 import type { HoverPreviewData, UseEditorLinksProps } from '../types';
 
 /**
@@ -55,11 +55,7 @@ export function useEditorLinks({ path, viewRef, editorRef }: UseEditorLinksProps
               targetSlug.includes(headingSlug) ||
               headingText.toLowerCase().includes(anchorRaw.toLowerCase())
             ) {
-              currentView.dispatch({
-                selection: { anchor: line.from },
-                scrollIntoView: true,
-              });
-              currentView.focus();
+              scrollHeadingIntoView(currentView, line.from);
               toast.info('Section atteinte', headingText);
               return;
             }
@@ -116,11 +112,7 @@ export function useEditorLinks({ path, viewRef, editorRef }: UseEditorLinksProps
                       headingSlug === targetSlug ||
                       headingText.toLowerCase().includes(anchorPart.toLowerCase())
                     ) {
-                      v.dispatch({
-                        selection: { anchor: line.from },
-                        scrollIntoView: true,
-                      });
-                      v.focus();
+                      scrollHeadingIntoView(v, line.from);
                       break;
                     }
                   }

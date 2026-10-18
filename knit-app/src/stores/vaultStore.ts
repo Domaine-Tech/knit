@@ -1,6 +1,6 @@
 import type { UnlistenFn } from '@tauri-apps/api/event';
-import { isTauriEnvironment } from '../utils';
-import { DEMO_FILES, DEMO_CONTENTS } from './demoVaultLoader';
+import { isTauriEnvironment } from '../utils/env';
+import { DEMO_FILES, DEMO_CONTENTS, DEMO_ASSET_URLS } from './demoVaultLoader';
 import type { VaultOps } from './vaultOps';
 import {
   pickAndOpenVault,
@@ -40,6 +40,8 @@ import {
   openExternalPath,
 } from './vaultQuery';
 
+import { frontmatterIndex } from './frontmatterIndex';
+import { crdtManager } from '../crdt';
 import type {
   SuggestIndexData,
   FileNode,
@@ -50,6 +52,9 @@ import type {
   TaskCard,
   TagInfo,
   KanbanFileInfo,
+  QueryFilter,
+  QueryResult,
+  FrontmatterIndexEntry,
 } from '../types';
 
 type VaultListener = () => void;
@@ -61,7 +66,10 @@ class VaultStore {
   public error: string | null = null;
 
   private listeners: Set<VaultListener> = new Set();
-  private localContents: Record<string, string> = { ...DEMO_CONTENTS };
+  private localContents: Record<string, string> = {
+    ...DEMO_CONTENTS,
+    ...DEMO_ASSET_URLS,
+  };
   private unlistenFns: UnlistenFn[] = [];
   private _mockTrash: Record<string, { relPath: string; backupContent?: string }> = {};
   private readonly ops: VaultOps;
@@ -124,11 +132,18 @@ class VaultStore {
     } else {
       this.currentVaultPath = 'Knit Demo Vault';
       this.files = DEMO_FILES;
+      void frontmatterIndex.rebuild(this.ops);
     }
   }
 
   public get vaultPath(): string | null {
     return this.currentVaultPath;
+  }
+
+  /** Contenu mémoire (mode démo / assets collés hors Tauri). */
+  public getLocalContent(relPath: string): string | undefined {
+    const key = relPath.replace(/\\/g, '/').replace(/^\/+/, '');
+    return this.localContents[key];
   }
 
   public get vaultName(): string | null {
@@ -271,6 +286,53 @@ class VaultStore {
 
   public openExternalPath(pathOrUrl: string): Promise<void> {
     return openExternalPath(this.ops, pathOrUrl);
+  }
+
+  /** Moteur Dataview en mémoire (B-031e) */
+  public queryFiles(filter: QueryFilter): QueryResult {
+    return frontmatterIndex.queryFiles(filter);
+  }
+
+  public listIndexedFiles(
+    folder: string,
+    sort?: string,
+    limit?: number
+  ): FrontmatterIndexEntry[] {
+    return frontmatterIndex.listFiles(folder, sort, limit);
+  }
+
+  public rebuildFrontmatterIndex(): Promise<void> {
+    return frontmatterIndex.rebuild(this.ops);
+  }
+
+  public getFrontmatterIndexVersion(): number {
+    return frontmatterIndex.getVersion();
+  }
+
+  public subscribeFrontmatterIndex(listener: () => void): () => void {
+    return frontmatterIndex.subscribe(listener);
+  }
+
+  public collectInlineTasks(fromFolder?: string, statusFilter?: string) {
+    return frontmatterIndex.collectInlineTasks(this.ops, fromFolder, statusFilter);
+  }
+
+  public async toggleInlineTask(
+    relPath: string,
+    lineIndex: number,
+    nextStatus: string
+  ): Promise<boolean> {
+    const existing = crdtManager.getContent(relPath);
+    const content =
+      existing && existing.length > 0 ? existing : await this.readFile(relPath);
+    const updated = frontmatterIndex.toggleTaskInContent(content, lineIndex, nextStatus);
+    if (updated === null) return false;
+
+    if (existing && existing.length > 0) {
+      crdtManager.applyExternalContent(relPath, updated);
+    }
+    await this.writeFile(relPath, updated);
+    return true;
   }
 }
 

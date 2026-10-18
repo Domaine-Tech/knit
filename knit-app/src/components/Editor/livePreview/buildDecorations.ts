@@ -10,6 +10,12 @@ import { TableCardWidget } from './widgets/tableCardWidget';
 import { CodeBlockCardWidget } from './widgets/codeBlockWidget';
 import { ImageCardWidget } from './widgets/imageCardWidget';
 import { CalloutHeaderWidget } from './widgets/calloutWidget';
+import { KnitTocWidget } from './widgets/knitTocWidget';
+import { KnitFilesWidget } from './widgets/knitFilesWidget';
+import { KnitQueryWidget } from './widgets/knitQueryWidget';
+import { KnitTasksWidget } from './widgets/knitTasksWidget';
+import { isKnitDynamicLang } from '../../../utils/dynamicBlockUtils';
+import { vaultStore } from '../../../stores/vaultStore';
 
 interface DecItem {
   from: number;
@@ -185,69 +191,117 @@ export function buildLivePreviewDecorations(state: EditorState): DecorationSet {
       const codeFenceMatch = lineText.match(/^```([a-zA-Z0-9_+#.-]*)\s*$/);
       if (codeFenceMatch) {
         const lang = codeFenceMatch[1].trim();
-        // Laisser mermaidExtension gérer ```mermaid
-        if (lang.toLowerCase() !== 'mermaid') {
-          let endLine = lineNum + 1;
-          while (endLine <= doc.lines && !doc.line(endLine).text.trim().startsWith('```')) {
-            endLine++;
+        const langLower = lang.toLowerCase();
+
+        // Trouver la fermeture du fence (partagé mermaid + autres langs)
+        let endLine = lineNum + 1;
+        while (endLine <= doc.lines && !doc.line(endLine).text.trim().startsWith('```')) {
+          endLine++;
+        }
+
+        // ```mermaid : délégué à mermaidExtension — il FAUT sauter tout le bloc,
+        // sinon le ``` de fermeture est réinterprété comme un nouveau fence
+        // et avale le contenu suivant (images, titres, knit-toc…).
+        if (langLower === 'mermaid') {
+          lineNum = endLine <= doc.lines ? endLine + 1 : endLine;
+          continue;
+        }
+
+        if (endLine <= doc.lines) {
+          const codeLines: string[] = [];
+          for (let l = lineNum + 1; l < endLine; l++) {
+            codeLines.push(doc.line(l).text);
           }
+          const fullCode = codeLines.join('\n');
 
-          if (endLine <= doc.lines) {
-            const codeLines: string[] = [];
-            for (let l = lineNum + 1; l < endLine; l++) {
-              codeLines.push(doc.line(l).text);
-            }
-            const fullCode = codeLines.join('\n');
+          const codeStartPos = line.from;
+          const codeEndPos = doc.line(endLine).to;
+          const isCursorInCodeBlock = sel.from <= codeEndPos && sel.to >= codeStartPos;
 
-            const codeStartPos = line.from;
-            const codeEndPos = doc.line(endLine).to;
-            const isCursorInCodeBlock = sel.from <= codeEndPos && sel.to >= codeStartPos;
-
-            if (!isCursorInCodeBlock) {
-              // Curseur hors du bloc : Remplacement complet par la carte CodeBlockCardWidget unifiée (comme les tableaux)
-              rangeDecorations.push({
-                from: codeStartPos,
-                to: codeEndPos,
-                deco: Decoration.replace({
-                  widget: new CodeBlockCardWidget(lang, fullCode, codeStartPos, codeEndPos),
-                  block: true,
-                }),
-              });
-              lineNum = endLine + 1;
-              continue;
-            } else {
-              // Curseur DANS le bloc : affichage de TOUTES les lignes en mode source fluide
-              // 1. Ligne d'en-tête (```lang)
-              lineDecorations.push({
-                from: line.from,
-                to: line.from,
-                deco: Decoration.line({ class: 'knit-code-line knit-code-header-line' }),
-                isLine: true,
-              });
-
-              // 2. Lignes internes de code avec styling propre
-              for (let l = lineNum + 1; l < endLine; l++) {
-                const codeLine = doc.line(l);
-                lineDecorations.push({
-                  from: codeLine.from,
-                  to: codeLine.from,
-                  deco: Decoration.line({ class: 'knit-code-line knit-code-body-line' }),
-                  isLine: true,
-                });
+          if (!isCursorInCodeBlock) {
+            const indexVersion = vaultStore.getFrontmatterIndexVersion();
+            let widget;
+            if (isKnitDynamicLang(langLower)) {
+              if (langLower === 'knit-toc') {
+                widget = new KnitTocWidget(
+                  fullCode,
+                  codeStartPos,
+                  codeEndPos,
+                  doc.toString()
+                );
+              } else if (langLower === 'knit-files') {
+                widget = new KnitFilesWidget(
+                  fullCode,
+                  codeStartPos,
+                  codeEndPos,
+                  indexVersion
+                );
+              } else if (langLower === 'knit-query') {
+                widget = new KnitQueryWidget(
+                  fullCode,
+                  codeStartPos,
+                  codeEndPos,
+                  indexVersion
+                );
+              } else {
+                widget = new KnitTasksWidget(
+                  fullCode,
+                  codeStartPos,
+                  codeEndPos,
+                  indexVersion
+                );
               }
+            } else {
+              widget = new CodeBlockCardWidget(
+                lang,
+                fullCode,
+                codeStartPos,
+                codeEndPos
+              );
+            }
 
-              // 3. Ligne de fermeture (```)
-              const closeLine = doc.line(endLine);
+            rangeDecorations.push({
+              from: codeStartPos,
+              to: codeEndPos,
+              deco: Decoration.replace({
+                widget,
+                block: true,
+              }),
+            });
+            lineNum = endLine + 1;
+            continue;
+          } else {
+            // Curseur DANS le bloc : affichage de TOUTES les lignes en mode source fluide
+            // 1. Ligne d'en-tête (```lang)
+            lineDecorations.push({
+              from: line.from,
+              to: line.from,
+              deco: Decoration.line({ class: 'knit-code-line knit-code-header-line' }),
+              isLine: true,
+            });
+
+            // 2. Lignes internes de code avec styling propre
+            for (let l = lineNum + 1; l < endLine; l++) {
+              const codeLine = doc.line(l);
               lineDecorations.push({
-                from: closeLine.from,
-                to: closeLine.from,
-                deco: Decoration.line({ class: 'knit-code-line knit-code-footer-line' }),
+                from: codeLine.from,
+                to: codeLine.from,
+                deco: Decoration.line({ class: 'knit-code-line knit-code-body-line' }),
                 isLine: true,
               });
-
-              lineNum = endLine + 1;
-              continue;
             }
+
+            // 3. Ligne de fermeture (```)
+            const closeLine = doc.line(endLine);
+            lineDecorations.push({
+              from: closeLine.from,
+              to: closeLine.from,
+              deco: Decoration.line({ class: 'knit-code-line knit-code-footer-line' }),
+              isLine: true,
+            });
+
+            lineNum = endLine + 1;
+            continue;
           }
         }
       }

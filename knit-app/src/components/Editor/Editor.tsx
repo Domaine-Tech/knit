@@ -32,6 +32,7 @@ import {
   createAutoWrapKeymap,
   createTableNavKeymap,
 } from './smartUxExtension';
+import { createTableHelperExtension } from './tableHelperExtension';
 import {
   createLivePreviewDebugExtension,
   livePreviewDebugCompartment,
@@ -42,9 +43,10 @@ import { useDebugMode, useEditorLinks } from '../../hooks';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import {
   getFlatFiles,
-  buildPathCopyMenuItems,
+  buildPathCopyMenuItem,
   findLinkAtCoords,
   packageContextForAI,
+  scrollHeadingIntoView,
 } from '../../utils';
 import {
   createKnitEditorTheme,
@@ -276,6 +278,7 @@ export const Editor: React.FC<EditorProps> = ({
       customKeymap,
       createAutoWrapKeymap(),
       createTableNavKeymap(),
+      createTableHelperExtension(),
       keymap.of([...foldKeymap, ...searchKeymap, ...historyKeymap, ...defaultKeymap]),
       knitEditorTheme,
       // Mode Debug Live Viewer (Compartment CodeMirror réactif)
@@ -499,11 +502,7 @@ export const Editor: React.FC<EditorProps> = ({
         const totalLines = view.state.doc.lines;
         const targetLineNum = Math.min(Math.max(1, initialLine), totalLines);
         const lineInfo = view.state.doc.line(targetLineNum);
-        view.dispatch({
-          selection: { anchor: lineInfo.from },
-          scrollIntoView: true,
-        });
-        view.focus();
+        scrollHeadingIntoView(view, lineInfo.from);
       } catch {
         // ignore
       }
@@ -626,7 +625,7 @@ export const Editor: React.FC<EditorProps> = ({
           vaultStore.revealInExplorer(path);
         },
       },
-      ...buildPathCopyMenuItems({
+      buildPathCopyMenuItem({
         relPath: path,
         absPath,
         includeMarkdownLink: true,

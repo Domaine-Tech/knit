@@ -1,5 +1,37 @@
 import { EditorView, keymap } from '@codemirror/view';
-import { splitTableRow, findTableDelimiterOffsets } from '../../utils';
+import {
+  splitTableRow,
+  findTableDelimiterOffsets,
+  formatTableColumns,
+} from '../../utils';
+
+function realignTableContainingLine(view: EditorView, lineNumber: number): void {
+  let startLine = lineNumber;
+  while (startLine > 1) {
+    const prev = view.state.doc.line(startLine - 1);
+    if (!prev.text.includes('|') || !prev.text.trim()) break;
+    startLine--;
+  }
+  let endLine = lineNumber;
+  while (endLine < view.state.doc.lines) {
+    const next = view.state.doc.line(endLine + 1);
+    if (!next.text.includes('|') || !next.text.trim()) break;
+    endLine++;
+  }
+  if (endLine - startLine < 1) return;
+
+  const from = view.state.doc.line(startLine).from;
+  const to = view.state.doc.line(endLine).to;
+  const current = view.state.doc.sliceString(from, to);
+  const formatted = formatTableColumns(current);
+  if (formatted !== current) {
+    const sel = view.state.selection.main;
+    view.dispatch({
+      changes: { from, to, insert: formatted },
+      selection: { anchor: Math.min(sel.from, from + formatted.length) },
+    });
+  }
+}
 
 /**
  * Auto-Wrap pour CodeMirror 6 :
@@ -119,7 +151,6 @@ export function createTableNavKeymap() {
 
         // Si la ligne courante est une ligne de tableau
         if (lineText.trim().startsWith('|') && lineText.trim().endsWith('|')) {
-          // Compter le nombre de colonnes avec splitTableRow
           const colCount = splitTableRow(lineText).length;
           if (colCount > 0) {
             let nextRow = '\n|';
@@ -130,6 +161,8 @@ export function createTableNavKeymap() {
               changes: { from: line.to, insert: nextRow },
               selection: { anchor: line.to + 3 },
             });
+            // Réalignement après insertion (ligne suivante = line.number + 1)
+            realignTableContainingLine(view, line.number + 1);
             return true;
           }
         }
