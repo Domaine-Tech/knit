@@ -20,3 +20,7 @@ L'agent DOIT :
    - Ne modifier aucun code lors de la première réponse.
    - Produire un plan d'action structuré par phases avec cases à cocher `[ ]`.
    - Attendre la validation explicite de l'utilisateur avant d'implémenter.
+4. **Interdiction Formelle des Tests Navigateur pour les Flux Natifs** :
+   - Consulter la règle `.agents/rules/tauri-testing.md`.
+   - Ne jamais utiliser de sous-agent navigateur pour tester des fonctionnalités dépendantes de Rust/Tauri (Drag & Drop OLE, I/O fichiers, watchers, IPC) car `isTauriEnvironment() === false` en dev web et les gestes OLE ne sont pas simulables. Toujours résoudre à la source et faire tester l'utilisateur dans l'application native `knit-app.exe`.
+

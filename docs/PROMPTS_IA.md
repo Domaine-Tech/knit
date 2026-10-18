@@ -619,6 +619,7 @@ Périmètre analysé : {{MODULE_OU_COMPOSANT_A_TESTER}}
 3. Zéro Test Factice (Zero Flaky / Zero Trivial Tests) : Rejeter les tests tautologiques qui testent le framework plutôt que la logique métier. Tout test doit tester des invariants, des cas limites (edge cases) et des scénarios d'échec réalistes.
 4. Isolation & Reproductibilité : Les tests ne doivent pas dépendre du système de fichiers réel de l'utilisateur (utiliser des répertoires temporaires isolés `tempfile` en Rust et des mocks mémoire légers en Frontend).
 5. Vitesse d'Exécution : La suite de tests complète doit s'exécuter en moins de 15 secondes pour garantir une boucle de feedback instantanée dans les scripts CI et de dev (`npm run test`, `cargo test`).
+6. Interdiction Formelle des Tests Navigateur pour les Flux Natifs Desktop : Ne JAMAIS tenter d'émuler les comportements natifs (Drag & Drop OLE/WebView2, écritures FS réelles `write_vault_file`, watcher `notify`, IPC Tauri) via un sous-agent navigateur web/Puppeteer. En mode web (`http://localhost:5173/`), `isTauriEnvironment() === false` et le backend Rust est absent. Les flux natifs doivent être résolus à la source dans le code (React, Tauri, Rust, OLE) et validés directement dans l'application native `knit-app.exe`.
 </rules>
 
 <step_by_step_instructions>
@@ -686,7 +687,9 @@ Règles architecturales absolues de Knit (Règle 18 & ADRs) :
    - L'instanciation de documents Yjs, la synchronisation d'états, la capture de snapshots, et l'émission/réception d'updates doivent impérativement passer par `src/crdt/crdtManager.ts` (ou stores dédiés comme `networkStore.ts`). Aucune manipulation directe d'OpLog ou transaction opaque dispersée dans les vues UI.
    - Toutes les conversions binaires `Uint8Array` ↔ `Base64` (flux CRDT, invitations P2P, state vectors, snapshots Tauri) DOIVENT exclusivement employer `src/utils/encodingUtils.ts` (`uint8ArrayToBase64`, `base64ToUint8Array`) par blocs de 32 Ko, éliminant formellement toute boucle d'encodage manuelle en $O(N^2)$.
 5. Conformité Stricte de Consommation & Zéro Réexportation Opaque : Tout fichier (`components/**`, `stores/**`, `hooks/**`) DOIT importer ses types exclusivement depuis `src/types` (jamais depuis des stores intermédiaires comme `vaultStore`), ses hooks depuis `src/hooks`, ses utilitaires purs depuis `src/utils`, et ses flux collaboratifs via `crdtManager`. Interdiction formelle pour un store de réexporter des types de domaine externes.
-6. Zéro émoji dans l'interface et le code applicatif (icônes vectorielles sobres DuotoneIcon/SVG).
+6. Centralisation du Thème & Palettes : Toute constante de style/couleur transverse (dont `COLLABORATIVE_PALETTE`, tokens HSL ambre, modes sombre/clair) DOIT impérativement résider dans `src/theme/theme.ts` et ne jamais être définie dans des stores réseau ou des composants.
+7. Centralisation des Utilitaires de Packaging IA : Tout utilitaire de formatage et d'assemblage de contexte Markdown / YAML pour les LLMs (`packageContextForAI`) DOIT résider dans `src/utils/aiContextUtils.ts` et être réexporté via `src/utils/index.ts`.
+8. Zéro émoji dans l'interface et le code applicatif (icônes vectorielles sobres DuotoneIcon/SVG).
 </context>
 
 <rules>
