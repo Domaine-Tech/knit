@@ -190,15 +190,19 @@
 | B-043a | Playbook d'exploitation Knit pour agents IA (à l'init du coffre) : doc générée (`GUIDE_IA.md` ou section riche de `KNIT.md`) pour maximiser les capacités Knit au service de l'humain — tâches B-054, Doc-Driven Views, blocs `knit-*`, slash, WikiLinks, assets, conventions de dossiers, handoff `AI_MEMORY` ; coché avec B-043 dans le Wizard | 🔴 | 📋 | Sprint 7 |
 | B-051 | Mode "Réseau Local Strict / Air-Gapped" (LAN-Only Toggle désactivant les relays WAN) | 🟡 | 📋 | Sprint 7 |
 
-### Sprint 8 — Distribution & Polish
+### Sprint 8 — Packaging Multi-OS, CI/CD Automatisée & Auto-Updater
 
 | # | Tâche | Priorité | Statut | Sprint |
 |---|---|---|---|---|
-| B-037 | Installateur Windows (`.msi` / `.exe`) | 🔴 | 📋 | Sprint 8 |
-| B-038 | Installateur Linux (`.AppImage` / `.deb`) | 🔴 | 📋 | Sprint 8 |
-| B-039 | Notifications système (nouveau pair connecté, sync terminée) | 🟡 | 📋 | Sprint 8 |
-| B-040 | Tray icon avec menu contextuel | 🟡 | 📋 | Sprint 8 |
-| B-041 | Tests end-to-end (Tauri + 2 pairs P2P) | 🟠 | 📋 | Sprint 8 |
+| B-037 | Installateur Windows (`.exe` NSIS moderne & `.msi` signés via Tauri v2) | 🔴 | 📋 | Sprint 8 |
+| B-038 | Installateur Linux (`.AppImage` universel & paquet `.deb` Debian/Ubuntu) | 🔴 | 📋 | Sprint 8 |
+| B-038a | Bundle macOS natif (`.dmg` interactif & `.app` Universal Binary Apple Silicon + Intel) | 🔴 | 📋 | Sprint 8 |
+| B-038b | Pipeline CI/CD GitHub Actions multi-OS (Matrix `windows-latest`, `macos-latest`, `ubuntu-22.04`, `tauri-action`, rust-cache & publication release automatique) | 🔴 | 📋 | Sprint 8 |
+| B-038c | Système de Mise à Jour Automatique In-App (Tauri v2 Updater, signature cryptographique Minisign, manifeste `latest.json` & dialogue UI de mise à jour 1-clic) | 🔴 | 📋 | Sprint 8 |
+| B-038d | Optimisation des binaires & profils de release (Cargo `[profile.release]` LTO fat, `strip = true`, `codegen-units = 1`, `panic = "abort"`, bundle Vite optimisé) | 🟠 | 📋 | Sprint 8 |
+| B-039 | Notifications système (nouveau pair connecté, sync terminée, mise à jour disponible) | 🟡 | 📋 | Sprint 8 |
+| B-040 | Tray icon avec menu contextuel et indicateur d'état réseau | 🟡 | 📋 | Sprint 8 |
+| B-041 | Tests end-to-end automatisés (Tauri + 2 pairs virtuels en simultané) | 🟠 | 📋 | Sprint 8 |
 | B-041a | Virtualisation de l'arborescence (Windowing Sidebar pour 50 000+ notes sans lag) | 🟠 | 📋 | Sprint 8 |
 | B-050 | Cache LRU des Documents CRDT & Libération Mémoire (LRU Doc Cache max 20 Y.Docs) | 🟠 | 📋 | Sprint 8 |
 | B-042 | README final + screenshots + documentation utilisateur | 🟠 | 📋 | Sprint 8 |
@@ -220,5 +224,4 @@
 | B-108 | Système de plugins pour vues custom | 🟢 | 💡 |
 | B-110 | Diagrammes Mermaid avancés : `gantt`, `classDiagram` | 🟡 | 💡 |
 | B-111 | Diagrammes Mermaid complexes : `pie`, `mindmap`, `timeline`, `gitGraph` | 🟢 | 💡 |
-| B-112 | Support macOS | 🟡 | 💡 |
 | B-113 | Application mobile (Tauri mobile) | 🟢 | 💡 |

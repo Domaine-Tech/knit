@@ -22,6 +22,7 @@
 - **[2026-10-18]** : Prompts **1+9+12** (4e) : dates unifiées (`toIsoDate`→`formatIsoDate`) ; `findTableBounds` branché ; `TaskPriority` + `cycleTaskStatus` ; `fileStem`/`normalizeRelPath` ; GraphView→hooks ; `DocViewChrome` ; `vaultCalendarOps` ; IPC wrappers ; guards JSON ; debugStore typé ; oxlint `!` → error. tsc+lint+cargo OK.
 - **[2026-10-18]** : Prompts 1+9+12 (3e) : MonthGridCell ; types DropTarget/… ; oxlint any.
 - **[2026-10-18]** : Sprint 6ter clôturé ; runtime **0.4.0** ; `docTypeRegistry`.
+- **[2026-10-18]** : Spécification Sprint 8 Packaging Multi-OS / CI/CD Tauri v2 / Auto-Updater / macOS natif ; Cargo.toml `[profile.release]` optimisé (LTO fat, strip, codegen-units 1).
 
 ## 4. Tâches Actives
 - [x] Sprint 5 / 6 / 6bis / **6ter** clôturés (v0.4.0).

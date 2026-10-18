@@ -234,7 +234,7 @@ export class KnitTasksWidget extends WidgetType {
       );
       if (ok) {
         item.status = next;
-        check.setAttribute('data-tooltip', statusLabel(next));
+        check.setAttribute('data-tooltip', taskStatusLabel(next));
         if (next === 'x') {
           check.innerHTML =
             '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
