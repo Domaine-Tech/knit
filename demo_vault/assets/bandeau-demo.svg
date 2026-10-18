@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="160" viewBox="0 0 800 160" fill="none">
+  <rect width="800" height="160" rx="10" fill="#141414"/>
+  <rect x="1" y="1" width="798" height="158" rx="9" stroke="#2A2A2A" stroke-width="2"/>
+  <circle cx="72" cy="80" r="28" fill="#F59E0B" fill-opacity="0.18"/>
+  <circle cx="72" cy="80" r="18" stroke="#F59E0B" stroke-width="2.5" fill="none"/>
+  <path d="M62 74c6 3 12 9 15 15" stroke="#FBBF24" stroke-width="2" stroke-linecap="round"/>
+  <text x="120" y="72" fill="#F5F5F5" font-family="Segoe UI, sans-serif" font-size="22" font-weight="600">Medias locaux du coffre</text>
+  <text x="120" y="102" fill="#A3A3A3" font-family="Segoe UI, sans-serif" font-size="14">Dossier assets/ synchronisable via Iroh Blobs</text>
+  <text x="120" y="128" fill="#737373" font-family="Segoe UI, sans-serif" font-size="12">Syntaxe : ![legende](assets/fichier.svg) sur une ligne seule</text>
+</svg>

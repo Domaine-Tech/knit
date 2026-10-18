@@ -22,6 +22,7 @@
 | B-035b | Volet Historique de versions & Time Travel (Diff visuel + Restauration) | 🟠 | 📋 | — |
 | B-036 | Créer le fichier `.knitshare` et la structure par défaut d'un vault | 🟠 | 📋 | — |
 | B-043 | Kit Universel de Règles & Skills Multi-Agents IA (Cursor `.cursor/rules/`, Claude `CLAUDE.md`, Antigravity `.agents/skills/`, Copilot `.github/`, Windsurf, Cline) | 🔴 | 📋 | — |
+| B-043a | Playbook d'exploitation Knit pour agents IA (doc init coffre : maximiser capacités au service de l'humain) | 🔴 | 📋 | — |
 | B-051 | Mode "Réseau Local Strict / Air-Gapped" (LAN-Only Toggle coupant tout trafic Internet) | 🟡 | 📋 | — |
 
 ---
@@ -44,6 +45,7 @@
   - `.windsurfrules` (Windsurf IDE)
   - `.clinerules` & `.aider.conf.yml` (Cline, Roo Code & Aider)
   - Chaque fichier enseigne le respect strict du frontmatter YAML, la protection du `.knit/`, l'utilisation de `assets/` et la non-régression Markdown pur.
+- [ ] **Playbook d'exploitation IA (B-043a)** : En plus des règles de non-régression, le Wizard / `init_vault` génère une documentation d'usage (`GUIDE_IA.md` et/ou section dédiée dans `KNIT.md`) pour que l'agent maximise Knit *au service de l'humain* : 7 statuts & `!p1..p3`, Doc-Driven Views (`type:`), blocs dynamiques `knit-toc|files|query|tasks`, slash commands, WikiLinks & backlinks, `assets/`, structure `wiki/` / `projet/taches/`, protocole handoff `.knit/AI_MEMORY.md`. Zéro implémentation hors Sprint 7.
 - [ ] **Mode Réseau Local Strict / Air-Gapped (B-051)** : Switch dans les paramètres désactivant les relays WAN Iroh et bornant le trafic aux échanges LAN directs (mDNS pur, 0 paquet sortant sur Internet).
 
 ---
@@ -54,7 +56,7 @@
 
 | Date | Tâche ajoutée | Raison | Intégré au sprint ? |
 |---|---|---|---|
-| — | — | — | — |
+| 2026-10-18 | B-043a Playbook d'exploitation IA | Compléter B-043 : règles + doc pour maximiser Knit au service de l'humain à l'init | Oui |
 
 ---
 

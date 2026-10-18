@@ -104,6 +104,7 @@ Knit élimine l'amnésie des agents IA entre conversations tout en préservant l
 ### ⚡ 5. Ergonomie Sérénité & Performance Zéro Saccade
 - **Mode Zen (`Ctrl+Shift+F`)** : Masquage en 1 clic de l'interface pour une concentration absolue dans une colonne épurée de 760px.
 - **Appairage P2P LAN Simplifié** : Invitation instantanée par **Code PIN éphémère à 6 chiffres** ou **QR Code**, sans copier de clés de 64 caractères.
+- **Blocs Dynamiques Dataview (Sprint 6bis)** : fences `knit-toc`, `knit-files`, `knit-query`, `knit-tasks` + Slash `/sommaire` `/fichiers` `/requete` `/taches-globales` ; index Frontmatter en mémoire via `vaultStore.queryFiles()` (projection Live Preview, zéro pollution disque). Démo : [`demo_vault/blocs-dynamiques.md`](demo_vault/blocs-dynamiques.md).
 - **Lazy-Rendering (`IntersectionObserver`)** : Les blocs Mermaid et requêtes Dataview ne sont calculés que lorsqu'ils entrent dans le viewport lors du scroll (ouverture instantanée en 0ms).
 - **Flush Disque Atomique (250ms)** : Frappes en RAM CRDT en < 1ms, écriture disque debouncée avec hachage XXH3 WriteGuard pour préserver la durée de vie des SSD.
 
@@ -190,8 +191,8 @@ Le projet suit scrupuleusement la méthodologie SemVer et les sprints documenté
 
 - [x] **v0.1.0 — Éditeur Local & Boucle FS ↔ CRDT** : Live preview CodeMirror 6, WriteGuard XXH3, Corbeille OS native ([Changelog v0.1.0](versions/v0.1.0/CHANGELOG.md)).
 - [x] **v0.2.0 — Réseau P2P & Résilience** : Transport Iroh QUIC, mDNS local, invitations P2P et synchronisation des assets ([Changelog v0.2.0](versions/v0.2.0/CHANGELOG.md)).
-- [ ] **v0.3.0 — Vues Projets, Autocomplétion & Mermaid** : Doc-Driven Views (Kanban/Table), autocomplétion omni-trigger (`B-052`), smart UX (`B-053`), tâches étendues (`B-054`), mode Zen (`B-055`) ([Changelog v0.3.0](versions/v0.3.0/CHANGELOG.md)).
-- [ ] **v0.4.0 — Requêtes Dataview & Vues Immersives** : Blocs dynamiques `knit-query`, Agenda global multi-collaborateurs (`B-031a`), Canvas infini, Diaporama ([Changelog v0.4.0](versions/v0.4.0/CHANGELOG.md)).
+- [x] **v0.3.0 — Vues Projets, Autocomplétion & Mermaid** : Doc-Driven Views (Kanban/Table), autocomplétion omni-trigger (`B-052`), smart UX (`B-053`), tâches étendues (`B-054`), mode Zen (`B-055`) ([Changelog v0.3.0](versions/v0.3.0/CHANGELOG.md)).
+- [ ] **v0.4.0 — Requêtes Dataview & Vues Immersives** : Sprint **6bis livré** (`knit-toc` / `knit-files` / `knit-query` / `knit-tasks`, `queryFiles`, B-047) — Sprint **6ter** à venir (Agenda `B-031a`, Canvas, Diaporama) ([Changelog v0.4.0](versions/v0.4.0/CHANGELOG.md)).
 - [ ] **v1.0.0 — Production Release** : Wizard finalisé, installateurs multiplateformes, présence collaborative avancée ([Changelog v1.0.0](versions/v1.0.0/CHANGELOG.md)).
 
 Consultez le **[Backlog Global](versions/BACKLOG.md)** pour le détail de l'ensemble des User Stories.

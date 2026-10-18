@@ -81,7 +81,8 @@ graph TD
 │    (wiki/, projet/taches/, KNIT.md)              │
 │                                                  │
 │  ☑ Configurer les règles pour agents IA          │
-│    (Cursor, Claude Code, Antigravity, Copilot)   │
+│    (kit B-043 + playbook d'exploitation B-043a)  │
+│    (Cursor, Claude, Copilot + GUIDE_IA.md)       │
 │                                                  │
 │  ☐ Initialiser un dépôt Git                     │
 │    (ajoute .knit/ au .gitignore)                 │
@@ -219,6 +220,7 @@ mon-projet/
 │   └── cache/               # (vide au départ)
 ├── .knitshare               # Config partagée (nom, conventions)
 ├── KNIT.md                  # Instructions universelles pour les IA
+├── GUIDE_IA.md              # Playbook d'exploitation (B-043a) — maximiser Knit pour l'humain
 ├── .cursor/rules/knit.mdc   # Règles d'édition pour Cursor IDE
 ├── CLAUDE.md                # Directives pour Claude Code CLI
 ├── .agents/skills/knit/     # Skill outillé pour Antigravity / Gemini

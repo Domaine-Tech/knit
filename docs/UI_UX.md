@@ -54,7 +54,7 @@ Pour concevoir une expérience immédiatement familière et ultra-productive, Kn
 
 | Idée Notion | Implémentation concrète dans Knit |
 |---|---|
-| **Le menu Slash Command (`/`)** | Taper `/` sur une ligne vide ouvre un menu de sélection rapide ultra-léger : `/titre`, `/tache`, `/callout`, `/mermaid`, `/code`, `/image`. Tout se fait au clavier en 1 seconde. |
+| **Le menu Slash Command (`/`)** | Taper `/` sur une ligne vide ouvre un menu de sélection rapide ultra-léger : `/titre`, `/tache`, `/callout`, `/mermaid`, `/code`, `/image`, et les blocs dynamiques `/sommaire`, `/fichiers`, `/requete`, `/taches-globales` (`knit-toc` / `knit-files` / `knit-query` / `knit-tasks`). Tout se fait au clavier en 1 seconde. |
 | **Les Callouts / Encarts visuels** | Standardisés en Markdown natif (`> [!NOTE]`, `> [!TIP]`, `> [!WARNING]`). Rendu sobre avec icône duotone discrète, fond neutre très doux et bordure fine. |
 | **Les Propriétés en en-tête de page** | Les métadonnées du frontmatter YAML (`statut:`, `priorite:`, `assigne:`, `echeance:`) s'affichent sous forme de pastilles épurées en haut de la note. Cliquer sur un statut ouvre un dropdown sobre qui réécrit le YAML sans casser le document. |
 | **Les Vues de données (Kanban & Table)** | Le dossier `projet/taches/` peut être visualisé en document simple, en colonnes Kanban déplaçables, ou en Tableau récapitulatif avec filtres. |
@@ -143,10 +143,11 @@ Knit intègre un système multi-onglets ultra-rapide respectant **100% des conve
 
 ### 4. Doc-Driven Views & TabBar Universelle Permanente
 Knit rompt avec l'ergonomie rigide où l'utilisateur doit changer manuellement de vue :
-- **TabBar Permanente** : La barre d'onglets reste visible et active en permanence, que le document actif soit une Note Markdown, un Tableau Kanban ou une Vue Table.
-- **Icônes Dynamiques par Document** : Chaque onglet affiche un pictogramme Reicon correspondant au type de document (`file-markdown`, `kanban`, ou `table`).
+- **TabBar Permanente** : La barre d'onglets reste visible et active en permanence, que le document actif soit une Note Markdown, un Tableau Kanban, une Vue Table ou une **Vue Image** (média).
+- **Icônes Dynamiques par Document** : Chaque onglet affiche un pictogramme correspondant au type (`file-markdown`, `kanban`, `table`, ou `image`).
 - **Navigation Zéro Clic** : Cliquer sur un fichier dans l'explorateur ou changer d'onglet résout instantanément la vue configurée dans le Frontmatter YAML (`type: kanban`, `type: table`, `type: note`).
-- **Bouton Universel Source `</>` ↔ Rendu** : Dans l'en-tête de chaque onglet, un bouton sobre `[Code Source </>]` (raccourci `Ctrl+E` ou `Ctrl+/`) permet de basculer instantanément entre la représentation visuelle (Kanban interactif, Tableau filtrable, Live Preview) et l'éditeur de texte brut CodeMirror 6.
+- **Médias (`assets/`)** : clic sur `.svg` / `.png` / `.jpg` / `.gif` / `.webp`… → onglet `docType: image` (`ImageView` : aperçu, copie `![…](chemin)`, révélation explorateur). Pas de bascule Source ni conversion YAML.
+- **Bouton Universel Source `</>` ↔ Rendu** : Dans l'en-tête de chaque onglet Markdown, un bouton sobre `[Code Source </>]` (raccourci `Ctrl+E` ou `Ctrl+/`) permet de basculer entre la représentation visuelle et le Markdown brut CodeMirror 6. Masqué sur les onglets image.
 
 ### 5. Menus Contextuels de Conversion de Document
 Accessible par clic droit sur un fichier (arbre `TreeNode`) ou sur un onglet (`TabBar`) :
@@ -409,6 +410,22 @@ Tout le design repose sur un fichier unique de variables CSS :
   --knit-shadow-lg:     0 12px 32px rgba(0,0,0,0.4);
 }
 ```
+
+---
+
+## Formulaires & listes déroulantes (`forms.css`)
+
+Tous les champs passent par le design system centralisé `knit-app/src/theme/forms.css` (`.knit-input`, `.knit-checkbox`, `.knit-btn`, etc.).
+
+| Élément | Règle |
+|---|---|
+| **Inputs / checkboxes / boutons** | Classes `forms.css` uniquement — pas de styles ad-hoc |
+| **Listes déroulantes** | **Jamais** de `<select>` natif (popup OS hors DA) |
+| **React** | Composant `<KnitSelect>` (`components/Form/KnitSelect.tsx`) |
+| **Widgets Live Preview (DOM)** | `createKnitSelectDom()` (`utils/knitSelect.ts`) |
+| **Apparence du menu** | Même langage que les menus contextuels : `--knit-radius-md`, `--knit-surface`, `--knit-shadow-lg`, options arrondies `--knit-radius-sm`, sélection en `--knit-primary-alpha` |
+
+Classes CSS : `.knit-select-root`, `.knit-select-trigger`, `.knit-select-menu`, `.knit-select-option`.
 
 ---
 

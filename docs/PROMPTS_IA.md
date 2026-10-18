@@ -475,12 +475,13 @@ Sources de vérité absolues à auditer :
 2. Documentation technique dans `docs/` (`ARCHITECTURE.md`, `MARKDOWN_SPEC.md`, `UI_UX.md`, `PILIERS.md`, `SOLUTIONS.md`, `README.md`).
 3. Suivi de versions dans `versions/` (`BACKLOG.md`, `VERSIONING.md`, `vX.Y.Z/CHANGELOG.md`, `vX.Y.Z/sprint-N/SPRINT.md`).
 4. Règles des agents IA (Règle B-043) : `KNIT.md`, `.cursorrules`, `CLAUDE.md`, `.cursor/rules/*.mdc`, `.knit/AI_MEMORY.md`.
+5. Coffre de démonstration : `demo_vault/` (syntaxes Markdown, blocs dynamiques, vues Doc-Driven, médias `assets/`).
 </context>
 
 <rules>
 1. STRICT MODE PLAN : Ne modifier aucun fichier lors de ce rapport d'audit.
 2. Traquer la moindre divergence de version, de terminologie ou de comportement technique entre ce qui est codé et ce qui est documenté.
-3. Vérifier que toute nouvelle fonctionnalité codée récemment possède sa spécification dans `docs/` et sa traçabilité dans le changelog actif.
+3. Vérifier que toute nouvelle fonctionnalité codée récemment possède sa spécification dans `docs/`, sa traçabilité dans le changelog actif, **et un exemple dans `demo_vault/`**.
 4. Vérifier que la mémoire partagée `.knit/AI_MEMORY.md` respecte son budget compact (< 70 lignes / ~400 tokens) et reflète la réalité du code.
 5. Détecter les liens brisés ou références obsolètes dans l'arborescence Markdown.
 </rules>
@@ -500,8 +501,12 @@ Sources de vérité absolues à auditer :
 - Confronte `KNIT.md`, `.cursorrules`, `CLAUDE.md`, `.cursor/rules/*.mdc` et `.knit/AI_MEMORY.md`.
 - Vérifie qu'aucune règle récente n'est manquante dans l'un des fichiers de consignes.
 
-Étape 4 : Détection des Éléments Orphelins & Liens Morts
-- Détecte les fonctionnalités codées mais absentes de la documentation ou du backlog.
+Étape 4 : Audit du Coffre de Démonstration (`demo_vault/`)
+- Vérifie que chaque syntaxe / bloc / type de vue runtime récemment livré a un exemple visible dans `demo_vault/` (`accueil.md`, `live-preview.md`, `blocs-dynamiques.md`, `assets/`, etc.).
+- Signale toute feature user-facing absente de la démo.
+
+Étape 5 : Détection des Éléments Orphelins & Liens Morts
+- Détecte les fonctionnalités codées mais absentes de la documentation, du backlog ou de `demo_vault/`.
 - Détecte les promesses de fonctionnalités documentées mais non encore implémentées (à consigner dans `BACKLOG.md`).
 </step_by_step_instructions>
 

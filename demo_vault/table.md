@@ -24,6 +24,8 @@ Les cartes de chaque categorie sont affichees dans une table interactive avec re
 - [x] Mode Live Preview Obsidian avec masquage discret [[live-preview]] !p1 @Sublix #ui/editor
 - [x] Blocs de code multi-langages avec bouton Copier !p2 #ui
 - [x] Rendu Mermaid integre avec coloration dynamique !p2 #diagramme
+- [x] Blocs dynamiques knit-toc / knit-files / knit-query / knit-tasks [[blocs-dynamiques]] !p1 @Sublix #dataview
+- [x] Assistant tableaux GFM (toolbar + realign) [[blocs-dynamiques]] !p2 #ux
 - [ ] Panneau lateral des retroliens et mentions non liees [[liens-navigation]] !p2 #backlinks
 - [ ] Hover Preview tooltip au survol des WikiLinks [[live-preview]] !p3 #ux
 
@@ -31,4 +33,4 @@ Les cartes de chaque categorie sont affichees dans une table interactive avec re
 
 - [x] Specification Markdown pure dans [[document-long]] !p2 #doc
 - [x] Regles agents IA sans emoji dans .cursorrules et CLAUDE.md !p1 #ia
-- [ ] Guide d'utilisation utilisateur final v0.3.0 !p3 #doc
+- [ ] Guide d'utilisation utilisateur final v0.4.0 !p3 #doc

@@ -1,7 +1,10 @@
 # Configuration partagée du coffre-fort Knit
 vault_name: "Knit Workspace"
 version: "0.3.0"
+# Demo Sprint 6bis : blocs knit-* + projet/taches/ pour knit-query
 statuses:
   - a-faire
   - en-cours
   - termine
+  - bloque
+  - annule

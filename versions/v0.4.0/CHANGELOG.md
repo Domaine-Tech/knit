@@ -1,28 +1,30 @@
 # Changelog — v0.4.0
 
 > Version 0.4.0 — Requêtes Dynamiques & Vues Visuelles Avancées (Sprint 6bis & Sprint 6ter).  
-> Statut : 📋 Planifié
+> Statut : 🚀 En cours (Sprint 6bis clôturé — runtime encore en 0.3.0 jusqu'à livraison 6ter)
 
 ---
 
 ## ✨ Nouveautés
 
-### Sprint 6bis — Moteur Dataview & Blocs Dynamiques
+### Sprint 6bis — Moteur Dataview & Blocs Dynamiques _(clôturé — runtime encore en 0.3.0 jusqu'à livraison 6ter)_
 - **Moteur de requêtes Frontmatter & Indexation locale en mémoire (`vaultStore.queryFiles()`) (B-031e)** :
-  - Indexation réactive des métadonnées YAML sans scanner le disque à chaque frappe.
+  - Indexation réactive des métadonnées YAML (`frontmatterIndex`) sans scanner le disque à chaque frappe.
+  - `mtime` réel via `FileNode.mtime_ms` (scan FS Rust) / horodatage déterministe en mode démo.
 - **Bloc dynamique `knit-files` (B-031f)** :
-  - Index et listing automatique d'un dossier (titre, icône, statut, date de mise à jour).
+  - Index et listing automatique d'un dossier (titre, icônes Duotone par `docType`, date de mise à jour).
 - **Bloc dynamique `knit-query` (B-031g)** :
-  - Tableaux et listes filtrables style Dataview (`from`, `where`, `sort`, `columns`).
+  - Tableaux et listes filtrables style Dataview (`from`, `where`, `sort`, `columns`) ; édition `statut` depuis le widget.
 - **Bloc dynamique `knit-toc` (B-031h)** :
   - Sommaire cliquable généré automatiquement d'après les titres de la note hôte.
 - **Bloc dynamique `knit-tasks` (B-031i)** :
-  - Agrégateur transversal de cases à cocher `- [ ]` synchronisé via CRDT (cocher met à jour le fichier d'origine).
+  - Agrégateur transversal de cases à cocher `- [ ]` synchronisé via CRDT / writeFile (cocher met à jour le fichier d'origine).
+  - Micro-jauge d'avancement feutrée 2px et badge réactif (`X/Y terminées • Z%`) mis à jour en direct au clic.
 - **Déclencheurs Slash commands dédiés (B-031j)** :
   - Insertion rapide `/sommaire`, `/fichiers`, `/requete`, `/taches-globales`.
-- **Assistant Visuel de Tableaux Markdown (B-047)** :
-  - Mini-toolbar contextuelle au survol d'un tableau GFM (`+ Ligne`, `+ Colonne`, `Alignement`, `Supprimer`).
-  - Navigation ultra-fluide avec `Tab` et `Shift+Tab`, ajout automatique de ligne sur `Entrée`.
+- **Assistant Visuel de Tableaux Markdown (B-047 & B-047a)** :
+  - Mini-toolbar contextuelle avec détection de la colonne active sous curseur (`Col. X/Y`), alignement contextuel (`Align. G/C/D` ciblé), `+ Ligne`, `+ Colonne`, `Supprimer`, `Aligner`.
+  - Navigation `Tab` / `Shift+Tab`, ajout de ligne sur `Entrée`, `formatTableColumns`.
 
 ### Sprint 6ter — Vues Immersives
 - **Agenda & Échéancier Global du Coffre (`type: calendar` & Vue Globale) (B-031a)** :

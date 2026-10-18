@@ -23,3 +23,15 @@ globs: **/*.md, **/*.yaml, **/*.yml
 - Tout diagramme doit être encapsulé dans un bloc standard ```` ```mermaid ````.
 - Privilégier les diagrammes vectoriels sobres (`graph`, `flowchart`, `sequenceDiagram`).
 - Éviter d'insérer des styles CSS inline dans le code Mermaid : le moteur Knit applique automatiquement le thème lié à `--knit-hue`.
+
+## 4. Blocs Dynamiques (Dataview — projection mémoire)
+- Langages reconnus : ```` ```knit-toc ````, ```` ```knit-files ````, ```` ```knit-query ````, ```` ```knit-tasks ````.
+- Le corps du fence reste du Markdown déclaratif (`clé: valeur`) ; aucune balise HTML propriétaire n'est écrite sur le disque.
+- Les vues sont projetées par le Live Preview via `vaultStore.queryFiles()` / index Frontmatter.
+- Slash dédiés : `/sommaire`, `/fichiers`, `/requete`, `/taches-globales`.
+- Exemples de référence : `demo_vault/blocs-dynamiques.md`, `demo_vault/live-preview.md`.
+
+## 5. Images & Médias (`assets/`)
+- Syntaxe : `![légende](assets/fichier.ext)` sur une **ligne seule** pour la carte Live Preview.
+- Les binaires vivent dans `assets/` (sync Iroh Blobs, hors CRDT texte).
+- Banc d'essai : `demo_vault/assets/` + section images de `demo_vault/live-preview.md`.

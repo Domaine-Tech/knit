@@ -24,6 +24,8 @@
 - **Kit Universel pour IA Agentiques (B-043)** :
   - Génération automatique des règles et compétences pour toutes les IA agentiques du marché : `KNIT.md`, `.cursor/rules/knit.mdc`, `CLAUDE.md`, `.agents/skills/knit/SKILL.md`, `.github/copilot-instructions.md`, `.windsurfrules`, `.clinerules`, `.aider.conf.yml`.
   - Intégration transparente enseignant le respect du frontmatter YAML, la protection du moteur `.knit/` et le classement dans `assets/`.
+- **Playbook d'exploitation Knit pour agents IA (B-043a)** :
+  - À l'init du coffre (avec B-043) : documentation générée (`GUIDE_IA.md` et/ou section riche de `KNIT.md`) pour que l'agent maximise les capacités Knit *au service de l'humain* (tâches étendues, Doc-Driven Views, blocs dynamiques, slash, WikiLinks, assets, handoff `AI_MEMORY`).
 - **Mode Réseau Local Strict / Air-Gapped (B-051)** :
   - Interrupteur de coupure totale du trafic Internet WAN dans les préférences, forçant le protocole P2P en mDNS direct sans contact relay.
 - **Cache LRU & Performances Mémoire (B-050 & B-041a)** :

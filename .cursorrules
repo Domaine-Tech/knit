@@ -10,6 +10,7 @@ Vous êtes un agent IA collaborant au développement de **Knit**, une applicatio
    - Fichiers `.md` stockés en clair sur le disque de l'utilisateur.
    - Synchronisation réseau P2P chiffrée de bout en bout via **Iroh** (QUIC). Aucun serveur central de stockage.
    - Images et médias stockés dans `assets/` et synchronisés via **Iroh Blobs**.
+   - Clic tree sur un média → onglet `docType: image` / `ImageView` (aperçu, pas d'édition Markdown du binaire).
    - Données locales dans `.knit/` (JAMAIS versionné ni partagé). Configuration partagée dans `.knitshare` (versionné et synchronisé).
 
 2. **Éditeur Markdown Pur (CodeMirror 6)** :
@@ -39,6 +40,7 @@ Pour toute modification du frontend React (`knit-app`) :
   - Pour les fichiers et dossiers, proposer systématiquement le panel d'actions complet : *Copier le chemin relatif*, *Copier le chemin absolu*, *Copier le nom*, *Copier le lien Markdown* (`[titre](chemin)`), et *Révéler dans l'explorateur*.
 - **Design System des Formulaires (`src/theme/forms.css`) & Robustesse Clic Molette** :
   - **Zéro composant de formulaire natif dépareillé** : Tous les `input`, `checkbox`, `button` et labels doivent utiliser les classes et variables de `forms.css` (`.knit-input`, `.knit-input-group`, `.knit-input-seamless`, `.knit-checkbox`, `.knit-label`, `.knit-btn`).
+  - **Listes déroulantes (`KnitSelect`)** : Interdiction des `<select>` natifs (popup OS non stylable). En React : `components/Form/KnitSelect.tsx` ; en DOM/widgets Live Preview : `createKnitSelectDom()` (`utils/knitSelect.ts`). Styles : `.knit-select-root` / `.knit-select-trigger` / `.knit-select-menu` / `.knit-select-option` (même DA que les menus contextuels).
   - **Conventions Clic Molette (`button === 1`)** : Toujours neutraliser le curseur boussole navigateur via `if (e.button === 1) e.preventDefault()` dans `onMouseDown`, et placer exclusivement l'action applicative (ouvrir note, fermer onglet) dans `onAuxClick` pour éviter tout double déclenchement. Le `toastStore` déduplique automatiquement les toasts identiques < 400ms.
 - **Tooltips Modernes & Rendu des Icônes** :
   - **Interdiction des infobulles OS par défaut** : Utiliser le composant `<Tooltip>` ou les attributs `data-tooltip="Texte"` et `data-shortcut="Ctrl+X"`. Le conteneur global `TooltipContainer` intercepte automatiquement tout attribut `title` et extrait les raccourcis dans un badge `<kbd>`.
@@ -68,12 +70,15 @@ Pour toute modification du frontend React (`knit-app`) :
    - Ne jamais supprimer de tâches ou de documentation sans consigne explicite.
    - Rédiger les messages de commits en français clair et concis (ex: `feat(editor): ajout du collage d'images depuis le presse-papier`).
 5. **Synchronisation Continue des Règles IA (Règle B-043)** :
-   - Toute nouvelle fonctionnalité touchant au format de coffre (syntaxe Markdown, types de documents YAML `type: ...`, nouveaux blocs dynamiques, triggers d'autocomplétion `[[#...]]`, `@...`, dossiers de coffre) **DOIT être immédiatement répercutée** dans l'ensemble des fichiers de règles générés pour les IA (`KNIT.md`, `.cursor/rules/knit.mdc`, `CLAUDE.md`, `.agents/skills/knit/SKILL.md`, etc.). Aucun écart entre l'application et les instructions des agents n'est toléré.
+   - Toute nouvelle fonctionnalité touchant au format de coffre (syntaxe Markdown, types de documents YAML `type: ...`, nouveaux blocs dynamiques, triggers d'autocomplétion `[[#...]]`, `@...`, dossiers de coffre, médias `assets/`) **DOIT être immédiatement répercutée** dans l'ensemble des fichiers de règles générés pour les IA (`KNIT.md`, `.cursor/rules/knit.mdc`, `CLAUDE.md`, `.agents/skills/knit/SKILL.md`, etc.) **et intégrée dans `demo_vault/`** (banc d'essai / onboarding Vite). Aucun écart entre l'application, les instructions des agents et la démo n'est toléré.
 6. **Mémoire Agentique Persistante (`.knit/AI_MEMORY.md`) & Protocole Handoff** :
    - Au démarrage d'une session ou tâche, tout agent lit en priorité `.knit/AI_MEMORY.md` (~400 tokens) pour s'imprégner de l'état immédiat et des décisions validées sans recharger d'historiques volumineux.
    - À l'achèvement d'une tâche d'envergure ou d'une session, l'agent met à jour `.knit/AI_MEMORY.md` (sections *Historique Récent* et *Tâches Actives*) pour garantir une passation de témoin parfaite.
 7. **Norme de Tâches Étendues & Markdown Pur (B-054)** :
    - Respecter les 7 statuts reconnus par Knit (`- [ ]`, `- [/]`, `- [x]`, `- [-]`, `- [?]`, `- [>]`, `- [!]`), les priorités inline (`!p1`, `!p2`, `!p3`), les dates/heures (`@YYYY-MM-DD[ HH:mm[-HH:mm]]`) et assignations (`@collaborateur` ou `@vault`). Ne jamais introduire de balise HTML propriétaire pour les tâches.
+7bis. **Blocs Dynamiques Dataview (Sprint 6bis)** :
+   - Fences : ```` ```knit-toc ````, ```` ```knit-files ````, ```` ```knit-query ````, ```` ```knit-tasks ```` ; Slash `/sommaire`, `/fichiers`, `/requete`, `/taches-globales`.
+   - Index : `vaultStore.queryFiles()` / `frontmatterIndex` (projection mémoire, Markdown pur sur disque). Voir `docs/MARKDOWN_SPEC.md` §7.
 8. **Alignement Strict des Numéros de Version (Commit, Push, Cadrage & Livraison de Sprint)** :
    - **Règle absolue** : À chaque **commit Git**, **`git push`**, **construction/planification d'un sprint**, ou **livraison d'un sprint/version**, l'agent IA DOIT impérativement vérifier et garantir que le numéro de version est 100% aligné sur l'ensemble des sources de vérité du projet.
    - **Périmètre des 6 fichiers de code sources de vérité** :

@@ -1,3 +1,11 @@
+---
+type: note
+titre: Les 9 Piliers de Knit
+statut: termine
+priorite: moyenne
+tags: [wiki, piliers]
+---
+
 # Les 9 Piliers de Knit
 
 1. **Local-First** : Vos fichiers Markdown sur disque sont la source unique de vérité.

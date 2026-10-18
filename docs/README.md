@@ -11,8 +11,8 @@ Bienvenue dans la documentation officielle du projet **Knit**.
 | [VISION.md](VISION.md) | Vision globale, problème adressé, modèle mental et cas d'usage |
 | [PILIERS.md](PILIERS.md) | Les 9 piliers fondamentaux de Knit détaillés un par un |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Architecture technique, modules Tauri/Rust, protocole de synchronisation |
-| [MARKDOWN_SPEC.md](MARKDOWN_SPEC.md) | Spécification officielle du Markdown Knit, YAML Frontmatter & Doc-Driven Views |
-| [UI_UX.md](UI_UX.md) | Design system, tokens CSS, palette HSL dynamique et intégration Mermaid |
+| [MARKDOWN_SPEC.md](MARKDOWN_SPEC.md) | Spécification officielle du Markdown Knit, YAML Frontmatter, Doc-Driven Views & blocs dynamiques (`knit-*`, §7) |
+| [UI_UX.md](UI_UX.md) | Design system, tokens CSS, Slash commands (dont Dataview), palette HSL et Mermaid |
 | [SOLUTIONS.md](SOLUTIONS.md) | Réponses techniques aux 3 warnings et au caution (boucle watcher, CRDT, etc.) |
 | [COMMANDS.md](../COMMANDS.md) | Guide des commandes de développement, tests, linting et raccourcis |
 | [WIZARD.md](WIZARD.md) | Spécification et wireframes du Wizard d'initialisation (créer/rejoindre un coffre) |

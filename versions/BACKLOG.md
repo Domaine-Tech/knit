@@ -141,13 +141,20 @@
 
 | # | Tâche | Priorité | Statut | Sprint |
 |---|---|---|---|---|
-| B-031e | Moteur de requêtes Frontmatter & Indexation locale en mémoire (`vaultStore.queryFiles()`) | 🔴 | 📋 | Sprint 6bis |
-| B-031f | Bloc dynamique `knit-files` : index automatique d'un dossier (fichiers, icônes, date de mise à jour) | 🟠 | 📋 | Sprint 6bis |
-| B-031g | Bloc dynamique `knit-query` : tableaux et listes filtrables style Dataview (`from`, `where`, `columns`) | 🔴 | 📋 | Sprint 6bis |
-| B-031h | Bloc dynamique `knit-toc` : sommaire automatique cliquable de la note courante basé sur les titres | 🟠 | 📋 | Sprint 6bis |
-| B-031i | Bloc dynamique `knit-tasks` : agrégateur transversal de cases à cocher `- [ ]` synchronisé via CRDT | 🟠 | 📋 | Sprint 6bis |
-| B-031j | Déclencheurs Slash command (`/sommaire`, `/fichiers`, `/requete`, `/taches-globales`) | 🟡 | 📋 | Sprint 6bis |
-| B-047 | Assistant Visuel de Tableaux Markdown (Interactive Table Helper avec navigation `Tab`) | 🟠 | 📋 | Sprint 6bis |
+| B-031e | Moteur de requêtes Frontmatter & Indexation locale en mémoire (`vaultStore.queryFiles()`) | 🔴 | ✅ | Sprint 6bis |
+| B-031f | Bloc dynamique `knit-files` : index automatique d'un dossier (fichiers, icônes, date de mise à jour) | 🟠 | ✅ | Sprint 6bis |
+| B-031g | Bloc dynamique `knit-query` : tableaux et listes filtrables style Dataview (`from`, `where`, `columns`) | 🔴 | ✅ | Sprint 6bis |
+| B-031h | Bloc dynamique `knit-toc` : sommaire automatique cliquable de la note courante basé sur les titres | 🟠 | ✅ | Sprint 6bis |
+| B-031i | Bloc dynamique `knit-tasks` : agrégateur transversal de cases à cocher `- [ ]` synchronisé via CRDT | 🟠 | ✅ | Sprint 6bis |
+| B-031j | Déclencheurs Slash command (`/sommaire`, `/fichiers`, `/requete`, `/taches-globales`) | 🟡 | ✅ | Sprint 6bis |
+| B-047 | Assistant Visuel de Tableaux Markdown (Interactive Table Helper avec navigation `Tab`) | 🟠 | ✅ | Sprint 6bis |
+
+#### Suivis post-clôture 6bis
+
+| # | Tâche | Priorité | Statut | Sprint |
+|---|---|---|---|---|
+| B-047a | Toolbar tableaux : alignement G/C/D sur la **colonne sous curseur** (avec badge Col. X/Y) | 🟡 | ✅ | Sprint 6bis |
+| B-057 | Unifier l'index Frontmatter TS avec `KnitSuggestIndex` Rust (éviter double scan à long terme) | 🟠 | 💡 | — |
 
 ### Sprint 6ter — Vues Immersives (Canvas, Calendrier & Diaporama)
 
@@ -178,6 +185,7 @@
 | B-036 | Créer le fichier `.knitshare` et la structure par défaut | 🟠 | 📋 | Sprint 7 |
 | B-017b | Appairage P2P LAN Simplifié (Code PIN éphémère à 6 chiffres & QR Code dynamique pour inviter sans clé 64 chars) | 🟠 | 📋 | Sprint 7 |
 | B-043 | Kit Universel Multi-Agents IA & Registre de Mémoire Persistante (`.knit/AI_MEMORY.md`, Cursor `.cursor/rules/`, Claude `CLAUDE.md`, Antigravity `.agents/skills/`, Copilot, etc.) | 🔴 | 📋 | Sprint 7 |
+| B-043a | Playbook d'exploitation Knit pour agents IA (à l'init du coffre) : doc générée (`GUIDE_IA.md` ou section riche de `KNIT.md`) pour maximiser les capacités Knit au service de l'humain — tâches B-054, Doc-Driven Views, blocs `knit-*`, slash, WikiLinks, assets, conventions de dossiers, handoff `AI_MEMORY` ; coché avec B-043 dans le Wizard | 🔴 | 📋 | Sprint 7 |
 | B-051 | Mode "Réseau Local Strict / Air-Gapped" (LAN-Only Toggle désactivant les relays WAN) | 🟡 | 📋 | Sprint 7 |
 
 ### Sprint 8 — Distribution & Polish

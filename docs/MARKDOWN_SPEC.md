@@ -255,6 +255,8 @@ Lorsque Knit détecte des tâches `- [ ]` dans une note :
 
 ## 7. Blocs Dynamiques & Requêtes en Temps Réel (*Dynamic Query Blocks*)
 
+> **Statut** : Sprint 6bis **livré** — runtime via Live Preview + `vaultStore.queryFiles()` / `frontmatterIndex`. Démo coffre : `demo_vault/blocs-dynamiques.md`.
+
 Knit permet d'insérer des blocs de code déclaratifs qui génèrent des **vues dynamiques projetées en direct**, sans jamais avoir à modifier manuellement la page d'accueil ou le tableau de bord lorsqu'un fichier est créé ou déplacé sur le disque.
 
 Le contenu sous-jacent reste un simple bloc de code Markdown, garantissant 0% de données polluées sur le disque.

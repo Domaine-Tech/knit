@@ -26,15 +26,17 @@ Knit est une application collaborative local-first et peer-to-peer (P2P) pour la
    - Le clic droit natif est désactivé au profit d'un menu sur-mesure centralisé (`contextMenuStore`). Tout composant interactif créé ou modifié doit inclure son menu contextuel adapté (ex: copie des chemins relatifs/absolus, lien Markdown, actions de fichiers et d'onglets).
 7. **Formulaires Centralisés & Robustesse des Événements Souris** :
    - Tout champ de formulaire (`input`, `checkbox`, `button`, `label`) doit utiliser le système centralisé défini dans `src/theme/forms.css` et les tokens Knit. Interdiction des éléments de formulaires natifs dépareillés.
+   - **Listes déroulantes** : ne jamais utiliser de `<select>` natif. React → `KnitSelect` (`components/Form/KnitSelect.tsx`) ; widgets DOM → `createKnitSelectDom()` (`utils/knitSelect.ts`). Styles `.knit-select-*` dans `forms.css` (DA menus contextuels).
    - Clic molette (`e.button === 1`) : Toujours bloquer la boussole de défilement navigateur avec `if (e.button === 1) e.preventDefault()` dans `onMouseDown`, et placer exclusivement l'action métier dans `onAuxClick` pour éliminer tout double déclenchement.
 8. **Tooltips Modernes & Netteté des Icônes** :
    - Ne jamais recourir aux infobulles natives de l'OS. Utiliser le composant `<Tooltip>` ou les attributs `data-tooltip="Action"` et `data-shortcut="Ctrl+X"`. Le `TooltipContainer` global intercepte automatiquement les attributs `title` et extrait les raccourcis en badges `<kbd>`.
    - Les tracés d'icônes (`DuotoneIcon`) doivent être ultra-lisibles aux petites tailles (14px) avec des traits nets et des têtes de flèches bien découpées.
 9. **Architecture Doc-Driven Views & TabBar Permanente** :
-   - Toute vue doit être résolue par onglet selon le type déclaré dans le Frontmatter YAML (`type: kanban`, `type: table`, `type: note`) selon [docs/MARKDOWN_SPEC.md](docs/MARKDOWN_SPEC.md).
+   - Toute vue Markdown doit être résolue par onglet selon le type déclaré dans le Frontmatter YAML (`type: kanban`, `type: table`, `type: note`) selon [docs/MARKDOWN_SPEC.md](docs/MARKDOWN_SPEC.md).
+   - **Médias** (`assets/*.svg|png|…`) : clic dans le tree → onglet `docType: image` / composant `ImageView` (pas d'édition Markdown du binaire, pas de bascule Source).
    - La barre d'onglets (`TabBar`) doit rester visible sur toutes les vues, avec icône dynamique par type de document.
 10. **Synchronisation Continue des Règles d'Agents IA (Règle B-043)** :
-   - Toute nouvelle fonctionnalité touchant au format de coffre (syntaxe Markdown, types de documents YAML `type: ...`, nouveaux blocs dynamiques, triggers d'autocomplétion `[[#...]]`, `@...`, dossiers de coffre) doit être immédiatement répercutée dans l'ensemble des fichiers de règles générés pour les IA (`KNIT.md`, `.cursor/rules/knit.mdc`, `CLAUDE.md`, `.agents/skills/knit/SKILL.md`).
+   - Toute nouvelle fonctionnalité touchant au format de coffre (syntaxe Markdown, types de documents YAML `type: ...`, nouveaux blocs dynamiques, triggers d'autocomplétion `[[#...]]`, `@...`, dossiers de coffre, médias `assets/`) doit être immédiatement répercutée dans l'ensemble des fichiers de règles générés pour les IA (`KNIT.md`, `.cursor/rules/knit.mdc`, `CLAUDE.md`, `.agents/skills/knit/SKILL.md`) **et intégrée dans `demo_vault/`**.
 11. **Mémoire Agentique Persistante (`.knit/AI_MEMORY.md`) & Protocole Handoff** :
    - Au démarrage d'une session ou tâche, tout agent lit en priorité `.knit/AI_MEMORY.md` (~400 tokens) pour réactiver l'état d'avancement et les décisions clés sans gonfler son contexte.
    - À l'achèvement d'une tâche d'envergure ou avant de clore, mettre à jour `.knit/AI_MEMORY.md` (sections *Historique Récent* et *Tâches Actives*).
@@ -63,4 +65,8 @@ Knit est une application collaborative local-first et peer-to-peer (P2P) pour la
     - Tout type ou interface de domaine (`FileNode`, `Tab`, `UserProfile`, `KanbanBoard`, `TaskStatus`, `DocType`, etc.) doit obligatoirement résider dans `knit-app/src/types/` (`vault.ts`, `markdown.ts`, `network.ts`, `kanban.ts`, `views.ts`) et être réexporté via `src/types/index.ts`. Zéro duplication tolérée dans les stores ou composants.
     - Conversions binaires (`Uint8Array` ↔ `Base64`) : utiliser obligatoirement `src/utils/encodingUtils.ts` (`uint8ArrayToBase64`, `base64ToUint8Array`) par blocs de 32 Ko pour tout flux CRDT, P2P ou snapshot. Proscription formelle des boucles manuelles inefficaces O(N²).
     - Découplage modulaire : isoler les logiques d'infrastructure complexes dans des hooks dédiés (`useKanbanBoard`, `useEditorLinks`, `editorTheme`) et composants mutualisés (`BaseSearchModal`).
+18. **Blocs Dynamiques Dataview (Sprint 6bis)** :
+    - Fences : ```` ```knit-toc ````, ```` ```knit-files ````, ```` ```knit-query ````, ```` ```knit-tasks ```` (corps `clé: valeur`, projection Live Preview uniquement — zéro HTML propriétaire sur disque).
+    - API : `vaultStore.queryFiles()` + `frontmatterIndex` ; Slash `/sommaire`, `/fichiers`, `/requete`, `/taches-globales`.
+    - Spec : [docs/MARKDOWN_SPEC.md](docs/MARKDOWN_SPEC.md) §7 ; démo : `demo_vault/blocs-dynamiques.md`.
 

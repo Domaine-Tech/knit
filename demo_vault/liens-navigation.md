@@ -31,6 +31,7 @@ Les tableaux sont rendus par le widget immersif `TableCardWidget`. Survolez chaq
 | **URL Brute** | https://tauri.app | `Documentation` | Ouvre Tauri v2 dans le navigateur |
 | **Dossier Local** | [Dossier .knit](./.knit/) | `Systeme` | Ouvre l'explorateur de fichiers de l'OS |
 | **Nouvelle Note** | [[wiki/nouvelle-note]] | `Creation` | Propose et cree la nouvelle note dans le coffre |
+| **Image locale** | [[live-preview.md#9. Images et Medias Locaux (assets/)]] | `Medias` | Section images du banc Live Preview |
 
 ---
 
@@ -40,6 +41,7 @@ Les tableaux sont rendus par le widget immersif `TableCardWidget`. Survolez chaq
 - [x] Verifier les metadonnees de la vue [[table.md|Inventaire Composants]] !p2
 - [ ] Tester le glisser-deposer dans le Kanban [[kanban.md]] !p2
 - [ ] Consulter la documentation officielle sur [le site de Tauri](https://tauri.app)
+- [ ] Ouvrir le schema media dans [[wiki/architecture.md]] !p3 @vault
 
 Lien inline au milieu d'un paragraphe : vous pouvez verifier que [[document-long.md]] affiche l'apercu du texte sans les marqueurs frontmatter YAML.
 
@@ -56,4 +58,19 @@ Cliquez sur l'ancre ci-dessous pour tester le defilement automatique :
 ## 4. Liens dans les Callouts et Alertes GFM
 
 > [!NOTE]
-> Information contextuelle sur la navigation : tous les liens internes sont resolus de maniere relative.
+> Information contextuelle sur la navigation : tous les liens internes sont resolus de maniere relative. Exemple WikiLink : [[accueil.md|Retour a l'accueil]].
+
+> [!TIP]
+> Pour tester le Hover Preview, survolez [[live-preview.md|la demo Live Preview]] sans cliquer. Utilisez ensuite **Ctrl + Clic** pour ouvrir l'onglet.
+
+> [!WARNING]
+> Un lien vers une note absente comme [[wiki/note-fantome]] propose la creation. Verifiez aussi les URLs externes : [Tauri](https://tauri.app).
+
+> [!IMPORTANT]
+> Les retroliens (panneau Backlinks) listent les notes qui pointent vers le fichier courant — ouvrez [[accueil.md]] puis consultez le panneau pour valider.
+
+---
+
+## 5. Medias et chemins relatifs
+
+Les images du dossier `assets/` utilisent le meme systeme de chemins relatifs que les WikiLinks. Demo complete : [[live-preview.md#9. Images et Medias Locaux (assets/)]].

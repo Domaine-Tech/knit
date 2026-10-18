@@ -227,8 +227,8 @@ gantt
     Sprint 6 : s6, after s5, 14d
 
     section v0.4.0 — Requêtes & Vues Immersives
-    Sprint 6bis : s6b, after s6, 14d
-    Sprint 6ter : s6t, after s6b, 14d
+    Sprint 6bis (livré) : done, after s6, 14d
+    Sprint 6ter : s6t, after done, 14d
 
     section v1.0.0 — Production
     Sprint 7 : s7, after s6t, 14d

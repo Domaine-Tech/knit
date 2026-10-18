@@ -288,6 +288,7 @@ L'utilisateur choisit **une seule valeur** : le `--knit-hue` (un angle de 0 à 3
 | **Mode daemon** | `knit daemon` tourne sans interface pour les serveurs/agents IA |
 | **Templates** | `.knit/templates/` pour créer des tâches/pages standardisées |
 | **Vues projets** | Kanban, tableau, calendrier — construites sur le même moteur de fichiers |
+| **Blocs dynamiques (6bis)** | `knit-toc` / `knit-files` / `knit-query` / `knit-tasks` via `vaultStore.queryFiles()` — projection Live Preview sans BDD |
 | **Futur** | Système de plugins pour des vues custom (post-MVP) |
 
 **Règle d'or** : Knit est un framework avec une app par-dessus, pas une app monolithique.

@@ -177,7 +177,10 @@ graph TD
 ### 3. Architecture d'Interception Inline (CodeMirror 6 WidgetType)
 Le moteur d'interception de blocs de code dans l'éditeur CodeMirror 6 utilise des décorations `WidgetType` réactives :
 - **Blocs Mermaid** (Sprint 6) : ```` ```mermaid ```` → rendu en SVG vectoriel interactif inline avec debounce 300ms.
-- **Blocs Dynamiques & Requêtes** (Sprint 6bis) : ```` ```knit-files ````, ```` ```knit-query ````, ```` ```knit-toc ````, ```` ```knit-tasks ```` → interrogent l'index en mémoire de `vaultStore` et projettent une table, une liste ou un sommaire en temps réel sans altérer le disque.
+- **Blocs Dynamiques & Requêtes** (Sprint 6bis — livré) : ```` ```knit-files ````, ```` ```knit-query ````, ```` ```knit-toc ````, ```` ```knit-tasks ```` → interrogent l'index Frontmatter en mémoire (`frontmatterIndex` / `vaultStore.queryFiles()`) et projettent une table, une liste ou un sommaire en temps réel sans altérer le disque.
+- **Invalidation** : rebuild par lots au chargement du coffre ; `upsert` / `remove` sur write, watcher et suppression.
+- **Mutations** : `knit-tasks` bascule une case source via Yjs (`crdtManager`) ou `writeFile` ; `knit-query` peut réécrire `statut:` via `updateFrontmatter`.
+- **Assistant tableaux GFM (B-047)** : mini-toolbar (+ ligne / colonne, alignement, supprimer) + `formatTableColumns` dans l'éditeur.
 - En mode Source `</>`, le bloc de code brut redevient directement modifiable en texte simple.
 
 ---

@@ -20,8 +20,7 @@ Dès qu'une modification touche l'un des domaines suivants :
 6. **Mise à jour des formats d'ID de tâche ou statuts autorisés** (les 7 statuts Markdown reconnus `- [ ]`, `- [/]`, `- [x]`, `- [-]`, `- [?]`, `- [>]`, `- [!]`, priorités `!p1`..`!p3`, dates `@YYYY-MM-DD`, assignations `@collaborateur`/`@vault`)
 7. **Commit Git, `git push`, Cadrage ou Livraison d'un Sprint** : vérification et alignement obligatoire du numéro de version dans les 6 sources de vérité de l'application et les dossiers de sprint.
 8. **Nouveau Type de Domaine Métier ou Refactoring Architectural** : tout nouveau type ou interface de domaine doit résider dans `knit-app/src/types/` et être réexporté dans `src/types/index.ts`. Zéro duplication de type entre stores et composants.
-
-
+9. **Nouvelle fonctionnalité user-facing** (syntaxe Markdown, bloc dynamique, type de vue `type: …`, trigger d'autocomplétion, convention de dossier, média `assets/`) : l'intégrer immédiatement dans `demo_vault/` (note dédiée ou extension d'`accueil.md` / `live-preview.md` / `blocs-dynamiques.md`) pour que le mode démo Vite reste exhaustif.
 
 ---
 
@@ -37,6 +36,7 @@ L'agent ou développeur doit mettre à jour les fichiers de directives et les te
 | `.agents/skills/knit/SKILL.md` & `AGENTS.md` | Antigravity / Gemini CLI | Instructions outillées et directives de workflow agentique |
 | `.github/copilot-instructions.md` | GitHub Copilot | Directives pour les suggestions de code et complétions de texte |
 | `docs/MARKDOWN_SPEC.md` | Humains & IA | Spécification officielle et source de vérité des syntaxes supportées |
+| `demo_vault/` | Onboarding / banc d'essai Vite | Exemples exhaustifs des syntaxes et vues runtime (`live-preview.md`, `blocs-dynamiques.md`, `assets/`, etc.) |
 | `.knit/AI_MEMORY.md` | Tous agents (inter-sessions) | Registre de mémoire compacte (~400 tokens) : décisions, historique et prochaines étapes |
 | `Cargo.toml`, `tauri.conf.json`, `package.json`, `version.ts` | Système de build & Runtime | Sources de vérité du numéro de version à aligner rigoureusement |
 
@@ -79,6 +79,7 @@ Tout agent IA intervenant sur le dépôt doit appliquer ce protocole de vérific
 ## 5. Règle d'Or de Non-Régression pour Agents
 
 - Ne **jamais** laisser une fonctionnalité de coffre non documentée dans les règles IA.
+- Ne **jamais** livrer une syntaxe ou capacité user-facing du coffre sans exemple dans `demo_vault/`.
 - Ne **jamais** committer ou livrer un sprint avec des versions désalignées.
 - Ne **jamais** introduire d'émojis dans les composants UI, menus, boutons, badges, toasts ou templates par défaut de l'application (utiliser exclusivement des icônes vectorielles `DuotoneIcon` ou SVG purs).
 - Un agent IA qui arrive dans un coffre Knit doit être capable, en lisant ces règles, d'utiliser la fonctionnalité sans erreur de syntaxe ni hallucination.

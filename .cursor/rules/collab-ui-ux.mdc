@@ -33,7 +33,7 @@ Toutes les interfaces collaboratives dans Knit doivent respecter les principes s
 - Style sobre : fond `--knit-surface`, bordure fine `--knit-border`, icônes Reicon Duotone.
 
 ## 5. Héritage Notion & Obsidian (Keyboard-First)
-- **Menu Slash (`/`)** : Implémenter l'autocomplétion sur ligne vide pour insérer `/titre`, `/tache`, `/callout`, `/mermaid`, `/code`, `/image`.
+- **Menu Slash (`/`)** : Implémenter l'autocomplétion sur ligne vide pour insérer `/titre`, `/tache`, `/callout`, `/mermaid`, `/code`, `/image`, ainsi que les blocs dynamiques `/sommaire`, `/fichiers`, `/requete`, `/taches-globales` (`knit-toc`, `knit-files`, `knit-query`, `knit-tasks`).
 - **WikiLinks (`[[...]]`)** : Détection et suggestion instantanée des notes du coffre dès la frappe de `[[`.
 - **Quick Switcher (`Ctrl+O`) & Palette (`Ctrl+P`)** : Navigation ultra-rapide par recherche floue sans lever les mains du clavier.
 - **Callouts Markdown** : Support visuel sobre des alertes GFM (`> [!NOTE]`, `> [!TIP]`, `> [!WARNING]`).
@@ -71,6 +71,10 @@ Toutes les interfaces collaboratives dans Knit doivent respecter les principes s
 
 ## 10. Système de Formulaires Centralisé & Robustesse Événements (`forms.css`)
 - **Centralisation (`forms.css`)** : Ne jamais styliser d'inputs ou boutons de manière isolée avec des classes ad-hoc. Utiliser les composants et classes standards (`.knit-input`, `.knit-input-group`, `.knit-input-seamless`, `.knit-checkbox`, `.knit-label`, `.knit-btn`, `.knit-btn-primary`).
+- **Listes déroulantes (`KnitSelect`)** : Proscrire les `<select>` HTML natifs (menu OS non stylable, hors DA). Utiliser :
+  - React : `knit-app/src/components/Form/KnitSelect.tsx`
+  - DOM / widgets Live Preview : `createKnitSelectDom()` dans `knit-app/src/utils/knitSelect.ts`
+  - Classes CSS : `.knit-select-root`, `.knit-select-trigger`, `.knit-select-menu`, `.knit-select-option` (arrondis, surface, hover et sélection alignés sur les menus contextuels).
 - **Focus Rings & Tokens** : Les focus rings utilisent strictement `--knit-primary` et `--knit-primary-alpha`. Les checkboxes utilisent une coche SVG blanche sur fond d'accentuation `--knit-primary`.
 - **Robustesse du clic molette (`button === 1`)** :
   - `onMouseDown` : Réserver à `if (e.button === 1) e.preventDefault()` pour empêcher le curseur de boussole de défilement (compass scroll).

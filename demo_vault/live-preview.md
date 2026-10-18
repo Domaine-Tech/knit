@@ -4,14 +4,14 @@ titre: Demonstration Complete Live Preview
 statut: en-cours
 priorite: haute
 assigne: Thomas
-tags: [demo, live-preview, sprint-6, markdown]
+tags: [demo, live-preview, sprint-6, sprint-6bis, markdown, medias]
 id: DEMO-001
 echeance: 2026-10-30
 ---
 
 # Demonstration Complete Live Preview Knit
 
-Ce document rassemble l'ensemble des fonctionnalites Markdown et des normes visuelles supportees par Knit v0.3.0. Il sert de banc d'essai pour valider le rendu dynamique Live Preview, la synchronisation du curseur et la coherence de la marge.
+Ce document rassemble l'ensemble des fonctionnalites Markdown et des normes visuelles supportees par Knit. Il sert de banc d'essai pour valider le rendu dynamique Live Preview, la synchronisation du curseur et la coherence de la marge.
 
 Consultez egalement les specifications d'architecture dans [[wiki/architecture|Architecture Technique]] et les principes fondamentaux dans [[wiki/piliers|Les 9 Piliers de Knit]].
 
@@ -106,6 +106,14 @@ export interface PeerConfig {
 }
 ```
 
+### Bloc sans langage (carte generique)
+
+```
+# Exemple de fence sans highlight
+vault_name = "Knit Workspace"
+local_first = true
+```
+
 ---
 
 ## 7. Diagrammes Mermaid Inline
@@ -120,9 +128,23 @@ graph TD
     F --> G[Synchronisation Yjs P2P]
 ```
 
+### Sequence P2P (second diagramme)
+
+```mermaid
+sequenceDiagram
+    participant A as Pair A
+    participant B as Pair B
+    A->>B: Ticket Iroh (QUIC)
+    B-->>A: Handshake chiffrement
+    A->>B: Diff Yjs (texte)
+    A->>B: Blob assets/ (medias)
+```
+
 ---
 
 ## 8. Callouts GFM (Alertes Feutrees)
+
+Slash rapides : `/callout-note`, `/callout-tip`, `/callout-warning`.
 
 > [!NOTE]
 > Information contextuelle sobre : le formatage CommonMark est applique a la volee sans transformer le document en format proprietaire.
@@ -136,9 +158,39 @@ graph TD
 > [!IMPORTANT]
 > L'interoperabilite avec Obsidian et VS Code est garantie par l'absence totale de base de donnees centrale.
 
+> [!CAUTION]
+> Ne placez jamais de secrets (cles, tokens) dans le Markdown synchronise via `.knitshare` : reservez-les a `.knit/` local.
+
 ---
 
-## 9. Citations et Listes Imbriquees
+## 9. Images et Medias Locaux (assets/)
+
+Les images sur **une ligne seule** sont projeteees en carte Live Preview (`ImageCardWidget`). Cliquez la carte pour editer le Markdown source. Collez une capture avec <kbd>Ctrl+V</kbd> pour enregistrer automatiquement dans `assets/`.
+
+### Logo Knit (SVG local)
+
+![Logo Knit Ambre](assets/logo-knit.svg)
+
+### Schema d'architecture
+
+![Schema architecture Knit](assets/schema-architecture.svg)
+
+### Bandeau demo medias
+
+![Bandeau medias du coffre](assets/bandeau-demo.svg)
+
+### Image distante (URL https)
+
+![Marque Markdown](https://upload.wikimedia.org/wikipedia/commons/4/48/Markdown-mark.svg)
+
+> [!TIP]
+> Convention coffre : stockez les binaires dans `assets/`. En collaboration P2P, ils transitent via Iroh Blobs (hors CRDT texte). Une image au milieu d'un paragraphe reste du Markdown inline non carte.
+
+Voir aussi [[wiki/architecture.md|Architecture Technique]] pour le schema integre.
+
+---
+
+## 10. Citations et Listes Imbriquees
 
 > La simplicite est la condition prealable a la fiabilite.
 > — Edsger W. Dijkstra
@@ -149,3 +201,19 @@ graph TD
 2. Deuxieme point structure
    - Validation croisee
    - Synchronisation sans conflit
+
+---
+
+## 11. Blocs Dynamiques (Sprint 6bis)
+
+Voir la note dediee [[blocs-dynamiques.md|Blocs Dynamiques & Dataview]] pour la demo complete.
+
+Mini-sommaire de cette note :
+
+```knit-toc
+depth: 2
+collapsible: false
+```
+
+Inserez un bloc via Slash : `/sommaire`, `/fichiers`, `/requete`, `/taches-globales`.
+En mode Source (<kbd>Ctrl+E</kbd>), le fence redevient du Markdown editable.
