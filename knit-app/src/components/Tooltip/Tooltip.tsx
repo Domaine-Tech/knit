@@ -1,8 +1,6 @@
 import React from 'react';
 import type { TooltipProps } from '../../types';
 
-export type { TooltipProps };
-
 /**
  * Composant Tooltip déclaratif Knit.
  * Associe les attributs data-tooltip, data-shortcut et data-tooltip-pos

@@ -42,9 +42,7 @@ import { useDebugMode, useEditorLinks } from '../../hooks';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import {
   getFlatFiles,
-  copyRelativePath,
-  copyAbsolutePath,
-  copyMarkdownLink,
+  buildPathCopyMenuItems,
   findLinkAtCoords,
   packageContextForAI,
 } from '../../utils';
@@ -628,30 +626,11 @@ export const Editor: React.FC<EditorProps> = ({
           vaultStore.revealInExplorer(path);
         },
       },
-      {
-        id: 'copy-rel-path',
-        label: 'Copier le chemin relatif',
-        icon: 'copy' as const,
-        onClick: () => {
-          copyRelativePath(path);
-        },
-      },
-      {
-        id: 'copy-abs-path',
-        label: 'Copier le chemin absolu',
-        icon: 'copy' as const,
-        onClick: () => {
-          copyAbsolutePath(absPath);
-        },
-      },
-      {
-        id: 'copy-md-link',
-        label: 'Copier le lien Markdown',
-        icon: 'link' as const,
-        onClick: () => {
-          copyMarkdownLink(path);
-        },
-      },
+      ...buildPathCopyMenuItems({
+        relPath: path,
+        absPath,
+        includeMarkdownLink: true,
+      }),
     ]);
   };
 

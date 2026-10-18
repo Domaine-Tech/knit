@@ -1,5 +1,5 @@
 import { vaultStore } from './vaultStore';
-import { flattenFileNodes } from '../utils/treeUtils';
+import { flattenFileNodes } from '../utils';
 
 import type {
   AppViewMode,

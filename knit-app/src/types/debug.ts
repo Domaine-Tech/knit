@@ -71,6 +71,19 @@ export interface EditorDebugReport {
   stats: LivePreviewDebugStats | null;
 }
 
+export interface KanbanDragLog {
+  id: string;
+  time: string;
+  action: 'reorder' | 'move' | 'no-op' | 'abort';
+  cardTitle: string;
+  cardId: string;
+  fromColumn: string;
+  toColumn: string;
+  fromIndex: number;
+  toIndex: number;
+  detail: string;
+}
+
 export interface GlobalDebugReport {
   timestamp: string;
   isDebugActive: boolean;

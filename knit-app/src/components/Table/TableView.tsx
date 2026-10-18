@@ -1,16 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   parseCardMetadata,
-  adaptCardStatusToColumn,
 } from '../../utils';
 import type {
   KanbanCard,
-  TaskStatus,
   TableRowItem,
   SortField,
   SortOrder,
 } from '../../types';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
+import { WikiLinkPills, TagPills } from '../Common/WikiLinkPills';
 import { toast } from '../../stores/toastStore';
 import { contextMenu } from '../../stores/contextMenuStore';
 import { debugStore } from '../../stores/debugStore';
@@ -32,7 +31,7 @@ export const TableView: React.FC<TableViewProps> = ({
   onOpenFile,
   onSwitchToEditor,
 }) => {
-  const { availableKanbans, currentPath, board, persistBoard } = useKanbanBoard({
+  const { availableKanbans, currentPath, board, toggleCard, deleteCard, addCard, moveCard } = useKanbanBoard({
     activeFilePath,
     activeFileContent,
     onUpdateContent,
@@ -125,54 +124,19 @@ export const TableView: React.FC<TableViewProps> = ({
   }, [currentPath, allRows, filteredAndSortedRows, sortField, sortOrder]);
 
   const handleToggleTaskCheckbox = (row: TableRowItem) => {
-    const updatedCols = board.columns.map((col) => {
-      if (col.id !== row.columnId) return col;
-      return {
-        ...col,
-        cards: col.cards.map((c) => {
-          if (c.id !== row.id) return c;
-          const nextCompleted = !c.completed;
-          return {
-            ...c,
-            completed: nextCompleted,
-            status: (nextCompleted ? 'x' : ' ') as TaskStatus,
-          };
-        }),
-      };
-    });
-    persistBoard({ ...board, columns: updatedCols });
+    toggleCard(row.columnId, row.id);
   };
 
   const handleMoveTaskColumn = (cardId: string, currentColumnId: string, targetColumnId: string) => {
     if (currentColumnId === targetColumnId) return;
-
-    const sourceCol = board.columns.find((c) => c.id === currentColumnId);
-    const card = sourceCol?.cards.find((c) => c.id === cardId);
-    if (!card) return;
-
-    const targetCol = board.columns.find((c) => c.id === targetColumnId);
-    const updatedCard: KanbanCard = adaptCardStatusToColumn(card, targetCol?.title || '');
-
-    const updatedCols = board.columns.map((col) => {
-      if (col.id === currentColumnId) {
-        return { ...col, cards: col.cards.filter((c) => c.id !== cardId) };
-      }
-      if (col.id === targetColumnId) {
-        return { ...col, cards: [...col.cards, updatedCard] };
-      }
-      return col;
-    });
-
-    persistBoard({ ...board, columns: updatedCols });
-    toast.success('Statut mis à jour', `Déplacé vers ${targetCol?.title || 'colonne'}`);
+    const result = moveCard({ cardId, sourceColumnId: currentColumnId, targetColumnId });
+    if (result.outcome === 'moved') {
+      toast.success('Statut mis à jour', `Déplacé vers ${result.toColumn || 'colonne'}`);
+    }
   };
 
   const handleDeleteTask = (row: TableRowItem) => {
-    const updatedCols = board.columns.map((col) => {
-      if (col.id !== row.columnId) return col;
-      return { ...col, cards: col.cards.filter((c) => c.id !== row.id) };
-    });
-    persistBoard({ ...board, columns: updatedCols });
+    deleteCard(row.columnId, row.id);
     toast.info('Tâche supprimée', row.title);
   };
 
@@ -192,14 +156,7 @@ export const TableView: React.FC<TableViewProps> = ({
       rawText: `- [ ] ${title}`,
     };
 
-    const updatedCols = board.columns.map((col) => {
-      if (col.id === colId) {
-        return { ...col, cards: [...col.cards, newCard] };
-      }
-      return col;
-    });
-
-    persistBoard({ ...board, columns: updatedCols });
+    addCard(colId, newCard);
     setNewTaskTitle('');
     setIsAddingTask(false);
     toast.success('Tâche ajoutée', title);
@@ -650,55 +607,18 @@ export const TableView: React.FC<TableViewProps> = ({
                       </span>
 
                       {row.wikiLinks.length > 0 && (
-                        <div style={{ display: 'flex', gap: 4 }}>
-                          {row.wikiLinks.map((l) => {
-                            const [target, alias] = l.split('|');
-                            const targetClean = target.trim();
-                            const displayName = (alias || targetClean).trim();
-                            const filePath = targetClean.endsWith('.md') ? targetClean : `${targetClean}.md`;
-                            return (
-                              <button
-                                key={l}
-                                onClick={() => onOpenFile(filePath)}
-                                title={`Ouvrir la note [[${displayName}]] (Ctrl + Clic ou Clic)`}
-                                style={{
-                                  padding: '1px 5px',
-                                  borderRadius: 3,
-                                  backgroundColor: 'var(--knit-primary-alpha)',
-                                  border: '1px solid var(--knit-primary)',
-                                  color: 'var(--knit-primary)',
-                                  fontSize: 10,
-                                  cursor: 'pointer',
-                                }}
-                              >
-                                [[{displayName}]]
-                              </button>
-                            );
-                          })}
-                        </div>
+                        <WikiLinkPills
+                          links={row.wikiLinks}
+                          onOpenFile={onOpenFile}
+                          variant="table"
+                        />
                       )}
                     </div>
                   </td>
 
                   {/* Tags */}
                   <td style={{ padding: '10px 12px', verticalAlign: 'middle' }}>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                      {row.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          style={{
-                            fontSize: 10,
-                            padding: '1px 6px',
-                            borderRadius: 3,
-                            backgroundColor: 'var(--knit-surface-hover)',
-                            color: 'var(--knit-text-secondary)',
-                            border: '1px solid var(--knit-border)',
-                          }}
-                        >
-                          #{tag}
-                        </span>
-                      ))}
-                    </div>
+                    <TagPills tags={row.tags} variant="table" />
                   </td>
 
                   {/* Actions */}

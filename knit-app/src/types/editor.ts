@@ -28,7 +28,7 @@ export interface UseEditorLinksProps {
 }
 
 export interface KeymapCallbacks {
-  onSave?: () => void;
-  onToggleViewMode?: () => void;
-  onPackageAI?: () => void;
+  onSave: () => void;
+  onToggleViewMode: () => void;
+  onPackageAI: () => void;
 }

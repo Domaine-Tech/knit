@@ -3,8 +3,6 @@ import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { BaseSearchModal } from './BaseSearchModal';
 import type { CommandItem } from '../../types';
 
-export type { CommandItem };
-
 interface CommandPaletteModalProps {
   isOpen: boolean;
   onClose: () => void;

@@ -30,7 +30,7 @@ import { DuotoneIcon } from './components/Icons/DuotoneIcon';
 import { ErrorBoundary } from './components/Common/ErrorBoundary';
 import { debugStore } from './stores/debugStore';
 import { useResizablePanels, useKnitShortcuts } from './hooks';
-import { buildCommandList, APP_VERSION, packageContextForAI } from './utils';
+import { buildCommandList, APP_VERSION, packageContextForAI, formatIsoDate } from './utils';
 
 export const App: React.FC = () => {
   const [theme, setTheme] = useState<ThemeMode>(getStoredTheme);
@@ -181,10 +181,7 @@ export const App: React.FC = () => {
   // Note Quotidienne (Ctrl+Shift+J ou Alt+D - US B-053)
   const handleOpenDailyNote = useCallback(async () => {
     const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const dateStr = `${year}-${month}-${day}`;
+    const dateStr = formatIsoDate(now);
     const relativePath = `journal/${dateStr}.md`;
 
     try {

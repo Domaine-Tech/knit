@@ -16,6 +16,16 @@ export interface AvatarInfo {
   mime_type?: string;
 }
 
+export interface PeerProfileSummary {
+  first_name: string;
+  last_name: string;
+  display_name: string;
+  email?: string;
+  role: string;
+  status_message: string;
+  avatar: AvatarInfo;
+}
+
 export interface UserProfile {
   first_name: string;
   last_name: string;

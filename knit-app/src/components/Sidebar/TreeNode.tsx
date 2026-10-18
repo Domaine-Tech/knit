@@ -7,10 +7,7 @@ import { toast } from '../../stores/toastStore';
 import { networkStore } from '../../stores/networkStore';
 import { tabStore } from '../../stores/tabStore';
 import {
-  copyRelativePath,
-  copyAbsolutePath,
-  copyFileName,
-  copyMarkdownLink,
+  buildPathCopyMenuItems,
 } from '../../utils';
 
 interface TreeNodeProps {
@@ -248,30 +245,14 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
           },
         },
         { id: 'div-dir-3', divider: true },
-        {
-          id: 'copy-dir-rel-path',
-          label: 'Copier le chemin relatif',
-          icon: 'copy',
-          onClick: () => {
-            copyRelativePath(node.path);
-          },
-        },
-        {
-          id: 'copy-dir-abs-path',
-          label: 'Copier le chemin absolu',
-          icon: 'copy',
-          onClick: () => {
-            copyAbsolutePath(absPath);
-          },
-        },
-        {
-          id: 'copy-dir-name',
-          label: 'Copier le nom du dossier',
-          icon: 'clipboard',
-          onClick: () => {
-            copyFileName(node.name);
-          },
-        },
+        ...buildPathCopyMenuItems({
+          relPath: node.path,
+          absPath,
+          name: node.name,
+          nameLabel: 'Copier le nom du dossier',
+          includeMarkdownLink: false,
+          idPrefix: 'copy-dir-',
+        }),
         { id: 'div-dir-delete', divider: true },
         {
           id: 'delete-dir',
@@ -342,38 +323,12 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
           },
         },
         { id: 'div-file-2', divider: true },
-        {
-          id: 'copy-rel-path',
-          label: 'Copier le chemin relatif',
-          icon: 'copy',
-          onClick: () => {
-            copyRelativePath(node.path);
-          },
-        },
-        {
-          id: 'copy-abs-path',
-          label: 'Copier le chemin absolu',
-          icon: 'copy',
-          onClick: () => {
-            copyAbsolutePath(absPath);
-          },
-        },
-        {
-          id: 'copy-name',
-          label: 'Copier le nom du fichier',
-          icon: 'clipboard',
-          onClick: () => {
-            copyFileName(node.name);
-          },
-        },
-        {
-          id: 'copy-md-link',
-          label: 'Copier le lien Markdown',
-          icon: 'link',
-          onClick: () => {
-            copyMarkdownLink(node.path, node.name);
-          },
-        },
+        ...buildPathCopyMenuItems({
+          relPath: node.path,
+          absPath,
+          name: node.name,
+          markdownAlias: node.name,
+        }),
         { id: 'div-file-delete', divider: true },
         {
           id: 'delete-file',

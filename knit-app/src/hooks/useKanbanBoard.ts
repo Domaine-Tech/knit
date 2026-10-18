@@ -1,7 +1,15 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { vaultStore } from '../stores/vaultStore';
-import type { KanbanFileInfo, KanbanBoard, UseKanbanBoardProps } from '../types';
-import { parseKanbanMarkdown, serializeKanbanMarkdown } from '../utils';
+import type {
+  KanbanFileInfo,
+  KanbanBoard,
+  KanbanCard,
+  UseKanbanBoardProps,
+  MoveCardOptions,
+  MoveCardResult,
+  TaskStatus,
+} from '../types';
+import { adaptCardStatusToColumn, parseKanbanMarkdown, serializeKanbanMarkdown } from '../utils';
 
 export function useKanbanBoard({
   activeFilePath,
@@ -89,11 +97,179 @@ export function useKanbanBoard({
     [currentPath, onUpdateContent]
   );
 
+  const toggleCard = useCallback((columnId: string, cardId: string) => {
+    const current = boardRef.current;
+    const columns = current.columns.map((col) => {
+      if (col.id !== columnId) return col;
+      return {
+        ...col,
+        cards: col.cards.map((c) => {
+          if (c.id !== cardId) return c;
+          const nextCompleted = !c.completed;
+          return {
+            ...c,
+            completed: nextCompleted,
+            status: (nextCompleted ? 'x' : ' ') as TaskStatus,
+          };
+        }),
+      };
+    });
+    persistBoard({ ...current, columns });
+  }, [persistBoard]);
+
+  const deleteCard = useCallback((columnId: string, cardId: string) => {
+    const current = boardRef.current;
+    const columns = current.columns.map((col) => {
+      if (col.id !== columnId) return col;
+      return { ...col, cards: col.cards.filter((c) => c.id !== cardId) };
+    });
+    persistBoard({ ...current, columns });
+  }, [persistBoard]);
+
+  const updateCardTitle = useCallback((columnId: string, cardId: string, title: string) => {
+    const nextTitle = title.trim();
+    if (!nextTitle) return;
+    const current = boardRef.current;
+    const columns = current.columns.map((col) => {
+      if (col.id !== columnId) return col;
+      return {
+        ...col,
+        cards: col.cards.map((c) => (c.id === cardId ? { ...c, title: nextTitle } : c)),
+      };
+    });
+    persistBoard({ ...current, columns });
+  }, [persistBoard]);
+
+  const addCard = useCallback((columnId: string, card: KanbanCard) => {
+    const current = boardRef.current;
+    const columns = current.columns.map((col) =>
+      col.id === columnId ? { ...col, cards: [...col.cards, card] } : col
+    );
+    persistBoard({ ...current, columns });
+  }, [persistBoard]);
+
+  const moveCard = useCallback((options: MoveCardOptions): MoveCardResult => {
+    const { cardId, sourceColumnId, targetColumnId } = options;
+    const currentBoard = boardRef.current;
+
+    const fail = (
+      outcome: MoveCardResult['outcome'],
+      partial: Partial<MoveCardResult> = {}
+    ): MoveCardResult => ({
+      outcome,
+      cardTitle: partial.cardTitle ?? cardId,
+      cardId,
+      fromColumn: partial.fromColumn ?? sourceColumnId,
+      toColumn: partial.toColumn ?? targetColumnId,
+      fromIndex: partial.fromIndex ?? -1,
+      toIndex: partial.toIndex ?? options.insertIndex ?? -1,
+    });
+
+    const sourceCol = currentBoard.columns.find((c) => c.id === sourceColumnId);
+    if (!sourceCol) return fail('missing-source');
+
+    const sourceIndex = sourceCol.cards.findIndex((c) => c.id === cardId);
+    const cardToMove = sourceIndex >= 0 ? sourceCol.cards[sourceIndex] : undefined;
+    if (!cardToMove) {
+      return fail('missing-card', { fromColumn: sourceCol.title });
+    }
+
+    const targetCol = currentBoard.columns.find((c) => c.id === targetColumnId);
+    if (!targetCol) {
+      return fail('missing-target', {
+        cardTitle: cardToMove.title,
+        fromColumn: sourceCol.title,
+        fromIndex: sourceIndex,
+      });
+    }
+
+    if (sourceColumnId === targetColumnId) {
+      if (options.insertIndex === undefined) {
+        return fail('noop', {
+          cardTitle: cardToMove.title,
+          fromColumn: sourceCol.title,
+          toColumn: targetCol.title,
+          fromIndex: sourceIndex,
+          toIndex: sourceIndex,
+        });
+      }
+
+      let insertIndex = options.insertIndex;
+      if (insertIndex === sourceIndex || insertIndex === sourceIndex + 1) {
+        return fail('noop', {
+          cardTitle: cardToMove.title,
+          fromColumn: sourceCol.title,
+          toColumn: targetCol.title,
+          fromIndex: sourceIndex,
+          toIndex: options.insertIndex,
+        });
+      }
+
+      const cards = [...sourceCol.cards];
+      const [moved] = cards.splice(sourceIndex, 1);
+      if (sourceIndex < insertIndex) {
+        insertIndex -= 1;
+      }
+      cards.splice(insertIndex, 0, moved);
+
+      persistBoard({
+        ...currentBoard,
+        columns: currentBoard.columns.map((col) =>
+          col.id === sourceColumnId ? { ...col, cards } : col
+        ),
+      });
+
+      return {
+        outcome: 'reordered',
+        cardTitle: moved.title,
+        cardId,
+        fromColumn: sourceCol.title,
+        toColumn: targetCol.title,
+        fromIndex: sourceIndex,
+        toIndex: insertIndex,
+      };
+    }
+
+    const updatedCard = adaptCardStatusToColumn(cardToMove, targetCol.title || '');
+    const insertIndex = options.insertIndex === undefined
+      ? targetCol.cards.length
+      : Math.max(0, Math.min(options.insertIndex, targetCol.cards.length));
+
+    const columns = currentBoard.columns.map((col) => {
+      if (col.id === sourceColumnId) {
+        return { ...col, cards: col.cards.filter((c) => c.id !== cardId) };
+      }
+      if (col.id === targetColumnId) {
+        const cards = [...col.cards];
+        cards.splice(insertIndex, 0, updatedCard);
+        return { ...col, cards };
+      }
+      return col;
+    });
+
+    persistBoard({ ...currentBoard, columns });
+
+    return {
+      outcome: 'moved',
+      cardTitle: cardToMove.title,
+      cardId,
+      fromColumn: sourceCol.title,
+      toColumn: targetCol.title,
+      fromIndex: sourceIndex,
+      toIndex: insertIndex,
+    };
+  }, [persistBoard]);
+
   return {
     availableKanbans,
     currentPath,
     board,
     boardRef,
     persistBoard,
+    toggleCard,
+    deleteCard,
+    updateCardTitle,
+    addCard,
+    moveCard,
   };
 }

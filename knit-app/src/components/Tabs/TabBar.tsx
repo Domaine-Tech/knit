@@ -5,10 +5,7 @@ import { vaultStore } from '../../stores/vaultStore';
 import { contextMenu } from '../../stores/contextMenuStore';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import {
-  copyRelativePath,
-  copyAbsolutePath,
-  copyFileName,
-  copyMarkdownLink,
+  buildPathCopyMenuItems,
 } from '../../utils';
 
 interface TabBarProps {
@@ -163,38 +160,12 @@ export const TabBar: React.FC<TabBarProps> = ({
         },
       },
       { id: 'div-tab-2', divider: true },
-      {
-        id: 'copy-rel-path',
-        label: 'Copier le chemin relatif',
-        icon: 'copy' as const,
-        onClick: () => {
-          copyRelativePath(tab.path);
-        },
-      },
-      {
-        id: 'copy-abs-path',
-        label: 'Copier le chemin absolu',
-        icon: 'copy' as const,
-        onClick: () => {
-          copyAbsolutePath(absPath);
-        },
-      },
-      {
-        id: 'copy-name',
-        label: 'Copier le nom du fichier',
-        icon: 'clipboard' as const,
-        onClick: () => {
-          copyFileName(tab.title);
-        },
-      },
-      {
-        id: 'copy-md-link',
-        label: 'Copier le lien Markdown',
-        icon: 'link' as const,
-        onClick: () => {
-          copyMarkdownLink(tab.path, tab.title);
-        },
-      },
+      ...buildPathCopyMenuItems({
+        relPath: tab.path,
+        absPath,
+        name: tab.title,
+        markdownAlias: tab.title,
+      }),
       { id: 'div-tab-3', divider: true },
       {
         id: 'reopen-closed',

@@ -16,6 +16,17 @@ export const COLLABORATIVE_PALETTE: readonly string[] = [
 const THEME_STORAGE_KEY = 'knit-theme-mode';
 const HUE_STORAGE_KEY = 'knit-theme-hue';
 
+export const COLUMN_ACCENT_COLORS = [
+  'var(--knit-primary)',
+  '#3B82F6',
+  '#F59E0B',
+  '#10B981',
+  '#8B5CF6',
+  '#EC4899',
+  '#06B6D4',
+  '#64748B',
+];
+
 export const DEFAULT_HUE = 35; // Ambre Artisanal & Cuivre Doré (évite toute ressemblance avec Obsidian)
 
 export function getStoredTheme(): ThemeMode {

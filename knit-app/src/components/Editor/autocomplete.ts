@@ -3,8 +3,7 @@ import type { EditorView } from '@codemirror/view';
 import { networkStore } from '../../stores/networkStore';
 import { vaultStore } from '../../stores/vaultStore';
 import type { SuggestIndexData, HeadingItem, AutocompleteSourceProps } from '../../types';
-
-export type { AutocompleteSourceProps };
+import { formatIsoDate, getNextDayOfWeek, slugify } from '../../utils';
 
 export const EMOJI_DICTIONARY: Record<string, string> = {
   sparkles: '✨',
@@ -47,23 +46,6 @@ export const EMOJI_DICTIONARY: Record<string, string> = {
   zap: '⚡',
 };
 
-// Formate une date en YYYY-MM-DD
-function formatDate(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
-function getNextDayOfWeek(dayOfWeek: number): Date {
-  const d = new Date();
-  const current = d.getDay();
-  let diff = dayOfWeek - current;
-  if (diff <= 0) diff += 7;
-  d.setDate(d.getDate() + diff);
-  return d;
-}
-
 /**
  * Cache mémoire pour l'index de suggestions ultra-rapide (< 2ms)
  */
@@ -96,13 +78,13 @@ export function getLocalHeadings(content: string, currentPath: string = ''): Hea
 
     if (trimmed.startsWith('# ')) {
       const text = trimmed.slice(2).trim();
-      headings.push({ file_rel: currentPath, level: 1, text, slug: text.toLowerCase().replace(/[^a-z0-9]+/g, '-') });
+      headings.push({ file_rel: currentPath, level: 1, text, slug: slugify(text) });
     } else if (trimmed.startsWith('## ')) {
       const text = trimmed.slice(3).trim();
-      headings.push({ file_rel: currentPath, level: 2, text, slug: text.toLowerCase().replace(/[^a-z0-9]+/g, '-') });
+      headings.push({ file_rel: currentPath, level: 2, text, slug: slugify(text) });
     } else if (trimmed.startsWith('### ')) {
       const text = trimmed.slice(4).trim();
-      headings.push({ file_rel: currentPath, level: 3, text, slug: text.toLowerCase().replace(/[^a-z0-9]+/g, '-') });
+      headings.push({ file_rel: currentPath, level: 3, text, slug: slugify(text) });
     }
   }
   return headings;
@@ -266,10 +248,10 @@ export function createKnitAutocompletion(sources: AutocompleteSourceProps) {
           tomorrow.setDate(tomorrow.getDate() + 1);
 
           const suggestions = [
-            { label: 'today', detail: `@${formatDate(today)} (Aujourd'hui)`, date: formatDate(today) },
-            { label: 'demain', detail: `@${formatDate(tomorrow)} (Demain)`, date: formatDate(tomorrow) },
-            { label: 'lundi', detail: `@${formatDate(getNextDayOfWeek(1))} (Lundi prochain)`, date: formatDate(getNextDayOfWeek(1)) },
-            { label: 'vendredi', detail: `@${formatDate(getNextDayOfWeek(5))} (Vendredi prochain)`, date: formatDate(getNextDayOfWeek(5)) },
+            { label: 'today', detail: `@${formatIsoDate(today)} (Aujourd'hui)`, date: formatIsoDate(today) },
+            { label: 'demain', detail: `@${formatIsoDate(tomorrow)} (Demain)`, date: formatIsoDate(tomorrow) },
+            { label: 'lundi', detail: `@${formatIsoDate(getNextDayOfWeek(1))} (Lundi prochain)`, date: formatIsoDate(getNextDayOfWeek(1)) },
+            { label: 'vendredi', detail: `@${formatIsoDate(getNextDayOfWeek(5))} (Vendredi prochain)`, date: formatIsoDate(getNextDayOfWeek(5)) },
           ];
 
           const options = suggestions

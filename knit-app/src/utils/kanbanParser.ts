@@ -9,20 +9,9 @@
  * - Support des priorités inline : !p1, !p2, !p3
  */
 
-import type { TaskStatus, KanbanCard, KanbanColumn, KanbanBoard } from '../types';
-
-
-// Couleurs par défaut attribuées cycliquement aux colonnes
-export const COLUMN_ACCENT_COLORS = [
-  'var(--knit-primary)',
-  '#3B82F6', // Bleu
-  '#F59E0B', // Ambre / Orange
-  '#10B981', // Vert émeraude
-  '#8B5CF6', // Violet
-  '#EC4899', // Rose
-  '#06B6D4', // Cyan
-  '#64748B', // Ardoise
-];
+import type { TaskStatus, KanbanCard, KanbanColumn, KanbanBoard, CardMetadata } from '../types';
+import { slugify } from './markdownUtils';
+import { COLUMN_ACCENT_COLORS } from '../theme/theme';
 
 /**
  * Détecte si un contenu Markdown ou un chemin est déclaré comme un Kanban
@@ -134,12 +123,7 @@ export function parseKanbanMarkdown(content: string, fallbackTitle: string = 'Ta
 
   const usedColIds = new Set<string>();
   const generateColId = (colTitle: string): string => {
-    const slug = colTitle
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '') || 'col';
+    const slug = slugify(colTitle) || 'col';
     let candidate = `col-${slug}`;
     let counter = 2;
     while (usedColIds.has(candidate)) {
@@ -152,13 +136,7 @@ export function parseKanbanMarkdown(content: string, fallbackTitle: string = 'Ta
 
   const usedCardIds = new Set<string>();
   const generateCardId = (cardTitle: string): string => {
-    const slug = cardTitle
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
-      .slice(0, 30) || 'card';
+    const slug = slugify(cardTitle).slice(0, 30) || 'card';
     let candidate = `card-${slug}`;
     let counter = 2;
     while (usedCardIds.has(candidate)) {
@@ -319,14 +297,7 @@ export function serializeKanbanMarkdown(board: KanbanBoard): string {
 /**
  * Analyse une ligne de carte pour extraire d'éventuels WikiLinks [[...]], #tags, et priorités !p1/!p2/!p3
  */
-export function parseCardMetadata(title: string): {
-  cleanTitle: string;
-  tags: string[];
-  wikiLinks: string[];
-  priority?: 'p1' | 'p2' | 'p3';
-  assignee?: string;
-  dueDate?: string;
-} {
+export function parseCardMetadata(title: string): CardMetadata {
   const tags: string[] = [];
   const wikiLinks: string[] = [];
 

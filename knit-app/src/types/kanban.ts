@@ -27,9 +27,44 @@ export interface KanbanBoard {
   columns: KanbanColumn[];
 }
 
+export interface CardMetadata {
+  cleanTitle: string;
+  tags: string[];
+  wikiLinks: string[];
+  priority?: 'p1' | 'p2' | 'p3';
+  assignee?: string;
+  dueDate?: string;
+}
+
 export interface UseKanbanBoardProps {
   activeFilePath?: string | null;
   activeFileContent?: string;
   onUpdateContent: (path: string, content: string) => void;
+}
+
+export interface MoveCardOptions {
+  cardId: string;
+  sourceColumnId: string;
+  targetColumnId: string;
+  /** Slot d'insertion. Absent : la carte est ajoutée en fin de colonne cible. */
+  insertIndex?: number;
+}
+
+export type MoveCardOutcome =
+  | 'missing-source'
+  | 'missing-card'
+  | 'missing-target'
+  | 'noop'
+  | 'reordered'
+  | 'moved';
+
+export interface MoveCardResult {
+  outcome: MoveCardOutcome;
+  cardTitle: string;
+  cardId: string;
+  fromColumn: string;
+  toColumn: string;
+  fromIndex: number;
+  toIndex: number;
 }
 

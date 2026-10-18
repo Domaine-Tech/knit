@@ -1,18 +1,6 @@
 import React, { useState } from 'react';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
-
-export interface KanbanDragLog {
-  id: string;
-  time: string;
-  action: 'reorder' | 'move' | 'no-op' | 'abort';
-  cardTitle: string;
-  cardId: string;
-  fromColumn: string;
-  toColumn: string;
-  fromIndex: number;
-  toIndex: number;
-  detail: string;
-}
+import type { KanbanDragLog } from '../../types';
 
 interface KanbanDebugHUDProps {
   columnsCount: number;

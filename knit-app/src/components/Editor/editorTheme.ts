@@ -3,6 +3,7 @@ import { HighlightStyle } from '@codemirror/language';
 import { tags } from '@lezer/highlight';
 import { openSearchPanel } from '@codemirror/search';
 import { EditorState } from '@codemirror/state';
+import type { KeymapCallbacks } from '../../types';
 
 /**
  * Thème CodeMirror 6 stylé avec les tokens Knit CSS et support de la largeur saine (760px vs pleine largeur)
@@ -152,12 +153,6 @@ export const knitPhrases = EditorState.phrases.of({
   'replace all': 'Tout remplacer',
   'close': 'Fermer',
 });
-
-interface KeymapCallbacks {
-  onSave: () => void;
-  onToggleViewMode: () => void;
-  onPackageAI: () => void;
-}
 
 /**
  * Crée le keymap des raccourcis spécifiques à l'éditeur Knit (Ctrl+S, Ctrl+F, Ctrl+H, Ctrl+E, Ctrl+Shift+C)

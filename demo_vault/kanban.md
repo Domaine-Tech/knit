@@ -31,8 +31,8 @@ Vous pouvez a tout moment basculer en mode source (`</>`) avec `Ctrl+E` pour con
 ## En revue
 
 - [ ] Relecture de la documentation de specification Markdown !p2
+- [/] Test croise de compatibilite avec Obsidian et VS Code !p3 @vault
 - [ ] Neutralisation des marges asymetriques sur les titres !p1
-- [ ] Test croise de compatibilite avec Obsidian et VS Code !p3 @vault
 
 ## Termine
 

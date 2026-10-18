@@ -9,6 +9,7 @@ import type {
   PeerIdentity,
   AvatarInfo,
   UserProfile,
+  PeerProfileSummary,
   ConnectedPeerInfo,
   DiscoveredLanPeer,
 } from '../types';
@@ -198,7 +199,7 @@ class NetworkStore {
       );
       this.unlistenFns.push(unlistenSyncResp);
 
-      const unlistenProfile = await listen<{ from_peer: string; profile: Partial<UserProfile> }>(
+      const unlistenProfile = await listen<{ from_peer: string; profile: PeerProfileSummary }>(
         'p2p_profile_updated',
         (event) => {
           const { from_peer, profile } = event.payload;

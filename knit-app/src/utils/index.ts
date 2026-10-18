@@ -13,3 +13,5 @@ export * from './env';
 export * from './version';
 export * from './editorUtils';
 export * from './aiContextUtils';
+export * from './dateUtils';
+export * from './contextMenuBuilders';

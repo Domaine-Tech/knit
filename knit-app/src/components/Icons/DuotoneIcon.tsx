@@ -1,8 +1,6 @@
 import React from 'react';
 import type { IconName } from '../../types';
 
-export type { IconName };
-
 interface DuotoneIconProps {
   name: IconName;
   size?: number;

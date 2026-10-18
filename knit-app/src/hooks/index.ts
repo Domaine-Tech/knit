@@ -3,6 +3,7 @@
  */
 
 export * from './useKanbanBoard';
+export * from './useKanbanDnD';
 export * from './useKnitShortcuts';
 export * from './useResizablePanels';
 export * from './useDebugMode';
