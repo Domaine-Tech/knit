@@ -111,6 +111,35 @@ export class TableCardWidget extends WidgetType {
     }
 
     wrapper.appendChild(table);
+
+    const handleWrapperWheel = (e: WheelEvent) => {
+      if (wrapper.scrollWidth > wrapper.clientWidth) {
+        // Shift+wheel ou trackpad deltaX : défilement horizontal fluide
+        if (e.deltaX !== 0 || e.shiftKey) {
+          const dx = e.deltaX !== 0 ? e.deltaX : e.deltaY;
+          e.preventDefault();
+          e.stopPropagation();
+          wrapper.scrollLeft += dx;
+          return;
+        }
+
+        // Molette verticale standard sur le tableau :
+        const target = e.target as HTMLElement | null;
+        const isOverHeader = Boolean(target?.closest('thead') || target?.tagName === 'TH');
+        const atLeft = wrapper.scrollLeft <= 0 && e.deltaY < 0;
+        const atRight =
+          wrapper.scrollLeft + wrapper.clientWidth >= wrapper.scrollWidth - 1 && e.deltaY > 0;
+
+        // Défiler horizontalement si sur l'en-tête ou tant que les bords ne sont pas atteints
+        if (isOverHeader || (!atLeft && !atRight)) {
+          e.preventDefault();
+          e.stopPropagation();
+          wrapper.scrollLeft += e.deltaY;
+        }
+      }
+    };
+    wrapper.addEventListener('wheel', handleWrapperWheel, { passive: false });
+
     card.appendChild(wrapper);
 
     card.onclick = (e) => {
@@ -130,6 +159,10 @@ export class TableCardWidget extends WidgetType {
           return;
         }
       }
+
+      // Ignorer les clics sur la scrollbar ou hors d'une cellule pour éviter la bascule source intempestive
+      const targetCell = (e.target as HTMLElement).closest('td, th');
+      if (!targetCell) return;
 
       // 2. Sinon : bascule vers la source du tableau (sauf lecture verrouillée)
       e.preventDefault();

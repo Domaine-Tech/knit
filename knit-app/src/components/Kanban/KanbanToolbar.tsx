@@ -41,9 +41,13 @@ export const KanbanToolbar: React.FC<KanbanToolbarProps> = ({
   readOnly = false,
 }) => {
   const hoverPreview = useDelayedHoverPreview(120);
+  const prevSwitcherOpenRef = React.useRef(isSwitcherOpen);
 
   useEffect(() => {
-    if (!isSwitcherOpen) hoverPreview.cancel(true);
+    if (prevSwitcherOpenRef.current && !isSwitcherOpen) {
+      hoverPreview.cancel(true);
+    }
+    prevSwitcherOpenRef.current = isSwitcherOpen;
   }, [isSwitcherOpen, hoverPreview]);
 
   return (

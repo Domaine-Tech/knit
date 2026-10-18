@@ -217,6 +217,21 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
   );
   useRegisterDebugStats('kanban', kanbanDebugReport);
 
+  const handleBoardWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (e.deltaY !== 0 && e.deltaX === 0 && !e.shiftKey) {
+      const target = e.target as HTMLElement | null;
+      const scrollableCards = target?.closest('.knit-kanban-column-cards') as HTMLElement | null;
+      if (scrollableCards && scrollableCards.scrollHeight > scrollableCards.clientHeight) {
+        const atTop = scrollableCards.scrollTop === 0 && e.deltaY < 0;
+        const atBottom =
+          scrollableCards.scrollTop + scrollableCards.clientHeight >= scrollableCards.scrollHeight - 1 &&
+          e.deltaY > 0;
+        if (!atTop && !atBottom) return;
+      }
+      e.currentTarget.scrollLeft += e.deltaY;
+    }
+  };
+
   return (
     <div
       style={{
@@ -229,7 +244,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
         overflow: 'hidden',
       }}
     >
-      <div className={compactChrome ? 'knit-hover-chrome-hide' : undefined}>
+      {!compactChrome && (
         <KanbanToolbar
           title={board.title}
           columnCount={board.columns.length}
@@ -248,10 +263,11 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
           onSwitchToEditor={onSwitchToEditor}
           readOnly={readOnly}
         />
-      </div>
+      )}
 
       <div
-        className={readOnly ? 'knit-view-readonly' : undefined}
+        className={`knit-kanban-board-columns ${readOnly ? 'knit-view-readonly' : ''}`.trim()}
+        onWheel={handleBoardWheel}
         onDragEnter={(e) => {
           if (readOnly) return;
           e.preventDefault();
@@ -280,6 +296,7 @@ export const KanbanView: React.FC<KanbanViewProps> = ({
             columnCount={board.columns.length}
             filterQuery={filterQuery}
             isDebugActive={isDebugActive}
+            readOnly={readOnly}
             renamingColumnId={renamingColumnId}
             renamingColumnTitle={renamingColumnTitle}
             addingCardInColumnId={addingCardInColumnId}

@@ -183,7 +183,7 @@
   min-height: 0;
 }
 
-.knit-hover-preview-body.is-doctype-view {
+.knit-hover-preview-body.is-doctype-view:not(.is-doctype-kanban):not(.is-doctype-table) {
   display: block;
   position: relative;
   /* Corps = unique scroller du portal (molette fiable) */
@@ -194,7 +194,7 @@
   overflow-y: auto;
 }
 
-.knit-hover-preview-body.is-doctype-view > * {
+.knit-hover-preview-body.is-doctype-view:not(.is-doctype-kanban):not(.is-doctype-table) > * {
   display: block;
   height: auto;
   min-height: 0;
@@ -202,7 +202,7 @@
   overflow: visible;
 }
 
-.knit-hover-preview-body.is-doctype-view .knit-hover-doctype-root {
+.knit-hover-preview-body.is-doctype-view:not(.is-doctype-kanban):not(.is-doctype-table) .knit-hover-doctype-root {
   display: block;
   height: auto;
   min-height: 0;
@@ -245,11 +245,153 @@
   display: none;
 }
 
-/* Vues immersives : laisser le contenu pousser la hauteur du body-scroller */
-.knit-hover-preview-body.is-doctype-view .knit-view-readonly {
+/* Vues immersives : laisser le contenu pousser la hauteur du body-scroller (sauf kanban et table) */
+.knit-hover-preview-body.is-doctype-view:not(.is-doctype-kanban):not(.is-doctype-table) .knit-view-readonly {
   height: auto !important;
   min-height: 0 !important;
   overflow: visible !important;
+}
+
+/* Aperçu immersif Kanban au survol */
+.knit-hover-preview-body.is-doctype-kanban {
+  display: flex !important;
+  flex-direction: column !important;
+  position: relative;
+  height: min(60vh, 390px) !important;
+  max-height: min(60vh, 390px) !important;
+  min-height: 240px !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+}
+
+.knit-hover-preview-body.is-doctype-kanban > * {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+}
+
+.knit-hover-preview-body.is-doctype-kanban .knit-hover-doctype-root {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+}
+
+.knit-hover-preview-body.is-doctype-kanban .knit-kanban-board-columns {
+  flex: 1 1 auto !important;
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 12px !important;
+  padding: 12px 14px !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  align-items: stretch !important;
+  scroll-behavior: smooth;
+}
+
+.knit-hover-preview-body.is-doctype-kanban .knit-kanban-column {
+  width: 240px !important;
+  min-width: 240px !important;
+  max-width: 240px !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex-shrink: 0 !important;
+}
+
+.knit-hover-preview-body.is-doctype-kanban .knit-kanban-column-cards {
+  flex: 1 1 auto !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  min-height: 60px !important;
+  padding: 8px 10px !important;
+  gap: 8px !important;
+}
+
+.knit-hover-preview-body.is-doctype-kanban .knit-kanban-column-cards::-webkit-scrollbar,
+.knit-hover-preview-body.is-doctype-kanban .knit-kanban-board-columns::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.knit-hover-preview-body.is-doctype-kanban .knit-kanban-column-cards::-webkit-scrollbar-thumb,
+.knit-hover-preview-body.is-doctype-kanban .knit-kanban-board-columns::-webkit-scrollbar-thumb {
+  background: var(--knit-border);
+  border-radius: 4px;
+}
+
+/* Aperçu immersif Table au survol */
+.knit-hover-preview-body.is-doctype-table {
+  display: flex !important;
+  flex-direction: column !important;
+  position: relative;
+  height: min(60vh, 390px) !important;
+  max-height: min(60vh, 390px) !important;
+  min-height: 240px !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+}
+
+.knit-hover-preview-body.is-doctype-table > * {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+}
+
+.knit-hover-preview-body.is-doctype-table .knit-hover-doctype-root {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+}
+
+.knit-hover-preview-body.is-doctype-table .knit-table-view-container {
+  height: 100% !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.knit-hover-preview-body.is-doctype-table .knit-table-view-scroll {
+  flex: 1 1 auto !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+  scroll-behavior: smooth;
+}
+
+.knit-hover-preview-body.is-doctype-table .knit-table-view-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 8px;
+}
+
+.knit-hover-preview-body.is-doctype-table .knit-table-view-scroll::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.knit-hover-preview-body.is-doctype-table .knit-table-view-scroll::-webkit-scrollbar-thumb {
+  background: var(--knit-border);
+  border-radius: 4px;
+}
+
+.knit-hover-preview-body.is-doctype-table .knit-table-view-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--knit-primary);
 }
 
 .knit-editor-hover-preview .cm-content {
@@ -671,6 +813,21 @@ details.knit-html-details {
 .knit-rendered-table-wrapper {
   overflow-x: auto;
   width: 100%;
+  scroll-behavior: smooth;
+}
+
+.knit-rendered-table-wrapper::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+
+.knit-rendered-table-wrapper::-webkit-scrollbar-thumb {
+  background: var(--knit-border);
+  border-radius: 4px;
+}
+
+.knit-rendered-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: var(--knit-text-muted);
 }
 
 .knit-rendered-table {

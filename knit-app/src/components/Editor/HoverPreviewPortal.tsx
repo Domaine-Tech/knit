@@ -53,7 +53,7 @@ function hoverPanelStyle(opts: {
     top: opts.top,
     zIndex: opts.zIndex,
     width: opts.width,
-    maxWidth: 'min(92vw, 560px)',
+    maxWidth: 'min(94vw, 620px)',
     padding: '8px 10px',
     backgroundColor: 'var(--knit-surface, #1e1e24)',
     border: opts.border,
@@ -189,7 +189,7 @@ function PreviewBody({
     return (
       <div
         ref={bodyRef}
-        className="knit-hover-preview-body is-doctype-view"
+        className={`knit-hover-preview-body is-doctype-view is-doctype-${preview.docType}`}
         {...pointerProps}
       >
         <ErrorBoundary fallbackTitle="Aperçu indisponible">
@@ -324,6 +324,14 @@ export const HoverPreviewPortal: React.FC<HoverPreviewPortalProps> = ({
       return el.scrollHeight > el.clientHeight + 1;
     };
 
+    const isScrollableX = (el: HTMLElement): boolean => {
+      const { overflowX } = window.getComputedStyle(el);
+      if (overflowX !== 'auto' && overflowX !== 'scroll' && overflowX !== 'overlay') {
+        return false;
+      }
+      return el.scrollWidth > el.clientWidth + 1;
+    };
+
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       e.stopPropagation();
@@ -331,39 +339,104 @@ export const HoverPreviewPortal: React.FC<HoverPreviewPortalProps> = ({
       const body = bodyRef.current;
       if (!body) return;
 
-      let target: HTMLElement | null = null;
-      for (const node of e.composedPath()) {
-        if (!(node instanceof HTMLElement)) continue;
-        if (node === root) break;
-        if (isScrollableY(node)) {
-          target = node;
-          break;
-        }
-      }
-      if (!target && isScrollableY(body)) target = body;
-      if (!target) {
-        target =
-          body.querySelector<HTMLElement>('.cm-scroller') ||
-          body.querySelector<HTMLElement>('[style*="overflow"]') ||
-          body;
-      }
-
-      const delta =
+      const deltaY =
         e.deltaMode === WheelEvent.DOM_DELTA_LINE
           ? e.deltaY * 16
           : e.deltaMode === WheelEvent.DOM_DELTA_PAGE
-            ? e.deltaY * target.clientHeight
+            ? e.deltaY * 100
             : e.deltaY;
 
-      const maxScroll = Math.max(0, target.scrollHeight - target.clientHeight);
-      if (maxScroll <= 0 && target !== body && isScrollableY(body)) {
-        body.scrollTop = Math.max(
-          0,
-          Math.min(body.scrollHeight - body.clientHeight, body.scrollTop + delta)
-        );
+      const deltaX =
+        e.deltaMode === WheelEvent.DOM_DELTA_LINE
+          ? e.deltaX * 16
+          : e.deltaMode === WheelEvent.DOM_DELTA_PAGE
+            ? e.deltaX * 100
+            : e.deltaX;
+
+      // 1. Direct horizontal scroll (trackpad deltaX or Shift+wheel)
+      if (deltaX !== 0 || e.shiftKey) {
+        const xDelta = deltaX !== 0 ? deltaX : deltaY;
+        let targetX: HTMLElement | null = null;
+        for (const node of e.composedPath()) {
+          if (!(node instanceof HTMLElement)) continue;
+          if (node === root) break;
+          if (isScrollableX(node)) {
+            targetX = node;
+            break;
+          }
+        }
+        if (targetX) {
+          const maxScrollX = Math.max(0, targetX.scrollWidth - targetX.clientWidth);
+          targetX.scrollLeft = Math.max(0, Math.min(maxScrollX, targetX.scrollLeft + xDelta));
+          return;
+        }
+      }
+
+      // 2. Locate vertical scroll target & potential horizontal container
+      let targetY: HTMLElement | null = null;
+      let targetXFallback: HTMLElement | null = null;
+      let isOverHeader = false;
+
+      for (const node of e.composedPath()) {
+        if (!(node instanceof HTMLElement)) continue;
+        if (node === root) break;
+        if (!isOverHeader && (node.tagName === 'THEAD' || node.tagName === 'TH')) {
+          isOverHeader = true;
+        }
+        if (!targetY && isScrollableY(node)) {
+          targetY = node;
+        }
+        if (!targetXFallback && isScrollableX(node)) {
+          targetXFallback = node;
+        }
+      }
+
+      // Si le curseur est sur l'en-tête de tableau, scroller horizontalement en priorité
+      if (isOverHeader && targetXFallback) {
+        const maxScrollX = Math.max(0, targetXFallback.scrollWidth - targetXFallback.clientWidth);
+        targetXFallback.scrollLeft = Math.max(0, Math.min(maxScrollX, targetXFallback.scrollLeft + deltaY));
         return;
       }
-      target.scrollTop = Math.max(0, Math.min(maxScroll, target.scrollTop + delta));
+
+      if (targetY) {
+        const maxScrollY = Math.max(0, targetY.scrollHeight - targetY.clientHeight);
+        const atTop = targetY.scrollTop <= 0 && deltaY < 0;
+        const atBottom = targetY.scrollTop >= maxScrollY && deltaY > 0;
+
+        // If inner vertical scroller hit boundary, translate to horizontal container if available
+        if ((atTop || atBottom) && targetXFallback) {
+          const maxScrollX = Math.max(0, targetXFallback.scrollWidth - targetXFallback.clientWidth);
+          targetXFallback.scrollLeft = Math.max(0, Math.min(maxScrollX, targetXFallback.scrollLeft + deltaY));
+          return;
+        }
+
+        targetY.scrollTop = Math.max(0, Math.min(maxScrollY, targetY.scrollTop + deltaY));
+        return;
+      }
+
+      // 3. Fallback to horizontal container (e.g. board column row or table)
+      if (targetXFallback) {
+        const maxScrollX = Math.max(0, targetXFallback.scrollWidth - targetXFallback.clientWidth);
+        targetXFallback.scrollLeft = Math.max(0, Math.min(maxScrollX, targetXFallback.scrollLeft + deltaY));
+        return;
+      }
+
+      // 4. Default vertical scroll on body or editor scroller
+      if (isScrollableY(body)) {
+        const maxScroll = Math.max(0, body.scrollHeight - body.clientHeight);
+        body.scrollTop = Math.max(0, Math.min(maxScroll, body.scrollTop + deltaY));
+      } else {
+        const fallback =
+          body.querySelector<HTMLElement>('.cm-scroller') ||
+          body.querySelector<HTMLElement>('[style*="overflow"]');
+        if (fallback && isScrollableY(fallback)) {
+          const maxScroll = Math.max(0, fallback.scrollHeight - fallback.clientHeight);
+          fallback.scrollTop = Math.max(0, Math.min(maxScroll, fallback.scrollTop + deltaY));
+        } else if (fallback && isScrollableX(fallback)) {
+          const maxScroll = Math.max(0, fallback.scrollWidth - fallback.clientWidth);
+          fallback.scrollLeft = Math.max(0, Math.min(maxScroll, fallback.scrollLeft + deltaY));
+        }
+      }
     };
 
     root.addEventListener('wheel', onWheel, { passive: false, capture: true });
@@ -443,7 +516,9 @@ export const HoverPreviewPortal: React.FC<HoverPreviewPortalProps> = ({
               </kbd>
               <span>
                 {isPreviewPinned
-                  ? 'Molette pour lire la suite — clic titre/lien pour ouvrir'
+                  ? hoverPreview.docType === 'table' || hoverPreview.docType === 'kanban'
+                    ? 'Molette (Shift pour horizontal) — clic titre/lien pour ouvrir'
+                    : 'Molette pour lire la suite — clic titre/lien pour ouvrir'
                   : 'Entrer dans la fenêtre pour scroller et lire'}
               </span>
             </div>

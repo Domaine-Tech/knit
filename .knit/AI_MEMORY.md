@@ -23,6 +23,7 @@
 - **[2026-10-18]** : Prompts 1+9+12 (3e) : MonthGridCell ; types DropTarget/… ; oxlint any.
 - **[2026-10-18]** : Sprint 6ter clôturé ; runtime **0.4.0** ; `docTypeRegistry`.
 - **[2026-10-18]** : Spécification Sprint 8 Packaging Multi-OS / CI/CD Tauri v2 / Auto-Updater / macOS natif ; Cargo.toml `[profile.release]` optimisé (LTO fat, strip, codegen-units 1).
+- **[2026-10-18]** : Résolution du Hover Preview Kanban & Table (`livePreview.css`, `HoverPreviewPortal`, `KanbanView`, `KanbanToolbar`, `TableView`, `tableCardWidget`) : défilement horizontal fluide direct et Shift+molette, protection du clic scrollbar contre la bascule source, suppression du `clearHoverPreview(true)` intempestif au montage, minWidth 680px + colonnes non écrasées pour TableView avec scrollbar dédiée 8px.
 
 ## 4. Tâches Actives
 - [x] Sprint 5 / 6 / 6bis / **6ter** clôturés (v0.4.0).

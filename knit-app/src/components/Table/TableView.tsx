@@ -156,41 +156,65 @@ export const TableView: React.FC<TableViewProps> = ({
     void copyTextWithToast(md, 'Tableau Markdown copié', 'Presse-papier mis à jour');
   };
 
+  const handleTableWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (e.deltaY !== 0 && e.deltaX === 0 && !e.shiftKey) {
+      const container = e.currentTarget;
+      const target = e.target as HTMLElement | null;
+      const isOverHeader = Boolean(target?.closest('thead') || target?.tagName === 'TH');
+
+      if (isOverHeader && container.scrollWidth > container.clientWidth) {
+        container.scrollLeft += e.deltaY;
+        e.preventDefault();
+        return;
+      }
+
+      const atTop = container.scrollTop <= 0 && e.deltaY < 0;
+      const atBottom =
+        container.scrollTop + container.clientHeight >= container.scrollHeight - 1 &&
+        e.deltaY > 0;
+      if ((atTop || atBottom) && container.scrollWidth > container.clientWidth) {
+        container.scrollLeft += e.deltaY;
+      }
+    }
+  };
+
   return (
     <div
-      className={readOnly ? 'knit-view-readonly' : undefined}
+      className={`knit-table-view-container ${readOnly ? 'knit-view-readonly' : ''}`.trim()}
       style={{
-        flex: readOnly ? 'none' : 1,
+        flex: 1,
         display: 'flex',
         flexDirection: 'column',
-        height: readOnly ? 'auto' : '100%',
+        height: '100%',
         minHeight: 0,
         backgroundColor: 'var(--knit-bg)',
-        overflow: readOnly ? 'visible' : 'hidden',
+        overflow: 'hidden',
       }}
     >
-      <TableToolbar
-        board={board}
-        currentPath={currentPath}
-        availableKanbans={availableKanbans}
-        filteredCount={filteredAndSortedRows.length}
-        readOnly={readOnly}
-        compactChrome={compactChrome}
-        isSwitcherOpen={isSwitcherOpen}
-        setIsSwitcherOpen={setIsSwitcherOpen}
-        searchFilter={searchFilter}
-        setSearchFilter={setSearchFilter}
-        columnFilter={columnFilter}
-        setColumnFilter={setColumnFilter}
-        onOpenFile={onOpenFile}
-        onStartAddTask={() => {
-          setIsAddingTask(true);
-          setNewTaskColumnId(board.columns[0]?.id || '');
-        }}
-        onExportCSV={handleExportCSV}
-        onCopyMarkdownTable={handleCopyMarkdownTable}
-        onSwitchToEditor={onSwitchToEditor}
-      />
+      {!compactChrome && (
+        <TableToolbar
+          board={board}
+          currentPath={currentPath}
+          availableKanbans={availableKanbans}
+          filteredCount={filteredAndSortedRows.length}
+          readOnly={readOnly}
+          compactChrome={compactChrome}
+          isSwitcherOpen={isSwitcherOpen}
+          setIsSwitcherOpen={setIsSwitcherOpen}
+          searchFilter={searchFilter}
+          setSearchFilter={setSearchFilter}
+          columnFilter={columnFilter}
+          setColumnFilter={setColumnFilter}
+          onOpenFile={onOpenFile}
+          onStartAddTask={() => {
+            setIsAddingTask(true);
+            setNewTaskColumnId(board.columns[0]?.id || '');
+          }}
+          onExportCSV={handleExportCSV}
+          onCopyMarkdownTable={handleCopyMarkdownTable}
+          onSwitchToEditor={onSwitchToEditor}
+        />
+      )}
 
       {isAddingTask && (
         <TableAddTaskRow
@@ -206,15 +230,20 @@ export const TableView: React.FC<TableViewProps> = ({
 
       {/* Table principale */}
       <div
+        className="knit-table-view-scroll"
+        onWheel={handleTableWheel}
         style={{
-          flex: readOnly ? 'none' : 1,
-          overflow: readOnly ? 'visible' : 'auto',
+          flex: 1,
+          minHeight: 0,
+          overflowX: 'auto',
+          overflowY: 'auto',
           padding: readOnly ? '8px 10px' : '12px 18px',
         }}
       >
         <table
           style={{
             width: '100%',
+            minWidth: 680,
             borderCollapse: 'collapse',
             fontSize: 12,
             textAlign: 'left',
@@ -232,37 +261,39 @@ export const TableView: React.FC<TableViewProps> = ({
               }}
             >
               <th
-                onClick={() => handleToggleSort('completed')}
-                style={{ padding: '8px 10px', width: 44, cursor: 'pointer' }}
+                onClick={readOnly ? undefined : () => handleToggleSort('completed')}
+                style={{ padding: '8px 10px', width: 44, minWidth: 44, cursor: readOnly ? 'default' : 'pointer' }}
               >
                 Fait {sortField === 'completed' && (sortOrder === 'asc' ? '↑' : '↓')}
                 {isDebugActive && <span className="knit-debug-table-col-badge">bool</span>}
               </th>
               <th
-                onClick={() => handleToggleSort('column')}
-                style={{ padding: '8px 12px', width: 170, cursor: 'pointer' }}
+                onClick={readOnly ? undefined : () => handleToggleSort('column')}
+                style={{ padding: '8px 12px', width: 170, minWidth: 160, cursor: readOnly ? 'default' : 'pointer' }}
               >
                 Colonne / Statut {sortField === 'column' && (sortOrder === 'asc' ? '↑' : '↓')}
                 {isDebugActive && <span className="knit-debug-table-col-badge">enum</span>}
               </th>
               <th
-                onClick={() => handleToggleSort('title')}
-                style={{ padding: '8px 12px', cursor: 'pointer' }}
+                onClick={readOnly ? undefined : () => handleToggleSort('title')}
+                style={{ padding: '8px 12px', minWidth: 280, cursor: readOnly ? 'default' : 'pointer' }}
               >
                 Tâche {sortField === 'title' && (sortOrder === 'asc' ? '↑' : '↓')}
                 {isDebugActive && <span className="knit-debug-table-col-badge">string</span>}
               </th>
-              <th style={{ padding: '8px 12px', width: 180 }}>
+              <th style={{ padding: '8px 12px', width: 180, minWidth: 160 }}>
                 Tags
                 {isDebugActive && <span className="knit-debug-table-col-badge">tags[]</span>}
               </th>
-              <th style={{ padding: '8px 10px', width: 70, textAlign: 'right' }}>Actions</th>
+              {!readOnly && (
+                <th style={{ padding: '8px 10px', width: 70, minWidth: 70, textAlign: 'right' }}>Actions</th>
+              )}
             </tr>
           </thead>
           <tbody>
             {filteredAndSortedRows.length === 0 ? (
               <tr>
-                <td colSpan={5} style={{ padding: 24, textAlign: 'center', color: 'var(--knit-text-muted)' }}>
+                <td colSpan={readOnly ? 4 : 5} style={{ padding: 24, textAlign: 'center', color: 'var(--knit-text-muted)' }}>
                   Aucune tâche ne correspond aux critères
                 </td>
               </tr>
@@ -276,7 +307,7 @@ export const TableView: React.FC<TableViewProps> = ({
                   }}
                   onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--knit-surface)')}
                   onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                  onContextMenu={(e) => {
+                  onContextMenu={readOnly ? undefined : (e) => {
                     e.preventDefault();
                     contextMenu.show(e, [
                       ...board.columns.map((c) => ({
@@ -297,34 +328,61 @@ export const TableView: React.FC<TableViewProps> = ({
                   }}
                 >
                   {/* Case à cocher */}
-                  <td style={{ padding: '10px 10px', verticalAlign: 'middle' }}>
+                  <td style={{ padding: '10px 10px', width: 44, minWidth: 44, verticalAlign: 'middle' }}>
                     <input
                       type="checkbox"
                       checked={row.completed}
-                      onChange={() => handleToggleTaskCheckbox(row)}
-                      style={{ cursor: 'pointer', accentColor: 'var(--knit-primary)' }}
+                      disabled={readOnly}
+                      onChange={readOnly ? undefined : () => handleToggleTaskCheckbox(row)}
+                      style={{ cursor: readOnly ? 'default' : 'pointer', accentColor: 'var(--knit-primary)' }}
                     />
                   </td>
 
-                  {/* Colonne / Statut avec sélecteur direct */}
-                  <td style={{ padding: '8px 12px', verticalAlign: 'middle' }}>
-                    <KnitSelect
-                      value={row.columnId}
-                      onChange={(nextCol) =>
-                        handleMoveTaskColumn(row.id, row.columnId, nextCol)
-                      }
-                      aria-label="Colonne / statut"
-                      style={{ fontSize: 11, minWidth: 120 }}
-                      className="knit-table-status-select"
-                      options={board.columns.map((col) => ({
-                        value: col.id,
-                        label: col.title,
-                      }))}
-                    />
+                  {/* Colonne / Statut */}
+                  <td style={{ padding: '8px 12px', width: 170, minWidth: 160, verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                    {readOnly ? (
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          padding: '2px 8px',
+                          borderRadius: 'var(--knit-radius-xs, 4px)',
+                          backgroundColor: 'var(--knit-surface-hover)',
+                          fontSize: 11,
+                          color: 'var(--knit-text)',
+                        }}
+                      >
+                        <span
+                          style={{
+                            width: 6,
+                            height: 6,
+                            borderRadius: '50%',
+                            backgroundColor:
+                              board.columns.find((c) => c.id === row.columnId)?.color || 'var(--knit-primary)',
+                          }}
+                        />
+                        {row.columnTitle}
+                      </span>
+                    ) : (
+                      <KnitSelect
+                        value={row.columnId}
+                        onChange={(nextCol) =>
+                          handleMoveTaskColumn(row.id, row.columnId, nextCol)
+                        }
+                        aria-label="Colonne / statut"
+                        style={{ fontSize: 11, minWidth: 120 }}
+                        className="knit-table-status-select"
+                        options={board.columns.map((col) => ({
+                          value: col.id,
+                          label: col.title,
+                        }))}
+                      />
+                    )}
                   </td>
 
                   {/* Titre & WikiLinks */}
-                  <td style={{ padding: '10px 12px', verticalAlign: 'middle' }}>
+                  <td style={{ padding: '10px 12px', minWidth: 280, verticalAlign: 'middle' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                       <span
                         style={{
@@ -347,28 +405,30 @@ export const TableView: React.FC<TableViewProps> = ({
                   </td>
 
                   {/* Tags */}
-                  <td style={{ padding: '10px 12px', verticalAlign: 'middle' }}>
+                  <td style={{ padding: '10px 12px', width: 180, minWidth: 160, verticalAlign: 'middle' }}>
                     <TagPills tags={row.tags} variant="table" />
                   </td>
 
                   {/* Actions */}
-                  <td style={{ padding: '10px 10px', textAlign: 'right', verticalAlign: 'middle' }}>
-                    <button
-                      onClick={() => handleDeleteTask(row)}
-                      title="Supprimer la tâche"
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: 'var(--knit-text-muted)',
-                        padding: 3,
-                        cursor: 'pointer',
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.color = '#EF4444')}
-                      onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--knit-text-muted)')}
-                    >
-                      <DuotoneIcon name="trash" size={13} />
-                    </button>
-                  </td>
+                  {!readOnly && (
+                    <td style={{ padding: '10px 10px', width: 70, minWidth: 70, textAlign: 'right', verticalAlign: 'middle' }}>
+                      <button
+                        onClick={() => handleDeleteTask(row)}
+                        title="Supprimer la tâche"
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--knit-text-muted)',
+                          padding: 3,
+                          cursor: 'pointer',
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = '#EF4444')}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--knit-text-muted)')}
+                      >
+                        <DuotoneIcon name="trash" size={13} />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))
             )}

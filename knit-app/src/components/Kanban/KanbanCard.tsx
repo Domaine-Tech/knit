@@ -12,6 +12,7 @@ interface KanbanCardProps {
   isDragged: boolean;
   pointerEventsLocked: boolean;
   isDebugActive: boolean;
+  readOnly?: boolean;
   onOpenFile: (path: string) => void;
   onToggle: () => void;
   onDelete: () => void;
@@ -32,6 +33,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
   isDragged,
   pointerEventsLocked,
   isDebugActive,
+  readOnly = false,
   onOpenFile,
   onToggle,
   onDelete,
@@ -49,22 +51,26 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
   return (
     <div
       data-knit-card="true"
-      draggable={!isEditing}
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
-      onDragEnter={(e) => {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-      }}
-      onDragOver={onDragOver}
-      onDrop={onDrop}
+      draggable={!readOnly && !isEditing}
+      onDragStart={readOnly ? undefined : onDragStart}
+      onDragEnd={readOnly ? undefined : onDragEnd}
+      onDragEnter={
+        readOnly
+          ? undefined
+          : (e) => {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = 'move';
+            }
+      }
+      onDragOver={readOnly ? undefined : onDragOver}
+      onDrop={readOnly ? undefined : onDrop}
       style={{
         padding: '9px 11px',
         backgroundColor: 'var(--knit-bg)',
         border: '1px solid var(--knit-border)',
         borderRadius: 'var(--knit-radius-sm)',
         boxShadow: 'var(--knit-shadow-xs)',
-        cursor: isEditing ? 'default' : 'grab',
+        cursor: isEditing ? 'default' : readOnly ? 'default' : 'grab',
         opacity: isDragged ? 0.35 : 1,
         transition: 'border-color var(--knit-duration-fast), opacity var(--knit-duration-fast)',
         position: 'relative',
@@ -72,10 +78,10 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
         userSelect: isEditing ? 'text' : 'none',
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = 'var(--knit-border-hover)';
+        if (!readOnly) e.currentTarget.style.borderColor = 'var(--knit-border-hover)';
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = 'var(--knit-border)';
+        if (!readOnly) e.currentTarget.style.borderColor = 'var(--knit-border)';
       }}
     >
       <div style={{ pointerEvents: pointerEventsLocked ? 'none' : 'auto' }}>
@@ -127,19 +133,20 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
                 type="checkbox"
                 className="knit-checkbox"
                 checked={card.completed}
-                onChange={onToggle}
-                style={{ marginTop: 3, cursor: 'pointer' }}
+                disabled={readOnly}
+                onChange={readOnly ? undefined : onToggle}
+                style={{ marginTop: 3, cursor: readOnly ? 'default' : 'pointer' }}
               />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <span
-                  onDoubleClick={onStartEdit}
+                  onDoubleClick={readOnly ? undefined : onStartEdit}
                   style={{
                     fontSize: 13,
                     lineHeight: 1.4,
                     color: card.completed ? 'var(--knit-text-muted)' : 'var(--knit-text)',
                     textDecoration: card.completed ? 'line-through' : 'none',
                     wordBreak: 'break-word',
-                    cursor: isEditing ? 'text' : 'grab',
+                    cursor: isEditing ? 'text' : readOnly ? 'default' : 'grab',
                     userSelect: isEditing ? 'text' : 'none',
                   }}
                 >
@@ -153,23 +160,25 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
                   </div>
                 )}
               </div>
-              <button
-                type="button"
-                onClick={onDelete}
-                title="Retirer la tâche"
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--knit-text-muted)',
-                  padding: 2,
-                  cursor: 'pointer',
-                  opacity: 0.6,
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-                onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.6')}
-              >
-                <DuotoneIcon name="close" size={11} />
-              </button>
+              {!readOnly && (
+                <button
+                  type="button"
+                  onClick={onDelete}
+                  title="Retirer la tâche"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--knit-text-muted)',
+                    padding: 2,
+                    cursor: 'pointer',
+                    opacity: 0.6,
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+                  onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.6')}
+                >
+                  <DuotoneIcon name="close" size={11} />
+                </button>
+              )}
             </div>
           </div>
         )}

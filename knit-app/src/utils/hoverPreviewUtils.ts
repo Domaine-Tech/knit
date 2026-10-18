@@ -29,7 +29,7 @@ export const hoverPreviewPinnedRef = { current: false };
 /** Dimensions stables du panneau Hover Preview (pin = bordure seule, zéro saut). */
 export const HOVER_PREVIEW_WIDTH = 380;
 /** Largeur élargie pour vues immersives (kanban, canvas, agenda…). */
-export const HOVER_PREVIEW_IMMERSIVE_WIDTH = 540;
+export const HOVER_PREVIEW_IMMERSIVE_WIDTH = 580;
 /** Hauteur estimée (titre + corps + footer) — 1er frame avant mesure réelle. */
 export const HOVER_PREVIEW_EST_HEIGHT = 320;
 /** Écart curseur ↔ panneau : zéro superposition souris / aperçu. */

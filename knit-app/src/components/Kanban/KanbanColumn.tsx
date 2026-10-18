@@ -47,6 +47,7 @@ interface KanbanColumnProps {
   columnCount: number;
   filterQuery: string;
   isDebugActive: boolean;
+  readOnly?: boolean;
   renamingColumnId: string | null;
   renamingColumnTitle: string;
   addingCardInColumnId: string | null;
@@ -88,6 +89,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   columnCount,
   filterQuery,
   isDebugActive,
+  readOnly = false,
   renamingColumnId,
   renamingColumnTitle,
   addingCardInColumnId,
@@ -139,17 +141,26 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
 
   return (
     <div
+      className="knit-kanban-column"
       onDragEnter={(e) => {
+        if (readOnly) return;
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
       }}
-      onDragOver={(e) => onDragOverColumn(e, column.id)}
+      onDragOver={(e) => {
+        if (readOnly) return;
+        onDragOverColumn(e, column.id);
+      }}
       onDragLeave={(e) => {
+        if (readOnly) return;
         if (!e.currentTarget.contains(e.relatedTarget as Node)) {
           onClearDropTarget(column.id);
         }
       }}
-      onDrop={(e) => onDropOnColumn(e, column.id)}
+      onDrop={(e) => {
+        if (readOnly) return;
+        onDropOnColumn(e, column.id);
+      }}
       style={{
         width: 300,
         minWidth: 300,
@@ -199,8 +210,8 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
             />
           ) : (
             <span
-              onDoubleClick={() => onStartRename(column.id, column.title)}
-              title="Double-cliquez pour renommer la colonne"
+              onDoubleClick={readOnly ? undefined : () => onStartRename(column.id, column.title)}
+              title={readOnly ? undefined : "Double-cliquez pour renommer la colonne"}
               style={{
                 fontSize: 13,
                 fontWeight: 700,
@@ -208,7 +219,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
-                cursor: 'text',
+                cursor: readOnly ? 'default' : 'text',
               }}
             >
               {column.title}
@@ -229,7 +240,8 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
           </span>
           {isDebugActive && <span className="knit-debug-kanban-col-badge">#{column.id}</span>}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        {!readOnly && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           {colIdx > 0 && (
             <button
               type="button"
@@ -310,15 +322,24 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
             <DuotoneIcon name="slider" size={12} />
           </button>
         </div>
+        )}
       </div>
 
       <div
+        className="knit-kanban-column-cards"
         onDragEnter={(e) => {
+          if (readOnly) return;
           e.preventDefault();
           e.dataTransfer.dropEffect = 'move';
         }}
-        onDragOver={(e) => onDragOverColumn(e, column.id)}
-        onDrop={(e) => onDropOnColumn(e, column.id)}
+        onDragOver={(e) => {
+          if (readOnly) return;
+          onDragOverColumn(e, column.id);
+        }}
+        onDrop={(e) => {
+          if (readOnly) return;
+          onDropOnColumn(e, column.id);
+        }}
         style={{
           flex: 1,
           padding: '8px 10px',
@@ -329,7 +350,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
           minHeight: 120,
         }}
       >
-        {matchingCards.length === 0 && dropTarget?.columnId === column.id && draggedCard && (
+        {matchingCards.length === 0 && dropTarget?.columnId === column.id && draggedCard && !readOnly && (
           <div
             style={{
               padding: '20px 12px',
@@ -354,10 +375,11 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
 
         {matchingCards.map((card: KanbanCardModel, cardIdx) => (
           <React.Fragment key={card.id}>
-            {shouldShowIndicator && dropTarget?.index === cardIdx && <KanbanDropIndicator />}
+            {shouldShowIndicator && dropTarget?.index === cardIdx && !readOnly && <KanbanDropIndicator />}
             <KanbanCard
               card={card}
               columnId={column.id}
+              readOnly={readOnly}
               isEditing={editingCardId === card.id}
               editingText={editingCardText}
               isDragged={draggedCard?.cardId === card.id}
@@ -378,78 +400,80 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
           </React.Fragment>
         ))}
 
-        {shouldShowIndicator && dropTarget?.index === matchingCards.length && matchingCards.length > 0 && (
+        {shouldShowIndicator && dropTarget?.index === matchingCards.length && matchingCards.length > 0 && !readOnly && (
           <KanbanDropIndicator />
         )}
 
-        {addingCardInColumnId === column.id ? (
-          <form
-            onSubmit={(e) => onAddCardSubmit(column.id, e)}
-            style={{
-              padding: 8,
-              backgroundColor: 'var(--knit-bg)',
-              border: '1px solid var(--knit-primary)',
-              borderRadius: 'var(--knit-radius-sm)',
-            }}
-          >
-            <input
-              ref={addCardInputRef}
-              type="text"
-              className="knit-input"
-              placeholder="Nom de la tâche (ex: Spécifications [[Specs]] #projet)..."
-              value={newCardTitle}
-              onChange={(e) => onNewCardTitleChange(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Escape') onCancelAddCard();
+        {!readOnly && (
+          addingCardInColumnId === column.id ? (
+            <form
+              onSubmit={(e) => onAddCardSubmit(column.id, e)}
+              style={{
+                padding: 8,
+                backgroundColor: 'var(--knit-bg)',
+                border: '1px solid var(--knit-primary)',
+                borderRadius: 'var(--knit-radius-sm)',
               }}
-              style={{ width: '100%', fontSize: 12, marginBottom: 6 }}
-            />
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
-              <button
-                type="button"
-                className="knit-btn"
-                style={{ padding: '2px 8px', fontSize: 11 }}
-                onClick={onCancelAddCard}
-              >
-                Annuler
-              </button>
-              <button type="submit" className="knit-btn knit-btn-primary" style={{ padding: '2px 8px', fontSize: 11 }}>
-                Ajouter
-              </button>
-            </div>
-          </form>
-        ) : (
-          <button
-            type="button"
-            onClick={() => onStartAddCard(column.id, true)}
-            style={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 6,
-              padding: '6px 8px',
-              borderRadius: 'var(--knit-radius-xs)',
-              border: '1px dashed var(--knit-border)',
-              backgroundColor: 'transparent',
-              color: 'var(--knit-text-muted)',
-              fontSize: 12,
-              cursor: 'pointer',
-              marginTop: 4,
-              transition: 'all var(--knit-duration-fast)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = 'var(--knit-primary)';
-              e.currentTarget.style.color = 'var(--knit-primary)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = 'var(--knit-border)';
-              e.currentTarget.style.color = 'var(--knit-text-muted)';
-            }}
-          >
-            <DuotoneIcon name="plus" size={12} />
-            <span>Ajouter une tâche</span>
-          </button>
+            >
+              <input
+                ref={addCardInputRef}
+                type="text"
+                className="knit-input"
+                placeholder="Nom de la tâche (ex: Spécifications [[Specs]] #projet)..."
+                value={newCardTitle}
+                onChange={(e) => onNewCardTitleChange(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') onCancelAddCard();
+                }}
+                style={{ width: '100%', fontSize: 12, marginBottom: 6 }}
+              />
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
+                <button
+                  type="button"
+                  className="knit-btn"
+                  style={{ padding: '2px 8px', fontSize: 11 }}
+                  onClick={onCancelAddCard}
+                >
+                  Annuler
+                </button>
+                <button type="submit" className="knit-btn knit-btn-primary" style={{ padding: '2px 8px', fontSize: 11 }}>
+                  Ajouter
+                </button>
+              </div>
+            </form>
+          ) : (
+            <button
+              type="button"
+              onClick={() => onStartAddCard(column.id, true)}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                padding: '6px 8px',
+                borderRadius: 'var(--knit-radius-xs)',
+                border: '1px dashed var(--knit-border)',
+                backgroundColor: 'transparent',
+                color: 'var(--knit-text-muted)',
+                fontSize: 12,
+                cursor: 'pointer',
+                marginTop: 4,
+                transition: 'all var(--knit-duration-fast)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = 'var(--knit-primary)';
+                e.currentTarget.style.color = 'var(--knit-primary)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'var(--knit-border)';
+                e.currentTarget.style.color = 'var(--knit-text-muted)';
+              }}
+            >
+              <DuotoneIcon name="plus" size={12} />
+              <span>Ajouter une tâche</span>
+            </button>
+          )
         )}
       </div>
     </div>
