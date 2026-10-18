@@ -217,3 +217,20 @@ collapsible: false
 
 Inserez un bloc via Slash : `/sommaire`, `/fichiers`, `/requete`, `/taches-globales`.
 En mode Source (<kbd>Ctrl+E</kbd>), le fence redevient du Markdown editable.
+
+---
+
+## 12. Balises HTML Securisees (B-059)
+
+Apercu rapide — banc d'essai exhaustif : [[html-securise.md|HTML Securise (B-059)]].
+
+- Raccourcis : <kbd>Ctrl</kbd> + <kbd>E</kbd> (Source) · <kbd>Ctrl</kbd> + <kbd>O</kbd> (Quick Switcher)
+- Inline : <u>souligne</u>, <mark>surligne</mark>, H<sub>2</sub>O, E = mc<sup>2</sup>, vers<br>suivant
+- Accordeon :
+
+<details>
+<summary>Ouvrir un apercu details/summary</summary>
+
+Whitelist + sanitizer anti-XSS. Voir [[html-securise.md]] pour toutes les combinaisons (tableaux, FAQ, `open`, composition callouts/taches).
+</details>
+

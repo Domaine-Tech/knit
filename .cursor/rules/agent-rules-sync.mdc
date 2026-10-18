@@ -12,7 +12,10 @@ globs: **/*.rs, **/*.tsx, **/*.ts, **/*.md, docs/**, versions/**
 ## 1. Déclencheurs de Mise à Jour Obligatoire
 
 Dès qu'une modification touche l'un des domaines suivants :
-1. **Nouveau type de document / Vue** (ex: `type: canvas`, `type: calendar`, `type: slides`, etc.)
+1. **Nouveau type de document / Vue** (ex: `type: canvas`, `type: calendar`, `type: slides`, etc.) :
+   - Ajouter le littéral dans `knit-app/src/types/views.ts` (`DocType` + `AppViewMode` si besoin)
+   - **Obligatoire** : une entrée dans `knit-app/src/utils/docTypeRegistry.ts` (`CONVERTIBLE_DOC_TYPES` : `type`, `label`, `icon`, `description`, `defaultFileName` + template `defaultContentForDocType`)
+   - Brancher le rendu dans `DocumentPane` / `detectDocType` ; **ne jamais** re-lister les types en dur dans TabBar, menus « + », « Changer le type » ou palette (tout consomme le registre)
 2. **Nouvelle propriété YAML Frontmatter** (ex: `echeance:`, `icon:`, `assigne:`, etc.)
 3. **Nouveau bloc dynamique** (ex: `knit-toc`, `knit-files`, `knit-query`, `knit-tasks`)
 4. **Nouveau déclencheur ou syntaxe d'autocomplétion** (ex: `[[Note#Titre]]`, `@date`, `@collaborateur`, `:emoji:`)

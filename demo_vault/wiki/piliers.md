@@ -15,5 +15,5 @@ tags: [wiki, piliers]
 5. **Zéro Conflit, Zéro Latence** : Convergence mathématique garantie via CRDT.
 6. **UI/UX Premium & Simple** : Design sombre soigné, zéro émoji dans l'interface, tokens de design centralisés.
 7. **Multiplateforme** : Windows, macOS et Linux.
-8. **Modulaire & Extensible** : Vues Doc-Driven résolues par onglet (`type: kanban | table | note`).
+8. **Modulaire & Extensible** : Vues Doc-Driven résolues par onglet (`type: note | kanban | table | calendar | canvas | slides | gallery`).
 9. **Diagrammes Mermaid Natifs** : Rendu visuel immédiat réactif au thème.

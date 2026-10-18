@@ -46,10 +46,12 @@ Toutes les interfaces collaboratives dans Knit doivent respecter les principes s
 - **Transitions instantanées** : Durée de transition de 80ms à 150ms. Pas d'effets élastiques ou d'animations gadget qui ralentissent l'utilisateur.
 
 ## 7. Système d'Onglets & Conventions Molette / Clavier
+- **Principe onglet = fichier** : un onglet TabBar représente toujours un fichier Markdown ou média du coffre. Les vues applicatives transverses (ex. Agenda global) s'ouvrent en **modale** (`GlobalAgendaModal`), jamais via un chemin virtuel type `knit://agenda`.
+- **Agenda global vs scoped** : Global = modale (Header, `Ctrl+Shift+A`, 4ᵉ onglet sidebar, mini-widget) ; Scoped = fichier `type: calendar` en onglet DocumentPane avec `folderScope`.
 - **Clic molette sur fichier (sidebar)** : ouvrir dans un nouvel onglet permanent.
 - **Clic molette sur onglet** : fermer immédiatement l'onglet.
 - **Aperçu vs Permanent** : simple clic = onglet aperçu (remplaçable) ; double-clic ou frappe = permanent.
-- **Raccourcis essentiels** : `Ctrl+W` (fermer), `Ctrl+Shift+T` (rouvrir dernier fermé), `Ctrl+Tab` (suivant), `Ctrl+\` (split).
+- **Raccourcis essentiels** : `Ctrl+W` (fermer), `Ctrl+Shift+T` (rouvrir dernier fermé), `Ctrl+Tab` (suivant), `Ctrl+\` (split), `Ctrl+Shift+A` (Agenda global modale).
 - **Glisser-déposer d'onglets** : réordonnancement fluide et split view par glissement vers les bordures.
 
 ## 8. Recherche & Système de Tags

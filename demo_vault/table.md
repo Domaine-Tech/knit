@@ -22,15 +22,22 @@ Les cartes de chaque categorie sont affichees dans une table interactive avec re
 ## Composants Editeur UI
 
 - [x] Mode Live Preview Obsidian avec masquage discret [[live-preview]] !p1 @Sublix #ui/editor
-- [x] Blocs de code multi-langages avec bouton Copier !p2 #ui
-- [x] Rendu Mermaid integre avec coloration dynamique !p2 #diagramme
+- [x] Vue Agenda multi-vues Mois/Semaine/Jour avec drag-and-drop bijectif [[projet/agenda|agenda]] !p1 @Thomas #ui/calendar
+- [x] Vue Canvas infinie 2D avec ingestion de notes de l'arbre [[canvas]] !p1 @Sublix #ui/canvas
+- [x] Vue Diaporama plein ecran avec navigation clavier [[diaporama]] !p2 @Alice #ui/slides
+- [x] Vue Galerie visuelle avec pastilles et bannieres [[galerie]] !p2 @Bob #ui/gallery
+- [x] Vue Graphe local 2D interactive avec reseau de forces [[liens-navigation]] !p1 @Thomas #ui/graph
+- [x] Support HTML securise DOMPurify et blocs details [[live-preview]] !p1 @Thomas #securite
+- [x] Standardisation Drag-and-Drop avec CalendarDropIndicator et halo [[projet/agenda|agenda]] !p1 @Sublix #ux
 - [x] Blocs dynamiques knit-toc / knit-files / knit-query / knit-tasks [[blocs-dynamiques]] !p1 @Sublix #dataview
 - [x] Assistant tableaux GFM (toolbar + realign) [[blocs-dynamiques]] !p2 #ux
-- [ ] Panneau lateral des retroliens et mentions non liees [[liens-navigation]] !p2 #backlinks
-- [ ] Hover Preview tooltip au survol des WikiLinks [[live-preview]] !p3 #ux
+- [x] Panneau lateral des retroliens et mentions non liees [[liens-navigation]] !p2 #backlinks
+- [x] Hover Preview tooltip au survol des WikiLinks [[live-preview]] !p3 #ux
 
 ## Documentation et Normes
 
 - [x] Specification Markdown pure dans [[document-long]] !p2 #doc
 - [x] Regles agents IA sans emoji dans .cursorrules et CLAUDE.md !p1 #ia
-- [ ] Guide d'utilisation utilisateur final v0.4.0 !p3 #doc
+- [x] Specification des 7 Vues Doc-Driven dans [[accueil]] !p1 #doc
+- [x] Banc d'essai exhaustif dans demo_vault !p1 @vault #test
+

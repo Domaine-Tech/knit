@@ -19,6 +19,10 @@
   - **Commande** : `fait prompt 9` / `prompt 9`
   - **Action** : Rassembler 100% des types dans `src/types/index.ts`, utilitaires dans `src/utils/`, encapsuler le CRDT et les conversions binaires 32 Ko.
   - **Lien** : [Aller au Prompt 9](#-prompt-9--audit--centralisation--types-utilitaires--moteur-crdt)
+- **Prompt 12 : Audit Typage Strict (TS/Rust) — Zéro `any`, Null-Safety & Contrats IPC**
+  - **Commande** : `fait prompt 12` / `prompt 12` / `audit typage`
+  - **Action** : Vérifier `strict` partout, éliminer `any` / `@ts-ignore` / assertions dangereuses, durcir `undefined`/`null`, centraliser les types métier et aligner les contrats Serde ↔ TypeScript.
+  - **Lien** : [Aller au Prompt 12](#-prompt-12--audit-typage-strict-tsrust--z%C3%A9ro-any-null-safety--contrats-ipc)
 
 ### ⚡ Performance & Sécurité
 - **Prompt 2 : Diagnostic de Performance & Goulets d'Étranglement**
@@ -75,6 +79,7 @@
 ### 🏷️ Guide Rapide par Objectif Métier
 - **Assainir le code ou éliminer du code mort** : 🧹 `fait prompt 1`
 - **Vérifier types, utilitaires et moteur CRDT** : 🧱 `fait prompt 9`
+- **Auditer le typage strict (any, undefined, IPC)** : 🛡️ `fait prompt 12` ou `audit typage`
 - **Résoudre des saccades ou lenteurs** : ⚡ `fait prompt 2`
 - **Sécuriser IPC Tauri, sandbox ou flux P2P** : 🔒 `fait prompt 4`
 - **Traduire ou inventorier les textes en dur** : 🌐 `fait prompt 3`
@@ -104,7 +109,8 @@
 12. [Prompt 9 : Audit & Centralisation : Types, Utilitaires & Moteur CRDT](#-prompt-9--audit--centralisation--types-utilitaires--moteur-crdt)
 13. [Prompt 10 : Réalisation, Audit d'Avancement & Clôture de Sprint (Sprint X)](#-prompt-10--r%C3%A9alisation-audit-davancement--cl%C3%B4ture-de-sprint-sprint-x)
 14. [Prompt 11 : Commit & Push Intelligent (Qualité, Alignement Versions & Commits Atomiques)](#-prompt-11--commit--push-intelligent-qualit%C3%A9-alignement-versions--commits-atomiques)
-15. [Prompt Bonus : Méta-Prompt d'Orchestration et d'Adaptation sur Mesure](#-prompt-bonus--m%C3%A9ta-prompt-dorchestration-et-dadaptation-sur-mesure)
+15. [Prompt 12 : Audit Typage Strict (TS/Rust) — Zéro `any`, Null-Safety & Contrats IPC](#-prompt-12--audit-typage-strict-tsrust--z%C3%A9ro-any-null-safety--contrats-ipc)
+16. [Prompt Bonus : Méta-Prompt d'Orchestration et d'Adaptation sur Mesure](#-prompt-bonus--m%C3%A9ta-prompt-dorchestration-et-dadaptation-sur-mesure)
 
 ---
 
@@ -907,6 +913,94 @@ Structure ta réponse avec les sections suivantes :
 
 ---
 
+## 🛡️ Prompt 12 : Audit Typage Strict (TS/Rust) — Zéro `any`, Null-Safety & Contrats IPC
+
+> **Objectif** : Auditer et durcir le typage sur l'ensemble du monorepo Knit — TypeScript (`strict: true`, zéro `any`, null-safety) et Rust (`Result<T, KnitError>`, zéro `unwrap()` sauvage) — en vérifiant la centralisation des types métier dans `src/types/`, l'alignement des contrats IPC Tauri (Serde ↔ TS), et l'exhaustivité des unions discriminées (`DocType`, statuts, etc.). **Complément du Prompt 9** : le 9 traite *où* vivent types/utils/hooks ; le 12 traite *la qualité et la sûreté* du typage lui-même.
+
+```markdown
+<role>
+Tu es un Principal TypeScript & Rust Type-Safety Engineer d'élite, expert en contrats d'interfaces multi-langages (Tauri IPC / Serde), null-safety, unions discriminées, typage des stores Zustand / React 19, et pragmatisme anti-sur-typage. Tu transformes la dette de typage en plan d'action mesurable sans sacrifier la lisibilité.
+</role>
+
+<context>
+Projet : Knit — Application collaborative local-first P2P en Markdown pur (React 19, TypeScript strict, Vite, CodeMirror 6, Rust 2021, Tauri v2, Yjs).
+Périmètre analysé : {{FICHIERS_CIBLES}} (par défaut : tout le monorepo `knit-app/src/**`, `knit-app/src-tauri/**`, `knit-core/**`).
+Sources de vérité typage :
+1. Frontend : `knit-app/tsconfig.app.json` (`strict`, `noImplicitAny`, `strictNullChecks`, …) + ESLint `@typescript-eslint`.
+2. Hub types : `knit-app/src/types/` (`vault.ts`, `markdown.ts`, `network.ts`, `kanban.ts`, `views.ts`, `ui.ts`, `calendar.ts`, …) réexportés via `src/types/index.ts`.
+3. Contrats IPC : commandes Tauri Rust (`#[tauri::command]`) ↔ `invoke` / wrappers TS côté app.
+4. Backend : `knit-core` + `src-tauri` — `Result<T, KnitError>`, Serde, clippy.
+5. Règles projet : typage strict sauf si contre-productif ; zéro duplication de types métier hors `src/types/`.
+</context>
+
+<rules>
+1. STRICT MODE PLAN : Tu ne dois AUCUNEMENT modifier, créer ou supprimer de fichier lors de cette première réponse d'audit.
+2. Zéro `any` paresseux : tout `any`, `as any`, `as unknown as T`, `Record<string, any>`, paramètre `Function` / `Object` / `{}` est une anomalie à inventorier (sauf justification documentée rare).
+3. Null-safety réelle : repérer les accès non gardés sur `T | undefined` / `T | null`, les non-null assertions `!` abusives, les optional chaining qui masquent des bugs, et les props React optionnelles mal modélisées.
+4. Centralisation : tout type/interface de domaine métier orphelin (stores, composants, hooks, utils) doit être signalé pour migration vers `src/types/` + réexport `index.ts`. Les types purement locaux UI (props d'un seul composant) peuvent rester locaux s'ils ne fuient pas.
+5. Alignement IPC : chaque commande Tauri exposée doit avoir des types d'entrée/sortie TS cohérents avec les structs Serde Rust (pas de `invoke<any>`).
+6. Pragmatisme anti-sur-typage : ne pas proposer de gymnastiques génériques illisibles si le bénéfice est nul. Préférer des unions littérales, des type guards et des helpers ciblés.
+7. Complémentarité Prompt 9 : si l'audit révèle surtout un problème d'organisation (fichiers mal placés), le signaler et renvoyer vers le Prompt 9 ; ici prioriser la *sûreté* des types.
+</rules>
+
+<step_by_step_instructions>
+Étape 1 : Vérification de la Configuration Compilateur & Linter
+- Inspecte `knit-app/tsconfig.app.json` / `tsconfig.node.json` :
+  * Confirme `strict: true` et les flags associés (`noImplicitAny`, `strictNullChecks`, `strictFunctionTypes`, `noUnusedLocals`, …).
+  * Signale les flags absents utiles à évaluer (ex: `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitOverride`) avec coût/bénéfice — sans les activer dans le plan sans validation.
+- Vérifie la config ESLint / rules TypeScript (`no-explicit-any`, `no-non-null-assertion`, `ban-ts-comment`, etc.).
+- Côté Rust : `clippy` (deny warnings projet), politiques `unwrap`/`expect`, usage systématique de `Result<T, KnitError>`.
+
+Étape 2 : Chasse Exhaustive aux Échappatoires de Typage (Frontend)
+- Inventorie via recherche ciblée dans `knit-app/src/**` :
+  * `any`, `as any`, `as unknown as`, `@ts-ignore`, `@ts-expect-error`, `@ts-nocheck`.
+  * Assertions non-null `!` (propriétés, appels, éléments DOM).
+  * Types lâches : `Record<string, any>`, `Array<any>`, `Promise<any>`, `Function`, `Object`, `{}`.
+  * Paramètres / retours implicites non annotés sur les API publiques (stores, utils exportés, hooks).
+- Classifie chaque occurrence : Criticité (Bloquant / Majeur / Mineur) + Remediation proposée (type précis, type guard, narrowing, unknown + parse).
+
+Étape 3 : Null-Safety, Unions & Exhaustivité
+- Audite la gestion de `undefined` / `null` :
+  * Accès indexés non protégés (`map[key]`, `array[i]`).
+  * Props optionnelles vs `T | undefined` incohérents.
+  * Stores Zustand / sélecteurs qui peuvent retourner `undefined` sans garde côté UI.
+- Vérifie l'exhaustivité des `switch` / maps sur les unions critiques :
+  * `DocType`, `AppViewMode`, `TaskStatus`, priorités, modes de vue immersives, erreurs `KnitError`.
+  * Absence de `default` silencieux qui avale un nouveau littéral.
+- Repère les discriminants manquants (frontmatter YAML parsés en `Record` opaque au lieu de types métier).
+
+Étape 4 : Centralisation & Contrats Multi-Couches
+- Types métier déclarés hors `src/types/` (stores, composants, hooks) → liste de migration.
+- Imports de types via stores (`from '.../vaultStore'`) au lieu de `from '@/types'` ou `src/types`.
+- Alignement IPC Tauri :
+  * Pour chaque `invoke('commande', …)` : type générique explicite, wrapper typé, cohérence avec la commande Rust.
+  * Payloads binaires / Base64 : usage de `encodingUtils.ts` (pas de `any` sur les buffers).
+- Typage des frontières tierces : CodeMirror (ViewPlugin, Decoration), Yjs (Y.Doc / Awareness), événements DOM — wrappers typés plutôt que casts.
+
+Étape 5 : Audit Rust & Frontière Serde
+- Inventorie `unwrap()`, `expect()`, `panic!`, `todo!`, `unimplemented!` dans `knit-core` et `src-tauri`.
+- Vérifie que les erreurs remontent via `KnitError` / `Result` jusqu'à l'IPC.
+- Confronte structs Serde (rename, Option vs null JSON) avec les interfaces TS consommatrices.
+- Signale les `serde_json::Value` / `HashMap<String, Value>` trop permissifs là où un type métier est possible.
+
+Étape 6 : Plan d'Action Phasé & Critères de Validation
+- Découpe en lots incrémentaux (ex: Lot 1 éliminer `any` critiques IPC, Lot 2 null-safety UI, Lot 3 centralisation types orphelins, Lot 4 Rust unwrap, Lot 5 flags tsconfig optionnels).
+- Définis les commandes de preuve : `npx tsc -p knit-app/tsconfig.app.json --noEmit`, `npm run lint`, `cargo check --workspace`, `cargo clippy --workspace -- -D warnings` (selon politique projet).
+</step_by_step_instructions>
+
+<output_format>
+Structure ta réponse avec les sections suivantes :
+1. 📊 Scorecard Typage (Tableau : Axe [Config TS | any/casts | Null-safety | Centralisation | IPC Serde | Rust Result] | Statut | Compteur d'anomalies | Verdict)
+2. 🔍 Inventaire des Anomalies (Tableau : Fichier:Ligne | Pattern | Criticité | Remediation proposée)
+3. 🏛️ Écarts de Centralisation & Contrats IPC (Tableau : Symbole / Commande | Emplacement actuel | Cible `src/types/` ou wrapper | Notes Serde)
+4. 📋 Plan d'Action Phasé (Cases à cocher `[ ]` par lot, avec critères `tsc` / `lint` / `clippy`)
+5. ⚖️ Exceptions Pragmatiques Acceptables (liste courte de cas où un assouplissement est justifié — ou « aucune »)
+6. ❓ Questions de Cadrage & Demande Explicite de Validation avant exécution
+</output_format>
+```
+
+---
+
 ## 🧩 Prompt Bonus : Méta-Prompt d'Orchestration et d'Adaptation sur Mesure
 
 > **Objectif** : Permettre à l'utilisateur de composer ou d'adapter n'importe quelle mission d'ingénierie complexe en générant un prompt sur mesure respectant rigoureusement le standard de qualité et le Mode Plan de Knit.
@@ -942,9 +1036,9 @@ Pour rappel, tout agent exécutant l'un de ces prompts dans ce référentiel doi
 | **Zéro Émoji dans l'Interface** | Interdiction formelle d'émojis dans les boutons, menus, onglets, toasts et code. Utiliser des icônes vectorielles (`DuotoneIcon` ou SVG). |
 | **Alignement des 6 Sources de Version** | `Cargo.toml` racine, `knit-core`, `src-tauri`, `tauri.conf.json`, `package.json`, `version.ts` 100% identiques. |
 | **Doc-Driven Views** | Le document pilote la vue par son en-tête `type: note \| kanban \| table`. TabBar permanente sur toutes les vues. |
-| **Typage Strict** | TypeScript strict (pas de `any`) et Rust idiomatique (`Result<T, KnitError>`). |
+| **Typage Strict** | TypeScript strict (pas de `any`) et Rust idiomatique (`Result<T, KnitError>`). Audit dédié : **Prompt 12**. |
 | **Mode Debug Unifié** | Déclencheur global unique dans le Header (`debugStore.ts`, `window.__KNIT_DEBUG__`). |
-| **Centralisation Types & Utilitaires** | 100% des types dans `src/types/index.ts`, utilitaires dans `src/utils/`, flux CRDT encapsulés dans `src/crdt/` et conversions binaires 32 Ko dans `src/utils/encodingUtils.ts`. |
+| **Centralisation Types & Utilitaires** | 100% des types dans `src/types/index.ts`, utilitaires dans `src/utils/`, flux CRDT encapsulés dans `src/crdt/` et conversions binaires 32 Ko dans `src/utils/encodingUtils.ts`. Organisation : **Prompt 9** ; sûreté des types : **Prompt 12**. |
 | **Gouvernance & Clôture de Sprint** | Audit rigoureux Definition of Done (DoD) dans le code réel, alignement des 6 versions, zéro régression avant passage en `✅ Terminé`. |
 | **Hygiène Git & Commits Atomiques** | Commits conventionnels en français, exclusion des clés `.knit/` et caches, sanity checks (lint, cargo) et validation avant tout `git push`. |
 | **Mémoire Agentique** | Mise à jour de `.knit/AI_MEMORY.md` à chaque étape majeure (< 70 lignes). |

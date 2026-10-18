@@ -16,7 +16,7 @@ Bienvenue dans la documentation officielle du projet **Knit**.
 | [SOLUTIONS.md](SOLUTIONS.md) | Réponses techniques aux 3 warnings et au caution (boucle watcher, CRDT, etc.) |
 | [COMMANDS.md](../COMMANDS.md) | Guide des commandes de développement, tests, linting et raccourcis |
 | [WIZARD.md](WIZARD.md) | Spécification et wireframes du Wizard d'initialisation (créer/rejoindre un coffre) |
-| [PROMPTS_IA.md](PROMPTS_IA.md) | Référentiel des 11 prompts IA standardisés, catégorisés et optimisés en Mode Plan |
+| [PROMPTS_IA.md](PROMPTS_IA.md) | Référentiel des 12 prompts IA standardisés, catégorisés et optimisés en Mode Plan |
 
 ---
 

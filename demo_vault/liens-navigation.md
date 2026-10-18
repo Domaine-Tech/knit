@@ -32,6 +32,7 @@ Les tableaux sont rendus par le widget immersif `TableCardWidget`. Survolez chaq
 | **Dossier Local** | [Dossier .knit](./.knit/) | `Systeme` | Ouvre l'explorateur de fichiers de l'OS |
 | **Nouvelle Note** | [[wiki/nouvelle-note]] | `Creation` | Propose et cree la nouvelle note dans le coffre |
 | **Image locale** | [[live-preview.md#9. Images et Medias Locaux (assets/)]] | `Medias` | Section images du banc Live Preview |
+| **HTML securise** | [[html-securise.md|Banc HTML B-059]] | `HTML` | Whitelist kbd/mark/details + sanitizer |
 
 ---
 
@@ -61,7 +62,7 @@ Cliquez sur l'ancre ci-dessous pour tester le defilement automatique :
 > Information contextuelle sur la navigation : tous les liens internes sont resolus de maniere relative. Exemple WikiLink : [[accueil.md|Retour a l'accueil]].
 
 > [!TIP]
-> Pour tester le Hover Preview, survolez [[live-preview.md|la demo Live Preview]] sans cliquer. Maintenez **Ctrl** (ou Cmd) pour figer l'apercu et scroller dedans. Utilisez ensuite **Ctrl + Clic** pour ouvrir l'onglet.
+> Pour tester le Hover Preview, survolez [[live-preview.md|la demo Live Preview]] sans cliquer. Entrez dans la fenetre d'apercu (ou maintenez **Ctrl**/Cmd) puis utilisez la **molette** pour lire la suite du document. **Ctrl + Clic** ouvre l'onglet.
 
 > [!WARNING]
 > Un lien vers une note absente comme [[wiki/note-fantome]] propose la creation. Verifiez aussi les URLs externes : [Tauri](https://tauri.app).
@@ -74,3 +75,12 @@ Cliquez sur l'ancre ci-dessous pour tester le defilement automatique :
 ## 5. Medias et chemins relatifs
 
 Les images du dossier `assets/` utilisent le meme systeme de chemins relatifs que les WikiLinks. Demo complete : [[live-preview.md#9. Images et Medias Locaux (assets/)]].
+
+---
+
+## 6. Vue Graphe Local Interactive 2D (B-049)
+
+En complement du panneau de retroliens (Backlinks), Knit integre une **vue interactive en reseau de force 2D** :
+- **Declenchement** : Cliquez sur le bouton avec l'icone graphe dans la barre d'outils de l'editeur (a droite du bouton Split View).
+- **Exploration des Connexions** : Visualisez en direct les liens sortants (`[[WikiLinks]]`) et les retroliens entrants connectes a la note active.
+- **Interactivite** : Deplacez les nœuds par glisser-deposer (curseur `grab` / `grabbing`), zoomez a la molette et cliquez sur un nœud pour ouvrir instantanement le document dans le coffre.

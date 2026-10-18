@@ -3,7 +3,7 @@
 > Ce fichier est la source de vérité pour toutes les tâches du projet.
 > Il peut être modifié **à tout moment**, y compris en milieu de sprint.
 >
-> Dernière mise à jour : 2026-10-17
+> Dernière mise à jour : 2026-10-18
 
 ---
 
@@ -161,12 +161,12 @@
 
 | # | Tâche | Priorité | Statut | Sprint |
 |---|---|---|---|---|
-| B-031a | Agenda & Échéancier Global du Coffre (`type: calendar` / vue globale, extraction `@dates` et `@heures`, attribution `@collaborateur` ou coffre `@vault`, filtrage 'Mes tâches & Vault', drag-and-drop bidirectionnel) | 🔴 | 📋 | Sprint 6ter |
-| B-031b | Vue Canvas / Tableau Blanc infini (`type: canvas`, cartes déplaçables & connecteurs fléchés) | 🔴 | 📋 | Sprint 6ter |
-| B-031c | Vue Diaporama / Présentation (`type: slides`, séparateur `---`, mode plein écran) | 🟡 | 📋 | Sprint 6ter |
-| B-031d | Vue Galerie / Database (`type: gallery`, cartes visuelles avec bannière et métadonnées) | 🟡 | 📋 | Sprint 6ter |
-| B-049 | Vue Graphe Local Interactive (Local Graph View 2D basé sur WikiLinks & Backlinks) | 🟠 | 📋 | Sprint 6ter |
-| B-059 | Support sécurisé du HTML standardisé en Live Preview & Rendu (Whitelist inline : `<kbd>`, `<u>`, `<mark>`, `<sub>`, `<sup>`, `<br>` ; Blocs repliables : `<details>`/`<summary>` ; Sanitizer strict anti-XSS) | 🟡 | 📋 | Sprint 6ter |
+| B-031a | Agenda & Échéancier Global du Coffre (`type: calendar` / vue globale, extraction `@dates` et `@heures`, attribution `@collaborateur` ou coffre `@vault`, filtrage 'Mes tâches & Vault', drag-and-drop bidirectionnel) | 🔴 | ✅ | Sprint 6ter |
+| B-031b | Vue Canvas / Tableau Blanc infini (`type: canvas`, cartes déplaçables & connecteurs fléchés) | 🔴 | ✅ | Sprint 6ter |
+| B-031c | Vue Diaporama / Présentation (`type: slides`, séparateur `---`, mode plein écran) | 🟡 | ✅ | Sprint 6ter |
+| B-031d | Vue Galerie / Database (`type: gallery`, cartes visuelles avec bannière et métadonnées) | 🟡 | ✅ | Sprint 6ter |
+| B-049 | Vue Graphe Local Interactive (Local Graph View 2D basé sur WikiLinks & Backlinks) | 🟠 | ✅ | Sprint 6ter |
+| B-059 | Support sécurisé du HTML standardisé en Live Preview & Rendu (Whitelist inline : `<kbd>`, `<u>`, `<mark>`, `<sub>`, `<sup>`, `<br>` ; Blocs repliables : `<details>`/`<summary>` ; Sanitizer strict anti-XSS) | 🟡 | ✅ | Sprint 6ter |
 
 ---
 

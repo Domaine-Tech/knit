@@ -1,7 +1,7 @@
 ---
 type: note
 titre: Bienvenue dans Knit
-tags: [accueil, guide, sprint-6bis, local-first]
+tags: [accueil, guide, sprint-6bis, sprint-6ter, local-first]
 ---
 
 # Bienvenue dans Knit
@@ -20,10 +20,15 @@ Knit est votre environnement de documentation, de wiki et de gestion de projet *
 Explorez les modules interactifs complets inclus dans ce coffre :
 
 - [[blocs-dynamiques.md|Blocs Dynamiques & Dataview (Sprint 6bis)]] : `knit-toc`, `knit-files`, `knit-query`, `knit-tasks`, slash `/sommaire`… et assistant de tableaux.
+- [[html-securise.md|HTML Securise (Sprint 6ter / B-059)]] : whitelist `<kbd>`, `<u>`, `<mark>`, `<sub>`, `<sup>`, `<br>`, accordeons `<details>`/`<summary>`, sanitizer anti-XSS.
 - [[live-preview.md|Demonstration Live Preview]] : Rendu Obsidian, 7 statuts, priorites `!p1`-`!p3`, images `assets/`, callouts, blocs de code, Mermaid reactif a `--knit-hue`.
 - [[kanban.md|Tableau Kanban]] : Vue de gestion agile (`type: kanban`) avec colonnes thematiques, glisser-deposer de cartes et synchronisation Markdown.
 - [[table.md|Vue Synthetique Tableau]] : Vue tableau filtrable et triable (`type: table`).
-- [[liens-navigation.md|Navigation & Retroliens]] : WikiLinks `[[...]]`, ancres internes `[[#...]]`, apercu au survol (Hover Preview) et retroliens.
+- [[projet/agenda.md|Agenda du Projet]] : Vue calendrier délimitée (`type: calendar` dans `projet/`) agrégeant automatiquement les dates du dossier actuel et enfants.
+- [[canvas.md|Canvas]] : Tableau blanc JSON-Canvas (`type: canvas`).
+- [[diaporama.md|Diaporama]] : Presentation plein ecran (`type: slides`).
+- [[galerie.md|Galerie]] : Grille de cartes (`type: gallery`).
+- [[liens-navigation.md|Navigation & Retroliens]] : WikiLinks `[[...]]`, ancres internes `[[#...]]`, apercu au survol (Hover Preview), retroliens et graphe local.
 - [[document-long.md|Test de Performance Document Long]] : Banc d'essai dense pour valider la reactivite du Live Preview.
 - [[wiki/architecture.md|Architecture Technique]] & [[wiki/piliers.md|Les 9 Piliers de Knit]].
 
@@ -34,17 +39,32 @@ Explorez les modules interactifs complets inclus dans ce coffre :
 | Domaine | Contenu demo | Note de reference |
 | :--- | :--- | :--- |
 | Live Preview | Titres, taches, formatage, tableaux, code, Mermaid, callouts | [[live-preview.md]] |
+| HTML securise | Whitelist inline + `<details>` / sanitizer anti-XSS (B-059) | [[html-securise.md]] |
 | Medias | `![...](assets/...)`, SVG locaux, URL https, collage Ctrl+V | [[live-preview.md#9. Images et Medias Locaux (assets/)]] |
 | Dataview | `knit-toc`, `knit-files`, `knit-query`, `knit-tasks` | [[blocs-dynamiques.md]] |
-| Vues Doc-Driven | `type: note`, `kanban`, `table`, `tache` | [[kanban.md]], [[table.md]] |
+| Vues Doc-Driven | `type: note`, `kanban`, `table`, `calendar`, `canvas`, `slides`, `gallery` | [[projet/agenda.md]], [[canvas.md]], [[diaporama.md]], [[galerie.md]] |
 | Navigation | WikiLinks, ancres, hover, liens dans callouts | [[liens-navigation.md]] |
-| Journal | Note quotidienne `journal/YYYY-MM-DD.md` | [[journal/2026-10-17.md]] |
+| Journal | Note quotidienne `journal/YYYY-MM-DD.md` | [[journal/2026-10-18.md]], [[journal/2026-10-17.md]] |
 
 Les taches d'exemple pour les requetes se trouvent dans [[projet/taches/task-001-index-frontmatter.md|projet/taches/]]. Les medias sont dans le dossier `assets/`.
 
 ---
 
-## Sprint 6bis — Apercu rapide
+## Sprint 6ter — Vues Immersives & Drag-and-Drop Unifie
+
+| Vue / Fonctionnalite | Type / Declencheur | Caracteristiques cles & Experience D&D |
+| :--- | :--- | :--- |
+| **Agenda Global (modale)** | Header / `Ctrl+Shift+A` / sidebar | Vue coffre entière en modale immersive — **pas un onglet** (principe onglet = fichier) |
+| **Agenda de Projet Délimité** | `type: calendar` (`projet/agenda.md`) | Onglet fichier, scoping automatique (`projet/**`), vues Mois/Semaine/Jour/Liste, priorités `!p1..p3`, coches directes, **D&D bijectif** |
+| **Tableau Blanc Infini** | `type: canvas` (`canvas.md`) | JSON-Canvas infini, cartes elevables avec halo, connecteurs fleches, **import de notes par D&D** depuis la barre laterale |
+| **Diaporama Interactif** | `type: slides` (`diaporama.md`) | Presentation plein ecran, separateur `---`, navigation clavier Flèches/Espace, raccourci plein ecran <kbd>F</kbd> |
+| **Galerie & Database** | `type: gallery` (`galerie.md`) | Cartes visuelles avec bannieres, pastilles frontmatter et reorganisation D&D |
+| **Graphe Local 2D** | Bouton Graphe (Header) | Reseau de force 2D interactif base sur les WikiLinks et retroliens |
+| **HTML Securise** | Balises inline & blocs (`html-securise.md`) | Whitelist Live Preview `<kbd>`, `<u>`, `<mark>`, `<sub>`, `<sup>`, `<br>`, accordeons `<details>`/`<summary>`, sanitizer anti-XSS |
+
+---
+
+## Sprint 6bis — Blocs Dynamiques & Dataview
 
 | Bloc / Fonction | Slash | Role |
 | :--- | :--- | :--- |
@@ -52,7 +72,7 @@ Les taches d'exemple pour les requetes se trouvent dans [[projet/taches/task-001
 | `knit-files` | `/fichiers` | Index automatique d'un dossier |
 | `knit-query` | `/requete` | Tableau Dataview (`from` / `where` / `columns`) |
 | `knit-tasks` | `/taches-globales` | Agregateur de cases `- [ ]` transversal |
-| Assistant tableaux | — | Toolbar `+ Ligne` / `+ Colonne` / Alignement |
+| Assistant tableaux | — | Toolbar `+ Ligne` / `+ Colonne` / Alignement contextuel |
 
 ---
 

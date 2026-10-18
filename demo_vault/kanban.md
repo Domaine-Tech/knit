@@ -19,25 +19,30 @@ Vous pouvez a tout moment basculer en mode source (`</>`) avec `Ctrl+E` pour con
 ## A cadrer
 
 - [ ] Rediger les specifications du protocole mobile P2P !p2 @Alex @2026-11-01
-- [/] Etudier l'integration d'un explorateur de graphe de notes !p3 #recherche
-- [/] Rendu dynamique des blocs de code avec bouton Copier !p2 #editor
+- [ ] Export PDF / HTML imprime integre pour le diaporama !p3 @Alice
+- [ ] Themes visuels personnalises pour le Canvas infini !p3 #canvas
 
 ## En cours
 
-- [/] Optimisation de la memoire sur les tres longs fichiers Markdown !p2
-- [/] Validation des calculs de hauteur sur documents de plus de 2000 lignes !p1
-- [/] Definir les profils de chiffrement de bout en bout pour Iroh Blobs !p1 @Thomas
+- [/] Finalisation de la release v0.4.0 (P2P + Vues immersives) !p1 @Thomas @2026-10-19
+- [/] Verification de la robustesse Cross-DnD (Kanban vers Agenda) !p1 @Sublix @2026-10-18
+- [/] Banc d'essai multi-noeuds Iroh avec synchronisation en direct !p2 @Thomas
 
 ## En revue
 
-- [ ] Relecture de la documentation de specification Markdown !p2
-- [/] Test croise de compatibilite avec Obsidian et VS Code !p3 @vault
-- [ ] Neutralisation des marges asymetriques sur les titres !p1
+- [x] Rendu securise HTML inline et accordeons details en Live Preview !p1 @Thomas #securite
+- [x] Standardisation D&D avec indicateur lumineux d'insertion et halo dore !p1 @Sublix #ux
+- [x] Validation croisee des 6 sources de version 0.4.0 !p2 @vault
 
 ## Termine
 
+- [x] Vue Agenda & Echeancier global multi-vues Mois/Semaine/Jour/Liste (B-045) !p1 @Thomas @2026-10-18
+- [x] Vue Canvas infinie 2D avec ingestion de notes Markdown (B-046) !p1 @Sublix
+- [x] Vue Diaporama plein ecran avec navigation clavier (B-047) !p2 @Alice
+- [x] Vue Galerie visuelle avec pastilles et bannieres (B-048) !p2 @Bob
+- [x] Vue Graphe local 2D interactive avec forces physiques (B-049) !p1 @Thomas
 - [x] Synchronisation Live Preview dans CodeMirror 6 !p1 @Sublix #ui/editor
-- [x] Mise en place de la triple garde WriteGuard anti-boucle !p1 @Thomas
-- [x] Resolution du decalage de gouttiere cause par les tableaux !p1 #bugfix
+- [x] Blocs dynamiques Dataview knit-toc / knit-files / knit-query / knit-tasks !p1 #dataview
 - [x] Support des 7 statuts de taches standardises B-054 !p2
+
 

@@ -35,3 +35,15 @@ Le texte Markdown est synchronise via Yjs. Les medias binaires du dossier `asset
 - Convention : `![legende](assets/fichier.ext)` sur une ligne seule → carte Live Preview.
 - Collage <kbd>Ctrl+V</kbd> : enregistrement automatique dans `assets/` puis insertion Markdown.
 - Banc d'essai : [[live-preview.md#9. Images et Medias Locaux (assets/)]].
+
+## Vues Immersives & Drag-and-Drop (Sprint 6ter)
+
+- **Vues pilotees par le document (Doc-Driven Views)** : Rendu conditionnel selon `type:` (`calendar`, `canvas`, `slides`, `gallery`, `kanban`, `table`).
+- **Standardisation Drag & Drop** :
+  - Indicateur d'insertion `CalendarDropIndicator` (filet dore + point lumineux 8px).
+  - Feedback fantome (`opacity: 0.35`) avec curseur `grabbing`.
+  - Surbrillance immediate du conteneur cible (bordure en tirets primaires et halo doux).
+  - Cross-DnD : Les cartes Kanban peuvent etre glissees dans l'Agenda ; les notes Markdown de la barre laterale peuvent etre deposees sur le Canvas.
+- **Graphe Local 2D** : Moteur de simulation de forces physiques sur HTML5 Canvas 2D connectant les WikiLinks sortants et retroliens.
+- **HTML Securise** : Assainissement DOMPurify de la whitelist inline (`<kbd>`, `<u>`, `<mark>`, `<sub>`, `<sup>`) et blocs (`<details>`, `<summary>`).
+

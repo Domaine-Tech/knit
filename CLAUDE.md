@@ -32,9 +32,11 @@ Knit est une application collaborative local-first et peer-to-peer (P2P) pour la
    - Ne jamais recourir aux infobulles natives de l'OS. Utiliser le composant `<Tooltip>` ou les attributs `data-tooltip="Action"` et `data-shortcut="Ctrl+X"`. Le `TooltipContainer` global intercepte automatiquement les attributs `title` et extrait les raccourcis en badges `<kbd>`.
    - Les tracés d'icônes (`DuotoneIcon`) doivent être ultra-lisibles aux petites tailles (14px) avec des traits nets et des têtes de flèches bien découpées.
 9. **Architecture Doc-Driven Views & TabBar Permanente** :
-   - Toute vue Markdown doit être résolue par onglet selon le type déclaré dans le Frontmatter YAML (`type: kanban`, `type: table`, `type: note`) selon [docs/MARKDOWN_SPEC.md](docs/MARKDOWN_SPEC.md).
+   - Toute vue Markdown doit être résolue par onglet selon le type déclaré dans le Frontmatter YAML (`type: kanban`, `type: table`, `type: note`, `calendar`, `canvas`, `slides`, `gallery`) selon [docs/MARKDOWN_SPEC.md](docs/MARKDOWN_SPEC.md).
    - **Médias** (`assets/*.svg|png|…`) : clic dans le tree → onglet `docType: image` / composant `ImageView` (pas d'édition Markdown du binaire, pas de bascule Source).
-   - La barre d'onglets (`TabBar`) doit rester visible sur toutes les vues, avec icône dynamique par type de document.
+   - Vues immersives v0.4.0 : Agenda scoped `type: calendar` (onglet fichier), **Agenda global en modale** (`GlobalAgendaModal`, Header/`Ctrl+Shift+A`), Canvas JSON-Canvas, Slides, Gallery, graphe local, HTML whitelist B-059.
+   - **Principe onglet = fichier** : ne jamais simuler un onglet virtuel (`knit://…`) pour une vue transverse ; TabBar réservée aux fichiers Markdown / médias.
+   - La barre d'onglets (`TabBar`) doit rester visible sur toutes les vues fichier, avec icône dynamique par type de document.
 10. **Synchronisation Continue des Règles d'Agents IA (Règle B-043)** :
    - Toute nouvelle fonctionnalité touchant au format de coffre (syntaxe Markdown, types de documents YAML `type: ...`, nouveaux blocs dynamiques, triggers d'autocomplétion `[[#...]]`, `@...`, dossiers de coffre, médias `assets/`) doit être immédiatement répercutée dans l'ensemble des fichiers de règles générés pour les IA (`KNIT.md`, `.cursor/rules/knit.mdc`, `CLAUDE.md`, `.agents/skills/knit/SKILL.md`) **et intégrée dans `demo_vault/`**.
 11. **Mémoire Agentique Persistante (`.knit/AI_MEMORY.md`) & Protocole Handoff** :
@@ -59,10 +61,11 @@ Knit est une application collaborative local-first et peer-to-peer (P2P) pour la
     - Un seul déclencheur global dans le Header (knit-app/src/components/Header.tsx) couplé à src/stores/debugStore.ts et window.__KNIT_DEBUG__. Ne jamais insérer de bouton de debug dans les onglets ou vues locales.
     - Assure la mesure temps réel pixel-perfect (0px décalage) de CodeMirror 6 et le rendu bijectif unifié des blocs de code Markdown (carte unifiée en lecture, source intégrale au clic).
 16. **Déclencheur Rapide des Prompts Standardisés (`docs/PROMPTS_IA.md`)** :
-    - Dès que l'utilisateur demande `fait prompt X` ou `prompt X` (1 à 11 ou bonus), `réalise sprint X` ou `commit et push`, charger immédiatement la spécification dans `docs/PROMPTS_IA.md`.
+    - Dès que l'utilisateur demande `fait prompt X` ou `prompt X` (1 à 12 ou bonus), `réalise sprint X`, `commit et push` ou `audit typage`, charger immédiatement la spécification dans `docs/PROMPTS_IA.md`.
     - Adopter le rôle expert, appliquer le **STRICT MODE PLAN** (analyse en lecture seule, aucune écriture sans validation), produire un plan d'action détaillé par phases avec cases à cocher `[ ]` et attendre la validation explicite de l'utilisateur.
-17. **Centralisation du Typage (`src/types/`) & Découplage Modulaire** :
+17. **Centralisation du Typage (`src/types/`) & Registre DocTypes** :
     - Tout type ou interface de domaine (`FileNode`, `Tab`, `UserProfile`, `KanbanBoard`, `TaskStatus`, `DocType`, etc.) doit obligatoirement résider dans `knit-app/src/types/` (`vault.ts`, `markdown.ts`, `network.ts`, `kanban.ts`, `views.ts`) et être réexporté via `src/types/index.ts`. Zéro duplication tolérée dans les stores ou composants.
+    - **Vues Doc-Driven** : `knit-app/src/utils/docTypeRegistry.ts` (`CONVERTIBLE_DOC_TYPES`) est la source unique des labels, **icônes**, descriptions et templates de création. Menus « + », « Changer le type », TabBar et palette consomment ce registre — ne jamais re-lister les types en dur.
     - Conversions binaires (`Uint8Array` ↔ `Base64`) : utiliser obligatoirement `src/utils/encodingUtils.ts` (`uint8ArrayToBase64`, `base64ToUint8Array`) par blocs de 32 Ko pour tout flux CRDT, P2P ou snapshot. Proscription formelle des boucles manuelles inefficaces O(N²).
     - Découplage modulaire : isoler les logiques d'infrastructure complexes dans des hooks dédiés (`useKanbanBoard`, `useEditorLinks`, `editorTheme`) et composants mutualisés (`BaseSearchModal`).
 18. **Blocs Dynamiques Dataview (Sprint 6bis)** :

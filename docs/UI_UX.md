@@ -281,34 +281,84 @@ Pour garantir un temps de réponse imperceptible (< 2ms) même dans un coffre co
 
 ---
 
-## 📅 Moteur d'Agenda & Échéancier Global du Coffre (B-031a & KnitCalendarIndex)
+## 📅 Moteur d'Agenda, Portée de Projet & Échéancier (B-031a & KnitCalendarIndex)
 
-Knit intègre un système d'agenda natif qui analyse en direct l'ensemble des fichiers Markdown du coffre sans aucune base de données propriétaire tierce.
+Knit intègre un système d'agenda bijectif natif qui analyse en direct les fichiers Markdown du coffre sans aucune base de données propriétaire tierce.
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ 📅 AGENDA DU COFFRE          [ Vue Mois ] [ Vue Semaine ] [ Vue Jour ] [ Liste ]       │
-│ Filtres : [🔘 Tout le coffre] [👤 Mes tâches & Vault] [👥 Collaborateur: Thomas H. ▼]   │
+│ 📅 AGENDA DU PROJET (projets/alpha)  [📁 Ce projet] [Afficher tout le coffre]           │
+│ Filtres : [🔘 Tout] [👤 Mes tâches & Vault] [👥 Collaborateur: Thomas H. ▼] [!p1..p3] │
+│ Modes   : [ Vue Mois ] [ Vue Semaine ] [ Vue Jour ] [ Vue Liste ]                      │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
 │ Lundi 20 Octobre 2026                                                                  │
 │ ┌────────────────────────────────────────────────────────────────────────────────────┐ │
-│ │ 10:00 - 11:30  Point Hebdo Sprint 6               👥 @vault        (notes/sprint.md)│ │
-│ │ 14:00 - 15:30  Démo client P2P CRDT               👤 @Thomas H.    (clients/demo.md)│ │
-│ │ 17:00          Finaliser relecture doc            👤 @Sarah        (docs/spec.md)   │ │
+│ │ [ ] 10:00 - 11:30  Point Hebdo Sprint 6   !p1     👥 @vault        (notes/sprint.md)│ │
+│ │ [x] 14:00 - 15:30  Démo client P2P CRDT   !p2     👤 @Thomas H.    (clients/demo.md)│ │
+│ │ [ ] 17:00          Finaliser relecture doc        👤 @Sarah        (docs/spec.md)   │ │
 │ └────────────────────────────────────────────────────────────────────────────────────┘ │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 1. Attribution Personnelle vs Attribution Collective (`@vault`)
-- **Attribution nominative (`@collaborateur`)** : la tâche ou réunion est affectée à un membre de l'équipe (avatar dynamique affiché).
-- **Attribution collective (`@vault`)** : si `@vault` est spécifié (ou par défaut si aucune personne n'est nommée), la tâche est considérée comme partagée avec l'ensemble des pairs du coffre.
-- **Filtre "Mes Tâches & Vault"** : permet en un clic à l'utilisateur d'afficher uniquement les tâches qui lui sont attribuées et celles communes à tout le coffre, masquant les tâches attribuées à d'autres pairs.
+### 1. Dualité : Agenda Global du Coffre vs Agenda de Projet Délimité (Scoped)
+- **Principe « onglet = fichier »** : un onglet de la TabBar représente toujours un fichier Markdown (ou média) du coffre. Les vues applicatives transverses (Agenda global) ne doivent **pas** simuler un onglet virtuel.
+- **Agenda Global Centralisé (modale)** : Accessible à tout instant depuis le bouton **Agenda** du Header (`Ctrl+Shift+A`), le **4ème onglet dédié de la barre latérale** (`files | search | tags | calendar`), le mini-widget calendrier (clic date ou titre), ou la palette de commandes. Il s’ouvre dans une **modale immersive** (pas un onglet) et centralise 100 % des échéances du coffre sans fichier Markdown physique.
+- **Agenda de Projet Délimité (onglet fichier)** : Tout fichier note avec `type: calendar` (ex: `projets/site-web/agenda.md`) s’ouvre en **onglet** via DocumentPane. Sa portée est délimitée au dossier hôte et à ses sous-dossiers (`projets/site-web/**`). Un bouton toggle permet d’élargir la vue à tout le coffre pour vérifier les conflits.
 
-### 2. Heures, Durées et Glisser-Déposer Réversible
-- **Heures et plages** : support complet des syntaxes `@2026-10-20 14:00` et `@2026-10-20 14:00-15:30`.
-- **Drag-and-Drop bijectif** : déplacer un événement d'un jour à un autre ou modifier son heure réécrit directement la mention Markdown dans le document source, sans corruption de données.
-- **Mini-Widget Calendrier dans la barre latérale** : vue mensuelle compacte avec pastilles colorées `--knit-primary` sous les dates actives et saut direct vers la note de journal.
-- **Notifications d'échéances discrètes (Tauri)** : rappels locaux paramétrables (ex: 15 min avant) pour les réunions et échéances critiques.
+### 2. Attribution, Statuts & Priorités
+- **Attribution collective (`@vault`) ou nominative (`@collaborateur`)**.
+- **Cases à cocher interactives** : cocher une tâche directement dans l'agenda bascule instantanément son statut (`- [ ]` ↔ `- [x]`) dans le document source.
+- **Badges de priorités visuels** : distinction immédiate des priorités (`!p1` rouge/urgent, `!p2` ambre Knit, `!p3` bleu doux).
+- **Signalement des retards** : contour rougeoyant et regroupement dédié dans la vue Liste pour les tâches échues non complétées.
+
+### 3. Menus Contextuels Systématiques (Clic Droit) & Création Rapide
+- **Clic droit sur une case de jour** : ajout rapide d'un événement via modale ergonomique, saut vers la note de journal (`journal/YYYY-MM-DD.md`), bascule en vue Jour ou copie de date ISO.
+- **Clic droit sur un événement** : changement de priorité en 1 clic, reprogrammation (Aujourd'hui, Demain, Semaine prochaine), bascule de statut ou copie des chemins.
+- **Popover des jours chargés** : le lien `+N autres` ouvre un panneau de détail sans tronquer les événements.
+- **Panneau latéral Agenda** : mini-calendrier mensuel combiné à la liste des échéances imminentes du coffre.
+
+---
+
+## 🎨 Vues Immersives & Formats Visuels Déclarés (Sprint 6ter)
+
+En complément de l'Éditeur, du Kanban et du Tableau, Knit introduit 4 nouvelles représentations visuelles réversibles en Markdown pur :
+
+### 1. Tableau Blanc Infini (`type: canvas` — B-031b)
+- **Format standard ouvert** : basé sur la spécification internationale [JSON-Canvas](https://jsoncanvas.org).
+- **Cartes & Liens directionnels** : manipulation fluide de cartes de notes et connecteurs fléchés avec courbure de Bézier.
+- **Navigation infinie** : zoom molette centré sur le curseur, pan avec clic molette ou barre d'espace + glisser, bouton recentrage.
+- **Cross-DnD depuis la Sidebar** : glisser n'importe quelle note depuis l'arbre de fichiers dépose une nouvelle carte liée sur le canvas.
+
+### 2. Diaporama Interactif (`type: slides` — B-031c)
+- **Segmentation naturelle** : chaque diapositive est délimitée par un séparateur Markdown standard `---` (hors frontmatter).
+- **Mode Plein Écran Immersif** : activation instantanée via le bouton dédié ou la touche <kbd>F</kbd>.
+- **Navigation au clavier** : flèches <kbd>→</kbd> / <kbd>←</kbd>, <kbd>Espace</kbd> (avancer), <kbd>Origine</kbd> / <kbd>Fin</kbd>.
+- **Compteur & Barre de progression** : jauge feutrée 2px en pied d'écran indiquant la diapositive courante (`X / Y`).
+
+### 3. Galerie Visuelle & Fiches Frontmatter (`type: gallery` — B-031d)
+- **Grille réactive** : affichage en cartes aérées avec adaptation automatique au redimensionnement de la fenêtre.
+- **Bannières & Vignettes** : extraction automatique de l'image de couverture (`cover:`, `banner:` ou première image `assets/`).
+- **Pastilles de métadonnées** : affichage sobre des tags YAML, statuts et dates d'échéance sous le titre de chaque fiche.
+- **Glisser-déposer de réorganisation** : réordonnancement visuel fluide conforme à la charte d'excellence D&D.
+
+### 4. Vue Graphe Local Interactive 2D (B-049)
+- **Simulation de forces 2D** : projection en temps réel des relations WikiLinks (`[[...]]`) et rétroliens de la note active.
+- **Poignée de redimensionnement ergonomique** : barre de séparation inférieure avec poignée feutrée (style VS Code), curseur `row-resize`, persistance de hauteur (`localStorage`), et réinitialisation rapide à 400px sur double-clic.
+- **Navigation & Saut au clic** : cliquer sur un nœud ouvre instantanément la note liée dans l'espace de travail.
+
+---
+
+## 🧲 Standard de Drag-and-Drop (D&D) Unifié
+
+Pour éliminer toute disparité d'ergonomie, l'ensemble des modules interactifs de Knit (Kanban, Agenda, Canvas, Galerie, Arborescence) partagent une grammaire gestuelle feutrée et ultra-précise :
+
+| Élément D&D | Spécification Visuelle & Comportement |
+|---|---|
+| **Indicateur d'insertion** | Filet lumineux d'accentuation `--knit-primary` (2px) doté d'une pastille d'ancrage circulaire de 8px (`CalendarDropIndicator`). |
+| **Fantôme de traînée (Ghost Drag)** | Carte ou élément traîné semi-transparent avec **`opacity: 0.35`** et curseur système `grabbing`. |
+| **Surbrillance réceptrice** | Conteneur d'accueil illuminé par une bordure pointillée feutrée (`border: 1px dashed var(--knit-primary)`) et halo doux de 12px. |
+| **Zone de largage vide (Placeholder)** | Encarts dédiés clairement délimités pour accueillir les éléments dans les colonnes ou conteneurs vides. |
+| **Cross-DnD Inter-Vues** | Glisser une tâche Kanban sur l'Agenda la planifie à la date ciblée ; glisser une note de la Sidebar sur le Canvas crée une carte liée. |
 
 ---
 
@@ -335,7 +385,12 @@ Pour offrir un confort de rédaction sans précédent, Knit intègre un ensemble
   - Presser `Entrée` crée automatiquement la ligne suivante pré-remplie avec le bon nombre de colonnes et aligne les bordures.
 
 ### 4. Prévisualisation Flottante au Survol (Hover Preview Tooltip)
-- Survoler un `[[Lien]]`, un `@collaborateur` ou un `#tag` avec maintien de `Ctrl` (ou au hover simple paramétrable) affiche une infobulle en lévitation avec le rendu HTML de la cible, permettant de consulter une note ou un profil sans abandonner le document en cours de rédaction.
+- Hôte global (`HoverPreviewHost` + bus `knit-hover-link` + hook `useDelayedHoverPreview`) : hors éditeur aussi.
+- Surfaces : Editor/CM6, Agenda, Canvas, Galerie (cartes note), Quick Switcher (item sélectionné clavier/souris), favoris sidebar, switcher Kanban, recherche, tags, pills WikiLink, blocs `knit-*`, graphe, backlinks.
+- Survoler une cible fichier affiche l’extrait Markdown ; survol de la fenêtre (ou `Ctrl`/`Cmd`) fige pour scroller ; clic titre/lien ouvre.
+- Agenda : clic → ouvrir ; `Ctrl`/`Cmd`+clic ou molette → nouvel onglet. Non branché (anti-spam) : arborescence, onglets, cartes image Galerie.
+- **Contrat lecture partagé avec le Mode Zen** : même Live Preview verrouillé (`livePreviewVisualLockFacet` — pas de bascule source au clic Mermaid/code/table) + liens au clic simple + boutons utiles (Copier, details). **Spécifique au hover** : strip frontmatter, chrome immersif compact (`.knit-hover-chrome-hide` / `compactChrome`), troncature, portal.
+- **Nested** (lien survolé dans un preview déjà figé) : **même rendu DocType** / largeur que le parent ; **non figable** (`pointer-events: none`, pas de footer pin).
 
 ### 5. Raccourci Note Quotidienne (`Ctrl+Shift+J` ou `Alt+D`)
 - Crée ou ouvre instantanément la note du jour `journal/YYYY-MM-DD.md` avec horodatage automatique et modèle d'habitudes ou de log de sprint.
@@ -821,15 +876,18 @@ En cliquant sur une version antérieure dans la timeline :
 
 ---
 
-## 🧘 Mode Zen & Focus Absolu (Zen Mode — Ctrl+Shift+F)
+## Mode Lecture (Zen — Ctrl+Shift+F)
 
-Pour les sessions de réflexion profonde ou de rédaction immersive :
+Pour les sessions de lecture immersive et de relecture sans distraction :
 - **Raccourci instantané `Ctrl+Shift+F`** :
   - Masque la barre latérale (Sidebar).
   - Épure la barre d'onglets (fondue dans le fond jusqu'au survol).
   - Masque la barre d'état inférieure.
   - Centre le texte dans une largeur de lecture ergonomique de 760px avec marge généreuse.
-- **Sortie instantanée** : Presser `Échap` ou `Ctrl+Shift+F` restaure l'interface complète sans transition brutale.
+  - **Lecture seule** sur toutes les vues Doc-Driven (note, kanban, table, agenda, canvas, slides, galerie) : aucune édition / DnD.
+  - **Liens au clic simple** (pas besoin de Ctrl+clic) pour naviguer dans le coffre.
+  - **Même contrat Live Preview que le Hover Preview** : widgets immersifs figés (pas de bascule source au clic) ; toolbars immersives restent visibles en Zen (chrome réduit = hover only).
+- **Sortie instantanée** : Presser `Échap` ou `Ctrl+Shift+F` restaure l'interface complète et réactive l'édition.
 
 ---
 

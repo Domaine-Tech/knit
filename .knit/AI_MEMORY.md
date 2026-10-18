@@ -5,27 +5,25 @@
 ## 1. Principes & Stack
 - Markdown pur sur disque ; pas de BDD propriétaire. React 19 / TS strict / Vite / CM6 Live Preview.
 - Rust 2021, Tauri v2 (`knit-core` + `src-tauri`). CRDT Yjs P2P (Iroh/QUIC).
-- Vues Doc-Driven : `note | kanban | table | image` (runtime). Médias `assets/` → `ImageView`.
+- Vues Doc-Driven : `note | kanban | table | image | calendar | canvas | slides | gallery`.
 - UI : `contextMenuStore`, tokens `--knit-hue`, zéro emoji (icônes vectorielles).
 
 ## 2. ADR Synthétiques
 - **ADR-01 (B-043)** : Toute syntaxe/type/bloc → règles IA **et** exemple dans `demo_vault/`.
 - **ADR-02 (B-052)** : Autocomplétion `[[` `[[#` `@` `@@` `#` `:` `/` + `KnitSuggestIndex` Rust.
-- **ADR-03 (B-053)** : Smart Paste, Auto-Wrap, Tab tableaux, Hover Preview, journal `Ctrl+Shift+J`, backlinks.
-- **ADR-04 (B-031a)** : Agenda global `@YYYY-MM-DD`, `@collaborateur`/`@vault` (Sprint 6ter).
+- **ADR-03 (B-053)** : Smart Paste, Auto-Wrap, Tab tableaux, Hover Preview, journal, backlinks.
+- **ADR-04 (B-031a/b)** : Dualité Agenda — Global = **modale** ; Scoped = `type: calendar` onglet.
 - **ADR-05** : Handoff via ce fichier. **ADR-06** : 7 statuts tâches + `!p1..p3` + Mode Zen.
 - **ADR-07** : Alignement versions (6 sources) à chaque commit/push/sprint.
-- **ADR-08** : Zéro-Émoji UI. **ADR-09 (B-056)** : Debug global unique Header + HUD LP.
+- **ADR-08** : Zéro-Émoji UI. **ADR-09 (B-056)** : Debug global unique Header + HUD multi-vues.
+- **ADR-10 (B-059)** : HTML whitelist LP + sanitizer.
 
 ## 3. Historique Récent
-- **[2026-10-18]** : Prompt 1 complet : WriteGuard create/delete/trash/restore/rename ; `preventMiddleCompass` ; `resolveWikiLink` ; path/watcher unifiés ; B-058 hooks ; Editor → Chrome/Hover/contextMenu (~321 L).
-- **[2026-10-18]** : Hover Preview : maintien Ctrl/Cmd fige l'infobulle (pointer-events + scroll interne).
-- **[2026-10-18]** : Prompt 9 : types → `src/types/` ; hooks `useAppShell` / `useTableRows` ; CRDT frontière.
-- **[2026-10-18]** : Vue Image + clôture Sprint 6bis ; runtime 0.3.0.
+- **[2026-10-18]** : Prompts **1+9+12** (4e) : dates unifiées (`toIsoDate`→`formatIsoDate`) ; `findTableBounds` branché ; `TaskPriority` + `cycleTaskStatus` ; `fileStem`/`normalizeRelPath` ; GraphView→hooks ; `DocViewChrome` ; `vaultCalendarOps` ; IPC wrappers ; guards JSON ; debugStore typé ; oxlint `!` → error. tsc+lint+cargo OK.
+- **[2026-10-18]** : Prompts 1+9+12 (3e) : MonthGridCell ; types DropTarget/… ; oxlint any.
+- **[2026-10-18]** : Sprint 6ter clôturé ; runtime **0.4.0** ; `docTypeRegistry`.
 
 ## 4. Tâches Actives
-- [x] Sprint 5 / 6 / 6bis clôturés.
-- [x] Prompt 1 (Lots 1–3 + Editor chrome) + Prompt 9 + B-058.
-- [ ] **Sprint 6ter** (v0.4.0) : B-031a Agenda & Calendrier Global.
-- [ ] Suivi 💡 : B-057 (index FM Rust).
-- [ ] **B-043a** (Sprint 7) : Playbook exploitation IA — backlog only.
+- [x] Sprint 5 / 6 / 6bis / **6ter** clôturés (v0.4.0).
+- [ ] Suivi : B-057 (index FM Rust).
+- [ ] **Sprint 7** (v1.0.0) : Wizard (B-032/B-033), PIN/QR (B-017b), Playbook IA (B-043a).

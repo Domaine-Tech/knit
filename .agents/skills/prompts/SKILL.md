@@ -1,11 +1,11 @@
 ---
 name: prompts-ia
-description: Déclencheur et exécuteur automatique des 11 prompts IA standardisés et catégorisés en Mode Plan (Refactoring, Performance, Traduction/i18n, Sécurité, UX/Killer App, Alignement Code/Doc/Versions, Collaboration P2P, Tests & QA, Centralisation Types/Utils/CRDT, Réalisation & Clôture de Sprint, Commit & Push Intelligent) définis dans docs/PROMPTS_IA.md. S'active lorsque l'utilisateur demande "fait prompt X", "exécute le prompt X", "réalise sprint X", "commit et push" ou mentionne un prompt du référentiel.
+description: Déclencheur et exécuteur automatique des 12 prompts IA standardisés et catégorisés en Mode Plan (Refactoring, Performance, Traduction/i18n, Sécurité, UX/Killer App, Alignement Code/Doc/Versions, Collaboration P2P, Tests & QA, Centralisation Types/Utils/CRDT, Réalisation & Clôture de Sprint, Commit & Push Intelligent, Audit Typage Strict) définis dans docs/PROMPTS_IA.md. S'active lorsque l'utilisateur demande "fait prompt X", "exécute le prompt X", "réalise sprint X", "commit et push", "audit typage" ou mentionne un prompt du référentiel.
 ---
 
 # Skill : Prompts IA Standardisés & Mode Plan (Knit)
 
-Ce skill permet d'exécuter instantanément l'un des 11 prompts spécialisés de [docs/PROMPTS_IA.md](file:///d:/Dev/Repos/knit/docs/PROMPTS_IA.md) lorsqu'un utilisateur tape une commande de type :
+Ce skill permet d'exécuter instantanément l'un des 12 prompts spécialisés de [docs/PROMPTS_IA.md](file:///d:/Dev/Repos/knit/docs/PROMPTS_IA.md) lorsqu'un utilisateur tape une commande de type :
 - `fait prompt 1` / `exécute le prompt 1` / `prompt 1`
 - `fait prompt 2` / `prompt 2`
 - `fait prompt 3` / `prompt 3`
@@ -17,11 +17,12 @@ Ce skill permet d'exécuter instantanément l'un des 11 prompts spécialisés de
 - `fait prompt 9` / `prompt 9` (Centralisation Types, Utils, Hooks React & Moteur CRDT)
 - `fait prompt 10` / `prompt 10` / `réalise sprint X` / `exécute sprint X` / `clôture sprint X` (Audit & Clôture de Sprint)
 - `fait prompt 11` / `prompt 11` / `commit et push` / `smart commit` (Commit & Push Intelligent)
+- `fait prompt 12` / `prompt 12` / `audit typage` (Audit Typage Strict TS/Rust)
 - `fait prompt bonus` / `meta prompt`
 
 ---
 
-## 🎯 Correspondance des 11 Prompts par Catégorie
+## 🎯 Correspondance des 12 Prompts par Catégorie
 
 ### 🏗️ Architecture, Typage & Refactorisation
 - **Prompt 1** : **Nettoyage & Refactorisation** (`fait prompt 1`)
@@ -30,6 +31,9 @@ Ce skill permet d'exécuter instantanément l'un des 11 prompts spécialisés de
 - **Prompt 9** : **Centralisation Types, Utils, Hooks React & CRDT** (`fait prompt 9`)
   - *Rôle* : Principal Systems Integrity & Software Architect
   - *Réf* : [docs/PROMPTS_IA.md#prompt-9](file:///d:/Dev/Repos/knit/docs/PROMPTS_IA.md#-prompt-9--audit--centralisation--types-utilitaires-hooks-react--moteur-crdt)
+- **Prompt 12** : **Audit Typage Strict (TS/Rust)** (`fait prompt 12` / `audit typage`)
+  - *Rôle* : Principal TypeScript & Rust Type-Safety Engineer
+  - *Réf* : [docs/PROMPTS_IA.md#prompt-12](file:///d:/Dev/Repos/knit/docs/PROMPTS_IA.md#-prompt-12--audit-typage-strict-tsrust--z%C3%A9ro-any-null-safety--contrats-ipc)
 
 ### ⚡ Performance & Sécurité
 - **Prompt 2** : **Optimisation & Performance** (`fait prompt 2`)

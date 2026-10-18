@@ -82,38 +82,50 @@ knit/
 │   │   │   ├── assets.rs   # Sauvegarde des images et pièces jointes
 │   │   │   ├── config.rs   # .knit/config.yaml
 │   │   │   └── identity.rs # Keypair Ed25519
-│   │   ├── index/          # Moteur d'indexation incrémentale (Autocomplétion & Agenda < 2ms)
+│   │   ├── markdown/       # Parseur Markdown & Moteurs d'indexation
 │   │   │   ├── mod.rs
-│   │   │   ├── headings.rs # Index hiérarchique des titres (#, ##, ###)
-│   │   │   ├── tags.rs     # Trie préfixe des tags et compteurs
-│   │   │   ├── calendar.rs # Index temporel des dates/heures et assignations (@nom / @vault)
-│   │   │   └── matcher.rs  # Algorithme de recherche floue (Fuzzy matcher)
-│   │   └── markdown/       # Parseur Markdown
+│   │   │   ├── frontmatter.rs # YAML frontmatter
+│   │   │   ├── diff.rs     # Calcul de diff texte
+│   │   │   ├── suggest.rs  # Index incrémental d'autocomplétion (KnitSuggestIndex < 2ms)
+│   │   │   └── calendar.rs # Index temporel du coffre (KnitCalendarIndex @dates, @heures, @assignations)
+│   │   └── vault/          # Gestion du coffre-fort
 │   │       ├── mod.rs
-│   │       ├── frontmatter.rs # YAML frontmatter
-│   │       └── diff.rs     # Calcul de diff texte
+│   │       ├── init.rs     # Création / jonction de vault
+│   │       ├── tree.rs     # Arborescence et filtrage de fichiers (markdown + médias)
+│   │       ├── assets.rs   # Sauvegarde des images et pièces jointes
+│   │       ├── config.rs   # .knit/config.yaml
+│   │       └── identity.rs # Keypair Ed25519
 │   └── Cargo.toml
 │
 ├── knit-app/               # Application Tauri (interface graphique)
 │   ├── src-tauri/
 │   │   ├── src/
 │   │   │   ├── main.rs     # Point d'entrée Tauri
-│   │   │   └── commands.rs # Commandes IPC Tauri (I/O, assets, toasts)
+│   │   │   └── commands.rs # Commandes IPC Tauri (I/O, assets, calendar, toasts)
 │   │   ├── Cargo.toml      # Dépend de knit-core
 │   │   └── tauri.conf.json
-│   ├── src/                 # Frontend React
+│   ├── src/                 # Frontend React 19 + TypeScript strict
 │   │   ├── App.tsx
 │   │   ├── components/
-│   │   │   ├── Editor/      # CodeMirror 6 + Paste image handler
-│   │   │   ├── Sidebar/     # Navigation vault
-│   │   │   ├── Kanban/      # Vue Kanban
-│   │   │   ├── Mermaid/     # Rendu Mermaid
+│   │   │   ├── Editor/      # CodeMirror 6, Live Preview, Widgets, Hover Preview, Backlinks
+│   │   │   ├── Sidebar/     # Arborescence, recherche, tags, panneau agenda
+│   │   │   ├── Tabs/        # TabBar universelle, split view, drag & drop d'onglets
+│   │   │   ├── Header/      # En-tête, synchronisation, bouton Agenda global (Ctrl+Shift+A)
+│   │   │   ├── Kanban/      # Vue Kanban agile (colonnes ##, cartes - [ ])
+│   │   │   ├── Calendar/    # Agenda scoped (CalendarView), modale globale (GlobalAgendaModal), widget
+│   │   │   ├── Canvas/      # Vue Tableau Blanc infini (JSON-Canvas 2D)
+│   │   │   ├── Slides/      # Vue Diaporama plein écran (séparateurs ---)
+│   │   │   ├── Gallery/     # Vue Galerie multimédia de cartes
+│   │   │   ├── Graph/       # Vue Graphe Local interactif 2D
+│   │   │   ├── Modal/       # QuickSwitcher, Palette de commandes, modales d'ajout
 │   │   │   ├── Toast/       # Système de Toast centralisé (bottom-right)
-│   │   │   └── Wizard/      # Wizard init
+│   │   │   └── Wizard/      # Wizard d'accueil
 │   │   ├── theme/
-│   │   │   ├── tokens.css   # Design tokens
-│   │   │   └── theme.ts     # Logique thème + hue
-│   │   └── stores/          # État global (toastStore, vaultStore)
+│   │   │   ├── tokens.css   # Design tokens HSL (--knit-hue)
+│   │   │   └── theme.ts     # Thème clair/sombre
+│   │   ├── utils/
+│   │   │   └── docTypeRegistry.ts # Registre unique des types Doc-Driven (source de vérité)
+│   │   └── stores/          # État global (vaultStore, tabStore, toastStore, debugStore)
 │   ├── index.html
 │   └── package.json
 │
@@ -155,20 +167,30 @@ Plutôt que d'imposer un mode d'affichage global déconnecté des fichiers, Knit
 
 ```mermaid
 graph TD
-    DOC["📄 Document Markdown<br/>(frontmatter YAML)"] --> RESOLVE{"🔍 Résolveur de Vue<br/>(type: ...)"}
+    DOC["📄 Document Markdown / Média<br/>(frontmatter YAML / assets/)"] --> RESOLVE{"🔍 Registre DocType<br/>(docTypeRegistry.ts)"}
     RESOLVE -->|"type: kanban"| KB["📋 Vue Kanban<br/>(Colonnes ##, Cartes - [ ])"]
     RESOLVE -->|"type: table"| TB["📊 Vue Tableau<br/>(Filtres, Tri, Colonnes)"]
+    RESOLVE -->|"type: calendar"| CAL["📅 Vue Agenda Scoped<br/>(Mois/Semaine/Jour/Liste)"]
+    RESOLVE -->|"type: canvas"| CNV["🎨 Vue Canvas<br/>(JSON-Canvas, Cartes, Flèches)"]
+    RESOLVE -->|"type: slides"| SLD["📽️ Vue Diaporama<br/>(Plein écran, séparateur ---)"]
+    RESOLVE -->|"type: gallery"| GAL["🖼️ Vue Galerie<br/>(Grille de cartes, bannières)"]
+    RESOLVE -->|"assets/*.png|svg|..."| IMG["🖼️ Vue Image<br/>(Visualiseur média dédié)"]
     RESOLVE -->|"type: note / défaut"| ED["📝 Éditeur CodeMirror 6<br/>(Live Preview, Mermaid)"]
 
-    KB <-->|"Bouton Universel [</>]"| RAW["💻 Source Markdown brute"]
+    KB <-->|"Bouton Universel [</>]"| RAW["💻 Source Markdown / JSON brute"]
     TB <-->|"Bouton Universel [</>]"| RAW
+    CAL <-->|"Bouton Universel [</>]"| RAW
+    CNV <-->|"Bouton Universel [</>]"| RAW
+    SLD <-->|"Bouton Universel [</>]"| RAW
+    GAL <-->|"Bouton Universel [</>]"| RAW
     ED <-->|"Bouton Universel [</>]"| RAW
 ```
 
 ### 1. Résolution & Cycle de vie par Onglet (`Tab`)
-- Chaque onglet (`Tab`) dans `tabStore` possède son type de vue résolu (`viewMode: 'editor' | 'kanban' | 'table'`) et son flag d'affichage brut `isRawSource`.
-- La barre d'onglets (`TabBar`) est **universelle et permanente** : elle reste affichée en haut de l'espace de travail quel que soit le type de vue active.
-- L'icône de l'onglet et de l'arbre s'adapte dynamiquement au type déclaré (`file-markdown`, `kanban`, `table`).
+- Chaque onglet (`Tab`) dans `tabStore` possède son type de vue résolu (`viewMode: 'editor' | 'kanban' | 'table' | 'calendar' | 'canvas' | 'slides' | 'gallery' | 'image'`) et son flag d'affichage brut `isRawSource`.
+- La barre d'onglets (`TabBar`) est **universelle et permanente** : elle reste affichée en haut de l'espace de travail quel que soit le type de vue active (hors médias qui n'ont pas de mode source).
+- L'icône de l'onglet et de l'arbre s'adapte dynamiquement au type déclaré via la source unique de vérité `docTypeRegistry.ts` (`CONVERTIBLE_DOC_TYPES`).
+- **Principe « un onglet = un fichier physique »** : les vues transverses applicatives (Agenda Global du coffre) s'ouvrent en **modale immersive** (`GlobalAgendaModal`, `Ctrl+Shift+A`, Header ou Sidebar) sans créer d'onglet virtuel. Seuls les documents Markdown `type: calendar` délimités à un dossier (`folderScope`) s'ouvrent en onglet standard.
 
 ### 2. Conversions Non-Destructives
 - La modification du type de vue via le menu contextuel (clic droit explorateur, onglet ou toolbar) met à jour la clé `type:` dans le Frontmatter YAML via la commande `update_frontmatter_field`.

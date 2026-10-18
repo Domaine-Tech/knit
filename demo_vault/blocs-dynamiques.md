@@ -99,9 +99,15 @@ Placez le curseur dans le tableau ci-dessous (mode Source ou edition) : une mini
 | Module | Sprint | Statut |
 | --- | --- | --- |
 | Index Frontmatter | 6bis | Livre |
-| knit-toc | 6bis | Livre |
-| knit-query | 6bis | Livre |
-| Agenda global | 6ter | Planifie |
+| knit-toc & knit-files | 6bis | Livre |
+| knit-query & knit-tasks | 6bis | Livre |
+| Agenda & Echeancier (B-045) | 6ter | Livre |
+| Canvas infini 2D (B-046) | 6ter | Livre |
+| Diaporama plein ecran (B-047) | 6ter | Livre |
+| Galerie de cartes (B-048) | 6ter | Livre |
+| Graphe local 2D (B-049) | 6ter | Livre |
+| HTML securise (B-050) | 6ter | Livre |
+| Drag-and-Drop unifie | 6ter | Livre |
 
 ---
 

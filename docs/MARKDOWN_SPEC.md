@@ -41,7 +41,7 @@ Contenu du document...
 
 | Clé YAML | Alias acceptés | Types / Valeurs possibles | Description & Rôle dans Knit |
 |---|---|---|---|
-| **`type`** | `knit_view`, `view` | `note` (ou `markdown`), `kanban`, `table`<br/>*(Futurs v0.4.0 : `canvas`, `calendar`, `slides`, `gallery`)* | **Type de vue principale**. Définit si le document s'ouvre dans l'Éditeur de note, le Tableau Kanban ou la Vue Tableau. |
+| **`type`** | `knit_view`, `view` | `note` (ou `markdown`), `kanban`, `table`, `calendar`, `canvas`, `slides`, `gallery` | **Type de vue principale**. Définit la vue Doc-Driven (éditeur, kanban, tableau, agenda, canvas, diaporama, galerie). |
 | **`titre`** | `title` | Texte (ex: `"Feuille de route 2027"`) | Titre d'affichage dans la TabBar et l'en-tête (si absent, le premier `# Titre` ou le nom de fichier est utilisé). |
 | **`statut`** | `status` | `a-faire` (`todo`), `en-cours` (`in-progress`), `termine` (`done`), `bloque` (`blocked`) | Cycle de vie de la note/tâche. Affiche une pastille colorée interactive en haut de la note. |
 | **`priorite`** | `priority` | `basse` (`low`), `moyenne` (`medium`), `haute` (`high`), `urgente` (`urgent`) | Niveau de criticité avec code couleur doux. |
@@ -65,6 +65,10 @@ Lors de la sélection d'un fichier ou du changement d'onglet actif :
 1. **Lecture du Frontmatter** :
    - Si `type: kanban` (ou `view: kanban` ou `kanban-plugin: basic`) → Affichage direct en **Vue Kanban**.
    - Si `type: table` (ou `view: table`) → Affichage direct en **Vue Tableau**.
+   - Si `type: calendar` → **Vue Agenda scoped** en onglet fichier (agrégation `KnitCalendarIndex` sur le dossier hôte). L’Agenda **global** du coffre est une modale applicative (pas un fichier / pas un onglet virtuel).
+   - Si `type: canvas` → **Vue Canvas** (JSON-Canvas).
+   - Si `type: slides` → **Vue Diaporama** (séparateurs `---` hors frontmatter).
+   - Si `type: gallery` → **Vue Galerie** (grille de cartes).
    - Si `type: note` (ou `markdown` ou absence de `type`) → Affichage en **Éditeur Markdown**.
 2. **Détection heuristique de secours (si pas de frontmatter explicite)** :
    - Fichiers nommés `*.kanban.md` ou contenant des colonnes Kanban typiques → Vue Kanban.
@@ -103,9 +107,29 @@ Changer le type de vue ▸
 
 ### Scénario 3 : Reconversion vers une Note Markdown classique
 
-- Knit remplace `type: kanban` ou `type: table` par `type: note` (ou retire la clé).
+- Knit remplace le type par `type: note` (ou retire la clé).
 - Le document redevient instantanément un fichier Markdown éditable en texte brut dans CodeMirror 6.
 - Les sections `##` et cases à cocher `- [ ]` sont conservées à l'identique.
+
+### Scénario 4 : Conversion vers la Vue Agenda de Projet
+
+- Knit applique `type: calendar`.
+- Le document s'ouvre en vue calendrier (Mois, Semaine, Jour, Liste) en agrégeant toutes les tâches `@YYYY-MM-DD`, heures et réunions contenues dans le dossier de la note (`folderScope`).
+
+### Scénario 5 : Conversion vers la Vue Canvas (Tableau Blanc infini)
+
+- Knit applique `type: canvas`.
+- Knit initialise une structure standard JSON-Canvas ```` ```canvas {"nodes": [], "edges": []} ``` ```` préservant le texte préexistant en carte initiale.
+
+### Scénario 6 : Conversion vers la Vue Diaporama
+
+- Knit applique `type: slides`.
+- Le document est segmenté en diapositives projetables plein écran à chaque séparateur horizontal `---`.
+
+### Scénario 7 : Conversion vers la Vue Galerie
+
+- Knit applique `type: gallery`.
+- Projette les notes associées sous forme de grille de cartes visuelles exploitant les images `assets/` et les bannières déclarées (`banner:`, `cover:`).
 
 > [!NOTE]
 > Toutes les conversions de type de document s'inscrivent dans l'historique global `historyStore` : une annulation avec `Ctrl+Z` ou via le Toast restaure immédiatement le format antérieur.
@@ -122,7 +146,8 @@ Chaque vue dispose dans son en-tête d'un bouton d'action universel :
 
 - **En Vue Kanban** : Permet de basculer instantanément vers l'éditeur de texte CodeMirror 6 pour éditer directement le Markdown brut, puis de recliquer pour revenir au tableau visuel sans recharger la page.
 - **En Vue Tableau** : Idem.
-- **En Note Markdown** : Permet d'alterner entre le mode **Live Preview** (rendu dynamique des titres, gras, callouts et diagrammes Mermaid) et le mode **Source Brute** (syntaxe brute visible).
+- **En Vue Canvas, Diaporama, Galerie et Agenda** : Permet de basculer instantanément vers le texte brut (Markdown ou JSON-Canvas) sous-jacent pour un contrôle total sans perte de données.
+- **En Note Markdown** : Permet d'alterner entre le mode **Live Preview** (rendu dynamique des titres, gras, callouts, blocs dynamiques et diagrammes Mermaid) et le mode **Source Brute** (syntaxe brute visible).
 
 ---
 
@@ -182,7 +207,8 @@ Chaque vue dispose dans son en-tête d'un bouton d'action universel :
   - `Tab` navigue vers la cellule suivante en alignant automatiquement les séparateurs `|`.
   - `Entrée` crée immédiatement la ligne suivante avec les barres verticales alignées.
 - **Hover Preview (Prévisualisation flottante au survol)** :
-  - Survoler un `[[Lien]]`, un `@collaborateur` ou un `#tag` (avec maintien optionnel de `Ctrl`) ouvre une infobulle translucide avec le contenu de la cible sans quitter l'écran de travail.
+  - Bus global `knit-hover-link` + `HoverPreviewHost` (pas limité à l’éditeur).
+  - Survoler un `[[Lien]]` ou une cible fichier ouvre une infobulle avec le contenu Markdown ; pin sticky au survol de la fenêtre ou via `Ctrl`/`Cmd`.
 - **Raccourci Note Quotidienne (`Ctrl+Shift+J` ou `Alt+D`)** :
   - Ouvre ou initialise instantanément la note du jour `journal/YYYY-MM-DD.md` avec le modèle par défaut.
 - **Panneau latéral de Rétroliens (Backlinks Panel)** :
@@ -308,4 +334,23 @@ group_by: file
 ```
 ````
 - Cocher une case dans le bloc dynamique coche instantanément la case dans le fichier `.md` d'origine via CRDT / Yjs !
+
+---
+
+## 8. HTML sécurisé en Live Preview (B-059)
+
+Knit autorise un sous-ensemble HTML standard dans le Markdown, projeté hors curseur :
+
+| Balise | Rendu |
+|---|---|
+| `<kbd>` | Touche clavier stylisée |
+| `<u>` | Souligné |
+| `<mark>` | Surlignage feutré |
+| `<sub>` / `<sup>` | Indice / exposant |
+| `<br>` | Saut de ligne forcé |
+| `<details>` / `<summary>` | Accordion natif |
+
+**Sanitizer** : `<script>`, `<iframe>`, `<object>`, `<style>` et attributs `on*` sont systématiquement neutralisés (local + P2P). Le même filtre s'applique à `renderSimpleMarkdown` (infobulles, widgets).
+
+**Démo** : `demo_vault/html-securise.md`.
 

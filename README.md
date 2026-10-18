@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Domaine-Tech/knit/releases"><img src="https://img.shields.io/badge/version-v0.3.0--dev-8B5CF6?style=flat-square" alt="Version" /></a>
+  <a href="https://github.com/Domaine-Tech/knit/releases"><img src="https://img.shields.io/badge/version-v0.4.0-8B5CF6?style=flat-square" alt="Version" /></a>
   <a href="https://tauri.app/"><img src="https://img.shields.io/badge/Tauri-v2.12-24C8D5?style=flat-square&logo=tauri&logoColor=white" alt="Tauri v2" /></a>
   <a href="https://www.rust-lang.org/"><img src="https://img.shields.io/badge/Rust-2021-DEA584?style=flat-square&logo=rust&logoColor=white" alt="Rust 2021" /></a>
   <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React 19" /></a>
@@ -61,9 +61,10 @@ Le mode d'affichage découle directement du Frontmatter YAML de la note. Un simp
 - **`type: note`** : Éditeur Live Preview avec coloration syntaxique et diagrammes Mermaid inline.
 - **`type: kanban`** : Tableau Kanban complet. Les colonnes sont délimitées par des titres `##` et les cartes par des items `- [ ]`.
 - **`type: table`** : Vue tabulaire structurée avec filtres, tri en direct et modification de cellules.
-- **`type: calendar`** : Agenda et échéancier du coffre agrégeant toutes les tâches `@dates` et réunions.
+- **`type: calendar`** : Agenda et échéancier scoped en onglet (`type: calendar` délimité au dossier) et Agenda global du coffre en modale immersive (`Ctrl+Shift+A`).
 - **`type: canvas`** : Tableau blanc infini au format standard international [JSON-Canvas](https://jsoncanvas.org).
 - **`type: slides`** : Diaporama plein écran avec séparateurs `---` (norme Marp / Slidev).
+- **`type: gallery`** : Vue galerie d'images et fiches visuelles avec bannières et métadonnées frontmatter.
 
 ### ✨ 2. Moteur d'Autocomplétion Universel (Omni-Trigger)
 Actif dans l'éditeur, sur les cartes Kanban et dans les cellules de tableau :
@@ -192,7 +193,7 @@ Le projet suit scrupuleusement la méthodologie SemVer et les sprints documenté
 - [x] **v0.1.0 — Éditeur Local & Boucle FS ↔ CRDT** : Live preview CodeMirror 6, WriteGuard XXH3, Corbeille OS native ([Changelog v0.1.0](versions/v0.1.0/CHANGELOG.md)).
 - [x] **v0.2.0 — Réseau P2P & Résilience** : Transport Iroh QUIC, mDNS local, invitations P2P et synchronisation des assets ([Changelog v0.2.0](versions/v0.2.0/CHANGELOG.md)).
 - [x] **v0.3.0 — Vues Projets, Autocomplétion & Mermaid** : Doc-Driven Views (Kanban/Table), autocomplétion omni-trigger (`B-052`), smart UX (`B-053`), tâches étendues (`B-054`), mode Zen (`B-055`) ([Changelog v0.3.0](versions/v0.3.0/CHANGELOG.md)).
-- [ ] **v0.4.0 — Requêtes Dataview & Vues Immersives** : Sprint **6bis livré** (`knit-toc` / `knit-files` / `knit-query` / `knit-tasks`, `queryFiles`, B-047) — Sprint **6ter** à venir (Agenda `B-031a`, Canvas, Diaporama) ([Changelog v0.4.0](versions/v0.4.0/CHANGELOG.md)).
+- [x] **v0.4.0 — Requêtes Dataview & Vues Immersives** : Sprints **6bis et 6ter livrés** (`knit-toc` / `knit-files` / `knit-query` / `knit-tasks`, `queryFiles`, B-047, Agenda B-031a, Canvas B-031b, Diaporama B-031c, Galerie B-031d, Graphe local B-049, HTML sécurisé B-059) ([Changelog v0.4.0](versions/v0.4.0/CHANGELOG.md)).
 - [ ] **v1.0.0 — Production Release** : Wizard finalisé, installateurs multiplateformes, présence collaborative avancée ([Changelog v1.0.0](versions/v1.0.0/CHANGELOG.md)).
 
 Consultez le **[Backlog Global](versions/BACKLOG.md)** pour le détail de l'ensemble des User Stories.
