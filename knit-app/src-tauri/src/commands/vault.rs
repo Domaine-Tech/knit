@@ -35,42 +35,62 @@ pub async fn write_vault_file(
 
 #[tauri::command]
 pub async fn create_vault_file(
+    state: tauri::State<'_, AppState>,
     vault_path: String,
     rel_path: String,
     content: Option<String>,
 ) -> Result<(), String> {
     let path = Path::new(&vault_path);
-    ipc(vault::create_file(path, &rel_path, content.as_deref()))
+    ipc(vault::create_file_with_guard(
+        path,
+        &rel_path,
+        content.as_deref(),
+        &state.guard,
+    ))
 }
 
 #[tauri::command]
-pub async fn create_vault_dir(vault_path: String, rel_path: String) -> Result<(), String> {
+pub async fn create_vault_dir(
+    state: tauri::State<'_, AppState>,
+    vault_path: String,
+    rel_path: String,
+) -> Result<(), String> {
     let path = Path::new(&vault_path);
-    ipc(vault::create_dir(path, &rel_path))
+    ipc(vault::create_dir_with_guard(path, &rel_path, &state.guard))
 }
 
 #[tauri::command]
-pub async fn delete_vault_path(vault_path: String, rel_path: String) -> Result<(), String> {
+pub async fn delete_vault_path(
+    state: tauri::State<'_, AppState>,
+    vault_path: String,
+    rel_path: String,
+) -> Result<(), String> {
     let path = Path::new(&vault_path);
-    ipc(vault::delete_path(path, &rel_path))
+    ipc(vault::delete_path_with_guard(path, &rel_path, &state.guard))
 }
 
 #[tauri::command]
 pub async fn trash_vault_path(
+    state: tauri::State<'_, AppState>,
     vault_path: String,
     rel_path: String,
 ) -> Result<vault::TrashRecord, String> {
     let path = Path::new(&vault_path);
-    ipc(vault::trash_path(path, &rel_path))
+    ipc(vault::trash_path_with_guard(path, &rel_path, &state.guard))
 }
 
 #[tauri::command]
 pub async fn restore_vault_path(
+    state: tauri::State<'_, AppState>,
     vault_path: String,
     trash_id: String,
 ) -> Result<String, String> {
     let path = Path::new(&vault_path);
-    ipc(vault::restore_trash_path(path, &trash_id))
+    ipc(vault::restore_trash_path_with_guard(
+        path,
+        &trash_id,
+        &state.guard,
+    ))
 }
 
 #[tauri::command]

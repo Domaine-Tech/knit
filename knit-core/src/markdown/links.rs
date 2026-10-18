@@ -112,7 +112,10 @@ pub fn refactor_links_in_content(
 
     // 1. Détection & remplacement des WikiLinks : [[cible]] ou [[cible|alias]]
     let intermediate = WIKILINK_RE.replace_all(content, |caps: &regex::Captures| {
-        let target = caps.get(1).unwrap().as_str().trim();
+        let Some(target_m) = caps.get(1) else {
+            return caps.get(0).map(|m| m.as_str().to_string()).unwrap_or_default();
+        };
+        let target = target_m.as_str().trim();
         let alias = caps.get(2).map(|m| m.as_str());
 
         let target_clean = target.replace('\\', "/");
@@ -146,14 +149,20 @@ pub fn refactor_links_in_content(
                 None => format!("[[{}]]", replacement_target),
             }
         } else {
-            caps.get(0).unwrap().as_str().to_string()
+            caps.get(0).map(|m| m.as_str().to_string()).unwrap_or_default()
         }
     });
 
     // 2. Détection & remplacement des liens Markdown : [Label](cible) ou ![Alt](cible) avec titre optionnel
     let final_content = MDLINK_RE.replace_all(&intermediate, |caps: &regex::Captures| {
-        let label_part = caps.get(1).unwrap().as_str();
-        let raw_target = caps.get(2).unwrap().as_str().trim();
+        let Some(label_m) = caps.get(1) else {
+            return caps.get(0).map(|m| m.as_str().to_string()).unwrap_or_default();
+        };
+        let Some(target_m) = caps.get(2) else {
+            return caps.get(0).map(|m| m.as_str().to_string()).unwrap_or_default();
+        };
+        let label_part = label_m.as_str();
+        let raw_target = target_m.as_str().trim();
         let title_part = caps.get(3).map(|m| m.as_str());
 
         if raw_target.starts_with("http://")
@@ -161,7 +170,7 @@ pub fn refactor_links_in_content(
             || raw_target.starts_with("mailto:")
             || raw_target.starts_with('#')
         {
-            return caps.get(0).unwrap().as_str().to_string();
+            return caps.get(0).map(|m| m.as_str().to_string()).unwrap_or_default();
         }
 
         let (path_part, anchor_part) = match raw_target.split_once('#') {
@@ -193,7 +202,10 @@ pub fn refactor_links_in_content(
             let title_str = title_part.map(|t| format!(" {}", t)).unwrap_or_default();
             format!("{label_part}({final_link}{title_str})")
         } else {
-            caps.get(0).unwrap().as_str().to_string()
+            caps
+                .get(0)
+                .map(|m| m.as_str().to_string())
+                .unwrap_or_default()
         }
     });
 

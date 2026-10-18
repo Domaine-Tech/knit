@@ -1,10 +1,12 @@
 pub mod assets;
+pub mod hash;
 pub mod identity;
 pub mod snapshot;
 pub mod tree;
 pub mod walk;
 
 pub use assets::*;
+pub use hash::{compute_blake3_hash, compute_file_blake3};
 pub use identity::*;
 pub use snapshot::*;
 pub use tree::*;

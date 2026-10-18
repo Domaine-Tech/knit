@@ -8,7 +8,8 @@ use std::time::{Duration, Instant};
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
 use crate::error::{KnitError, Result};
-use crate::vault::tree::normalize_rel_path;
+use crate::vault::tree::{is_watcher_relevant_file, normalize_rel_path};
+use crate::vault::walk::is_ignored_dir_name;
 use crate::watcher::guard::WriteGuard;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -94,16 +95,10 @@ impl VaultWatcher {
 
         for comp in rel.components() {
             let s = comp.as_os_str().to_string_lossy();
-            if s == ".git"
-                || s == ".knit"
-                || s == "target"
-                || s == "node_modules"
-                || s == "dist"
-                || s.starts_with(".tmp")
-            {
-                return true;
+            if s == ".knitshare" || s == ".knitshare.example" {
+                continue;
             }
-            if s.starts_with('.') && s != ".knitshare" && s != ".knitshare.example" {
+            if s.starts_with(".tmp") || is_ignored_dir_name(&s) {
                 return true;
             }
         }
@@ -112,26 +107,7 @@ impl VaultWatcher {
     }
 
     fn is_relevant_extension(path: &Path) -> bool {
-        let ext = path
-            .extension()
-            .and_then(|e| e.to_str())
-            .unwrap_or("")
-            .to_lowercase();
-        let name = path
-            .file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or("");
-
-        ext == "md"
-            || ext == "markdown"
-            || ext == "txt"
-            || ext == "png"
-            || ext == "jpg"
-            || ext == "jpeg"
-            || ext == "svg"
-            || ext == "webp"
-            || name == ".knitshare"
-            || name == "KNIT.md"
+        is_watcher_relevant_file(path)
     }
 
     fn handle_fs_event<F>(

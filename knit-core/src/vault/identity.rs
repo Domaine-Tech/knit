@@ -1,5 +1,5 @@
 use crate::error::{KnitError, Result};
-use crate::network::blobs::compute_blake3_hash;
+use crate::vault::hash::compute_blake3_hash;
 use iroh::{PublicKey, SecretKey};
 use serde::{Deserialize, Serialize};
 use std::fs;

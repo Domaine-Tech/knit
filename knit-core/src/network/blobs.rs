@@ -6,6 +6,8 @@ use std::fs;
 use std::path::Path;
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
+pub use crate::vault::hash::{compute_blake3_hash, compute_file_blake3};
+
 pub const MAX_BLOB_FRAME_SIZE: u32 = 32 * 1024 * 1024; // 32 Mo max par blob
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -29,18 +31,6 @@ pub enum BlobMessage {
         blake3_hash: String,
         rel_path: String,
     },
-}
-
-/// Calcule l'empreinte BLAKE3 en chaîne hexadécimale
-pub fn compute_blake3_hash(data: &[u8]) -> String {
-    let hash = blake3::hash(data);
-    hash.to_hex().to_string()
-}
-
-/// Calcule l'empreinte BLAKE3 d'un fichier sur disque
-pub fn compute_file_blake3(path: &Path) -> Result<String> {
-    let bytes = fs::read(path).map_err(KnitError::Io)?;
-    Ok(compute_blake3_hash(&bytes))
 }
 
 /// Écrit une trame de média BLAKE3 sur un stream QUIC

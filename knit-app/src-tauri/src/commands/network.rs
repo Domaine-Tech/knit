@@ -9,7 +9,49 @@ use knit_core::vault::snapshot::{
     create_and_save_snapshot, list_snapshots_for_doc, load_latest_snapshot, DocSnapshot,
 };
 use std::path::Path;
+use std::sync::Arc;
 use tauri::Emitter;
+
+const P2P_INACTIVE: &str = "Le réseau P2P n'est pas actif pour ce coffre";
+
+fn decode_b64(label: &str, value: &str) -> Result<Vec<u8>, String> {
+    base64::engine::general_purpose::STANDARD
+        .decode(value)
+        .map_err(|e| format!("Erreur décodage base64 {label}: {}", e))
+}
+
+async fn with_network_node<T, F, Fut>(
+    state: &tauri::State<'_, AppState>,
+    f: F,
+) -> Result<T, String>
+where
+    F: FnOnce(Arc<KnitNetworkNode>) -> Fut,
+    Fut: std::future::Future<Output = Result<T, String>>,
+{
+    let lock = state.network_node.read().await;
+    let Some(node) = lock.as_ref().cloned() else {
+        return Err(P2P_INACTIVE.to_string());
+    };
+    drop(lock);
+    f(node).await
+}
+
+async fn with_network_node_opt<T, F, Fut>(
+    state: &tauri::State<'_, AppState>,
+    default: T,
+    f: F,
+) -> Result<T, String>
+where
+    F: FnOnce(Arc<KnitNetworkNode>) -> Fut,
+    Fut: std::future::Future<Output = Result<T, String>>,
+{
+    let lock = state.network_node.read().await;
+    let Some(node) = lock.as_ref().cloned() else {
+        return Ok(default);
+    };
+    drop(lock);
+    f(node).await
+}
 
 #[tauri::command]
 pub async fn start_p2p_network(
@@ -108,12 +150,7 @@ pub async fn stop_p2p_network(state: tauri::State<'_, AppState>) -> Result<(), S
 
 #[tauri::command]
 pub async fn get_p2p_invitation_code(state: tauri::State<'_, AppState>) -> Result<String, String> {
-    let lock = state.network_node.read().await;
-    if let Some(node) = lock.as_ref() {
-        ipc(node.get_invitation_code())
-    } else {
-        Err("Le réseau P2P n'est pas actif pour ce coffre".to_string())
-    }
+    with_network_node(&state, |node| async move { ipc(node.get_invitation_code()) }).await
 }
 
 #[tauri::command]
@@ -121,28 +158,20 @@ pub async fn connect_p2p_peer(
     state: tauri::State<'_, AppState>,
     invitation_code: String,
 ) -> Result<ConnectedPeerInfo, String> {
-    let node_opt = {
-        let lock = state.network_node.read().await;
-        lock.clone()
-    };
-
-    if let Some(node) = node_opt {
+    with_network_node(&state, |node| async move {
         ipc(node.connect_by_ticket(&invitation_code).await)
-    } else {
-        Err("Le réseau P2P n'est pas actif pour ce coffre".to_string())
-    }
+    })
+    .await
 }
 
 #[tauri::command]
 pub async fn get_connected_peers(
     state: tauri::State<'_, AppState>,
 ) -> Result<Vec<ConnectedPeerInfo>, String> {
-    let lock = state.network_node.read().await;
-    if let Some(node) = lock.as_ref() {
+    with_network_node_opt(&state, Vec::new(), |node| async move {
         Ok(node.get_connected_peers().await)
-    } else {
-        Ok(Vec::new())
-    }
+    })
+    .await
 }
 
 #[tauri::command]
@@ -151,14 +180,12 @@ pub async fn broadcast_yjs_update(
     doc_id: String,
     update_base64: String,
 ) -> Result<(), String> {
-    let lock = state.network_node.read().await;
-    if let Some(node) = lock.as_ref() {
-        let bytes = base64::engine::general_purpose::STANDARD
-            .decode(&update_base64)
-            .map_err(|e| format!("Erreur décodage base64 update: {}", e))?;
+    let bytes = decode_b64("update", &update_base64)?;
+    with_network_node_opt(&state, (), |node| async move {
         node.broadcast_yjs_update(&doc_id, &bytes).await;
-    }
-    Ok(())
+        Ok(())
+    })
+    .await
 }
 
 #[tauri::command]
@@ -167,14 +194,12 @@ pub async fn broadcast_awareness(
     doc_id: String,
     awareness_base64: String,
 ) -> Result<(), String> {
-    let lock = state.network_node.read().await;
-    if let Some(node) = lock.as_ref() {
-        let bytes = base64::engine::general_purpose::STANDARD
-            .decode(&awareness_base64)
-            .map_err(|e| format!("Erreur décodage base64 awareness: {}", e))?;
+    let bytes = decode_b64("awareness", &awareness_base64)?;
+    with_network_node_opt(&state, (), |node| async move {
         node.broadcast_awareness(&doc_id, &bytes).await;
-    }
-    Ok(())
+        Ok(())
+    })
+    .await
 }
 
 #[tauri::command]
@@ -183,12 +208,10 @@ pub async fn sync_asset_from_peers(
     rel_path: String,
     blake3_hash: String,
 ) -> Result<bool, String> {
-    let lock = state.network_node.read().await;
-    if let Some(node) = lock.as_ref() {
+    with_network_node_opt(&state, false, |node| async move {
         ipc(node.sync_asset_from_peers(&rel_path, &blake3_hash).await)
-    } else {
-        Ok(false)
-    }
+    })
+    .await
 }
 
 #[tauri::command]
@@ -332,14 +355,12 @@ pub async fn send_p2p_sync_step1(
     doc_id: String,
     state_vector_base64: String,
 ) -> Result<(), String> {
-    let lock = state.network_node.read().await;
-    if let Some(node) = lock.as_ref() {
-        let bytes = base64::engine::general_purpose::STANDARD
-            .decode(&state_vector_base64)
-            .map_err(|e| format!("Base64 invalide: {}", e))?;
+    let bytes = decode_b64("state_vector", &state_vector_base64)?;
+    with_network_node_opt(&state, (), |node| async move {
         node.send_sync_step1(&doc_id, &bytes).await;
-    }
-    Ok(())
+        Ok(())
+    })
+    .await
 }
 
 #[tauri::command]
@@ -349,14 +370,12 @@ pub async fn send_p2p_sync_step2(
     doc_id: String,
     update_base64: String,
 ) -> Result<(), String> {
-    let lock = state.network_node.read().await;
-    if let Some(node) = lock.as_ref() {
-        let bytes = base64::engine::general_purpose::STANDARD
-            .decode(&update_base64)
-            .map_err(|e| format!("Base64 invalide: {}", e))?;
+    let bytes = decode_b64("update", &update_base64)?;
+    with_network_node_opt(&state, (), |node| async move {
         node.send_sync_step2(&peer_id, &doc_id, &bytes).await;
-    }
-    Ok(())
+        Ok(())
+    })
+    .await
 }
 
 #[tauri::command]
