@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { vaultStore } from '../../stores/vaultStore';
-import { flattenFileNodes } from '../../utils/treeUtils';
+import { flattenFileNodes } from '../../utils';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { BaseSearchModal } from './BaseSearchModal';
 

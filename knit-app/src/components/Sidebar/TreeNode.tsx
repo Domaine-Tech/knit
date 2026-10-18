@@ -11,7 +11,7 @@ import {
   copyAbsolutePath,
   copyFileName,
   copyMarkdownLink,
-} from '../../utils/clipboardUtils';
+} from '../../utils';
 
 interface TreeNodeProps {
   node: FileNode;

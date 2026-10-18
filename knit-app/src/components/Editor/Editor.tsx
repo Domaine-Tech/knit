@@ -18,7 +18,7 @@ import {
   foldKeymap,
 } from '@codemirror/language';
 import { yCollab } from 'y-codemirror.next';
-import { crdtManager } from '../../crdt/crdtManager';
+import { crdtManager } from '../../crdt';
 import { contextMenu } from '../../stores/contextMenuStore';
 import { vaultStore } from '../../stores/vaultStore';
 import { toast } from '../../stores/toastStore';
@@ -31,22 +31,23 @@ import { createLivePreviewPlugin } from './livePreviewExtension';
 import {
   createAutoWrapKeymap,
   createTableNavKeymap,
-  packageContextForAI,
 } from './smartUxExtension';
 import {
   createLivePreviewDebugExtension,
   livePreviewDebugCompartment,
 } from './livePreviewDebugExtension';
 import { LivePreviewDebugHUD } from './LivePreviewDebugHUD';
-import { debugStore, useDebugMode } from '../../stores/debugStore';
+import { debugStore } from '../../stores/debugStore';
+import { useDebugMode, useEditorLinks } from '../../hooks';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
-import { getFlatFiles } from '../../utils/markdownUtils';
 import {
+  getFlatFiles,
   copyRelativePath,
   copyAbsolutePath,
   copyMarkdownLink,
-} from '../../utils/clipboardUtils';
-import { useEditorLinks, findLinkAtCoords } from './useEditorLinks';
+  findLinkAtCoords,
+  packageContextForAI,
+} from '../../utils';
 import {
   createKnitEditorTheme,
   knitHighlightStyle,

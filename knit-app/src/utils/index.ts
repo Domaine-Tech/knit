@@ -11,3 +11,5 @@ export * from './kanbanParser';
 export * from './commandRegistry';
 export * from './env';
 export * from './version';
+export * from './editorUtils';
+export * from './aiContextUtils';

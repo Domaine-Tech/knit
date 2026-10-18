@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   parseCardMetadata,
   adaptCardStatusToColumn,
-} from '../../utils/kanbanParser';
+} from '../../utils';
 import type {
   KanbanCard,
   TaskStatus,
@@ -13,9 +13,9 @@ import type {
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { toast } from '../../stores/toastStore';
 import { contextMenu } from '../../stores/contextMenuStore';
-import { debugStore, useDebugMode } from '../../stores/debugStore';
+import { debugStore } from '../../stores/debugStore';
 import { TableDebugHUD } from './TableDebugHUD';
-import { useKanbanBoard } from '../../hooks';
+import { useKanbanBoard, useDebugMode } from '../../hooks';
 
 interface TableViewProps {
   activeFilePath?: string | null;

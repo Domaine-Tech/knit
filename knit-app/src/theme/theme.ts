@@ -1,6 +1,17 @@
 import type { ThemeMode } from '../types';
 
-export type { ThemeMode };
+export const COLLABORATIVE_PALETTE: readonly string[] = [
+  '#3B82F6', // 0: Bleu Ardoise
+  '#10B981', // 1: Émeraude Sauge
+  '#D97706', // 2: Ambre Doré
+  '#E11D48', // 3: Terre Cuite
+  '#0891B2', // 4: Cyan Pétrole
+  '#6366F1', // 5: Indigo Feutré
+  '#DB2777', // 6: Rose Poudré
+  '#C2410C', // 7: Cuivre Foncé
+  '#0D9488', // 8: Vert Menthe
+  '#9333EA', // 9: Lavande Douce
+];
 
 const THEME_STORAGE_KEY = 'knit-theme-mode';
 const HUE_STORAGE_KEY = 'knit-theme-hue';

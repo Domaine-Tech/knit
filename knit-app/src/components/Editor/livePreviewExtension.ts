@@ -6,7 +6,7 @@ import {
   type DecorationSet,
 } from '@codemirror/view';
 import type { TaskStatus } from '../../types';
-import { splitTableRow, renderSimpleMarkdown } from '../../utils/markdownUtils';
+import { splitTableRow, renderSimpleMarkdown } from '../../utils';
 
 /* ==========================================================================
    WIDGETS DU LIVE PREVIEW (STYLE OBSIDIAN / LINEAR PREMIUM)

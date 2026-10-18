@@ -93,3 +93,10 @@ export const DEMO_FILES: FileNode[] = Object.values(rootNodes).sort((a, b) => {
   if (!a.is_dir && b.is_dir) return 1;
   return a.name.localeCompare(b.name);
 });
+
+// Neutralise la propagation HMR pour éviter tout rechargement d'application lors de modifications de notes
+if (import.meta.hot) {
+  import.meta.hot.accept(() => {
+    // Ne pas propager le rechargement aux stores importateurs
+  });
+}

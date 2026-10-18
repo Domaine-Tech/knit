@@ -30,3 +30,13 @@ export interface CommandRegistryOptions {
   handlePackageContext: () => void;
   handleHeaderViewChange: (view: AppViewMode) => void;
 }
+
+export interface KnitShortcutsProps {
+  setIsQuickSwitcherOpen: (open: boolean) => void;
+  setIsCommandPaletteOpen: (open: boolean) => void;
+  setIsZenMode: (fn: (prev: boolean) => boolean) => void;
+  handleOpenDailyNote: () => void;
+  handlePackageContext: () => void;
+  handleSaveActiveNote: () => void;
+  handleNewNote: () => void;
+}

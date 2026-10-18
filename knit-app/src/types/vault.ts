@@ -48,10 +48,3 @@ export interface KanbanFileInfo {
   cards_count?: number;
 }
 
-export interface DocSnapshot {
-  snapshot_id: string;
-  doc_id: string;
-  state_vector_base64: string;
-  yjs_snapshot_base64: string;
-  created_at_sec: number;
-}

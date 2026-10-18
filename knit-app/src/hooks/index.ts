@@ -5,3 +5,5 @@
 export * from './useKanbanBoard';
 export * from './useKnitShortcuts';
 export * from './useResizablePanels';
+export * from './useDebugMode';
+export * from './useEditorLinks';

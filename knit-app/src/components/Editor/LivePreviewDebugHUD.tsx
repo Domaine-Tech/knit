@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import type { LivePreviewDebugStats } from '../../types';
+import type { LivePreviewDebugStats, VaultProfilingRecommendation } from '../../types';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { toast } from '../../stores/toastStore';
-import { useDebugMode } from '../../stores/debugStore';
+import { useDebugMode } from '../../hooks';
 
 interface LivePreviewDebugHUDProps {
   stats: LivePreviewDebugStats | null;
@@ -66,7 +66,7 @@ ${profilerReportText}
   };
 
   const handleDumpConsole = () => {
-    if (window.__KNIT_DEBUG__) {
+    if (window.__KNIT_DEBUG__?.dumpReport) {
       window.__KNIT_DEBUG__.dumpReport();
       toast.info('Inspecteur Console', 'Rapport affiché dans la console développeur (F12).');
     }
@@ -305,7 +305,7 @@ ${profilerReportText}
                   Recommandations d'optimisation
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {profilingReport.recommendations.map((rec, i) => (
+                  {profilingReport.recommendations.map((rec: VaultProfilingRecommendation, i: number) => (
                     <div
                       key={i}
                       style={{

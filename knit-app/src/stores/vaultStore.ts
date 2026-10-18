@@ -3,12 +3,16 @@ import { listen } from '@tauri-apps/api/event';
 import type { UnlistenFn } from '@tauri-apps/api/event';
 import { toast } from './toastStore';
 import { historyStore } from './historyStore';
-import { crdtManager } from '../crdt/crdtManager';
+import { crdtManager } from '../crdt';
 import { tabStore } from './tabStore';
 import { networkStore } from './networkStore';
-import { detectDocType } from '../utils/markdownUtils';
-import { extractKanbanFiles } from '../utils/treeUtils';
-import { createDefaultKanbanMarkdown } from '../utils/kanbanParser';
+import {
+  detectDocType,
+  extractKanbanFiles,
+  createDefaultKanbanMarkdown,
+  isTauriEnvironment,
+} from '../utils';
+import { DEMO_FILES, DEMO_CONTENTS } from './demoVaultLoader';
 
 import type {
   HeadingItem,
@@ -26,11 +30,6 @@ import type {
 } from '../types';
 
 type VaultListener = () => void;
-
-export { isTauriEnvironment } from '../utils/env';
-import { isTauriEnvironment } from '../utils/env';
-import { DEMO_FILES, DEMO_CONTENTS } from './demoVaultLoader';
-export { DEMO_FILES, DEMO_CONTENTS };
 
 class VaultStore {
   public currentVaultPath: string | null = null;

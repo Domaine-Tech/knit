@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useLayoutEffect } from 'react';
 
 import type { TooltipData } from '../../types';
-import { computeTooltipPosition } from '../../utils/domUtils';
+import { computeTooltipPosition } from '../../utils';
 
 export const TooltipContainer: React.FC = () => {
   const [data, setData] = useState<TooltipData | null>(null);

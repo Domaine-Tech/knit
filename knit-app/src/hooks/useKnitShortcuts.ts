@@ -5,15 +5,7 @@ import { historyStore } from '../stores/historyStore';
 import { debugStore } from '../stores/debugStore';
 import { toast } from '../stores/toastStore';
 
-export interface KnitShortcutsProps {
-  setIsQuickSwitcherOpen: (open: boolean) => void;
-  setIsCommandPaletteOpen: (open: boolean) => void;
-  setIsZenMode: (fn: (prev: boolean) => boolean) => void;
-  handleOpenDailyNote: () => void;
-  handlePackageContext: () => void;
-  handleSaveActiveNote: () => void;
-  handleNewNote: () => void;
-}
+import type { KnitShortcutsProps } from '../types';
 
 export function useKnitShortcuts({
   setIsQuickSwitcherOpen,
@@ -155,8 +147,10 @@ export function useKnitShortcuts({
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown, true);
+    };
   }, [
     setIsQuickSwitcherOpen,
     setIsCommandPaletteOpen,

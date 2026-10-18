@@ -1,9 +1,9 @@
 import { tabStore } from '../stores/tabStore';
 import { vaultStore } from '../stores/vaultStore';
+import { debugStore } from '../stores/debugStore';
+import { toast } from '../stores/toastStore';
 import { applyTheme } from '../theme/theme';
 import type { CommandItem, CommandRegistryOptions } from '../types';
-
-export type { CommandRegistryOptions };
 
 export function buildCommandList(opts: CommandRegistryOptions): CommandItem[] {
   const {
@@ -24,6 +24,20 @@ export function buildCommandList(opts: CommandRegistryOptions): CommandItem[] {
   } = opts;
 
   return [
+    {
+      id: 'cmd-toggle-debug',
+      title: 'Activer / Désactiver le Mode Debug Global (Inspecteur)',
+      category: 'Développement',
+      shortcut: 'Ctrl+Alt+D',
+      icon: 'bug',
+      action: () => {
+        const next = debugStore.toggle();
+        toast.info(
+          next ? 'Mode Debug Global activé' : 'Mode Debug désactivé',
+          'Inspecteur Knit (Ctrl+Alt+D)'
+        );
+      },
+    },
     {
       id: 'cmd-split-view',
       title: splitTabId ? 'Fermer le panneau scindé' : 'Scinder l’espace de travail en 2 (Split View)',

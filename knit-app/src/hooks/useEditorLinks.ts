@@ -1,78 +1,14 @@
-import { useState, useRef, useCallback, useEffect, type RefObject } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import type { EditorView } from '@codemirror/view';
-import { vaultStore } from '../../stores/vaultStore';
-import { tabStore } from '../../stores/tabStore';
-import { toast } from '../../stores/toastStore';
-import { renderRichMarkdownPreview, findVaultNode, slugify } from '../../utils/markdownUtils';
-
-import type { HoverPreviewData } from '../../types';
-
-export type { HoverPreviewData };
+import { vaultStore } from '../stores/vaultStore';
+import { tabStore } from '../stores/tabStore';
+import { toast } from '../stores/toastStore';
+import { renderRichMarkdownPreview, findVaultNode, slugify } from '../utils';
+import type { HoverPreviewData, UseEditorLinksProps } from '../types';
 
 /**
- * Détecte l'URL ou la cible de lien (WikiLink, lien Markdown, URL brute, chemin local) sous les coordonnées du curseur
+ * Hook gérant la navigation au clic/survol sur les liens Markdown/WikiLinks et l'infobulle d'aperçu
  */
-export function findLinkAtCoords(x: number, y: number, view: EditorView): string | null {
-  const pos = view.posAtCoords({ x, y });
-  if (pos === null) return null;
-
-  const line = view.state.doc.lineAt(pos);
-  const lineText = line.text;
-  const col = pos - line.from;
-
-  // 1. WikiLinks [[Note#Ancre|Alias]] ou [[Note]] ou [[#Ancre]]
-  const wikiRegex = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
-  let wm: RegExpExecArray | null;
-  while ((wm = wikiRegex.exec(lineText)) !== null) {
-    const start = wm.index;
-    const end = start + wm[0].length;
-    if (col >= start && col <= end) {
-      return wm[1].trim();
-    }
-  }
-
-  // 2. Liens Markdown [Label](url-or-path)
-  const mdLinkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
-  let ml: RegExpExecArray | null;
-  while ((ml = mdLinkRegex.exec(lineText)) !== null) {
-    const start = ml.index;
-    const end = start + ml[0].length;
-    if (col >= start && col <= end) {
-      return ml[2].trim();
-    }
-  }
-
-  // 3. URLs brutes ou file URLs (ex: https://..., http://..., file:///..., mailto:...)
-  const rawUrlRegex = /(https?:\/\/[^\s<>)"]+|file:\/\/\/[^\s<>)"]+|mailto:[^\s<>)"]+)/g;
-  let rm: RegExpExecArray | null;
-  while ((rm = rawUrlRegex.exec(lineText)) !== null) {
-    const start = rm.index;
-    const end = start + rm[0].length;
-    if (col >= start && col <= end) {
-      return rm[1].trim();
-    }
-  }
-
-  // 4. Chemins de fichiers ou dossiers (ex: C:\... ou D:/... ou ./...)
-  const pathRegex = /(?:^|\s)((?:[a-zA-Z]:[\\/]|(?:\.\.?\/))[^\s<>)"]+)/g;
-  let pm: RegExpExecArray | null;
-  while ((pm = pathRegex.exec(lineText)) !== null) {
-    const start = pm.index;
-    const end = start + pm[0].length;
-    if (col >= start && col <= end) {
-      return pm[1].trim();
-    }
-  }
-
-  return null;
-}
-
-interface UseEditorLinksProps {
-  path: string;
-  viewRef: RefObject<EditorView | null>;
-  editorRef: RefObject<HTMLDivElement | null>;
-}
-
 export function useEditorLinks({ path, viewRef, editorRef }: UseEditorLinksProps) {
   const [hoverPreview, setHoverPreview] = useState<HoverPreviewData | null>(null);
   const hoverTargetRef = useRef<string | null>(null);

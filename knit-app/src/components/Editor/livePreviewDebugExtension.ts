@@ -8,22 +8,7 @@ import { Compartment, type Extension } from '@codemirror/state';
 
 import type { LineDebugInfo, WidgetDebugInfo, LivePreviewDebugStats } from '../../types';
 
-export type { LineDebugInfo, WidgetDebugInfo, LivePreviewDebugStats };
-
 export const livePreviewDebugCompartment = new Compartment();
-
-declare global {
-  interface Window {
-    __KNIT_DEBUG__?: {
-      dumpReport: () => void;
-      getStats: () => LivePreviewDebugStats | null;
-      getView: () => EditorView;
-      requestMeasure: () => void;
-      toggle: () => void;
-      isActive: boolean;
-    };
-  }
-}
 
 /**
  * Plugin CodeMirror 6 pour le diagnostic géométrique en temps réel (Mode Debug Live Viewer)
@@ -70,13 +55,13 @@ export const livePreviewDebugPlugin = ViewPlugin.fromClass(
         this.overlayEl = null;
       }
       this.cleanupClasses();
-      if (window.__KNIT_DEBUG__) {
-        window.__KNIT_DEBUG__.isActive = false;
-      }
     }
 
     private attachGlobalDebug() {
+      if (typeof window === 'undefined') return;
+      const existing = window.__KNIT_DEBUG__ || {};
       window.__KNIT_DEBUG__ = {
+        ...existing,
         dumpReport: () => {
           if (!this.lastStats) {
             console.warn('[Knit Debug] Aucune statistique disponible.');
@@ -106,11 +91,6 @@ export const livePreviewDebugPlugin = ViewPlugin.fromClass(
           this.view.requestMeasure();
           this.measureNow();
         },
-        toggle: () => {
-          const el = this.view.dom.closest('.knit-editor-wrapper');
-          el?.dispatchEvent(new CustomEvent('knit-toggle-live-debug'));
-        },
-        isActive: true,
       };
     }
 

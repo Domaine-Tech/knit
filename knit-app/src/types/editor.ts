@@ -1,3 +1,5 @@
+import type { RefObject } from 'react';
+import type { EditorView } from '@codemirror/view';
 import type { IconName } from './ui';
 
 /**
@@ -17,4 +19,16 @@ export interface AutocompleteSourceProps {
   getTags: () => string[];
   currentPath?: string;
   getContent?: () => string;
+}
+
+export interface UseEditorLinksProps {
+  path: string;
+  viewRef: RefObject<EditorView | null>;
+  editorRef: RefObject<HTMLDivElement | null>;
+}
+
+export interface KeymapCallbacks {
+  onSave?: () => void;
+  onToggleViewMode?: () => void;
+  onPackageAI?: () => void;
 }

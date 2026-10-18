@@ -2,8 +2,8 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import type { UnlistenFn } from '@tauri-apps/api/event';
 import { toast } from './toastStore';
-import { isTauriEnvironment } from '../utils/env';
-import { uint8ArrayToBase64, base64ToUint8Array } from '../utils/encodingUtils';
+import { isTauriEnvironment, uint8ArrayToBase64, base64ToUint8Array } from '../utils';
+import { COLLABORATIVE_PALETTE } from '../theme/theme';
 
 import type {
   PeerIdentity,
@@ -12,19 +12,6 @@ import type {
   ConnectedPeerInfo,
   DiscoveredLanPeer,
 } from '../types';
-
-export const COLLABORATIVE_PALETTE = [
-  '#3B82F6', // 0: Bleu Ardoise
-  '#10B981', // 1: Émeraude Sauge
-  '#D97706', // 2: Ambre Doré
-  '#E11D48', // 3: Terre Cuite
-  '#0891B2', // 4: Cyan Pétrole
-  '#6366F1', // 5: Indigo Feutré
-  '#DB2777', // 6: Rose Poudré
-  '#C2410C', // 7: Cuivre Foncé
-  '#0D9488', // 8: Vert Menthe
-  '#9333EA', // 9: Lavande Douce
-];
 
 type NetworkListener = () => void;
 

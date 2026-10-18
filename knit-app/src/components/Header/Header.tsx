@@ -4,12 +4,14 @@ import type { ThemeMode, AppViewMode } from '../../types';
 import { ColorPickerPopover } from './ColorPickerPopover';
 import { contextMenu } from '../../stores/contextMenuStore';
 import { vaultStore } from '../../stores/vaultStore';
-import { networkStore, COLLABORATIVE_PALETTE } from '../../stores/networkStore';
+import { networkStore } from '../../stores/networkStore';
+import { COLLABORATIVE_PALETTE } from '../../theme/theme';
 import { NetworkModal } from '../Network/NetworkModal';
 import { ProfileModal } from '../Profile/ProfileModal';
 import { WindowControls } from './WindowControls';
-import { getAppVersion, APP_VERSION } from '../../utils/version';
-import { debugStore, useDebugMode } from '../../stores/debugStore';
+import { getAppVersion, APP_VERSION } from '../../utils';
+import { debugStore } from '../../stores/debugStore';
+import { useDebugMode } from '../../hooks';
 
 interface HeaderProps {
   theme: ThemeMode;

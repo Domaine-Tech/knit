@@ -15,3 +15,4 @@ export * from './history';
 export * from './table';
 export * from './editor';
 export * from './debug';
+export * from './crdt';

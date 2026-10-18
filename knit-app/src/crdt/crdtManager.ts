@@ -3,11 +3,14 @@ import diff from 'fast-diff';
 import { Awareness, encodeAwarenessUpdate, applyAwarenessUpdate } from 'y-protocols/awareness';
 import { networkStore } from '../stores/networkStore';
 import { vaultStore } from '../stores/vaultStore';
-import { isTauriEnvironment } from '../utils/env';
-import { uint8ArrayToBase64, base64ToUint8Array } from '../utils/encodingUtils';
+import { isTauriEnvironment, uint8ArrayToBase64, base64ToUint8Array } from '../utils';
 import { invoke } from '@tauri-apps/api/core';
 
-import type { DocSnapshot } from '../types';
+import type {
+  DocSnapshot,
+  AwarenessUserState,
+  AwarenessChangeEvent,
+} from '../types';
 
 
 export class CRDTManager {
@@ -125,16 +128,17 @@ export class CRDTManager {
 
       // Configurer l'utilisateur local dans l'awareness
       if (networkStore.localIdentity) {
-        awareness.setLocalStateField('user', {
+        const localUser: AwarenessUserState = {
           name: networkStore.localIdentity.display_name,
           color: networkStore.localIdentity.color_hex,
           initials: networkStore.localIdentity.initials,
           colorIndex: networkStore.localIdentity.color_index,
-        });
+        };
+        awareness.setLocalStateField('user', localUser);
       }
 
       // Diffuser les mouvements de curseur locaux aux pairs
-      awareness.on('update', ({ added, updated, removed }: { added: number[]; updated: number[]; removed: number[] }, origin: unknown) => {
+      awareness.on('update', ({ added, updated, removed }: AwarenessChangeEvent, origin: unknown) => {
         if (origin !== 'p2p') {
           const changedClients = added.concat(updated, removed);
           const update = encodeAwarenessUpdate(awareness!, changedClients);

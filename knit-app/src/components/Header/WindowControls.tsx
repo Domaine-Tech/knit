@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { isTauriEnvironment } from '../../utils/env';
+import { isTauriEnvironment } from '../../utils';
 
 interface WindowControlsCSSProperties extends React.CSSProperties {
   WebkitAppRegion?: 'drag' | 'no-drag';

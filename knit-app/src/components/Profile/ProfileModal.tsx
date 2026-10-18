@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { networkStore, COLLABORATIVE_PALETTE } from '../../stores/networkStore';
+import { networkStore } from '../../stores/networkStore';
+import { COLLABORATIVE_PALETTE } from '../../theme/theme';
 import type { UserProfile } from '../../types';
 import { vaultStore } from '../../stores/vaultStore';
 import { toast } from '../../stores/toastStore';

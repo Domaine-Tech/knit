@@ -1,3 +1,5 @@
+import type { DocType } from '../types';
+
 /**
  * Utilitaires universels de traitement Markdown pour Knit
  * - Découpage précis des cellules de tableau Markdown (en préservant les | dans [[...|...]], `...` et \|)
@@ -270,8 +272,6 @@ export function renderRichMarkdownPreview(raw: string): string {
   return htmlParts.join('') || '<div style="color:var(--knit-text-muted);font-style:italic;">(Note vide)</div>';
 }
 
-import type { DocType } from '../types';
-export { findVaultNode, getFlatFiles } from './treeUtils';
 
 /**
  * Normalise un texte ou un titre de section en identifiant slug sécurisé (compatible GitHub/Obsidian)

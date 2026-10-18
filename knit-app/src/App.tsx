@@ -27,12 +27,10 @@ import { vaultStore } from './stores/vaultStore';
 import { tabStore } from './stores/tabStore';
 import { toast } from './stores/toastStore';
 import { DuotoneIcon } from './components/Icons/DuotoneIcon';
-import { packageContextForAI } from './components/Editor/smartUxExtension';
 import { ErrorBoundary } from './components/Common/ErrorBoundary';
 import { debugStore } from './stores/debugStore';
 import { useResizablePanels, useKnitShortcuts } from './hooks';
-import { buildCommandList } from './utils/commandRegistry';
-import { APP_VERSION } from './utils/version';
+import { buildCommandList, APP_VERSION, packageContextForAI } from './utils';
 
 export const App: React.FC = () => {
   const [theme, setTheme] = useState<ThemeMode>(getStoredTheme);
@@ -252,8 +250,25 @@ tags: [journal, quotidien]
     return () => window.removeEventListener('contextmenu', handleGlobalContextMenu);
   }, []);
 
-  const activeTab = tabStore.activeTab;
-  const splitTab = tabStore.splitTab;
+  // Dérivation résiliente des onglets actifs : ne peut jamais être désynchronisé ou null si des onglets existent
+  const resolvedActiveTabId = useMemo(() => {
+    if (activeTabId && tabs.some((t) => t.id === activeTabId)) return activeTabId;
+    return tabs.length > 0 ? tabs[0].id : null;
+  }, [tabs, activeTabId]);
+
+  const resolvedGroup2TabId = useMemo(() => {
+    if (activeGroup2TabId && group2Tabs.some((t) => t.id === activeGroup2TabId)) return activeGroup2TabId;
+    return group2Tabs.length > 0 ? group2Tabs[0].id : null;
+  }, [group2Tabs, activeGroup2TabId]);
+
+  const activeTab = useMemo(() => {
+    return tabs.find((t) => t.id === resolvedActiveTabId);
+  }, [tabs, resolvedActiveTabId]);
+
+  const splitTab = useMemo(() => {
+    return group2Tabs.find((t) => t.id === resolvedGroup2TabId);
+  }, [group2Tabs, resolvedGroup2TabId]);
+
   const focusedTab = (focusedGroupId === 2 && isSplit) ? splitTab : activeTab;
 
   // Vue déduite dynamiquement du document actif (Doc-Driven Views)
@@ -421,8 +436,13 @@ tags: [journal, quotidien]
           activeFilePath={tab.path}
           activeFileContent={tab.content}
           onUpdateContent={async (path, content) => {
-            tabStore.updateContent(tab.id, content);
-            await vaultStore.writeFile(path, content);
+            try {
+              tabStore.updateContent(tab.id, content);
+              await vaultStore.writeFile(path || tab.path, content);
+            } catch (err: unknown) {
+              console.error('Erreur sauvegarde Kanban:', err);
+              toast.error('Erreur de sauvegarde', String(err));
+            }
           }}
           onOpenFile={(path) => handleSelectFile(path, false)}
           onSwitchToEditor={() => tabStore.toggleViewMode(tab.id, groupId)}
@@ -436,8 +456,13 @@ tags: [journal, quotidien]
           activeFilePath={tab.path}
           activeFileContent={tab.content}
           onUpdateContent={async (path, content) => {
-            tabStore.updateContent(tab.id, content);
-            await vaultStore.writeFile(path, content);
+            try {
+              tabStore.updateContent(tab.id, content);
+              await vaultStore.writeFile(path || tab.path, content);
+            } catch (err: unknown) {
+              console.error('Erreur sauvegarde Tableau:', err);
+              toast.error('Erreur de sauvegarde', String(err));
+            }
           }}
           onOpenFile={(path) => handleSelectFile(path, false)}
           onSwitchToEditor={() => tabStore.toggleViewMode(tab.id, groupId)}
@@ -621,7 +646,7 @@ tags: [journal, quotidien]
                 >
                   <TabBar
                     tabs={tabs}
-                    activeTabId={activeTabId}
+                    activeTabId={resolvedActiveTabId}
                     groupId={1}
                     isFocused={focusedGroupId === 1}
                     isSplit={true}
@@ -702,7 +727,7 @@ tags: [journal, quotidien]
                 >
                   <TabBar
                     tabs={group2Tabs}
-                    activeTabId={activeGroup2TabId}
+                    activeTabId={resolvedGroup2TabId}
                     groupId={2}
                     isFocused={focusedGroupId === 2}
                     isSplit={true}
@@ -732,7 +757,7 @@ tags: [journal, quotidien]
               >
                 <TabBar
                   tabs={tabs}
-                  activeTabId={activeTabId}
+                  activeTabId={resolvedActiveTabId}
                   groupId={1}
                   isFocused={false}
                   isSplit={false}

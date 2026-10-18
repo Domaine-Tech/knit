@@ -1,7 +1,5 @@
 import type { DocType, Tab } from '../types';
-import { detectDocType } from '../utils/markdownUtils';
-
-export { detectDocType };
+import { detectDocType } from '../utils';
 
 type TabListener = () => void;
 
@@ -41,11 +39,11 @@ class TabStore {
   }
 
   public get activeTab(): Tab | undefined {
-    return this.tabs.find((t) => t.id === this.activeTabId);
+    return this.tabs.find((t) => t.id === this.activeTabId) || (this.tabs.length > 0 ? this.tabs[0] : undefined);
   }
 
   public get splitTab(): Tab | undefined {
-    return this.group2Tabs.find((t) => t.id === this.activeGroup2TabId);
+    return this.group2Tabs.find((t) => t.id === this.activeGroup2TabId) || (this.group2Tabs.length > 0 ? this.group2Tabs[0] : undefined);
   }
 
   public get currentFocusedTab(): Tab | undefined {

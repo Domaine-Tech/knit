@@ -80,3 +80,22 @@ export interface GlobalDebugReport {
   table?: unknown;
   profiler?: VaultProfilingReport | null;
 }
+
+export interface KnitDebugGlobal {
+  isActive?: boolean;
+  activeView?: AppViewMode;
+  isBenchmarking?: boolean;
+  latestReport?: VaultProfilingReport | null;
+  dumpReport?: () => void;
+  getStats?: () => LivePreviewDebugStats | null;
+  getView?: () => unknown;
+  requestMeasure?: () => void;
+  toggle?: () => void;
+  [key: string]: unknown;
+}
+
+declare global {
+  interface Window {
+    __KNIT_DEBUG__?: KnitDebugGlobal;
+  }
+}

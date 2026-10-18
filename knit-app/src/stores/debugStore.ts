@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
 import { vaultStore } from './vaultStore';
+import { flattenFileNodes } from '../utils/treeUtils';
 
 import type {
   AppViewMode,
@@ -9,17 +9,19 @@ import type {
   EditorDebugReport,
 } from '../types';
 
-export type {
-  VaultProfilingRecommendation,
-  VaultProfilingReport,
-  GlobalDebugReport,
-  EditorDebugReport,
-};
-
 type DebugListener = () => void;
 
 class DebugStore {
-  private _isActive: boolean = false;
+  private _isActive: boolean = (() => {
+    try {
+      if (typeof window !== 'undefined') {
+        return sessionStorage.getItem('knit_debug_active') === 'true';
+      }
+    } catch {
+      // Ignorer si indisponible
+    }
+    return false;
+  })();
   private _activeView: AppViewMode = 'editor';
   private _isBenchmarking: boolean = false;
   private _latestProfilingReport: VaultProfilingReport | null = null;
@@ -64,11 +66,28 @@ class DebugStore {
   }
 
   private notify() {
-    this.listeners.forEach((l) => l());
+    this.listeners.forEach((l) => {
+      try {
+        l();
+      } catch (err) {
+        console.error('[DebugStore] Erreur notification listener:', err);
+      }
+    });
+  }
+
+  private persistActiveState() {
+    try {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('knit_debug_active', String(this._isActive));
+      }
+    } catch {
+      // Ignorer si non accessible
+    }
   }
 
   public toggle(): boolean {
     this._isActive = !this._isActive;
+    this.persistActiveState();
     this.notify();
     window.dispatchEvent(
       new CustomEvent('knit-debug-toggled', {
@@ -81,6 +100,7 @@ class DebugStore {
   public setDebug(active: boolean) {
     if (this._isActive !== active) {
       this._isActive = active;
+      this.persistActiveState();
       this.notify();
       window.dispatchEvent(
         new CustomEvent('knit-debug-toggled', {
@@ -133,19 +153,7 @@ class DebugStore {
     const treeNodes = vaultStore.files;
     const treeWalkMs = Math.round((performance.now() - tTree0) * 10) / 10;
 
-    const flatFiles: string[] = [];
-    interface NodeLike {
-      path: string;
-      is_dir: boolean;
-      children?: NodeLike[];
-    }
-    const collectFlat = (nodes: NodeLike[]) => {
-      for (const n of nodes) {
-        if (!n.is_dir) flatFiles.push(n.path);
-        if (n.children) collectFlat(n.children);
-      }
-    };
-    collectFlat(treeNodes as unknown as NodeLike[]);
+    const flatFiles = flattenFileNodes(treeNodes).map((f) => f.path);
     const totalFilesCount = flatFiles.length;
     const mdFiles = flatFiles.filter((f) => f.endsWith('.md') || f.endsWith('.markdown'));
     const markdownFilesCount = mdFiles.length;
@@ -283,9 +291,9 @@ class DebugStore {
   private setupWindowBridge() {
     if (typeof window === 'undefined') return;
 
-    const existing = (window as unknown as { __KNIT_DEBUG__?: Record<string, unknown> }).__KNIT_DEBUG__ || {};
+    const existing = window.__KNIT_DEBUG__ || {};
 
-    (window as unknown as { __KNIT_DEBUG__: Record<string, unknown> }).__KNIT_DEBUG__ = {
+    window.__KNIT_DEBUG__ = {
       ...existing,
       get isActive() {
         return debugStore.isActive;
@@ -353,40 +361,3 @@ class DebugStore {
 }
 
 export const debugStore = new DebugStore();
-
-/**
- * Hook React pour écouter l'état du mode debug global dans les composants
- */
-export function useDebugMode(): {
-  isDebugActive: boolean;
-  activeView: AppViewMode;
-  toggleDebug: () => void;
-  isBenchmarking: boolean;
-  profilingReport: VaultProfilingReport | null;
-  runBenchmark: () => Promise<VaultProfilingReport>;
-} {
-  const [isActive, setIsActive] = useState(debugStore.isActive);
-  const [activeView, setActiveView] = useState(debugStore.activeView);
-  const [isBenchmarking, setIsBenchmarking] = useState(debugStore.isBenchmarking);
-  const [profilingReport, setProfilingReport] = useState<VaultProfilingReport | null>(
-    debugStore.latestProfilingReport
-  );
-
-  useEffect(() => {
-    return debugStore.subscribe(() => {
-      setIsActive(debugStore.isActive);
-      setActiveView(debugStore.activeView);
-      setIsBenchmarking(debugStore.isBenchmarking);
-      setProfilingReport(debugStore.latestProfilingReport);
-    });
-  }, []);
-
-  return {
-    isDebugActive: isActive,
-    activeView,
-    toggleDebug: () => debugStore.toggle(),
-    isBenchmarking,
-    profilingReport,
-    runBenchmark: () => debugStore.runVaultBenchmark(),
-  };
-}

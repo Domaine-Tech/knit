@@ -9,7 +9,7 @@ import {
   copyAbsolutePath,
   copyFileName,
   copyMarkdownLink,
-} from '../../utils/clipboardUtils';
+} from '../../utils';
 
 interface TabBarProps {
   tabs: Tab[];
