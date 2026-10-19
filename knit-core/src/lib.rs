@@ -286,5 +286,85 @@ mod tests {
         }
         assert!(detected_ai, "Le watcher doit détecter la modification externe de l'agent IA");
     }
+
+    #[tokio::test]
+    async fn test_watcher_file_and_dir_creation() {
+        let dir = tempdir().expect("tempdir creation");
+        let root = dir.path();
+        let guard = WriteGuard::new();
+
+        let (_watcher, mut rx) = VaultWatcher::new(root, guard.clone(), |_| {}).expect("watcher");
+
+        tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
+
+        // 1. Création d'un dossier
+        std::fs::create_dir(root.join("new_dir")).expect("create new_dir");
+        tokio::time::sleep(tokio::time::Duration::from_millis(150)).await;
+        let mut got_tree_changed = false;
+        while let Ok(ev) = rx.try_recv() {
+            if ev == VaultWatchEvent::TreeChanged {
+                got_tree_changed = true;
+            }
+        }
+        assert!(got_tree_changed, "La création d'un dossier doit émettre TreeChanged");
+
+        // 2. Création d'un fichier à la racine
+        std::fs::write(root.join("new_file.md"), b"# New File").expect("create new_file.md");
+        tokio::time::sleep(tokio::time::Duration::from_millis(150)).await;
+        let mut got_tree_changed_file = false;
+        let mut got_file_changed = false;
+        while let Ok(ev) = rx.try_recv() {
+            if ev == VaultWatchEvent::TreeChanged {
+                got_tree_changed_file = true;
+            }
+            if let VaultWatchEvent::FileChanged { path, .. } = ev {
+                if path == "new_file.md" {
+                    got_file_changed = true;
+                }
+            }
+        }
+        assert!(got_tree_changed_file, "La création d'un fichier doit émettre TreeChanged");
+        assert!(got_file_changed, "La création d'un fichier doit émettre FileChanged");
+
+        // 3. Création d'un fichier dans un sous-dossier
+        std::fs::write(root.join("new_dir").join("sub.md"), b"# Sub").expect("create sub.md");
+        tokio::time::sleep(tokio::time::Duration::from_millis(150)).await;
+        let mut got_sub_tree_changed = false;
+        let mut got_sub_file_changed = false;
+        while let Ok(ev) = rx.try_recv() {
+            if ev == VaultWatchEvent::TreeChanged {
+                got_sub_tree_changed = true;
+            }
+            if let VaultWatchEvent::FileChanged { path, .. } = ev {
+                if path == "new_dir/sub.md" {
+                    got_sub_file_changed = true;
+                }
+            }
+        }
+        assert!(got_sub_tree_changed, "La création d'un fichier dans un sous-dossier doit émettre TreeChanged");
+        assert!(got_sub_file_changed, "La création d'un fichier dans un sous-dossier doit émettre FileChanged");
+
+        // 4. Renommage d'un fichier externe
+        std::fs::rename(root.join("new_file.md"), root.join("renamed_file.md")).expect("rename file");
+        tokio::time::sleep(tokio::time::Duration::from_millis(150)).await;
+        let mut got_rename_tree = false;
+        while let Ok(ev) = rx.try_recv() {
+            if ev == VaultWatchEvent::TreeChanged {
+                got_rename_tree = true;
+            }
+        }
+        assert!(got_rename_tree, "Le renommage externe d'un fichier doit émettre TreeChanged");
+
+        // 5. Renommage d'un dossier externe
+        std::fs::rename(root.join("new_dir"), root.join("renamed_dir")).expect("rename dir");
+        tokio::time::sleep(tokio::time::Duration::from_millis(150)).await;
+        let mut got_dir_rename_tree = false;
+        while let Ok(ev) = rx.try_recv() {
+            if ev == VaultWatchEvent::TreeChanged {
+                got_dir_rename_tree = true;
+            }
+        }
+        assert!(got_dir_rename_tree, "Le renommage externe d'un dossier doit émettre TreeChanged");
+    }
 }
 

@@ -64,6 +64,20 @@ export function findFileMtimeMs(nodes: FileNode[], relPath: string): number | un
 }
 
 /**
+ * Vérifie si un chemin relatif est déjà présent dans l'arborescence des FileNode
+ */
+export function hasFileNode(nodes: FileNode[], relPath: string): boolean {
+  const norm = normalizeRelPath(relPath);
+  for (const node of nodes) {
+    if (normalizeRelPath(node.path) === norm) return true;
+    if (node.is_dir && node.children?.length) {
+      if (hasFileNode(node.children, norm)) return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Recherche récursive d'un nœud dans l'arborescence du coffre à partir d'une cible WikiLink
  */
 export function findVaultNode(target: string, nodes: FileNode[]): FileNode | null {

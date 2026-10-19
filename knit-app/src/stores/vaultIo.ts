@@ -6,6 +6,7 @@ import { tabStore } from './tabStore';
 import { networkStore } from './networkStore';
 import { frontmatterIndex } from './frontmatterIndex';
 import { isTauriEnvironment } from '../utils/env';
+import { hasFileNode } from '../utils';
 import { DEMO_FILES, DEMO_CONTENTS, DEMO_ASSET_URLS } from './demoVaultLoader';
 import type { FileNode, LinkRefactorReport, VaultOps } from '../types';
 
@@ -80,11 +81,28 @@ async function setupWatcher(ops: VaultOps, path: string) {
       await invoke<void>('stop_vault_watcher').catch(() => {});
       await invoke<void>('start_vault_watcher', { vaultPath: path });
 
+      // Debounce trailing pour consolider les événements FS en rafale (git, IA, batch mkdir/touch)
+      let treeDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+      const scheduleTreeReload = () => {
+        if (treeDebounceTimer !== null) {
+          clearTimeout(treeDebounceTimer);
+        }
+        treeDebounceTimer = setTimeout(() => {
+          treeDebounceTimer = null;
+          void ops.reloadTree().then(() => frontmatterIndex.rebuild(ops));
+        }, 120);
+      };
+
       const u1 = await listen<{ path: string; content: string }>(
         'vault_file_changed',
         (event) => {
           const { path: relPath, content } = event.payload;
           ops.localContents[relPath] = content;
+
+          // Si le fichier n'est pas encore présent dans l'arborescence, rafraîchir l'arbre dynamiquement
+          if (!hasFileNode(ops.files, relPath)) {
+            scheduleTreeReload();
+          }
 
           // Injection dans Yjs via crdtManager
           const updated = crdtManager.applyExternalContent(relPath, content);
@@ -119,14 +137,19 @@ async function setupWatcher(ops: VaultOps, path: string) {
           toast.info('Fichier supprimé', `Le fichier "${fileName}" a été supprimé du disque`);
         }
 
-        ops.reloadTree();
+        scheduleTreeReload();
       });
 
       const u3 = await listen('vault_tree_changed', () => {
-        void ops.reloadTree().then(() => frontmatterIndex.rebuild(ops));
+        scheduleTreeReload();
       });
 
-      ops.unlistenFns.push(u1, u2, u3);
+      ops.unlistenFns.push(u1, u2, u3, () => {
+        if (treeDebounceTimer !== null) {
+          clearTimeout(treeDebounceTimer);
+          treeDebounceTimer = null;
+        }
+      });
     } catch (err: unknown) {
       console.warn('Impossible de démarrer le Vault Watcher :', err);
     }

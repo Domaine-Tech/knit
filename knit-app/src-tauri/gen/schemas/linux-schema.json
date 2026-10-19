@@ -249,10 +249,28 @@
           "markdownDescription": "Enables the get_p2p_invitation_code command without any pre-configured scope."
         },
         {
+          "description": "Enables the get_suggest_index command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-get-suggest-index",
+          "markdownDescription": "Enables the get_suggest_index command without any pre-configured scope."
+        },
+        {
           "description": "Enables the get_user_profile command without any pre-configured scope.",
           "type": "string",
           "const": "allow-get-user-profile",
           "markdownDescription": "Enables the get_user_profile command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the get_vault_tags command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-get-vault-tags",
+          "markdownDescription": "Enables the get_vault_tags command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the get_vault_tasks command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-get-vault-tasks",
+          "markdownDescription": "Enables the get_vault_tasks command without any pre-configured scope."
         },
         {
           "description": "Enables the get_vault_tree command without any pre-configured scope.",
@@ -277,6 +295,12 @@
           "type": "string",
           "const": "allow-load-latest-doc-snapshot",
           "markdownDescription": "Enables the load_latest_doc_snapshot command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the open_external_path command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-open-external-path",
+          "markdownDescription": "Enables the open_external_path command without any pre-configured scope."
         },
         {
           "description": "Enables the parse_frontmatter command without any pre-configured scope.",
@@ -345,6 +369,12 @@
           "markdownDescription": "Enables the save_vault_asset command without any pre-configured scope."
         },
         {
+          "description": "Enables the search_vault command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-search-vault",
+          "markdownDescription": "Enables the search_vault command without any pre-configured scope."
+        },
+        {
           "description": "Enables the send_p2p_sync_step1 command without any pre-configured scope.",
           "type": "string",
           "const": "allow-send-p2p-sync-step1",
@@ -397,6 +427,12 @@
           "type": "string",
           "const": "allow-update-frontmatter",
           "markdownDescription": "Enables the update_frontmatter command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the update_task_status command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-update-task-status",
+          "markdownDescription": "Enables the update_task_status command without any pre-configured scope."
         },
         {
           "description": "Enables the upload_user_avatar command without any pre-configured scope.",
@@ -483,10 +519,28 @@
           "markdownDescription": "Denies the get_p2p_invitation_code command without any pre-configured scope."
         },
         {
+          "description": "Denies the get_suggest_index command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-get-suggest-index",
+          "markdownDescription": "Denies the get_suggest_index command without any pre-configured scope."
+        },
+        {
           "description": "Denies the get_user_profile command without any pre-configured scope.",
           "type": "string",
           "const": "deny-get-user-profile",
           "markdownDescription": "Denies the get_user_profile command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_vault_tags command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-get-vault-tags",
+          "markdownDescription": "Denies the get_vault_tags command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_vault_tasks command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-get-vault-tasks",
+          "markdownDescription": "Denies the get_vault_tasks command without any pre-configured scope."
         },
         {
           "description": "Denies the get_vault_tree command without any pre-configured scope.",
@@ -511,6 +565,12 @@
           "type": "string",
           "const": "deny-load-latest-doc-snapshot",
           "markdownDescription": "Denies the load_latest_doc_snapshot command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the open_external_path command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-open-external-path",
+          "markdownDescription": "Denies the open_external_path command without any pre-configured scope."
         },
         {
           "description": "Denies the parse_frontmatter command without any pre-configured scope.",
@@ -579,6 +639,12 @@
           "markdownDescription": "Denies the save_vault_asset command without any pre-configured scope."
         },
         {
+          "description": "Denies the search_vault command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-search-vault",
+          "markdownDescription": "Denies the search_vault command without any pre-configured scope."
+        },
+        {
           "description": "Denies the send_p2p_sync_step1 command without any pre-configured scope.",
           "type": "string",
           "const": "deny-send-p2p-sync-step1",
@@ -631,6 +697,12 @@
           "type": "string",
           "const": "deny-update-frontmatter",
           "markdownDescription": "Denies the update_frontmatter command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the update_task_status command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-update-task-status",
+          "markdownDescription": "Denies the update_task_status command without any pre-configured scope."
         },
         {
           "description": "Denies the upload_user_avatar command without any pre-configured scope.",

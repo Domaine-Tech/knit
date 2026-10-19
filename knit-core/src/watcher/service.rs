@@ -1,3 +1,4 @@
+use notify::event::ModifyKind;
 use notify::{Config, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -48,9 +49,11 @@ impl VaultWatcher {
         let guard_for_thread = guard.clone();
         let on_event_arc = Arc::new(on_event);
 
-        // Map de debounce en mémoire pour éviter les événements multiples sous 100ms
+        // Map de debounce en mémoire pour éviter les événements multiples sous 50ms sur le même fichier
         let debounce_map: Arc<Mutex<HashMap<PathBuf, Instant>>> =
             Arc::new(Mutex::new(HashMap::new()));
+        let last_tree_changed: Arc<Mutex<Instant>> =
+            Arc::new(Mutex::new(Instant::now() - Duration::from_secs(10)));
 
         let mut watcher = RecommendedWatcher::new(
             move |res: std::result::Result<Event, notify::Error>| {
@@ -60,6 +63,7 @@ impl VaultWatcher {
                         &root_for_filter,
                         &guard_for_thread,
                         &debounce_map,
+                        &last_tree_changed,
                         &tx,
                         &on_event_arc,
                     );
@@ -115,11 +119,24 @@ impl VaultWatcher {
         vault_root: &Path,
         guard: &WriteGuard,
         debounce_map: &Arc<Mutex<HashMap<PathBuf, Instant>>>,
+        last_tree_changed: &Arc<Mutex<Instant>>,
         tx: &UnboundedSender<VaultWatchEvent>,
         on_event: &Arc<F>,
     ) where
         F: Fn(VaultWatchEvent) + Send + Sync + 'static,
     {
+        let notify_tree_changed = || {
+            let mut last = last_tree_changed
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            if last.elapsed() >= Duration::from_millis(50) {
+                *last = Instant::now();
+                let ev = VaultWatchEvent::TreeChanged;
+                let _ = tx.send(ev.clone());
+                on_event(ev);
+            }
+        };
+
         for path in event.paths {
             if Self::should_ignore_path(&path, vault_root) {
                 continue;
@@ -130,24 +147,70 @@ impl VaultWatcher {
                 Err(_) => normalize_rel_path(&path),
             };
 
-            // Filtrage debounce : 100ms minimum entre deux événements sur le même chemin
-            {
-                let mut map = debounce_map.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
-                let now = Instant::now();
-                if let Some(&last_time) = map.get(&path) {
-                    if now.duration_since(last_time) < Duration::from_millis(100) {
-                        continue;
+            match event.kind {
+                EventKind::Create(_) => {
+                    // Création de fichier ou de dossier -> L'arborescence change
+                    notify_tree_changed();
+
+                    if path.is_file() && Self::is_relevant_extension(&path) {
+                        if let Ok(bytes) = fs::read(&path) {
+                            if guard.is_external_change(&path, &bytes) {
+                                let content = String::from_utf8_lossy(&bytes).to_string();
+                                guard.record_external_hash(&path, &bytes);
+
+                                let ev = VaultWatchEvent::FileChanged {
+                                    path: rel_path_str.clone(),
+                                    content,
+                                };
+                                let _ = tx.send(ev.clone());
+                                on_event(ev);
+                            }
+                        }
                     }
                 }
-                map.insert(path.clone(), now);
-            }
+                EventKind::Remove(_) => {
+                    // Suppression de fichier ou de dossier -> L'arborescence change
+                    notify_tree_changed();
 
-            match event.kind {
-                EventKind::Create(_) | EventKind::Modify(_) => {
-                    if path.is_dir() {
-                        let ev = VaultWatchEvent::TreeChanged;
+                    if Self::is_relevant_extension(&path) {
+                        let ev = VaultWatchEvent::FileDeleted {
+                            path: rel_path_str.clone(),
+                        };
                         let _ = tx.send(ev.clone());
                         on_event(ev);
+                    }
+                }
+                EventKind::Modify(ModifyKind::Name(_)) => {
+                    // Renommage ou déplacement externe (fichier ou dossier)
+                    notify_tree_changed();
+
+                    if path.exists() {
+                        if path.is_file() && Self::is_relevant_extension(&path) {
+                            if let Ok(bytes) = fs::read(&path) {
+                                if guard.is_external_change(&path, &bytes) {
+                                    let content = String::from_utf8_lossy(&bytes).to_string();
+                                    guard.record_external_hash(&path, &bytes);
+
+                                    let ev = VaultWatchEvent::FileChanged {
+                                        path: rel_path_str.clone(),
+                                        content,
+                                    };
+                                    let _ = tx.send(ev.clone());
+                                    on_event(ev);
+                                }
+                            }
+                        }
+                    } else if Self::is_relevant_extension(&path) {
+                        let ev = VaultWatchEvent::FileDeleted {
+                            path: rel_path_str.clone(),
+                        };
+                        let _ = tx.send(ev.clone());
+                        on_event(ev);
+                    }
+                }
+                EventKind::Modify(_) => {
+                    if path.is_dir() {
+                        notify_tree_changed();
                         continue;
                     }
 
@@ -155,12 +218,24 @@ impl VaultWatcher {
                         continue;
                     }
 
+                    // Debounce léger (50ms) pour éviter les écritures disque en rafale du même fichier
+                    {
+                        let mut map = debounce_map
+                            .lock()
+                            .unwrap_or_else(std::sync::PoisonError::into_inner);
+                        let now = Instant::now();
+                        if let Some(&last_time) = map.get(&path) {
+                            if now.duration_since(last_time) < Duration::from_millis(50) {
+                                continue;
+                            }
+                        }
+                        map.insert(path.clone(), now);
+                    }
+
                     // Lecture du contenu pour vérification WriteGuard (Triple Garde)
                     if let Ok(bytes) = fs::read(&path) {
                         if guard.is_external_change(&path, &bytes) {
-                            // C'est une vraie modification externe
                             let content = String::from_utf8_lossy(&bytes).to_string();
-                            // Enregistre le hash pour éviter toute redondance
                             guard.record_external_hash(&path, &bytes);
 
                             let ev = VaultWatchEvent::FileChanged {
@@ -172,18 +247,35 @@ impl VaultWatcher {
                         }
                     }
                 }
-                EventKind::Remove(_) => {
-                    let ev = if Self::is_relevant_extension(&path) {
-                        VaultWatchEvent::FileDeleted {
-                            path: rel_path_str,
+                _ => {
+                    if !path.exists() {
+                        notify_tree_changed();
+                        if Self::is_relevant_extension(&path) {
+                            let ev = VaultWatchEvent::FileDeleted {
+                                path: rel_path_str.clone(),
+                            };
+                            let _ = tx.send(ev.clone());
+                            on_event(ev);
                         }
-                    } else {
-                        VaultWatchEvent::TreeChanged
-                    };
-                    let _ = tx.send(ev.clone());
-                    on_event(ev);
+                    } else if path.is_dir() {
+                        notify_tree_changed();
+                    } else if Self::is_relevant_extension(&path) {
+                        notify_tree_changed();
+                        if let Ok(bytes) = fs::read(&path) {
+                            if guard.is_external_change(&path, &bytes) {
+                                let content = String::from_utf8_lossy(&bytes).to_string();
+                                guard.record_external_hash(&path, &bytes);
+
+                                let ev = VaultWatchEvent::FileChanged {
+                                    path: rel_path_str.clone(),
+                                    content,
+                                };
+                                let _ = tx.send(ev.clone());
+                                on_event(ev);
+                            }
+                        }
+                    }
                 }
-                _ => {}
             }
         }
     }

@@ -91,7 +91,7 @@ pub fn resolve_safe_path(vault_root: &Path, rel_path: &str) -> Result<PathBuf> {
 pub fn is_text_note_ext(ext: &str) -> bool {
     matches!(
         ext.to_ascii_lowercase().as_str(),
-        "md" | "markdown" | "txt"
+        "md" | "markdown" | "txt" | "canvas" | "html" | "htm"
     )
 }
 
@@ -108,10 +108,7 @@ pub fn is_vault_visible_file(name: &str, ext: Option<&str>) -> bool {
     if name.eq_ignore_ascii_case("KNIT.md") {
         return true;
     }
-    match ext {
-        Some(e) if is_text_note_ext(e) || is_media_ext(e) => true,
-        _ => false,
-    }
+    matches!(ext, Some(e) if is_text_note_ext(e) || is_media_ext(e))
 }
 
 /// Fichier pertinent pour le File Watcher (notes, médias, `.knitshare`).

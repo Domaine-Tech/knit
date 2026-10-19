@@ -112,6 +112,7 @@ pub async fn open_external_path(path_or_url: String) -> Result<(), String> {
         raw
     };
 
+    #[cfg(target_os = "windows")]
     let p = Path::new(clean);
 
     #[cfg(target_os = "windows")]
