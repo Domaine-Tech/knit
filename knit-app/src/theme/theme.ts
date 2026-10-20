@@ -60,10 +60,12 @@ export function getStoredHue(): number {
 export function applyTheme(mode: ThemeMode) {
   document.documentElement.setAttribute('data-theme', mode);
   localStorage.setItem(THEME_STORAGE_KEY, mode);
+  window.dispatchEvent(new CustomEvent('knit-theme-changed', { detail: { theme: mode } }));
 }
 
 export function applyHue(hue: number) {
   const clamped = Math.max(0, Math.min(360, Math.round(hue)));
   document.documentElement.style.setProperty('--knit-hue', clamped.toString());
   localStorage.setItem(HUE_STORAGE_KEY, clamped.toString());
+  window.dispatchEvent(new CustomEvent('knit-hue-changed', { detail: { hue: clamped } }));
 }
