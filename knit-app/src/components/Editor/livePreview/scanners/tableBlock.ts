@@ -15,13 +15,13 @@ export function tryScanTableBlock(
 ): BlockScanResult {
   const line = doc.line(lineNum);
   const lineText = line.text;
-  const isTableLine = /^\s*\|.*\|\s*$/.test(lineText.trim());
+  const isTableLine = /^\s*(?:>\s*)?\|.*\|\s*$/.test(lineText.trim());
   if (!isTableLine) {
     return { handled: false, nextLine: lineNum, lineDecorations: [], rangeDecorations: [] };
   }
 
   let tableEndLine = lineNum;
-  while (tableEndLine <= doc.lines && /^\s*\|.*\|\s*$/.test(doc.line(tableEndLine).text.trim())) {
+  while (tableEndLine <= doc.lines && /^\s*(?:>\s*)?\|.*\|\s*$/.test(doc.line(tableEndLine).text.trim())) {
     tableEndLine++;
   }
   tableEndLine--;
@@ -47,7 +47,7 @@ export function tryScanTableBlock(
     for (let l = lineNum; l <= tableEndLine; l++) {
       const rowLine = doc.line(l);
       const isTableDelimiter =
-        /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?\s*$/.test(rowLine.text.trim());
+        /^\s*(?:>\s*)?\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?\s*$/.test(rowLine.text.trim());
       if (isTableDelimiter) {
         lineDecorations.push({
           from: rowLine.from,

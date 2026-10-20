@@ -150,16 +150,18 @@ export function createTableNavKeymap() {
         const lineText = line.text;
 
         // Si la ligne courante est une ligne de tableau
-        if (lineText.trim().startsWith('|') && lineText.trim().endsWith('|')) {
+        const cleanLine = lineText.trim().replace(/^>\s*/, '');
+        if (cleanLine.startsWith('|') && cleanLine.endsWith('|')) {
           const colCount = splitTableRow(lineText).length;
           if (colCount > 0) {
-            let nextRow = '\n|';
+            const quotePrefix = lineText.match(/^\s*>\s*/)?.[0] ?? '';
+            let nextRow = `\n${quotePrefix}|`;
             for (let i = 0; i < colCount; i++) {
               nextRow += '  |';
             }
             view.dispatch({
               changes: { from: line.to, insert: nextRow },
-              selection: { anchor: line.to + 3 },
+              selection: { anchor: line.to + quotePrefix.length + 3 },
             });
             // Réalignement après insertion (ligne suivante = line.number + 1)
             realignTableContainingLine(view, line.number + 1);

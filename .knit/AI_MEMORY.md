@@ -24,6 +24,7 @@
 - **[2026-10-18]** : Sprint 6ter clôturé ; runtime **0.4.0** ; `docTypeRegistry`.
 - **[2026-10-18]** : Spécification Sprint 8 Packaging Multi-OS / CI/CD Tauri v2 / Auto-Updater / macOS natif ; Cargo.toml `[profile.release]` optimisé (LTO fat, strip, codegen-units 1).
 - **[2026-10-18]** : Résolution du Hover Preview Kanban & Table (`livePreview.css`, `HoverPreviewPortal`, `KanbanView`, `KanbanToolbar`, `TableView`, `tableCardWidget`) : défilement horizontal fluide direct et Shift+molette, protection du clic scrollbar contre la bascule source, suppression du `clearHoverPreview(true)` intempestif au montage, minWidth 680px + colonnes non écrasées pour TableView avec scrollbar dédiée 8px.
+- **[2026-10-20]** : Résolution du bug de découpage des tableaux contenant `<` ou `>` (ex: `(RTO < DPI 4 h)`) dans `splitTableRow` et `findTableDelimiterOffsets` (`markdownUtils.ts`) : remplacement du flag global `inHtml` par un regex strict de balise HTML, et support des tableaux dans les citations/callouts (`> | ... |`).
 
 ## 4. Tâches Actives
 - [x] Sprint 5 / 6 / 6bis / **6ter** clôturés (v0.4.0).

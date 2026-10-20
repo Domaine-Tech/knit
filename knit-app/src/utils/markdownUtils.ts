@@ -10,6 +10,9 @@ export type { ResolvedWikiLink };
  * - Rendu formaté immersif pour les tableaux et infobulles de prévisualisation (Live Preview)
  */
 
+const HTML_TAG_MATCH_RE =
+  /^(?:<\/?([a-zA-Z][a-zA-Z0-9]*)(?:\s+(?:[a-zA-Z0-9_:-]+(?:=(?:"[^"]*"|'[^']*'|[^\s"'=>]+))?))*\s*\/?>|<!--[\s\S]*?-->)/;
+
 /**
  * Découpe une ligne de tableau Markdown GFM en cellules distinctes,
  * en ignorant rigoureusement les barres verticales (|) situées à l'intérieur :
@@ -19,9 +22,13 @@ export type { ResolvedWikiLink };
  * - De paramètres d'URL entre parenthèses ((https://.../path?a=1|2))
  * - De balises HTML inline (<kbd>|</kbd>)
  * - De barres verticales échappées (\\|)
+ * Tout en préservant les comparaisons mathématiques (<, >) sans rompre le découpage des colonnes.
  */
 export function splitTableRow(line: string): string[] {
   let trimmed = line.trim();
+  if (trimmed.startsWith('>')) {
+    trimmed = trimmed.replace(/^>\s*/, '');
+  }
   if (trimmed.startsWith('|')) trimmed = trimmed.slice(1);
   if (trimmed.endsWith('|') && !trimmed.endsWith('\\|')) trimmed = trimmed.slice(0, -1);
 
@@ -31,7 +38,6 @@ export function splitTableRow(line: string): string[] {
   let inCode = false;
   let bracketDepth = 0;
   let parenDepth = 0;
-  let inHtml = false;
 
   for (let i = 0; i < trimmed.length; i++) {
     const char = trimmed[i];
@@ -81,16 +87,20 @@ export function splitTableRow(line: string): string[] {
         parenDepth--;
       }
 
-      // Balises HTML < ... >
+      // Balises HTML <tag ...> ou <!-- ... --> uniquement (évite que < ou > isolés désactivent le découpage)
       if (char === '<') {
-        inHtml = true;
-      } else if (char === '>') {
-        inHtml = false;
+        const rest = trimmed.slice(i);
+        const tagMatch = rest.match(HTML_TAG_MATCH_RE);
+        if (tagMatch) {
+          current += tagMatch[0];
+          i += tagMatch[0].length - 1;
+          continue;
+        }
       }
     }
 
     // Séparateur de cellule de tableau (|) uniquement si hors de tout bloc protégé
-    if (char === '|' && !inWiki && !inCode && bracketDepth === 0 && parenDepth === 0 && !inHtml) {
+    if (char === '|' && !inWiki && !inCode && bracketDepth === 0 && parenDepth === 0) {
       cells.push(current.trim());
       current = '';
     } else {
@@ -113,7 +123,6 @@ export function findTableDelimiterOffsets(lineText: string): number[] {
   let inCode = false;
   let bracketDepth = 0;
   let parenDepth = 0;
-  let inHtml = false;
 
   for (let i = 0; i < lineText.length; i++) {
     const char = lineText[i];
@@ -145,11 +154,18 @@ export function findTableDelimiterOffsets(lineText: string): number[] {
       if (char === '(') parenDepth++;
       else if (char === ')' && parenDepth > 0) parenDepth--;
 
-      if (char === '<') inHtml = true;
-      else if (char === '>') inHtml = false;
+      // Balises HTML <tag ...> ou <!-- ... --> uniquement
+      if (char === '<') {
+        const rest = lineText.slice(i);
+        const tagMatch = rest.match(HTML_TAG_MATCH_RE);
+        if (tagMatch) {
+          i += tagMatch[0].length - 1;
+          continue;
+        }
+      }
     }
 
-    if (char === '|' && !inWiki && !inCode && bracketDepth === 0 && parenDepth === 0 && !inHtml) {
+    if (char === '|' && !inWiki && !inCode && bracketDepth === 0 && parenDepth === 0) {
       offsets.push(i);
     }
   }

@@ -94,7 +94,7 @@ export class TableCardWidget extends WidgetType {
 
       const tbody = document.createElement('tbody');
       for (let i = 2; i < lines.length; i++) {
-        const rowLine = lines[i].trim();
+        const rowLine = lines[i].trim().replace(/^>\s*/, '');
         if (!rowLine.startsWith('|') || !rowLine.endsWith('|')) continue;
         const rowCells = splitTableRow(rowLine);
         const tr = document.createElement('tr');
