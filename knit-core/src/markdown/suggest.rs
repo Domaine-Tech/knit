@@ -1,12 +1,8 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::fs;
 use std::path::Path;
 
-use crate::error::{KnitError, Result};
+use crate::error::Result;
 use crate::markdown::frontmatter::parse_frontmatter;
-use crate::markdown::patterns::INLINE_TAG_RE;
-use crate::vault::walk::iter_vault_md_files;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct HeadingItem {
@@ -50,16 +46,8 @@ pub fn slugify_heading(heading: &str) -> String {
         .join("-")
 }
 
-/// Détecte le type de document d'après le frontmatter YAML
+/// Détecte le type de document (aligné sur `detectDocType` TS : FM `type:` puis chemin).
 pub fn detect_doc_type(content: &str, rel_path: &str) -> String {
-    let lower_path = rel_path.to_lowercase();
-    if lower_path.contains("kanban") {
-        return "kanban".to_string();
-    }
-    if lower_path.contains("tableau") || lower_path.contains("table") {
-        return "table".to_string();
-    }
-
     let fm = parse_frontmatter(content);
     if let Some(t) = fm.fields.get("type").map(|s| s.to_lowercase()) {
         if t.contains("kanban") || t.contains("board") {
@@ -80,17 +68,50 @@ pub fn detect_doc_type(content: &str, rel_path: &str) -> String {
         if t.contains("gallery") || t.contains("galerie") {
             return "gallery".to_string();
         }
+        if t.contains("note") {
+            return "note".to_string();
+        }
     }
 
-    // Heuristique de contenu : titres H2 avec cases à cocher -> kanban
-    let h2_count = content.lines().filter(|l| l.trim_start().starts_with("## ")).count();
-    let task_count = content.lines().filter(|l| {
-        let t = l.trim_start();
-        t.starts_with("- [ ]") || t.starts_with("- [x]") || t.starts_with("- [/]")
-    }).count();
+    // Plugins Obsidian legacy dans le YAML brut
+    if let Some(raw) = &fm.raw_frontmatter {
+        let lower = raw.to_lowercase();
+        if lower.contains("kanban: true") || lower.contains("kanban-plugin:") {
+            return "kanban".to_string();
+        }
+    }
 
-    if h2_count >= 2 && task_count >= 1 {
+    let lower_path = rel_path.to_lowercase();
+    if lower_path.contains("kanban") || lower_path.ends_with(".kanban.md") {
         return "kanban".to_string();
+    }
+    if lower_path.contains("tableau")
+        || lower_path.contains("table")
+        || lower_path.ends_with(".table.md")
+    {
+        return "table".to_string();
+    }
+    if lower_path.contains("calendar")
+        || lower_path.contains("agenda")
+        || lower_path.ends_with(".calendar.md")
+    {
+        return "calendar".to_string();
+    }
+    if lower_path.contains("canvas") || lower_path.ends_with(".canvas.md") {
+        return "canvas".to_string();
+    }
+    if lower_path.contains("slides")
+        || lower_path.contains("diaporama")
+        || lower_path.contains("slide")
+        || lower_path.ends_with(".slides.md")
+    {
+        return "slides".to_string();
+    }
+    if lower_path.contains("gallery")
+        || lower_path.contains("galerie")
+        || lower_path.ends_with(".gallery.md")
+    {
+        return "gallery".to_string();
     }
 
     "note".to_string()
@@ -144,93 +165,16 @@ pub fn extract_headings_from_content(rel_path: &str, content: &str) -> Vec<Headi
     items
 }
 
-/// Indexe l'ensemble du coffre pour l'autocomplétion ultra-rapide (< 2ms)
+/// Indexe l'ensemble du coffre pour l'autocomplétion (vue sur le scan unifié B-057).
 pub fn build_suggest_index(vault_root: &Path) -> Result<SuggestIndexData> {
-    if !vault_root.exists() || !vault_root.is_dir() {
-        return Err(KnitError::VaultNotFound(vault_root.display().to_string()));
-    }
-
-    let mut docs = Vec::new();
-    let mut all_headings = Vec::new();
-    let mut tag_counts: HashMap<String, usize> = HashMap::new();
-
-    for md in iter_vault_md_files(vault_root, false) {
-        let content = match fs::read_to_string(&md.path) {
-            Ok(c) => c,
-            Err(_) => continue,
-        };
-
-        let doc_type = detect_doc_type(&content, &md.rel_path);
-        let fm = parse_frontmatter(&content);
-
-        // Titre : frontmatter title / titre, ou 1er H1, ou nom de fichier
-        let mut title = fm.fields.get("title").or_else(|| fm.fields.get("titre")).cloned();
-        let headings = extract_headings_from_content(&md.rel_path, &content);
-
-        if title.is_none() {
-            for h in &headings {
-                if h.level == 1 {
-                    title = Some(h.text.clone());
-                    break;
-                }
-            }
-        }
-
-        let file_stem = Path::new(&md.rel_path)
-            .file_stem()
-            .map(|s| s.to_string_lossy().to_string())
-            .unwrap_or_else(|| md.rel_path.clone());
-
-        let final_title = title.unwrap_or(file_stem);
-
-        docs.push(SuggestDocItem {
-            rel_path: md.rel_path.clone(),
-            title: final_title,
-            doc_type,
-        });
-
-        all_headings.extend(headings);
-
-        // Tags dans frontmatter
-        if let Some(raw_tags) = fm.fields.get("tags") {
-            let clean = raw_tags.trim_start_matches('[').trim_end_matches(']');
-            for t in clean.split(',') {
-                let st = t.trim().trim_matches(['\'', '"', '#']);
-                if !st.is_empty() {
-                    *tag_counts.entry(st.to_string()).or_insert(0) += 1;
-                }
-            }
-        }
-
-        // Tags inline dans le body
-        for cap in INLINE_TAG_RE.captures_iter(&fm.body) {
-            if let Some(tag_match) = cap.get(1) {
-                let tag = tag_match.as_str().to_string();
-                *tag_counts.entry(tag).or_insert(0) += 1;
-            }
-        }
-    }
-
-    // Tri par ordre alphabétique
-    docs.sort_by(|a, b| a.rel_path.cmp(&b.rel_path));
-    all_headings.sort_by(|a, b| a.file_rel.cmp(&b.file_rel));
-
-    let mut tags: Vec<SuggestTagItem> = tag_counts
-        .into_iter()
-        .map(|(tag, count)| SuggestTagItem { tag, count })
-        .collect();
-    tags.sort_by(|a, b| b.count.cmp(&a.count).then_with(|| a.tag.cmp(&b.tag)));
-
-    Ok(SuggestIndexData {
-        docs,
-        headings: all_headings,
-        tags,
-    })
+    let index = crate::markdown::vault_index::get_cached_vault_index(vault_root)?;
+    Ok(index.suggest)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
     use tempfile::tempdir;
 
     #[test]

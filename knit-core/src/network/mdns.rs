@@ -16,6 +16,8 @@ pub struct DiscoveredLanPeer {
     pub addresses: Vec<String>,
     pub port: u16,
     pub invitation_code: Option<String>,
+    /// Code PIN LAN éphémère à 6 chiffres (B-017b), si annoncé.
+    pub pin_code: Option<String>,
     pub last_seen_sec: u64,
 }
 
@@ -52,6 +54,7 @@ impl MdnsService {
         vault_name: Option<&str>,
         port: u16,
         invitation_code: Option<&str>,
+        pin_code: Option<&str>,
     ) -> Result<()> {
         let host_name = format!("{}.local.", &self.my_peer_id[..8.min(self.my_peer_id.len())]);
         let instance_name = format!("{}-knit", &self.my_peer_id[..8.min(self.my_peer_id.len())]);
@@ -65,7 +68,10 @@ impl MdnsService {
         if let Some(inv) = invitation_code {
             properties.insert("invitation".to_string(), inv.to_string());
         }
-        properties.insert("version".to_string(), "0.2.0".to_string());
+        if let Some(pin) = pin_code {
+            properties.insert("pin".to_string(), pin.to_string());
+        }
+        properties.insert("version".to_string(), "0.4.0".to_string());
 
         let service_info = ServiceInfo::new(
             KNIT_MDNS_SERVICE_TYPE,
@@ -115,6 +121,7 @@ impl MdnsService {
                     let vault_name = info.get_property_val_str("vault_name").map(|s| s.to_string());
                     let invitation_code =
                         info.get_property_val_str("invitation").map(|s| s.to_string());
+                    let pin_code = info.get_property_val_str("pin").map(|s| s.to_string());
 
                     let addresses: Vec<String> = info
                         .get_addresses()
@@ -134,6 +141,7 @@ impl MdnsService {
                         addresses,
                         port: info.get_port(),
                         invitation_code,
+                        pin_code,
                         last_seen_sec: now,
                     };
 
@@ -180,6 +188,7 @@ mod tests {
             Some("Mon Vault"),
             11223,
             Some("knit://join/testticket"),
+            Some("123456"),
         );
         assert!(reg_result.is_ok(), "L'enregistrement mDNS doit réussir");
         assert!(service.unregister().is_ok());

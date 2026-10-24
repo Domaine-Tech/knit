@@ -6,10 +6,12 @@ pub mod watcher;
 
 pub use error::{KnitError, Result};
 pub use markdown::{
-    build_calendar_index, compute_relative_path, count_links_to_target, find_backlinks_in_vault,
-    get_frontmatter_field, parse_frontmatter, refactor_links_in_content, refactor_links_in_vault,
-    update_calendar_event_date, update_frontmatter_field, CalendarEvent, CalendarIndexData,
-    FrontmatterDoc, LinkRefactorReport,
+    build_and_cache_vault_index, build_calendar_index, build_vault_index,
+    compute_relative_path, count_links_to_target, find_backlinks_in_vault, get_cached_vault_index,
+    get_frontmatter_field, index_markdown_file, invalidate_vault_index_cache, parse_frontmatter,
+    refactor_links_in_content, refactor_links_in_vault, update_calendar_event_date,
+    update_frontmatter_field, CalendarEvent, CalendarIndexData, FrontmatterDoc, FrontmatterFileEntry,
+    IndexedInlineTask, IndexedMarkdownSlice, LinkRefactorReport, VaultIndexData,
 };
 pub use network::{
     compute_blake3_hash, create_invitation, handle_blob_request, store_verified_blob,
@@ -28,10 +30,15 @@ pub use vault::snapshot::{
     load_latest_snapshot, prune_old_snapshots, sign_snapshot_payload, verify_snapshot_signature,
     DocSnapshot, SnapshotAuthor, MAX_SNAPSHOTS_PER_DOC,
 };
+pub use vault::config::{
+    load_vault_config, save_vault_config, TrashMode, VaultLocalConfig,
+};
+pub use vault::init::{init_vault, prepare_join_vault, InitVaultOptions, InitVaultResult};
 pub use vault::tree::{
-    commit_trash_to_os, create_dir, create_file, delete_path, read_file_content, read_vault_tree,
-    recover_orphaned_trash, rename_file_and_refactor, resolve_safe_path, restore_trash_path,
-    trash_path, FileNode, TrashRecord, write_file_content, write_file_content_with_guard,
+    commit_trash_to_os, create_dir, create_file, delete_path, list_trash_records, purge_all_trash,
+    purge_trash_item, read_file_content, read_vault_tree, recover_orphaned_trash,
+    rename_file_and_refactor, resolve_safe_path, restore_trash_path, trash_path, FileNode,
+    TrashRecord, write_file_content, write_file_content_with_guard,
 };
 pub use watcher::guard::WriteGuard;
 pub use watcher::service::{VaultWatchEvent, VaultWatcher};

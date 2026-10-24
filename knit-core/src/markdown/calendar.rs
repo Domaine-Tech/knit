@@ -9,7 +9,6 @@ use std::sync::LazyLock;
 use crate::error::{KnitError, Result};
 use crate::markdown::frontmatter::parse_frontmatter;
 use crate::vault::tree::{resolve_safe_path, write_file_content_with_guard};
-use crate::vault::walk::iter_vault_md_files;
 use crate::watcher::guard::WriteGuard;
 
 /// `@2026-10-20`, `@2026-10-20 14:00`, `@2026-10-20 14:00-15:30`
@@ -134,154 +133,159 @@ fn push_event_from_match(
     });
 }
 
-/// Construit l'index calendrier du coffre (tâches inline + due/echeance frontmatter).
-pub fn build_calendar_index(vault_root: &Path) -> Result<CalendarIndexData> {
-    if !vault_root.exists() || !vault_root.is_dir() {
-        return Err(KnitError::VaultNotFound(vault_root.display().to_string()));
-    }
-
+/// Extrait les événements calendrier d'un seul fichier Markdown (FM due + mentions `@date`).
+pub fn extract_calendar_events_from_content(rel_path: &str, content: &str) -> Vec<CalendarEvent> {
     let mut events = Vec::new();
+    let fm = parse_frontmatter(content);
+    let file_name = Path::new(rel_path)
+        .file_name()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or_else(|| rel_path.to_string());
 
-    for md in iter_vault_md_files(vault_root, false) {
-        let content = match fs::read_to_string(&md.path) {
-            Ok(c) => c,
-            Err(_) => continue,
-        };
-
-        let fm = parse_frontmatter(&content);
-
-        let fm_statut = fm.fields.get("statut").or_else(|| fm.fields.get("status")).map(|s| s.to_lowercase());
-        let fm_completed = fm_statut.as_deref().map(|s| s == "termine" || s == "terminé" || s == "done").unwrap_or(false);
-        let fm_priority = fm.fields.get("priorite").or_else(|| fm.fields.get("priority")).map(|p| {
+    let fm_statut = fm
+        .fields
+        .get("statut")
+        .or_else(|| fm.fields.get("status"))
+        .map(|s| s.to_lowercase());
+    let fm_completed = fm_statut
+        .as_deref()
+        .map(|s| s == "termine" || s == "terminé" || s == "done")
+        .unwrap_or(false);
+    let fm_priority = fm
+        .fields
+        .get("priorite")
+        .or_else(|| fm.fields.get("priority"))
+        .map(|p| {
             let p_low = p.to_lowercase();
-            if p_low.contains("haute") || p_low.contains("urgent") || p_low == "p1" || p_low.contains("!p1") {
+            if p_low.contains("haute")
+                || p_low.contains("urgent")
+                || p_low == "p1"
+                || p_low.contains("!p1")
+            {
                 "p1".to_string()
             } else if p_low.contains("moyenne") || p_low == "p2" || p_low.contains("!p2") {
                 "p2".to_string()
-            } else if p_low.contains("basse") || p_low.contains("faible") || p_low == "p3" || p_low.contains("!p3") {
+            } else if p_low.contains("basse")
+                || p_low.contains("faible")
+                || p_low == "p3"
+                || p_low.contains("!p3")
+            {
                 "p3".to_string()
             } else {
                 p.to_string()
             }
         });
 
-        // Frontmatter due: / echeance:
-        for key in ["due", "echeance", "échéance"] {
-            if let Some(raw) = fm.fields.get(key) {
-                let raw = raw.trim().trim_matches('"').trim_matches('\'');
-                if let Some(caps) = DATE_MENTION_RE.captures(&format!("@{raw}")) {
-                    let titre = fm
-                        .fields
-                        .get("titre")
-                        .cloned()
-                        .or_else(|| fm.fields.get("title").cloned())
-                        .unwrap_or_else(|| {
-                            Path::new(&md.file_name)
-                                .file_stem()
-                                .map(|s| s.to_string_lossy().to_string())
-                                .unwrap_or_else(|| "Échéance".to_string())
-                        });
-                    let assignee = fm.fields.get("assigne").cloned();
-                    let date = caps
-                        .get(1)
-                        .map(|m| m.as_str().to_string())
-                        .unwrap_or_default();
-                    events.push(CalendarEvent {
-                        id: format!("{}:fm:{}", md.rel_path, key),
-                        title: titre,
-                        date,
-                        start_time: caps.get(2).map(|m| m.as_str().to_string()),
-                        end_time: caps.get(3).map(|m| m.as_str().to_string()),
-                        assignee,
-                        rel_path: md.rel_path.clone(),
-                        line: 0,
-                        source_span: format!("{key}: {raw}"),
-                        kind: "due".to_string(),
-                        completed: fm_completed,
-                        priority: fm_priority.clone(),
+    for key in ["due", "echeance", "échéance"] {
+        if let Some(raw) = fm.fields.get(key) {
+            let raw = raw.trim().trim_matches('"').trim_matches('\'');
+            if let Some(caps) = DATE_MENTION_RE.captures(&format!("@{raw}")) {
+                let titre = fm
+                    .fields
+                    .get("titre")
+                    .cloned()
+                    .or_else(|| fm.fields.get("title").cloned())
+                    .unwrap_or_else(|| {
+                        Path::new(&file_name)
+                            .file_stem()
+                            .map(|s| s.to_string_lossy().to_string())
+                            .unwrap_or_else(|| "Échéance".to_string())
                     });
-                } else if Regex::new(r"^\d{4}-\d{2}-\d{2}")
-                    .ok()
-                    .and_then(|re| re.find(raw))
-                    .is_some()
-                {
-                    let date = raw.chars().take(10).collect::<String>();
-                    let titre = fm
-                        .fields
-                        .get("titre")
-                        .cloned()
-                        .or_else(|| fm.fields.get("title").cloned())
-                        .unwrap_or_else(|| "Échéance".to_string());
-                    events.push(CalendarEvent {
-                        id: format!("{}:fm:{}", md.rel_path, key),
-                        title: titre,
-                        date,
-                        start_time: None,
-                        end_time: None,
-                        assignee: fm.fields.get("assigne").cloned(),
-                        rel_path: md.rel_path.clone(),
-                        line: 0,
-                        source_span: format!("{key}: {raw}"),
-                        kind: "due".to_string(),
-                        completed: fm_completed,
-                        priority: fm_priority.clone(),
-                    });
-                }
-            }
-        }
-
-        let mut in_code = false;
-        for (idx, line) in content.lines().enumerate() {
-            let trimmed = line.trim_start();
-            if trimmed.starts_with("```") {
-                in_code = !in_code;
-                continue;
-            }
-            if in_code {
-                continue;
-            }
-
-            for caps in DATE_MENTION_RE.captures_iter(line) {
-                let is_task = trimmed.starts_with("- [");
-                let kind = if is_task {
-                    "task"
-                } else {
-                    "inline"
-                };
-                let completed = trimmed.starts_with("- [x]") || trimmed.starts_with("- [X]");
-                let priority = if line.contains("!p1") {
-                    Some("p1".to_string())
-                } else if line.contains("!p2") {
-                    Some("p2".to_string())
-                } else if line.contains("!p3") {
-                    Some("p3".to_string())
-                } else {
-                    None
-                };
-
-                push_event_from_match(
-                    &mut events,
-                    &md.rel_path,
-                    idx + 1,
-                    line,
-                    &caps,
-                    kind,
-                    None,
-                    completed,
-                    priority,
-                );
+                let assignee = fm.fields.get("assigne").cloned();
+                let date = caps
+                    .get(1)
+                    .map(|m| m.as_str().to_string())
+                    .unwrap_or_default();
+                events.push(CalendarEvent {
+                    id: format!("{rel_path}:fm:{key}"),
+                    title: titre,
+                    date,
+                    start_time: caps.get(2).map(|m| m.as_str().to_string()),
+                    end_time: caps.get(3).map(|m| m.as_str().to_string()),
+                    assignee,
+                    rel_path: rel_path.to_string(),
+                    line: 0,
+                    source_span: format!("{key}: {raw}"),
+                    kind: "due".to_string(),
+                    completed: fm_completed,
+                    priority: fm_priority.clone(),
+                });
+            } else if raw.len() >= 10
+                && raw.as_bytes().get(4) == Some(&b'-')
+                && raw.as_bytes().get(7) == Some(&b'-')
+                && raw[..4].bytes().all(|b| b.is_ascii_digit())
+            {
+                let date = raw[..10].to_string();
+                let titre = fm
+                    .fields
+                    .get("titre")
+                    .cloned()
+                    .or_else(|| fm.fields.get("title").cloned())
+                    .unwrap_or_else(|| "Échéance".to_string());
+                events.push(CalendarEvent {
+                    id: format!("{rel_path}:fm:{key}"),
+                    title: titre,
+                    date,
+                    start_time: None,
+                    end_time: None,
+                    assignee: fm.fields.get("assigne").cloned(),
+                    rel_path: rel_path.to_string(),
+                    line: 0,
+                    source_span: format!("{key}: {raw}"),
+                    kind: "due".to_string(),
+                    completed: fm_completed,
+                    priority: fm_priority.clone(),
+                });
             }
         }
     }
 
-    events.sort_by(|a, b| {
-        a.date
-            .cmp(&b.date)
-            .then(a.start_time.cmp(&b.start_time))
-            .then(a.rel_path.cmp(&b.rel_path))
-    });
+    let mut in_code = false;
+    for (idx, line) in content.lines().enumerate() {
+        let trimmed = line.trim_start();
+        if trimmed.starts_with("```") {
+            in_code = !in_code;
+            continue;
+        }
+        if in_code {
+            continue;
+        }
 
-    Ok(CalendarIndexData { events })
+        for caps in DATE_MENTION_RE.captures_iter(line) {
+            let is_task = trimmed.starts_with("- [");
+            let kind = if is_task { "task" } else { "inline" };
+            let completed = trimmed.starts_with("- [x]") || trimmed.starts_with("- [X]");
+            let priority = if line.contains("!p1") {
+                Some("p1".to_string())
+            } else if line.contains("!p2") {
+                Some("p2".to_string())
+            } else if line.contains("!p3") {
+                Some("p3".to_string())
+            } else {
+                None
+            };
+
+            push_event_from_match(
+                &mut events,
+                rel_path,
+                idx + 1,
+                line,
+                &caps,
+                kind,
+                None,
+                completed,
+                priority,
+            );
+        }
+    }
+
+    events
+}
+
+/// Construit l'index calendrier du coffre (délègue au scan unifié B-057).
+pub fn build_calendar_index(vault_root: &Path) -> Result<CalendarIndexData> {
+    let index = crate::markdown::vault_index::get_cached_vault_index(vault_root)?;
+    Ok(index.calendar)
 }
 
 /// Réécrit la date (et optionnellement l'heure) d'un événement dans le fichier source.

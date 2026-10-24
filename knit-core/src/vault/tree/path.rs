@@ -16,7 +16,7 @@ pub struct FileNode {
     pub children: Vec<FileNode>,
 }
 
-pub(crate) fn file_mtime_ms(path: &Path) -> Option<u64> {
+pub fn file_mtime_ms(path: &Path) -> Option<u64> {
     path.metadata().ok().and_then(|meta| {
         meta.modified().ok().and_then(|modified| {
             modified
@@ -87,11 +87,12 @@ pub fn resolve_safe_path(vault_root: &Path, rel_path: &str) -> Result<PathBuf> {
     }
 }
 
-/// Extensions de notes / textes visibles dans l'arborescence.
+/// Extensions de notes / textes / configs visibles dans l'arborescence.
 pub fn is_text_note_ext(ext: &str) -> bool {
     matches!(
         ext.to_ascii_lowercase().as_str(),
         "md" | "markdown" | "txt" | "canvas" | "html" | "htm"
+            | "yaml" | "yml" | "toml" | "json" | "mdc"
     )
 }
 
@@ -103,24 +104,25 @@ pub fn is_media_ext(ext: &str) -> bool {
     )
 }
 
-/// Fichier affiché dans le tree (notes Markdown + médias coffre).
+/// Fichier affiché dans le tree (notes Markdown + médias + meta coffre point).
 pub fn is_vault_visible_file(name: &str, ext: Option<&str>) -> bool {
+    // Config / kit agents (`.knitshare`, `.cursorrules`, `.gitignore`…)
+    // Masquage par défaut = UI (`vaultTreeVisibility`), pas le scan FS.
+    if name.starts_with('.') {
+        return true;
+    }
     if name.eq_ignore_ascii_case("KNIT.md") {
         return true;
     }
     matches!(ext, Some(e) if is_text_note_ext(e) || is_media_ext(e))
 }
 
-/// Fichier pertinent pour le File Watcher (notes, médias, `.knitshare`).
+/// Fichier pertinent pour le File Watcher (notes, médias, meta coffre point).
 pub fn is_watcher_relevant_file(path: &Path) -> bool {
     let name = path
         .file_name()
         .and_then(|n| n.to_str())
         .unwrap_or("");
-    if name == ".knitshare" || name == ".knitshare.example" || name.eq_ignore_ascii_case("KNIT.md")
-    {
-        return true;
-    }
     let ext = path.extension().and_then(|e| e.to_str());
     is_vault_visible_file(name, ext)
 }

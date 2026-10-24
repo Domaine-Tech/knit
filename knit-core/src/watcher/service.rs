@@ -10,7 +10,7 @@ use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 
 use crate::error::{KnitError, Result};
 use crate::vault::tree::{is_watcher_relevant_file, normalize_rel_path};
-use crate::vault::walk::is_ignored_dir_name;
+use crate::vault::walk::is_watcher_ignored_name;
 use crate::watcher::guard::WriteGuard;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -102,7 +102,8 @@ impl VaultWatcher {
             if s == ".knitshare" || s == ".knitshare.example" {
                 continue;
             }
-            if s.starts_with(".tmp") || is_ignored_dir_name(&s) {
+            // Ignore `.knit` / `.git` / build ; les autres dots rafraîchissent l'arbre
+            if s.starts_with(".tmp") || is_watcher_ignored_name(&s) {
                 return true;
             }
         }

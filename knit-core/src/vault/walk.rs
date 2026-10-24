@@ -3,15 +3,32 @@ use walkdir::{DirEntry, WalkDir};
 
 use crate::vault::tree::normalize_rel_path;
 
-/// Dossiers exclus du parcours coffre (caches, build, données locales).
-pub fn is_ignored_dir_name(name: &str) -> bool {
-    name.starts_with('.')
-        || name == "target"
-        || name == "node_modules"
-        || name == "dist"
+/// Artefacts de build : **jamais** dans l'arbre (même avec toggle œil).
+///
+/// Aligné avec `ALWAYS_EXCLUDED_VAULT_NAMES` dans
+/// `knit-app/src/utils/vaultTreeVisibility.ts`.
+pub fn is_always_excluded_name(name: &str) -> bool {
+    matches!(name, "node_modules" | "target" | "dist")
 }
 
-/// Filtre WalkDir : descend dans le coffre en ignorant les dossiers exclus.
+/// Données locales / VCS : listées dans l'arbre (masquées UI par défaut),
+/// mais **ignorées** par le File Watcher (évite boucles CRDT / bruit).
+pub fn is_watcher_ignored_name(name: &str) -> bool {
+    is_always_excluded_name(name) || matches!(name, ".knit" | ".git")
+}
+
+/// Dotfile / dossier point (présent dans l'arbre ; masqué UI par défaut).
+pub fn is_dot_entry_name(name: &str) -> bool {
+    name.starts_with('.')
+}
+
+/// Dossiers exclus du parcours d'**index** Markdown (pas des notes utilisateur).
+/// Build + tous les dossiers point (`.knit`, `.cursor`, `.agents`…).
+pub fn is_ignored_dir_name(name: &str) -> bool {
+    is_always_excluded_name(name) || is_dot_entry_name(name)
+}
+
+/// Filtre WalkDir d'index : descend en ignorant exclusion absolue + dots.
 pub fn should_descend(entry: &DirEntry) -> bool {
     if entry.depth() == 0 {
         return true;

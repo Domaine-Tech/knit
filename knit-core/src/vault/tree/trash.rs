@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::error::{KnitError, Result};
@@ -10,6 +10,16 @@ use super::fs_ops::copy_dir_all;
 use super::path::resolve_safe_path;
 
 static TRASH_SEQ: AtomicU64 = AtomicU64::new(1);
+
+/// Racine de la corbeille locale : `.knit/trash/`.
+pub fn trash_dir(vault_root: &Path) -> PathBuf {
+    vault_root.join(".knit").join("trash")
+}
+
+/// Conteneur d'un élément : `.knit/trash/<trash_id>/`.
+pub fn trash_container_path(vault_root: &Path, trash_id: &str) -> PathBuf {
+    trash_dir(vault_root).join(trash_id)
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct TrashRecord {
@@ -61,7 +71,7 @@ fn trash_path_inner(
     let seq = TRASH_SEQ.fetch_add(1, Ordering::Relaxed);
     let trash_id = format!("{}-{}", now, seq);
 
-    let trash_container = vault_root.join(".knit").join("trash").join(&trash_id);
+    let trash_container = trash_container_path(vault_root, &trash_id);
     fs::create_dir_all(&trash_container)?;
 
     let staged_item = trash_container.join(&item_name);
@@ -123,7 +133,7 @@ fn restore_trash_path_inner(
     trash_id: &str,
     guard: Option<&WriteGuard>,
 ) -> Result<String> {
-    let trash_container = vault_root.join(".knit").join("trash").join(trash_id);
+    let trash_container = trash_container_path(vault_root, trash_id);
     if !trash_container.exists() {
         return Err(KnitError::Custom(format!(
             "Élément introuvable dans la corbeille : {}",
@@ -192,7 +202,7 @@ fn restore_trash_path_inner(
 /// `trash::delete`, garantissant ainsi qu'une restauration native depuis la Corbeille de l'OS
 /// (Windows Recycle Bin, Corbeille macOS / Linux) réintègre le fichier à son chemin d'origine exact.
 pub fn commit_trash_to_os(vault_root: &Path, trash_id: &str) -> Result<()> {
-    let trash_container = vault_root.join(".knit").join("trash").join(trash_id);
+    let trash_container = trash_container_path(vault_root, trash_id);
     if !trash_container.exists() {
         return Ok(());
     }
@@ -256,12 +266,86 @@ pub fn commit_trash_to_os(vault_root: &Path, trash_id: &str) -> Result<()> {
     Ok(())
 }
 
+/// Aperçu texte d'un fichier (non dossier) encore présent dans la corbeille.
+pub fn read_trash_preview(vault_root: &Path, trash_id: &str) -> Result<Option<String>> {
+    let records = list_trash_records(vault_root)?;
+    let Some(record) = records.into_iter().find(|r| r.trash_id == trash_id) else {
+        return Ok(None);
+    };
+    if record.is_dir {
+        return Ok(None);
+    }
+    let staged = trash_container_path(vault_root, trash_id).join(&record.item_name);
+    match fs::read_to_string(&staged) {
+        Ok(content) => Ok(Some(content)),
+        Err(_) => Ok(None),
+    }
+}
+
+/// Liste les éléments présents dans `.knit/trash/` (meta.json).
+pub fn list_trash_records(vault_root: &Path) -> Result<Vec<TrashRecord>> {
+    let mut records = Vec::new();
+    let trash_dir = trash_dir(vault_root);
+    if !trash_dir.exists() || !trash_dir.is_dir() {
+        return Ok(records);
+    }
+    let entries = match fs::read_dir(&trash_dir) {
+        Ok(rd) => rd,
+        Err(_) => return Ok(records),
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if !path.is_dir() {
+            continue;
+        }
+        let meta_path = path.join("meta.json");
+        if !meta_path.exists() {
+            continue;
+        }
+        if let Ok(meta_content) = fs::read_to_string(&meta_path) {
+            if let Ok(record) = serde_json::from_str::<TrashRecord>(&meta_content) {
+                records.push(record);
+            }
+        }
+    }
+    records.sort_by(|a, b| b.deleted_at.cmp(&a.deleted_at));
+    Ok(records)
+}
+
+/// Supprime définitivement un élément de `.knit/trash/` (sans restauration OS).
+pub fn purge_trash_item(vault_root: &Path, trash_id: &str) -> Result<()> {
+    let trash_container = trash_container_path(vault_root, trash_id);
+    if trash_container.exists() {
+        fs::remove_dir_all(&trash_container).map_err(KnitError::from)?;
+    }
+    Ok(())
+}
+
+/// Vide entièrement `.knit/trash/`.
+pub fn purge_all_trash(vault_root: &Path) -> Result<usize> {
+    let trash_dir = trash_dir(vault_root);
+    if !trash_dir.exists() {
+        return Ok(0);
+    }
+    let mut count = 0usize;
+    if let Ok(entries) = fs::read_dir(&trash_dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                let _ = fs::remove_dir_all(&path);
+                count += 1;
+            }
+        }
+    }
+    Ok(count)
+}
+
 /// Analyse le dossier `.knit/trash/` pour récupérer d'éventuels éléments orphelins
 /// (par exemple suite à une restauration manuelle depuis la corbeille de l'OS ayant replacé
 /// le fichier dans `.knit/trash/`, ou une coupure de l'application pendant le délai d'annulation).
 pub fn recover_orphaned_trash(vault_root: &Path) -> Result<Vec<String>> {
     let mut recovered = Vec::new();
-    let trash_dir = vault_root.join(".knit").join("trash");
+    let trash_dir = trash_dir(vault_root);
     if !trash_dir.exists() || !trash_dir.is_dir() {
         return Ok(recovered);
     }

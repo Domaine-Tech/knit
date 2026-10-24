@@ -3,7 +3,7 @@ use std::path::Path;
 
 use crate::error::{KnitError, Result};
 
-use crate::vault::walk::is_ignored_dir_name;
+use crate::vault::walk::is_always_excluded_name;
 use crate::watcher::guard::WriteGuard;
 
 use super::path::{
@@ -33,7 +33,10 @@ fn read_dir_recursive(vault_root: &Path, current_dir: &Path) -> Result<Vec<FileN
         let path = entry.path();
         let name = entry.file_name().to_string_lossy().to_string();
 
-        if is_ignored_dir_name(&name) {
+        // Tree : seuls `.knit` / build / VCS exclus.
+        // Les autres dots (`.knitshare`, `.cursor`…) restent listés ;
+        // le masquage UI est centralisé côté frontend (`vaultTreeVisibility`).
+        if is_always_excluded_name(&name) {
             continue;
         }
 
