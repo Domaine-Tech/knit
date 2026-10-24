@@ -17,16 +17,15 @@
 - **ADR-07** : Alignement versions (6 sources) à chaque commit/push/sprint.
 - **ADR-08** : Zéro-Émoji UI. **ADR-09 (B-056)** : Debug global unique Header.
 - **ADR-10 (B-059)** : HTML whitelist LP + sanitizer.
-- **ADR-11 (Sprint 7)** : `init_vault` + Wizard ; `.knitshare` ; config `.knit/config.yaml` (trash_mode, lan_only).
-- **ADR-12** : Join = connexion P2P + coquille locale ; miroir arbre = B-114. QR PIN ISO (`uqr`).
+- **ADR-11 (Sprint 7)** : `init_vault` + Wizard ; `.knitshare` ; config `.knit/config.yaml`.
+- **ADR-12** : Join = coquille locale ; miroir arbre = B-114. QR PIN ISO (`uqr`).
+- **ADR-13 (Sprint 8)** : Packaging Tauri multi-OS, CI release, updater Minisign, tray, LRU 20, arbre virtualisé.
 
 ## 3. Historique Récent
-- **[2026-10-24]** : Audit S7 Prompts 1/9/12 : Wizard découpé (Home/Create/Join), `RecentVaultList` + `PinQrBlock`, snapshots via `crdtManager`, guards TrashMode/Theme, trash helpers Rust, retrait `resolve_p2p_pin`.
-- **[2026-10-24]** : Bascule coffre : purge localContents + frontmatterIndex.clear + config ; `.knit` visible (toggle œil).
-- **[2026-10-24]** : Docs S7 + B-115/B-116 VaultSwitcher ; agenda démo skip IPC ; clôture Prompt 10 ; runtime **0.4.0**.
-- **[2026-10-24]** : Wizard Vite + registre `knit-vault-registry` ; visibilité arbre Rust/UI.
-
+- **[2026-10-24]** : Sprint 8 livré — NSIS Windows OK, CI/CD, updater, tray, LRU, virtualisation. Runtime **1.0.0**.
+- **[2026-10-24]** : Sprint 7 clôturé ; B-114 hors périmètre (Sprint 8+).
 
 ## 4. Tâches Actives
-- [x] Sprint 5 / 6 / 6bis / 6ter / **7** clôturés.
-- [ ] **Sprint 8** : packaging, CI, updater, tray, LRU, virtualisation ; **B-114** réplication join.
+- [x] Sprint 5 / 6 / 6bis / 6ter / **7** / **8** clôturés — **v1.0.0**.
+- [ ] **B-114** : réplication initiale du coffre au join (Sprint 8+).
+- [ ] Première release GitHub tag `v1.0.0` + secrets `TAURI_SIGNING_*`.

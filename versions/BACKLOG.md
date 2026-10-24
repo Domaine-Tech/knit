@@ -194,18 +194,18 @@
 
 | # | Tâche | Priorité | Statut | Sprint |
 |---|---|---|---|---|
-| B-037 | Installateur Windows (`.exe` NSIS moderne & `.msi` signés via Tauri v2) | 🔴 | 📋 | Sprint 8 |
-| B-038 | Installateur Linux (`.AppImage` universel & paquet `.deb` Debian/Ubuntu) | 🔴 | 📋 | Sprint 8 |
-| B-038a | Bundle macOS natif (`.dmg` interactif & `.app` Universal Binary Apple Silicon + Intel) | 🔴 | 📋 | Sprint 8 |
-| B-038b | Pipeline CI/CD GitHub Actions multi-OS (Matrix `windows-latest`, `macos-latest`, `ubuntu-22.04`, `tauri-action`, rust-cache & publication release automatique) | 🔴 | 📋 | Sprint 8 |
-| B-038c | Système de Mise à Jour Automatique In-App (Tauri v2 Updater, signature cryptographique Minisign, manifeste `latest.json` & dialogue UI de mise à jour 1-clic) | 🔴 | 📋 | Sprint 8 |
-| B-038d | Optimisation des binaires & profils de release (Cargo `[profile.release]` LTO fat, `strip = true`, `codegen-units = 1`, `panic = "abort"`, bundle Vite optimisé) | 🟠 | 📋 | Sprint 8 |
-| B-039 | Notifications système (nouveau pair connecté, sync terminée, mise à jour disponible) | 🟡 | 📋 | Sprint 8 |
-| B-040 | Tray icon avec menu contextuel et indicateur d'état réseau | 🟡 | 📋 | Sprint 8 |
-| B-041 | Tests end-to-end automatisés (Tauri + 2 pairs virtuels en simultané) | 🟠 | 📋 | Sprint 8 |
-| B-041a | Virtualisation de l'arborescence (Windowing Sidebar pour 50 000+ notes sans lag) | 🟠 | 📋 | Sprint 8 |
-| B-050 | Cache LRU des Documents CRDT & Libération Mémoire (LRU Doc Cache max 20 Y.Docs) | 🟠 | 📋 | Sprint 8 |
-| B-042 | README final + screenshots + documentation utilisateur | 🟠 | 📋 | Sprint 8 |
+| B-037 | Installateur Windows (`.exe` NSIS moderne & `.msi` signés via Tauri v2) | 🔴 | ✅ | Sprint 8 |
+| B-038 | Installateur Linux (`.AppImage` universel & paquet `.deb` Debian/Ubuntu) | 🔴 | ✅ | Sprint 8 |
+| B-038a | Bundle macOS natif (`.dmg` interactif & `.app` Universal Binary Apple Silicon + Intel) | 🔴 | ✅ | Sprint 8 |
+| B-038b | Pipeline CI/CD GitHub Actions multi-OS (Matrix `windows-latest`, `macos-latest`, `ubuntu-22.04`, `tauri-action`, rust-cache & publication release automatique) | 🔴 | ✅ | Sprint 8 |
+| B-038c | Système de Mise à Jour Automatique In-App (Tauri v2 Updater, signature cryptographique Minisign, manifeste `latest.json` & dialogue UI de mise à jour 1-clic) | 🔴 | ✅ | Sprint 8 |
+| B-038d | Optimisation des binaires & profils de release (Cargo `[profile.release]` LTO fat, `strip = true`, `codegen-units = 1`, `panic = "abort"`, bundle Vite optimisé) | 🟠 | ✅ | Sprint 8 |
+| B-039 | Notifications système (nouveau pair connecté, sync terminée, mise à jour disponible) | 🟡 | ✅ | Sprint 8 |
+| B-040 | Tray icon avec menu contextuel et indicateur d'état réseau | 🟡 | ✅ | Sprint 8 |
+| B-041 | Tests end-to-end automatisés (Tauri + 2 pairs virtuels en simultané) | 🟠 | ✅ | Sprint 8 |
+| B-041a | Virtualisation de l'arborescence (Windowing Sidebar pour 50 000+ notes sans lag) | 🟠 | ✅ | Sprint 8 |
+| B-050 | Cache LRU des Documents CRDT & Libération Mémoire (LRU Doc Cache max 20 Y.Docs) | 🟠 | ✅ | Sprint 8 |
+| B-042 | README final + screenshots + documentation utilisateur | 🟠 | ✅ | Sprint 8 |
 | B-114 | Réplication initiale du coffre au join (bootstrap arbre Markdown + snapshots via P2P après `prepare_join_vault`) | 🔴 | 💡 | Sprint 8+ |
 | B-115 | Visibilité arbre : build exclus ; `.knit`/dots listés (masqués UI, toggle œil) ; purge index/localContents à la bascule coffre | 🟡 | ✅ | UX post-S7 |
 | B-116 | Registre local des coffres + VaultSwitcher (`Ctrl+Shift+O`) ; Wizard si dossier sans `.knitshare` (Vite + Tauri) | 🟠 | ✅ | UX post-S7 |

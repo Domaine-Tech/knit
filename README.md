@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Domaine-Tech/knit/releases"><img src="https://img.shields.io/badge/version-v0.4.0-8B5CF6?style=flat-square" alt="Version" /></a>
+  <a href="https://github.com/Domaine-Tech/knit/releases"><img src="https://img.shields.io/badge/version-v1.0.0-8B5CF6?style=flat-square" alt="Version" /></a>
   <a href="https://tauri.app/"><img src="https://img.shields.io/badge/Tauri-v2.12-24C8D5?style=flat-square&logo=tauri&logoColor=white" alt="Tauri v2" /></a>
   <a href="https://www.rust-lang.org/"><img src="https://img.shields.io/badge/Rust-2021-DEA584?style=flat-square&logo=rust&logoColor=white" alt="Rust 2021" /></a>
   <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React 19" /></a>
@@ -156,6 +156,26 @@ knit/
 - [Node.js](https://nodejs.org/) (v18+)
 - [Rust & Cargo](https://rustup.rs/) (v1.75+)
 
+### Installation (binaires de release)
+
+Téléchargez la dernière release sur [GitHub Releases](https://github.com/Domaine-Tech/knit/releases) :
+
+| OS | Artefact |
+|---|---|
+| **Windows** | `Knit_x.y.z_x64-setup.exe` (NSIS) ou `.msi` (déploiement silencieux) |
+| **Linux** | `.AppImage` portable ou paquet `.deb` (Debian / Ubuntu) |
+| **macOS** | `.dmg` (glisser vers Applications) — binaire universel Apple Silicon + Intel |
+
+Les mises à jour in-app (Tauri Updater, signature Minisign) lisent `latest.json` sur la même page Releases. Voir [docs/UPDATER_SIGNING.md](docs/UPDATER_SIGNING.md).
+
+Captures de référence :
+
+<p align="center">
+  <img src="docs/assets/screenshots/editor.png" width="720" alt="Éditeur Knit" />
+  <br />
+  <img src="docs/assets/screenshots/settings.png" width="720" alt="Paramètres Knit" />
+</p>
+
 ### Lancement en Développement
 ```bash
 # Cloner le dépôt
@@ -194,7 +214,7 @@ Le projet suit scrupuleusement la méthodologie SemVer et les sprints documenté
 - [x] **v0.2.0 — Réseau P2P & Résilience** : Transport Iroh QUIC, mDNS local, invitations P2P et synchronisation des assets ([Changelog v0.2.0](versions/v0.2.0/CHANGELOG.md)).
 - [x] **v0.3.0 — Vues Projets, Autocomplétion & Mermaid** : Doc-Driven Views (Kanban/Table), autocomplétion omni-trigger (`B-052`), smart UX (`B-053`), tâches étendues (`B-054`), mode Zen (`B-055`) ([Changelog v0.3.0](versions/v0.3.0/CHANGELOG.md)).
 - [x] **v0.4.0 — Requêtes Dataview & Vues Immersives** : Sprints **6bis et 6ter livrés** (`knit-toc` / `knit-files` / `knit-query` / `knit-tasks`, `queryFiles`, B-047, Agenda B-031a, Canvas B-031b, Diaporama B-031c, Galerie B-031d, Graphe local B-049, HTML sécurisé B-059) ([Changelog v0.4.0](versions/v0.4.0/CHANGELOG.md)).
-- [ ] **v1.0.0 — Production Release** : Wizard finalisé, installateurs multiplateformes, présence collaborative avancée ([Changelog v1.0.0](versions/v1.0.0/CHANGELOG.md)).
+- [x] **v1.0.0 — Production Release** : Wizard, packaging multi-OS, CI/CD, auto-updater, tray, LRU CRDT, arbre virtualisé ([Changelog v1.0.0](versions/v1.0.0/CHANGELOG.md)).
 
 Consultez le **[Backlog Global](versions/BACKLOG.md)** pour le détail de l'ensemble des User Stories.
 

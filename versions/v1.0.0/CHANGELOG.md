@@ -1,9 +1,29 @@
 # Changelog — v1.0.0
 
 > Version 1.0.0 — Première Version Majeure & Déploiement Production.
-> Statut : 🚀 En cours (Sprint 7 livré — runtime applicatif toujours **0.4.0** ; bump SemVer + packaging = Sprint 8)
+> Statut : ✅ Livré (Sprint 7 + Sprint 8) — runtime **1.0.0**
 
 ---
+
+## Sprint 8 — Livré (packaging & polish)
+
+- **Packaging multi-OS** :
+  - Cibles Tauri : NSIS, MSI, deb, AppImage, app, DMG.
+  - Build Windows NSIS vérifié localement ; Linux / macOS via CI release.
+  - Template `.desktop` Linux + associations MIME Markdown.
+- **CI/CD** :
+  - `.github/workflows/ci.yml` (lint, build, `cargo test`, garde-fous).
+  - `.github/workflows/release.yml` (matrix 3 OS, `tauri-action`, `latest.json`).
+- **Auto-updater** :
+  - `tauri-plugin-updater` + Minisign ; UI Paramètres + modale d'installation.
+  - Doc signature : `docs/UPDATER_SIGNING.md`.
+- **Tray & notifications OS** :
+  - Menu Ouvrir / Paramètres / Quitter ; tooltip réseau.
+  - Notifications native pair connecté / première sync.
+- **Performances** :
+  - Chunks Vite (mermaid, yjs, CodeMirror, react).
+  - LRU CRDT 20 docs ; arbre sidebar virtualisé (50k nœuds gardés en test).
+- **Docs** : README installation multi-OS ; dossier `docs/assets/screenshots/`.
 
 ## Sprint 7 — Livré
 
@@ -23,7 +43,7 @@
 - **Volet Historique & Time Travel** :
   - Timeline des snapshots Yjs, diff bicolore (`fast-diff`), restauration 1 clic (clic molette).
 - **Panneau de préférences unifié** :
-  - Thème clair/sombre/auto, teinte HSL, état des pairs, mode corbeille OS vs Knit.
+  - Thème clair/sombre/auto, teinte HSL, état des pairs, mode corbeille OS vs Knit, recherches de mises à jour.
 - **Corbeille intégrée** :
   - Volet sidebar : liste `.knit/trash/`, prévisualisation, restauration (clic molette), vidage.
 - **Kit Universel pour IA Agentiques (B-043)** :
@@ -42,18 +62,6 @@
 
 ---
 
-## Sprint 8 — Planifié (packaging)
-
-- **Cache LRU & Performances Mémoire (B-050 & B-041a)** :
-  - Gestionnaire de pool LRU bornant à 20 le nombre de documents CRDT en RAM.
-  - Virtualisation de l'arborescence (Windowing).
-- **Intégration OS native & packaging** :
-  - Installateurs Windows (`.msi`, `.exe`), Linux (`.AppImage`, `.deb`), macOS.
-  - Tray icon, notifications système, auto-updater Tauri v2.
-- Suite de tests e2e 2 pairs ; optimisation mémoire au repos.
-
----
-
 ## Corrections
 
 - Stabilisation globale de l'OpLog et gestion robuste des réveils après veille système (cible release).
@@ -64,10 +72,11 @@
 ## Technique
 
 - `init_vault` / `VaultLocalConfig` dans `knit-core` + IPC Tauri.
-- Alignement runtime : les 6 sources restent en **0.4.0** jusqu'au bump Sprint 8.
+- Alignement runtime : **1.0.0** sur les 6 sources de vérité.
+- Hors v1.0.0 : **B-114** réplication join (Sprint 8+).
 
 ---
 
 ## Breaking Changes
 
-- Stabilisation de l'API de vault et du protocole de synchronisation v1 (à la livraison Sprint 8).
+- Stabilisation de l'API de vault et du protocole de synchronisation v1.
