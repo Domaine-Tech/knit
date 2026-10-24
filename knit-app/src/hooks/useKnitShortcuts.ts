@@ -28,6 +28,13 @@ export function useKnitShortcuts({
         return;
       }
 
+      // Sélecteur de coffres (Ctrl+Shift+O) — style Obsidian
+      if (isMod && e.shiftKey && e.key.toLowerCase() === 'o') {
+        e.preventDefault();
+        window.dispatchEvent(new CustomEvent('knit-open-vault-switcher'));
+        return;
+      }
+
       // Command Palette (Ctrl+P)
       if (isMod && !e.shiftKey && e.key.toLowerCase() === 'p') {
         e.preventDefault();

@@ -38,7 +38,7 @@ export const GalleryView: React.FC<GalleryViewProps> = ({
     () => parseGalleryItems(content, path, vaultStore.listIndexedFiles('', 'title', 50)),
     [content, path]
   );
-  const fm = useMemo(() => parseSimpleFrontmatter(content), [content]);
+  const fm = useMemo(() => parseSimpleFrontmatter(content).fields, [content]);
   const title = fm.title || fm.titre || fileStem(path) || 'Galerie';
 
   const uniqueTags = useMemo(() => {

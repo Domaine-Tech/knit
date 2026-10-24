@@ -1,52 +1,42 @@
 /**
- * Index Frontmatter local en mémoire (B-031e).
- * Alimenté au chargement du coffre et invalidé sur write / reload.
+ * Index coffre unifié en mémoire (B-031e + B-057).
+ * Hydraté par un seul scan Rust (`get_vault_index`) ou une passe locale (démo Vite).
+ * `queryFiles()` reste synchrone sur la Map Frontmatter.
  */
 
+import { invoke } from '@tauri-apps/api/core';
 import type {
   FrontmatterIndexEntry,
   IndexedInlineTask,
+  IndexedMarkdownSlice,
   QueryFilter,
   QueryResult,
+  SuggestIndexData,
+  VaultIndexData,
   VaultOps,
+  CalendarIndexData,
 } from '../types';
-import { detectDocType, findFileMtimeMs, getFlatFiles, normalizeTaskStatus } from '../utils';
+import {
+  findFileMtimeMs,
+  getFlatFiles,
+  isTauriEnvironment,
+  normalizeTaskStatus,
+  buildLocalVaultIndex,
+  indexMarkdownContentLocal,
+  normalizeIndexedMarkdownSlice,
+  normalizeVaultIndexData,
+} from '../utils';
 import { runQuery, listFolderEntries } from '../utils/queryEngine';
+import { isDemoVaultPath } from './vaultRegistry';
 
 const TASK_LINE_RE = /^(\s*[-*]\s*)\[([ xX/\-?>!])\](\s+)(.*)$/;
 
-function parseFieldMtime(fields: Record<string, string>): number | undefined {
-  for (const key of ['updated', 'mtime', 'modified', 'date']) {
-    const raw = fields[key];
-    if (!raw) continue;
-    const parsed = Date.parse(raw);
-    if (!Number.isNaN(parsed)) return parsed;
-  }
-  return undefined;
-}
-
-/**
- * Résout un mtime : FS (arbre) > champs FM > entrée précédente > maintenant.
- */
-function resolveEntryMtime(
-  ops: VaultOps,
-  path: string,
-  fields: Record<string, string>,
-  previous?: FrontmatterIndexEntry
-): number {
-  const fromTree = findFileMtimeMs(ops.files, path);
-  if (typeof fromTree === 'number' && Number.isFinite(fromTree)) return fromTree;
-
-  const fromFields = parseFieldMtime(fields);
-  if (typeof fromFields === 'number') return fromFields;
-
-  if (previous && Number.isFinite(previous.mtime)) return previous.mtime;
-
-  return Date.now();
-}
-
 class FrontmatterIndex {
   private entries = new Map<string, FrontmatterIndexEntry>();
+  private tasks: IndexedInlineTask[] = [];
+  private suggest: SuggestIndexData = { docs: [], headings: [], tags: [] };
+  private calendar: CalendarIndexData = { events: [] };
+  private generation = 0;
   private building = false;
   private dirty = true;
   private version = 0;
@@ -68,6 +58,10 @@ class FrontmatterIndex {
     return this.version;
   }
 
+  public getGeneration(): number {
+    return this.generation;
+  }
+
   public markDirty(): void {
     this.dirty = true;
   }
@@ -78,6 +72,14 @@ class FrontmatterIndex {
 
   public get(path: string): FrontmatterIndexEntry | undefined {
     return this.entries.get(path.replace(/\\/g, '/'));
+  }
+
+  public getSuggestData(): SuggestIndexData {
+    return this.suggest;
+  }
+
+  public getCalendarData(): CalendarIndexData {
+    return this.calendar;
   }
 
   public queryFiles(filter: QueryFilter): QueryResult {
@@ -92,53 +94,142 @@ class FrontmatterIndex {
     return listFolderEntries(this.entries.values(), folder, sort, limit);
   }
 
+  /** Remise à zéro lors d'un changement de coffre (évite fuites d'index). */
+  public clear(): void {
+    this.entries = new Map();
+    this.tasks = [];
+    this.suggest = { docs: [], headings: [], tags: [] };
+    this.calendar = { events: [] };
+    this.generation = 0;
+    this.building = false;
+    this.dirty = true;
+    this.notify();
+  }
+
+  public hydrate(data: VaultIndexData): void {
+    const next = new Map<string, FrontmatterIndexEntry>();
+    for (const entry of data.files) {
+      next.set(entry.path.replace(/\\/g, '/'), entry);
+    }
+    this.entries = next;
+    this.tasks = data.tasks;
+    this.suggest = data.suggest;
+    this.calendar = data.calendar;
+    this.generation = data.generation;
+    this.dirty = false;
+    this.notify();
+  }
+
+  private applySlice(slice: IndexedMarkdownSlice): void {
+    const key = slice.file.path.replace(/\\/g, '/');
+    this.entries.set(key, slice.file);
+    this.tasks = [...this.tasks.filter((t) => t.path !== key), ...slice.tasks];
+    this.calendar = {
+      events: [
+        ...this.calendar.events.filter((e) => e.relPath !== key),
+        ...slice.calendarEvents,
+      ],
+    };
+
+    const docs = [
+      ...this.suggest.docs.filter((d) => d.rel_path !== key),
+      {
+        rel_path: key,
+        title: slice.file.title,
+        doc_type: slice.file.docType,
+      },
+    ].sort((a, b) => a.rel_path.localeCompare(b.rel_path));
+
+    const headings = [
+      ...this.suggest.headings.filter((h) => h.file_rel !== key),
+      ...slice.headings,
+    ].sort((a, b) => a.file_rel.localeCompare(b.file_rel));
+
+    // Recalcul tags simplifié : retire les anciennes occurrences du fichier via rebuild suggest tags
+    // depuis les fileTags du slice + conservation des autres fichiers (approx. via docs).
+    const tagCounts: Record<string, number> = {};
+    for (const t of this.suggest.tags) {
+      tagCounts[t.tag] = t.count;
+    }
+    // Approximation : on ne décrémente pas précisément ; un rebuild complet corrige.
+    for (const tag of slice.fileTags) {
+      tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+    }
+    const tags = Object.entries(tagCounts)
+      .map(([tag, count]) => ({ tag, count }))
+      .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
+
+    this.suggest = { docs, headings, tags };
+    this.notify();
+  }
+
   public remove(path: string): void {
     const key = path.replace(/\\/g, '/');
-    if (this.entries.delete(key)) {
-      this.notify();
+    let changed = false;
+    if (this.entries.delete(key)) changed = true;
+    const nextTasks = this.tasks.filter((t) => t.path !== key);
+    if (nextTasks.length !== this.tasks.length) {
+      this.tasks = nextTasks;
+      changed = true;
     }
+    const nextEvents = this.calendar.events.filter((e) => e.relPath !== key);
+    if (nextEvents.length !== this.calendar.events.length) {
+      this.calendar = { events: nextEvents };
+      changed = true;
+    }
+    const docs = this.suggest.docs.filter((d) => d.rel_path !== key);
+    const headings = this.suggest.headings.filter((h) => h.file_rel !== key);
+    if (docs.length !== this.suggest.docs.length || headings.length !== this.suggest.headings.length) {
+      this.suggest = { ...this.suggest, docs, headings };
+      changed = true;
+    }
+    if (changed) this.notify();
   }
 
   public async upsert(ops: VaultOps, relPath: string): Promise<void> {
     const key = relPath.replace(/\\/g, '/');
-    if (!key.endsWith('.md') && !key.endsWith('KNIT.md')) {
+    if (!key.endsWith('.md') && !key.endsWith('KNIT.md') && !key.toLowerCase().endsWith('.markdown')) {
       this.remove(key);
       return;
     }
 
     try {
       const content = await ops.readFile(key);
-      const fm = await ops.parseFrontmatter(content);
-      const name = key.split('/').pop() || key;
-      const title =
-        fm.fields.titre ||
-        fm.fields.title ||
-        name.replace(/\.md$/i, '');
-      const fields = { ...fm.fields };
-      const docType = detectDocType(
-        fm.fields.type ? `---\ntype: ${fm.fields.type}\n---\n` : content,
-        key
-      );
-      // Upsert (write / reload) : FS > champ FM > maintenant (écriture fraîche).
       const mtime =
-        findFileMtimeMs(ops.files, key) ?? parseFieldMtime(fields) ?? Date.now();
+        findFileMtimeMs(ops.files, key) ?? Date.now();
 
-      this.entries.set(key, {
-        path: key,
-        name,
-        title,
-        docType,
-        mtime,
-        fields,
-      });
-      this.notify();
+      // Coffre démo = contenus mémoire ; IPC Rust inutile (chemin fictif)
+      if (isTauriEnvironment() && ops.currentVaultPath && !isDemoVaultPath(ops.currentVaultPath)) {
+        try {
+          await invoke<number>('invalidate_vault_index');
+          const raw = await invoke<{
+            file: FrontmatterIndexEntry & { doc_type?: string; docType?: string };
+            headings: SuggestIndexData['headings'];
+            fileTags?: string[];
+            file_tags?: string[];
+            tasks: IndexedInlineTask[];
+            calendarEvents?: CalendarIndexData['events'];
+            calendar_events?: CalendarIndexData['events'];
+          }>('index_markdown_content', {
+            relPath: key,
+            content,
+            mtime,
+          });
+          this.applySlice(normalizeIndexedMarkdownSlice(raw));
+          return;
+        } catch (err: unknown) {
+          console.debug('Fallback local pour index_markdown_content :', err);
+        }
+      }
+
+      this.applySlice(indexMarkdownContentLocal(key, content, mtime));
     } catch {
       this.remove(key);
     }
   }
 
   /**
-   * Reconstruction complète (non bloquante pour l'UI : lots asynchrones).
+   * Reconstruction complète via scan unique Rust (ou passe locale démo).
    */
   public async rebuild(ops: VaultOps): Promise<void> {
     if (this.building) {
@@ -149,8 +240,27 @@ class FrontmatterIndex {
     this.dirty = false;
 
     try {
+      if (
+        isTauriEnvironment() &&
+        ops.currentVaultPath &&
+        !isDemoVaultPath(ops.currentVaultPath)
+      ) {
+        try {
+          await invoke<number>('invalidate_vault_index');
+          const raw = await invoke<VaultIndexData>('get_vault_index', {
+            vaultPath: ops.currentVaultPath,
+          });
+          this.hydrate(normalizeVaultIndexData(raw));
+          return;
+        } catch (err: unknown) {
+          console.debug('Fallback local pour get_vault_index :', err);
+        }
+      }
+
+      // Démo Vite / fallback : une seule passe sur les contenus connus.
       const paths = getFlatFiles(ops.files);
-      const next = new Map<string, FrontmatterIndexEntry>();
+      const contents: Record<string, string> = {};
+      const mtimes: Record<string, number> = {};
       const BATCH = 24;
 
       for (let i = 0; i < paths.length; i += BATCH) {
@@ -158,37 +268,29 @@ class FrontmatterIndex {
         await Promise.all(
           batch.map(async (path) => {
             try {
-              const content = await ops.readFile(path);
-              const fm = await ops.parseFrontmatter(content);
-              const name = path.split('/').pop() || path;
-              const title =
-                fm.fields.titre ||
-                fm.fields.title ||
-                name.replace(/\.md$/i, '');
-              const fields = { ...fm.fields };
-              const previous = this.entries.get(path);
-              next.set(path, {
-                path,
-                name,
-                title,
-                docType: detectDocType(
-                  fm.fields.type ? `---\ntype: ${fm.fields.type}\n---\n` : content,
-                  path
-                ),
-                mtime: resolveEntryMtime(ops, path, fields, previous),
-                fields,
-              });
+              const content =
+                ops.localContents[path] !== undefined
+                  ? ops.localContents[path]
+                  : await ops.readFile(path);
+              contents[path] = content;
+              const mt = findFileMtimeMs(ops.files, path);
+              if (typeof mt === 'number') mtimes[path] = mt;
             } catch {
-              // Fichier inaccessible : ignorer
+              // ignorer
             }
           })
         );
-        // Yield to event loop between batches
         await new Promise((r) => setTimeout(r, 0));
       }
 
-      this.entries = next;
-      this.notify();
+      // Compléter avec localContents hors arbre (démo)
+      for (const [path, content] of Object.entries(ops.localContents)) {
+        if (!(path in contents) && path.endsWith('.md')) {
+          contents[path] = content;
+        }
+      }
+
+      this.hydrate(buildLocalVaultIndex(contents, mtimes, this.generation + 1));
     } finally {
       this.building = false;
       if (this.dirty) {
@@ -198,57 +300,37 @@ class FrontmatterIndex {
   }
 
   /**
-   * Collecte les cases à cocher Markdown `- [ ]` dans un sous-ensemble de chemins.
+   * Filtre les tâches inline déjà indexées (zéro relecture disque).
    */
   public async collectInlineTasks(
-    ops: VaultOps,
+    _ops: VaultOps,
     fromFolder?: string,
     statusFilter?: string
   ): Promise<IndexedInlineTask[]> {
     const prefix = (fromFolder || '').replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
-    const paths = getFlatFiles(ops.files).filter((p) => {
-      if (!prefix) return true;
-      return p === prefix || p.startsWith(`${prefix}/`);
+    const filtered = this.tasks.filter((task) => {
+      if (prefix && task.path !== prefix && !task.path.startsWith(`${prefix}/`)) {
+        return false;
+      }
+      if (!statusFilter || statusFilter === 'all') return true;
+      const status = normalizeTaskStatus(task.status);
+      if (statusFilter === 'todo' && status !== ' ') return false;
+      if (statusFilter === 'done' && status !== 'x') return false;
+      if (
+        statusFilter !== 'todo' &&
+        statusFilter !== 'done' &&
+        status !== statusFilter
+      ) {
+        return false;
+      }
+      return true;
     });
-
-    const tasks: IndexedInlineTask[] = [];
-    const BATCH = 16;
-
-    for (let i = 0; i < paths.length; i += BATCH) {
-      const batch = paths.slice(i, i + BATCH);
-      await Promise.all(
-        batch.map(async (path) => {
-          try {
-            const content = await ops.readFile(path);
-            const lines = content.split(/\r?\n/);
-            lines.forEach((rawLine, lineIndex) => {
-              const m = rawLine.match(TASK_LINE_RE);
-              if (!m) return;
-              const status = normalizeTaskStatus(m[2]);
-              if (statusFilter && statusFilter !== 'all') {
-                if (statusFilter === 'todo' && status !== ' ') return;
-                if (statusFilter === 'done' && status !== 'x') return;
-                if (statusFilter !== 'todo' && statusFilter !== 'done' && status !== statusFilter) {
-                  return;
-                }
-              }
-              tasks.push({
-                path,
-                lineIndex,
-                status,
-                text: m[4],
-                rawLine,
-              });
-            });
-          } catch {
-            // ignore
-          }
-        })
-      );
-      await new Promise((r) => setTimeout(r, 0));
-    }
-
-    return tasks;
+    // Ordre déterministe : évite qu'un upsert replace ne place le fichier en bas
+    return filtered.sort((a, b) => {
+      const byPath = a.path.localeCompare(b.path, 'fr', { sensitivity: 'base' });
+      if (byPath !== 0) return byPath;
+      return a.lineIndex - b.lineIndex;
+    });
   }
 
   /**

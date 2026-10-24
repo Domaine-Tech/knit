@@ -12,14 +12,12 @@ import {
   normalizeRelPath,
   normalizeSuggestIndexData,
   normalizeTaskCard,
-  slugify,
   copyTextWithToast,
   type RawSuggestDocItem,
   type RawTaskCard,
 } from '../utils';
 import type {
   HeadingItem,
-  SuggestDocItem,
   SuggestIndexData,
   FrontmatterDoc,
   SearchSnippet,
@@ -370,10 +368,18 @@ export function isPinned(ops: VaultOps, relPath: string): boolean {
   }
 
 export async function getSuggestIndex(ops: VaultOps): Promise<SuggestIndexData> {
+    // B-057 : projection mémoire de l'index unifié (hydraté par frontmatterIndex.rebuild).
+    const { frontmatterIndex } = await import('./frontmatterIndex');
+    const cached = frontmatterIndex.getSuggestData();
+    if (cached.docs.length > 0 || frontmatterIndex.getVersion() > 0) {
+      return cached;
+    }
+
     if (!ops.currentVaultPath) return { docs: [], headings: [], tags: [] };
 
     if (isTauriEnvironment()) {
       try {
+        // Vue cache process sur get_vault_index — pas de second scan disque.
         const raw = await invoke<{
           docs: RawSuggestDocItem[];
           headings: HeadingItem[];
@@ -387,52 +393,8 @@ export async function getSuggestIndex(ops: VaultOps): Promise<SuggestIndexData> 
       }
     }
 
-    const docs: SuggestDocItem[] = [];
-    const headings: HeadingItem[] = [];
-    const tagCounts: Record<string, number> = {};
-
-    for (const [p, c] of Object.entries(ops.localContents)) {
-      if (!p.endsWith('.md')) continue;
-      const title = fileStem(p) || p;
-      const doc_type = detectDocType(c, p);
-      docs.push({ rel_path: p, title, doc_type });
-
-      for (const line of c.split('\n')) {
-        const trimmed = line.trim();
-        if (trimmed.startsWith('# ')) {
-          headings.push({
-            file_rel: p,
-            level: 1,
-            text: trimmed.slice(2).trim(),
-            slug: slugify(trimmed.slice(2).trim()),
-          });
-        } else if (trimmed.startsWith('## ')) {
-          headings.push({
-            file_rel: p,
-            level: 2,
-            text: trimmed.slice(3).trim(),
-            slug: slugify(trimmed.slice(3).trim()),
-          });
-        } else if (trimmed.startsWith('### ')) {
-          headings.push({
-            file_rel: p,
-            level: 3,
-            text: trimmed.slice(4).trim(),
-            slug: slugify(trimmed.slice(4).trim()),
-          });
-        }
-        const tagMatches = line.matchAll(/(?:^|\s)#([a-zA-Z0-9_/-]+)/g);
-        for (const m of tagMatches) {
-          tagCounts[m[1]] = (tagCounts[m[1]] || 0) + 1;
-        }
-      }
-    }
-
-    return {
-      docs,
-      headings,
-      tags: Object.entries(tagCounts).map(([tag, count]) => ({ tag, count })),
-    };
+    await frontmatterIndex.rebuild(ops);
+    return frontmatterIndex.getSuggestData();
   }
 
 export async function convertDocumentType(

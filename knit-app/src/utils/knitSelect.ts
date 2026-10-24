@@ -188,7 +188,13 @@ export function createKnitSelectDom(opts: KnitSelectDomOptions): HTMLElement {
 
   trigger.addEventListener('mousedown', (e) => {
     preventMiddleCompass(e);
-    stop(e);
+    // Dans un widget CM replace : empêcher la sélection d'entrer dans le fence
+    if (opts.stopEditorEvents) {
+      e.preventDefault();
+      e.stopPropagation();
+    } else {
+      stop(e);
+    }
   });
   trigger.addEventListener('click', (e) => {
     e.preventDefault();

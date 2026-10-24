@@ -220,10 +220,49 @@ export function buildCommandList(opts: CommandRegistryOptions): CommandItem[] {
     },
     {
       id: 'cmd-open-vault',
-      title: 'Ouvrir un coffre-fort local...',
+      title: 'Ouvrir un dossier coffre…',
       category: 'Coffre-fort',
       icon: 'folder-open',
-      action: () => vaultStore.pickAndOpenVault(),
+      action: () => {
+        void vaultStore.pickAndOpenVaultSmart();
+      },
+    },
+    {
+      id: 'cmd-switch-vault',
+      title: 'Changer de coffre-fort…',
+      category: 'Coffre-fort',
+      icon: 'vault',
+      shortcut: 'Ctrl+Shift+O',
+      action: () => {
+        window.dispatchEvent(new CustomEvent('knit-open-vault-switcher'));
+      },
+    },
+    {
+      id: 'cmd-close-vault',
+      title: 'Fermer le coffre actuel (Wizard)',
+      category: 'Coffre-fort',
+      icon: 'x',
+      action: () => {
+        void vaultStore.openWizard();
+      },
+    },
+    {
+      id: 'cmd-new-vault-wizard',
+      title: 'Créer ou rejoindre un coffre…',
+      category: 'Coffre-fort',
+      icon: 'plus',
+      action: () => {
+        void vaultStore.openWizard();
+      },
+    },
+    {
+      id: 'cmd-demo-vault',
+      title: 'Ouvrir le coffre démo',
+      category: 'Coffre-fort',
+      icon: 'knit',
+      action: () => {
+        void vaultStore.openDemoVault();
+      },
     },
   ];
 }

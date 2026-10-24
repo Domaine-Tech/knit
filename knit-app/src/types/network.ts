@@ -2,6 +2,9 @@
  * Types relatifs au réseau P2P, identités des collaborateurs et profils utilisateur
  */
 
+/** PIN LAN factice en mode Vite (démo) — source unique pour Wizard / networkStore. */
+export const DEMO_LAN_PIN = '482915';
+
 export interface PeerIdentity {
   peer_id: string;
   display_name: string;
@@ -63,5 +66,7 @@ export interface DiscoveredLanPeer {
   addresses: string[];
   port: number;
   invitation_code?: string;
+  /** PIN LAN éphémère à 6 chiffres (B-017b). */
+  pin_code?: string;
   last_seen_sec: number;
 }

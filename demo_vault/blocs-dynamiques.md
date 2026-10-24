@@ -74,7 +74,13 @@ limit: 12
 
 ## Agregateur de taches transversales
 
-Cases a cocher `- [ ]` du dossier `projet` (et sous-dossiers). Cocher ici met a jour le fichier source via CRDT / ecriture disque.
+Cases `- [ ]` agregees depuis plusieurs fichiers. Cocher ici met a jour le fichier source.
+
+**Comportement :**
+- Ordre fixe : fichiers A→Z, puis numero de ligne (un fichier ne saute pas apres une coche).
+- `status: all` — toutes les taches restent visibles ; cocher change juste la case.
+- `status: todo` — seules les taches a faire ; cocher **retire** la ligne de cette liste (normal).
+- `group_by: file` — un groupe par fichier ; si toutes les taches d'un fichier sortent du filtre, le groupe disparait.
 
 ```knit-tasks
 from: "projet"
@@ -82,7 +88,7 @@ status: all
 group_by: file
 ```
 
-Taches encore a faire dans tout le coffre :
+Taches encore a faire dans tout le coffre (`status: todo` — cocher = disparait de la liste) :
 
 ```knit-tasks
 from: ""

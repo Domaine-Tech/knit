@@ -5,13 +5,14 @@ import { toast } from './toastStore';
 import { isTauriEnvironment, uint8ArrayToBase64, base64ToUint8Array } from '../utils';
 import { COLLABORATIVE_PALETTE } from '../theme/theme';
 
-import type {
-  PeerIdentity,
-  AvatarInfo,
-  UserProfile,
-  PeerProfileSummary,
-  ConnectedPeerInfo,
-  DiscoveredLanPeer,
+import {
+  DEMO_LAN_PIN,
+  type PeerIdentity,
+  type AvatarInfo,
+  type UserProfile,
+  type PeerProfileSummary,
+  type ConnectedPeerInfo,
+  type DiscoveredLanPeer,
 } from '../types';
 
 type NetworkListener = () => void;
@@ -23,6 +24,7 @@ class NetworkStore {
   public isNetworkActive: boolean = false;
   public localIdentity: PeerIdentity | null = null;
   public invitationCode: string | null = null;
+  public pinCode: string | null = null;
   public connectedPeers: ConnectedPeerInfo[] = [];
   public discoveredLanPeers: DiscoveredLanPeer[] = [];
   public activeFileByPeer: Map<string, string> = new Map();
@@ -80,6 +82,7 @@ class NetworkStore {
         initials: savedName.slice(0, 2).toUpperCase(),
       };
       this.invitationCode = 'knit://join/demo_sample_ticket_web';
+      this.pinCode = DEMO_LAN_PIN;
       this.notify();
       return;
     }
@@ -102,6 +105,12 @@ class NetworkStore {
         this.invitationCode = code;
       } catch (err: unknown) {
         console.warn('Impossible de récupérer le code invitation:', err);
+      }
+
+      try {
+        this.pinCode = (await invoke<string | null>('get_p2p_pin_code')) ?? null;
+      } catch (err: unknown) {
+        console.warn('Impossible de récupérer le PIN LAN:', err);
       }
 
       // Écouter les événements réseau P2P
@@ -267,7 +276,32 @@ class NetworkStore {
     this.discoveredLanPeers = [];
     this.activeFileByPeer.clear();
     this.invitationCode = null;
+    this.pinCode = null;
     this.notify();
+  }
+
+  /**
+   * Régénère le PIN LAN (republication mDNS côté Rust) et met à jour le store.
+   */
+  public async refreshPinCode(): Promise<string | null> {
+    if (!isTauriEnvironment()) {
+      const demo = String(100000 + Math.floor(Math.random() * 900000));
+      this.pinCode = demo;
+      this.notify();
+      return demo;
+    }
+    if (!this.isNetworkActive) {
+      throw new Error('Réseau P2P inactif');
+    }
+    try {
+      const pin = await invoke<string>('refresh_p2p_pin_code');
+      this.pinCode = pin;
+      this.notify();
+      return pin;
+    } catch (err: unknown) {
+      toast.error(`Impossible de rafraîchir le PIN : ${err}`);
+      throw err;
+    }
   }
 
   /**
@@ -292,7 +326,10 @@ class NetworkStore {
     }
 
     try {
-      const peer = await invoke<ConnectedPeerInfo>('connect_p2p_peer', { invitationCode });
+      const trimmed = invitationCode.trim();
+      const peer = /^\d{6}$/.test(trimmed)
+        ? await invoke<ConnectedPeerInfo>('connect_p2p_by_pin', { pin: trimmed })
+        : await invoke<ConnectedPeerInfo>('connect_p2p_peer', { invitationCode: trimmed });
       this.connectedPeers = [...this.connectedPeers.filter((p) => p.peer_id !== peer.peer_id), peer];
       this.notify();
       toast.success(`Connecté avec succès à ${peer.display_name} !`);

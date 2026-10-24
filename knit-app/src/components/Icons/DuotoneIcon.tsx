@@ -851,6 +851,57 @@ export const DuotoneIcon: React.FC<DuotoneIconProps> = ({
           </>
         );
 
+      case 'eye':
+        return (
+          <>
+            <ellipse
+              cx="256"
+              cy="256"
+              rx="180"
+              ry="100"
+              fill={secondaryFill}
+              fillOpacity="0.2"
+              stroke={primaryStroke}
+              strokeWidth="28"
+            />
+            <circle cx="256" cy="256" r="56" fill={secondaryFill} fillOpacity="0.35" />
+            <circle
+              cx="256"
+              cy="256"
+              r="56"
+              fill="none"
+              stroke={primaryStroke}
+              strokeWidth="28"
+            />
+          </>
+        );
+
+      case 'eye-off':
+        return (
+          <>
+            <ellipse
+              cx="256"
+              cy="256"
+              rx="180"
+              ry="100"
+              fill={secondaryFill}
+              fillOpacity="0.15"
+              stroke={primaryStroke}
+              strokeWidth="28"
+            />
+            <circle cx="256" cy="256" r="48" fill={secondaryFill} fillOpacity="0.3" />
+            <line
+              x1="128"
+              y1="128"
+              x2="384"
+              y2="384"
+              stroke={primaryStroke}
+              strokeWidth="36"
+              strokeLinecap="round"
+            />
+          </>
+        );
+
       case 'sort':
         return (
           <>

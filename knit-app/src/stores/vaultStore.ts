@@ -2,7 +2,10 @@ import type { UnlistenFn } from '@tauri-apps/api/event';
 import { isTauriEnvironment } from '../utils/env';
 import { DEMO_FILES, DEMO_CONTENTS, DEMO_ASSET_URLS } from './demoVaultLoader';
 import {
-  pickAndOpenVault,
+  pickVaultFolderInteractive,
+  checkVaultInitialized,
+  cloneDemoFileTree,
+  isDemoVaultPath,
   openVault,
   reloadTree,
   readFile,
@@ -12,12 +15,20 @@ import {
   saveAsset,
   renameFile,
 } from './vaultIo';
+import { DEMO_VAULT_PATH, vaultRegistry } from './vaultRegistry';
+import { networkStore } from './networkStore';
+import { tabStore } from './tabStore';
+import { toast } from './toastStore';
 import {
   trashPath,
   restoreTrash,
   commitTrash,
   recoverTrash,
   deletePath,
+  listTrash,
+  purgeTrashItem,
+  purgeAllTrash,
+  readTrashPreview,
 } from './vaultTrash';
 import {
   parseFrontmatter,
@@ -71,6 +82,8 @@ class VaultStore {
   public files: FileNode[] = [];
   public isLoading: boolean = false;
   public error: string | null = null;
+  /** Dossier choisi mais sans `.knitshare` → Wizard d'init. */
+  public pendingInitPath: string | null = null;
 
   private listeners: Set<VaultListener> = new Set();
   private localContents: Record<string, string> = {
@@ -133,13 +146,17 @@ class VaultStore {
       recoverTrash: () => self.recoverTrash(),
     };
 
-    const savedPath = localStorage.getItem('knit-last-vault-path');
-    if (savedPath && isTauriEnvironment()) {
-      void this.openVault(savedPath);
+    // Tauri + Vite : pas de coffre → Wizard. Dernier coffre valide → auto-ouverture.
+    const savedPath = vaultRegistry.getLastPath();
+    if (savedPath) {
+      if (isDemoVaultPath(savedPath)) {
+        void this.openDemoVault();
+      } else {
+        void this.openOrInitVault(savedPath);
+      }
     } else {
-      this.currentVaultPath = 'Knit Demo Vault';
-      this.files = DEMO_FILES;
-      void frontmatterIndex.rebuild(this.ops);
+      this.currentVaultPath = null;
+      this.files = [];
     }
   }
 
@@ -171,12 +188,158 @@ class VaultStore {
     this.listeners.forEach((l) => l());
   }
 
-  public pickAndOpenVault(): Promise<boolean> {
-    return pickAndOpenVault(this.ops);
+  /** Afficher le Wizard (aucun coffre ouvert, ou init en attente). */
+  public get needsWizard(): boolean {
+    return !this.currentVaultPath || !!this.pendingInitPath;
   }
 
-  public openVault(path: string): Promise<void> {
-    return openVault(this.ops, path);
+  /**
+   * Ferme le coffre (si ouvert) et force l'affichage du Wizard
+   * (créer / rejoindre / initialiser).
+   */
+  public async openWizard(): Promise<void> {
+    this.pendingInitPath = null;
+    if (this.currentVaultPath) {
+      await this.closeVaultSession({ clearLast: true });
+    } else {
+      vaultRegistry.clearLast();
+    }
+    // Garantir un état « pas de coffre » avant notify
+    this.currentVaultPath = null;
+    this.files = [];
+    this.notify();
+  }
+
+  public pickAndOpenVault(): Promise<boolean> {
+    return this.pickAndOpenVaultSmart().then((r) => r === 'opened');
+  }
+
+  /** Ouvre un dossier OS ; si non initialisé, bascule sur le Wizard. */
+  public async pickAndOpenVaultSmart(): Promise<'opened' | 'needs_init' | 'cancelled' | 'error'> {
+    if (!isTauriEnvironment()) {
+      // Vite : ouvrir le coffre démo via le switcher / Wizard
+      return 'cancelled';
+    }
+    const outcome = await pickVaultFolderInteractive(this.ops);
+    if (outcome.kind === 'needs_init') {
+      await this.requestInitVault(outcome.path);
+      return 'needs_init';
+    }
+    if (outcome.kind === 'opened') {
+      this.pendingInitPath = null;
+      this.notify();
+      return 'opened';
+    }
+    if (outcome.kind === 'error') return 'error';
+    return 'cancelled';
+  }
+
+  /** Ouvre un coffre déjà initialisé, ou demande l'init Wizard. */
+  public async openOrInitVault(path: string): Promise<'opened' | 'needs_init'> {
+    if (isDemoVaultPath(path)) {
+      await this.openDemoVault();
+      return 'opened';
+    }
+    const initialized = await checkVaultInitialized(path);
+    if (!initialized) {
+      await this.requestInitVault(path);
+      return 'needs_init';
+    }
+    this.pendingInitPath = null;
+    await this.openVault(path);
+    return 'opened';
+  }
+
+  public async requestInitVault(path: string): Promise<void> {
+    await this.closeVaultSession({ clearLast: false });
+    this.pendingInitPath = path;
+    this.notify();
+  }
+
+  public clearPendingInit(): void {
+    this.pendingInitPath = null;
+    this.notify();
+  }
+
+  /** Ferme le coffre courant et affiche le Wizard / switcher. */
+  public async closeVault(): Promise<void> {
+    await this.openWizard();
+  }
+
+  private async closeVaultSession(opts: { clearLast: boolean }): Promise<void> {
+    // Couper l'UI immédiatement (évite un shell vide « Coffre-fort » sans Wizard)
+    this.currentVaultPath = null;
+    this.files = [];
+    this.error = null;
+    // Purge mémoire démo / cache fichier — sinon fuites entre coffres (agenda, index)
+    for (const key of Object.keys(this.localContents)) {
+      delete this.localContents[key];
+    }
+    this._mockTrash = {};
+    frontmatterIndex.clear();
+    if (opts.clearLast) vaultRegistry.clearLast();
+    this.notify();
+
+    tabStore.closeAllTabs();
+    for (const unlisten of this.unlistenFns) {
+      unlisten();
+    }
+    this.unlistenFns = [];
+
+    try {
+      const { vaultConfigStore } = await import('./vaultConfigStore');
+      vaultConfigStore.reset();
+    } catch {
+      /* ignore */
+    }
+
+    try {
+      await networkStore.stopNetwork();
+    } catch {
+      /* ignore */
+    }
+    if (isTauriEnvironment()) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        await invoke<void>('stop_vault_watcher').catch(() => {});
+        await invoke<void>('invalidate_vault_index').catch(() => {});
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  public async openDemoVault(): Promise<void> {
+    if (this.currentVaultPath && this.currentVaultPath !== DEMO_VAULT_PATH) {
+      await this.closeVaultSession({ clearLast: false });
+    }
+    this.pendingInitPath = null;
+    // Délègue à openVault : charge DEMO_FILES même sous Tauri (pas de scan FS)
+    await openVault(this.ops, DEMO_VAULT_PATH);
+    if (this.files.length === 0) {
+      // Repli si le glob Vite n'a rien injecté
+      this.files = cloneDemoFileTree(DEMO_FILES);
+      Object.assign(this.localContents, DEMO_CONTENTS, DEMO_ASSET_URLS);
+      this.notify();
+    }
+    if (this.files.length === 0) {
+      toast.error(
+        'Coffre démo vide',
+        'demo_vault/ introuvable au build. Relancez Vite / tauri dev.'
+      );
+    }
+  }
+
+  public async openVault(path: string): Promise<void> {
+    this.pendingInitPath = null;
+    if (isDemoVaultPath(path)) {
+      await this.openDemoVault();
+      return;
+    }
+    if (this.currentVaultPath && this.currentVaultPath !== path) {
+      await this.closeVaultSession({ clearLast: false });
+    }
+    await openVault(this.ops, path);
   }
 
   public reloadTree(): Promise<void> {
@@ -221,6 +384,22 @@ class VaultStore {
 
   public recoverTrash(): Promise<string[]> {
     return recoverTrash(this.ops);
+  }
+
+  public listTrash(): Promise<TrashRecord[]> {
+    return listTrash(this.ops);
+  }
+
+  public purgeTrashItem(trashId: string): Promise<void> {
+    return purgeTrashItem(this.ops, trashId);
+  }
+
+  public purgeAllTrash(): Promise<number> {
+    return purgeAllTrash(this.ops);
+  }
+
+  public readTrashPreview(trashId: string): Promise<string | null> {
+    return readTrashPreview(this.ops, trashId);
   }
 
   public deletePath(relPath: string): Promise<void> {

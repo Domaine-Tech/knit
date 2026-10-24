@@ -1523,11 +1523,23 @@ details.knit-html-details {
   color: var(--knit-text-muted);
 }
 
+.knit-tasks-hint {
+  margin: 0 0 8px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--knit-text-muted);
+}
+
 .knit-tasks-item {
   display: flex;
   align-items: flex-start;
   gap: 8px;
   padding: 4px 0;
+}
+
+.knit-tasks-item.is-done .knit-tasks-text {
+  text-decoration: line-through;
+  opacity: 0.65;
 }
 
 .knit-tasks-check {

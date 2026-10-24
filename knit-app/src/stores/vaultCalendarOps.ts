@@ -5,6 +5,7 @@
 
 import { invoke } from '@tauri-apps/api/core';
 import { tabStore } from './tabStore';
+import { isDemoVaultPath } from './vaultRegistry';
 import {
   appendEventToContent,
   buildLocalCalendarIndex,
@@ -17,9 +18,19 @@ import {
 import type { CalendarIndexData, TaskPriority, VaultOps } from '../types';
 
 export async function getCalendarIndex(ops: VaultOps): Promise<CalendarIndexData> {
+  // B-057 : projection mémoire de l'index unifié.
+  const { frontmatterIndex } = await import('./frontmatterIndex');
+  const demo = isDemoVaultPath(ops.currentVaultPath);
+  const cached = frontmatterIndex.getCalendarData();
+  // Cache utile s'il y a des events ; `generation` (pas `version`) : clear()
+  // incrémente version sans hydrater — sinon agenda bloqué vide après bascule.
+  if (cached.events.length > 0) return cached;
+  if (!demo && frontmatterIndex.getGeneration() > 0) return cached;
+
   if (!ops.currentVaultPath) return { events: [] };
 
-  if (isTauriEnvironment()) {
+  // Coffre démo = mémoire Vite, jamais de scan Rust sur un chemin fictif
+  if (isTauriEnvironment() && !demo) {
     try {
       const data = await invoke<CalendarIndexData>('get_calendar_index', {
         vaultPath: ops.currentVaultPath,
@@ -30,6 +41,9 @@ export async function getCalendarIndex(ops: VaultOps): Promise<CalendarIndexData
     }
   }
 
+  await frontmatterIndex.rebuild(ops);
+  const fromIndex = frontmatterIndex.getCalendarData();
+  if (fromIndex.events.length > 0) return fromIndex;
   return normalizeCalendarIndex(buildLocalCalendarIndex(ops.localContents));
 }
 

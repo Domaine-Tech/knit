@@ -36,7 +36,12 @@ export function createLivePreviewPlugin(): Extension {
 
       constructor(view: EditorView) {
         this.unsub = vaultStore.subscribeFrontmatterIndex(() => {
+          // Préserver le scroll : le rebuild des widgets ne doit pas « téléporter »
+          const scrollTop = view.scrollDOM.scrollTop;
           view.dispatch({ effects: refreshDynamicBlocksEffect.of(null) });
+          requestAnimationFrame(() => {
+            view.scrollDOM.scrollTop = scrollTop;
+          });
         });
       }
 

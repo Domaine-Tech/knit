@@ -422,10 +422,15 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
                         key={collab.peer_id}
                         src={avatarUrl}
                         alt={collab.display_name}
-                        title={`${collab.display_name} — Cliquer pour rejoindre`}
+                        data-tooltip={`${collab.display_name} — rejoindre le curseur`}
                         onClick={(e) => {
                           e.stopPropagation();
                           onSelectFile(node.path, false);
+                          window.dispatchEvent(
+                            new CustomEvent('knit-teleport-to-peer', {
+                              detail: { path: node.path, peerId: collab.peer_id },
+                            })
+                          );
                         }}
                         style={{
                           width: 18,
@@ -440,10 +445,15 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
                     ) : (
                       <div
                         key={collab.peer_id}
-                        title={`${collab.display_name} — Cliquer pour rejoindre`}
+                        data-tooltip={`${collab.display_name} — rejoindre le curseur`}
                         onClick={(e) => {
                           e.stopPropagation();
                           onSelectFile(node.path, false);
+                          window.dispatchEvent(
+                            new CustomEvent('knit-teleport-to-peer', {
+                              detail: { path: node.path, peerId: collab.peer_id },
+                            })
+                          );
                         }}
                         style={{
                           width: 18,
@@ -466,6 +476,10 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
                   })}
                   {collaborators.length > 2 && (
                     <div
+                      data-tooltip={collaborators
+                        .slice(2)
+                        .map((c) => c.display_name)
+                        .join(', ')}
                       style={{
                         fontSize: 9,
                         fontWeight: 600,
@@ -473,6 +487,7 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
                         backgroundColor: 'var(--knit-surface-hover)',
                         borderRadius: 'var(--knit-radius-xs)',
                         padding: '1px 4px',
+                        cursor: 'default',
                       }}
                     >
                       +{collaborators.length - 2}

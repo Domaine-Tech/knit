@@ -47,17 +47,28 @@ export const EMOJI_DICTIONARY: Record<string, string> = {
 };
 
 /**
- * Cache mémoire pour l'index de suggestions ultra-rapide (< 2ms)
+ * Cache mémoire pour l'index de suggestions ultra-rapide (< 2ms).
+ * Invalidé uniquement quand la génération de l'index unifié (B-057) change.
  */
 let cachedSuggestIndex: SuggestIndexData | null = null;
-let lastSuggestIndexTime = 0;
+let cachedSuggestGeneration = -1;
 
 export async function getOrLoadSuggestIndex(): Promise<SuggestIndexData> {
-  const now = Date.now();
-  if (!cachedSuggestIndex || now - lastSuggestIndexTime > 4000) {
-    cachedSuggestIndex = await vaultStore.getSuggestIndex();
-    lastSuggestIndexTime = now;
+  const { frontmatterIndex } = await import('../../stores/frontmatterIndex');
+  const generation = frontmatterIndex.getGeneration();
+  if (cachedSuggestIndex && cachedSuggestGeneration === generation && generation > 0) {
+    return cachedSuggestIndex;
   }
+
+  const fromIndex = frontmatterIndex.getSuggestData();
+  if (fromIndex.docs.length > 0 || frontmatterIndex.getVersion() > 0) {
+    cachedSuggestIndex = fromIndex;
+    cachedSuggestGeneration = generation;
+    return fromIndex;
+  }
+
+  cachedSuggestIndex = await vaultStore.getSuggestIndex();
+  cachedSuggestGeneration = frontmatterIndex.getGeneration();
   return cachedSuggestIndex || { docs: [], headings: [], tags: [] };
 }
 

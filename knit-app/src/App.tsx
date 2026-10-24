@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Header } from './components/Header/Header';
 import { Sidebar } from './components/Sidebar/Sidebar';
 import { TabBar } from './components/Tabs/TabBar';
@@ -10,12 +10,30 @@ import { HoverPreviewHost } from './components/Editor/HoverPreviewHost';
 import { ToastContainer } from './components/Toast/ToastContainer';
 import { ContextMenuContainer } from './components/ContextMenu/ContextMenuContainer';
 import { TooltipContainer } from './components/Tooltip/TooltipContainer';
+import { Wizard } from './components/Wizard/Wizard';
 import { applyTheme, applyHue } from './theme/theme';
 import { tabStore } from './stores/tabStore';
+import { vaultStore } from './stores/vaultStore';
 import { useAppShell } from './hooks';
 
 export const App: React.FC = () => {
   const shell = useAppShell();
+  /** Compteur de sync store → relecture synchrone de needsWizard à chaque notify. */
+  const [, setVaultEpoch] = useState(0);
+  const [pendingInitPath, setPendingInitPath] = useState<string | null>(
+    () => vaultStore.pendingInitPath
+  );
+
+  useEffect(() => {
+    return vaultStore.subscribe(() => {
+      setPendingInitPath(vaultStore.pendingInitPath);
+      setVaultEpoch((n) => n + 1);
+    });
+  }, []);
+
+  // Toujours dérivé du store (évite un shell « Coffre-fort » vide sans Wizard)
+  const needsWizard = vaultStore.needsWizard;
+
   const {
     theme,
     setTheme,
@@ -63,6 +81,23 @@ export const App: React.FC = () => {
     documentPaneProps,
   } = shell;
 
+  if (needsWizard) {
+    return (
+      <>
+        <Wizard
+          pendingInitPath={pendingInitPath}
+          onVaultOpened={() => {
+            vaultStore.clearPendingInit();
+            setVaultEpoch((n) => n + 1);
+          }}
+        />
+        <ToastContainer />
+        <ContextMenuContainer />
+        <TooltipContainer />
+      </>
+    );
+  }
+
   return (
     <div
       style={{
@@ -93,8 +128,15 @@ export const App: React.FC = () => {
           hue={hue}
           onOpenQuickSwitcher={() => setIsQuickSwitcherOpen(true)}
           onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+          onRequestWizard={() => {
+            void vaultStore.openWizard();
+          }}
           onThemeToggle={() => {
             const next = theme === 'dark' ? 'light' : 'dark';
+            setTheme(next);
+            applyTheme(next);
+          }}
+          onThemeChange={(next) => {
             setTheme(next);
             applyTheme(next);
           }}

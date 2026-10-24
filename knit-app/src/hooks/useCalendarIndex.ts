@@ -14,20 +14,21 @@ export function useCalendarIndex(debounceMs = 400): {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const loadingRef = useRef(false);
+  const requestIdRef = useRef(0);
 
   const reload = useCallback(async () => {
-    if (loadingRef.current) return;
-    loadingRef.current = true;
+    const id = ++requestIdRef.current;
+    const pathAtStart = vaultStore.currentVaultPath;
     setLoading(true);
     try {
       const data = await vaultStore.getCalendarIndex();
+      if (id !== requestIdRef.current) return;
+      if (vaultStore.currentVaultPath !== pathAtStart) return;
       setEvents(data.events || []);
     } catch {
       /* ignore — UI légère ; CalendarView peut toaster au besoin */
     } finally {
-      loadingRef.current = false;
-      setLoading(false);
+      if (id === requestIdRef.current) setLoading(false);
     }
   }, []);
 
@@ -35,17 +36,18 @@ export function useCalendarIndex(debounceMs = 400): {
     let alive = true;
 
     const load = async () => {
-      if (loadingRef.current) return;
-      loadingRef.current = true;
+      const id = ++requestIdRef.current;
+      const pathAtStart = vaultStore.currentVaultPath;
       setLoading(true);
       try {
         const data = await vaultStore.getCalendarIndex();
-        if (alive) setEvents(data.events || []);
+        if (!alive || id !== requestIdRef.current) return;
+        if (vaultStore.currentVaultPath !== pathAtStart) return;
+        setEvents(data.events || []);
       } catch {
         /* ignore */
       } finally {
-        loadingRef.current = false;
-        if (alive) setLoading(false);
+        if (alive && id === requestIdRef.current) setLoading(false);
       }
     };
 
@@ -61,6 +63,7 @@ export function useCalendarIndex(debounceMs = 400): {
 
     return () => {
       alive = false;
+      requestIdRef.current += 1;
       unsub();
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };

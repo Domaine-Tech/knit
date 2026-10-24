@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNetworkSession } from '../../hooks/useNetworkSession';
+import { contextMenu } from '../../stores/contextMenuStore';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { ProfileModal } from '../Profile/ProfileModal';
 import { NetworkInvitePanel } from './NetworkInvitePanel';
@@ -20,17 +21,54 @@ export const NetworkModal: React.FC<NetworkModalProps> = ({ isOpen, onClose }) =
     closeProfile,
     localId,
     myCode,
+    pinCode,
     peers,
     lanPeers,
     isNetworkActive,
     avatarDataUrl,
     currentProfile,
     peerAvatarDataUrls,
+    isRefreshingPin,
     handleCopyCode,
+    handleCopyPin,
+    handleRefreshPin,
     handleConnect,
   } = useNetworkSession();
 
   if (!isOpen) return null;
+
+  const showNetworkContext = (e: React.MouseEvent) => {
+    e.preventDefault();
+    contextMenu.show(e, [
+      {
+        id: 'copy-ticket',
+        label: 'Copier le code d’invitation',
+        icon: 'copy',
+        disabled: !myCode,
+        onClick: () => void handleCopyCode(),
+      },
+      {
+        id: 'copy-pin',
+        label: 'Copier le PIN LAN',
+        icon: 'copy',
+        disabled: !pinCode,
+        onClick: () => void handleCopyPin(),
+      },
+      {
+        id: 'refresh-pin',
+        label: 'Rafraîchir le PIN',
+        icon: 'sync',
+        disabled: isRefreshingPin || !isNetworkActive,
+        onClick: () => void handleRefreshPin(),
+      },
+      {
+        id: 'close',
+        label: 'Fermer',
+        icon: 'x',
+        onClick: onClose,
+      },
+    ]);
+  };
 
   return (
     <div
@@ -63,6 +101,7 @@ export const NetworkModal: React.FC<NetworkModalProps> = ({ isOpen, onClose }) =
           overflow: 'hidden',
         }}
         onClick={(e) => e.stopPropagation()}
+        onContextMenu={showNetworkContext}
       >
         <div
           style={{
@@ -219,12 +258,16 @@ export const NetworkModal: React.FC<NetworkModalProps> = ({ isOpen, onClose }) =
 
           <NetworkInvitePanel
             myCode={myCode}
+            pinCode={pinCode}
             invitationInput={invitationInput}
             setInvitationInput={setInvitationInput}
             isConnecting={isConnecting}
+            isRefreshingPin={isRefreshingPin}
             lanPeers={lanPeers}
             peers={peers}
             handleCopyCode={() => void handleCopyCode()}
+            handleCopyPin={() => void handleCopyPin()}
+            handleRefreshPin={() => void handleRefreshPin()}
             handleConnect={(code) => void handleConnect(code)}
           />
 

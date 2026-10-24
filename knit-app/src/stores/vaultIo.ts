@@ -8,35 +8,71 @@ import { frontmatterIndex } from './frontmatterIndex';
 import { isTauriEnvironment } from '../utils/env';
 import { hasFileNode } from '../utils';
 import { DEMO_FILES, DEMO_CONTENTS, DEMO_ASSET_URLS } from './demoVaultLoader';
-import type { FileNode, LinkRefactorReport, VaultOps } from '../types';
+import { isDemoVaultPath, vaultRegistry } from './vaultRegistry';
+import type { FileNode, LinkRefactorReport, PickVaultOutcome, VaultOps } from '../types';
+
+export { isDemoVaultPath };
+export type { PickVaultOutcome };
 
 /** Coffre démo mémoire (pas un chemin disque réel). */
-function isVirtualDemoVault(ops: VaultOps): boolean {
+export function isVirtualDemoVault(ops: VaultOps): boolean {
   const path = ops.currentVaultPath;
-  return !path || path === 'Knit Demo Vault' || path === 'Knit Workspace (Web Dev)';
+  return !path || isDemoVaultPath(path);
+}
+
+export async function checkVaultInitialized(path: string): Promise<boolean> {
+  // Toujours : le coffre démo n'est pas un dossier FS
+  if (isDemoVaultPath(path)) return true;
+
+  if (!isTauriEnvironment()) {
+    // En Vite, un chemin « créé » via Wizard est enregistré → initialisé
+    return vaultRegistry.list().some((v) => v.path === path);
+  }
+  try {
+    return await invoke<boolean>('is_vault_initialized', { vaultPath: path });
+  } catch {
+    return false;
+  }
+}
+
+/** Clone profond de l'arbre démo (évite de muter DEMO_FILES partagé). */
+export function cloneDemoFileTree(nodes: FileNode[]): FileNode[] {
+  return nodes.map((n) => ({
+    ...n,
+    children: cloneDemoFileTree(n.children ?? []),
+  }));
+}
+
+export async function pickVaultFolderPath(): Promise<string | null> {
+  if (!isTauriEnvironment()) return null;
+  return invoke<string | null>('pick_vault_folder');
 }
 
 export async function pickAndOpenVault(ops: VaultOps): Promise<boolean> {
+    const outcome = await pickVaultFolderInteractive(ops);
+    return outcome.kind === 'opened';
+  }
+
+export async function pickVaultFolderInteractive(ops: VaultOps): Promise<PickVaultOutcome> {
     if (!isTauriEnvironment()) {
-      ops.currentVaultPath = 'Knit Workspace (Web Dev)';
-      ops.files = DEMO_FILES;
-      ops.notify();
-      return true;
+      return { kind: 'cancelled' };
     }
 
     try {
       ops.isLoading = true;
       ops.notify();
 
-      const selected = await invoke<string | null>('pick_vault_folder');
-      if (selected) {
-        await ops.openVault(selected);
-        return true;
-      }
-      return false;
+      const selected = await pickVaultFolderPath();
+      if (!selected) return { kind: 'cancelled' };
+
+      const ok = await checkVaultInitialized(selected);
+      if (!ok) return { kind: 'needs_init', path: selected };
+
+      await ops.openVault(selected);
+      return { kind: 'opened', path: selected };
     } catch (err: unknown) {
       ops.error = String(err);
-      return false;
+      return { kind: 'error', message: String(err) };
     } finally {
       ops.isLoading = false;
       ops.notify();
@@ -45,15 +81,67 @@ export async function pickAndOpenVault(ops: VaultOps): Promise<boolean> {
 
 export async function openVault(ops: VaultOps, path: string): Promise<void> {
     ops.currentVaultPath = path;
-    localStorage.setItem('knit-last-vault-path', path);
+    const isDemo = isDemoVaultPath(path);
+    vaultRegistry.touch(path, undefined, { isDemo });
+
+    // Coffre démo mémoire : Vite ET Tauri (jamais de get_vault_tree sur ce chemin)
+    if (isDemo || !isTauriEnvironment()) {
+      if (isDemo) {
+        ops.files = cloneDemoFileTree(DEMO_FILES);
+        for (const key of Object.keys(ops.localContents)) {
+          delete ops.localContents[key];
+        }
+        Object.assign(ops.localContents, DEMO_CONTENTS, DEMO_ASSET_URLS);
+        if (ops.files.length === 0) {
+          console.warn(
+            'DEMO_FILES vide : vérifiez que demo_vault/ est accessible au build Vite (server.fs.allow).'
+          );
+        }
+      } else {
+        for (const key of Object.keys(ops.localContents)) {
+          delete ops.localContents[key];
+        }
+        const welcome =
+          '---\ntype: note\n---\n\n# Accueil\n\nCoffre créé en mode développement (Vite).\n';
+        ops.localContents['accueil.md'] = welcome;
+        ops.files = [
+          {
+            id: 'accueil.md',
+            name: 'accueil.md',
+            path: 'accueil.md',
+            is_dir: false,
+            extension: 'md',
+            children: [],
+          },
+        ];
+      }
+      void frontmatterIndex.rebuild(ops);
+      await networkStore.startNetwork(path).catch((err) => {
+        console.warn('Erreur initialisation P2P (Vite/démo):', err);
+      });
+      ops.notify();
+      return;
+    }
 
     // Initialisation ou redémarrage du watcher FS natif
     await setupWatcher(ops, path);
     await ops.reloadTree();
     void frontmatterIndex.rebuild(ops);
 
-    // Démarrage du réseau P2P Iroh & mDNS
-    networkStore.startNetwork(path).catch((err) => {
+    // Config locale (.knit/config.yaml) — thème / corbeille / air-gap
+    try {
+      const { vaultConfigStore } = await import('./vaultConfigStore');
+      await vaultConfigStore.load(path);
+      if (typeof vaultConfigStore.config.hue === 'number') {
+        const { applyHue } = await import('../theme/theme');
+        applyHue(vaultConfigStore.config.hue);
+      }
+    } catch (err) {
+      console.warn('Erreur chargement config locale:', err);
+    }
+
+    // Démarrage du réseau P2P Iroh & mDNS (await pour éviter la course ticket/PIN/join)
+    await networkStore.startNetwork(path).catch((err) => {
       console.warn('Erreur initialisation P2P sur coffre:', err);
     });
 

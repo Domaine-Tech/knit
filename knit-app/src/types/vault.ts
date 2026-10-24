@@ -57,6 +57,54 @@ export interface TrashRecord {
   deleted_at: number;
 }
 
+/** Mode corbeille après staging `.knit/trash/` (B-034a). */
+export type TrashMode = 'os' | 'knit';
+
+/** Narrowing sûr du mode corbeille (IPC / KnitSelect). */
+export function parseTrashMode(raw: string | null | undefined, fallback: TrashMode = 'os'): TrashMode {
+  return raw === 'knit' || raw === 'os' ? raw : fallback;
+}
+
+/** Résultat d'une sélection de dossier coffre. */
+export type PickVaultOutcome =
+  | { kind: 'cancelled' }
+  | { kind: 'opened'; path: string }
+  | { kind: 'needs_init'; path: string }
+  | { kind: 'error'; message: string };
+
+/** Config locale `.knit/config.yaml` (jamais synchronisée). */
+export interface VaultLocalConfig {
+  theme: string;
+  hue: number;
+  trash_mode: TrashMode;
+  lan_only: boolean;
+}
+
+/** Options d'initialisation d'un coffre (IPC `init_vault`). */
+export interface InitVaultOptions {
+  vault_name: string;
+  create_default_structure?: boolean;
+  install_ai_kit?: boolean;
+  init_git?: boolean;
+  hue?: number;
+  theme?: string;
+}
+
+export interface InitVaultResult {
+  vault_path: string;
+  vault_name: string;
+  created_files: string[];
+}
+
+/** Entrée du registre local des coffres (persistance `localStorage`, style Obsidian). */
+export interface RegisteredVault {
+  path: string;
+  name: string;
+  lastOpenedAt: number;
+  /** Coffre mémoire Vite (`Knit Demo Vault`). */
+  isDemo?: boolean;
+}
+
 export interface KanbanFileInfo {
   path: string;
   name: string;

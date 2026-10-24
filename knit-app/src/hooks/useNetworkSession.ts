@@ -16,6 +16,7 @@ import { copyTextWithToast } from '../utils';
 export function useNetworkSession() {
   const [invitationInput, setInvitationInput] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
+  const [isRefreshingPin, setIsRefreshingPin] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [, setTick] = useState(0);
 
@@ -27,6 +28,7 @@ export function useNetworkSession() {
 
   const localId: PeerIdentity | null = networkStore.localIdentity;
   const myCode: string = networkStore.invitationCode || '';
+  const pinCode: string | null = networkStore.pinCode;
   const peers: ConnectedPeerInfo[] = networkStore.connectedPeers;
   const lanPeers: DiscoveredLanPeer[] = networkStore.discoveredLanPeers;
   const isNetworkActive: boolean = networkStore.isNetworkActive;
@@ -37,6 +39,23 @@ export function useNetworkSession() {
   const handleCopyCode = async (): Promise<void> => {
     if (!myCode) return;
     await copyTextWithToast(myCode, "Code d'invitation copié dans le presse-papier !");
+  };
+
+  const handleCopyPin = async (): Promise<void> => {
+    if (!pinCode) return;
+    await copyTextWithToast(pinCode, 'PIN LAN copié dans le presse-papier !');
+  };
+
+  const handleRefreshPin = async (): Promise<void> => {
+    setIsRefreshingPin(true);
+    try {
+      await networkStore.refreshPinCode();
+      toast.success('PIN LAN régénéré');
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsRefreshingPin(false);
+    }
   };
 
   const handleConnect = async (codeToUse?: string): Promise<void> => {
@@ -69,12 +88,14 @@ export function useNetworkSession() {
     invitationInput,
     setInvitationInput,
     isConnecting,
+    isRefreshingPin,
     isProfileOpen,
     openProfile,
     closeProfile,
 
     localId,
     myCode,
+    pinCode,
     peers,
     lanPeers,
     isNetworkActive,
@@ -83,6 +104,8 @@ export function useNetworkSession() {
     peerAvatarDataUrls,
 
     handleCopyCode,
+    handleCopyPin,
+    handleRefreshPin,
     handleConnect,
   };
 }

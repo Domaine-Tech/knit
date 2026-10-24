@@ -10,6 +10,11 @@ import { vaultStore } from '../stores/vaultStore';
 import { toast } from '../stores/toastStore';
 import { tabStore } from '../stores/tabStore';
 import { historyStore } from '../stores/historyStore';
+import {
+  filterHiddenVaultNodes,
+  loadShowHiddenFiles,
+  saveShowHiddenFiles,
+} from '../utils/vaultTreeVisibility';
 
 function filterNodes(nodes: FileNode[], query: string): FileNode[] {
   if (!query.trim()) return nodes;
@@ -53,6 +58,7 @@ export function useSidebarTree(options: UseSidebarTreeOptions) {
   };
 
   const [filterText, setFilterText] = useState('');
+  const [showHiddenFiles, setShowHiddenFilesState] = useState(loadShowHiddenFiles);
   const [isCreatingFile, setIsCreatingFile] = useState(false);
   const [newFileName, setNewFileName] = useState('');
   const [renameTarget, setRenameTarget] = useState<RenameTarget | null>(null);
@@ -213,14 +219,31 @@ export function useSidebarTree(options: UseSidebarTreeOptions) {
   };
 
   const pickAndOpenVault = (): void => {
-    vaultStore.pickAndOpenVault();
+    void vaultStore.pickAndOpenVaultSmart();
   };
 
   const revealVaultInExplorer = (): void => {
     vaultStore.revealInExplorer('');
   };
 
-  const filtered = filterNodes(files, filterText);
+  const setShowHiddenFiles = (value: boolean | ((prev: boolean) => boolean)): void => {
+    setShowHiddenFilesState((prev) => {
+      const next = typeof value === 'function' ? value(prev) : value;
+      saveShowHiddenFiles(next);
+      return next;
+    });
+  };
+
+  const toggleShowHiddenFiles = (): void => {
+    setShowHiddenFiles((prev) => !prev);
+  };
+
+  // Toggle œil OU recherche active → révéler dots / kit IA (jamais `.knit` etc.)
+  const visibleTree = filterHiddenVaultNodes(
+    files,
+    showHiddenFiles || Boolean(filterText.trim())
+  );
+  const filtered = filterNodes(visibleTree, filterText);
   const pinnedNotes = vaultStore.getPinnedNotes();
   const vaultRoot = vaultStore.currentVaultPath || '';
   const vaultDisplayName = vaultRoot.split(/[/\\]/).pop() || 'Coffre-fort';
@@ -232,6 +255,8 @@ export function useSidebarTree(options: UseSidebarTreeOptions) {
     filterText,
     setFilterText,
     filtered,
+    showHiddenFiles,
+    toggleShowHiddenFiles,
 
     isCreatingFile,
     setIsCreatingFile,

@@ -4,6 +4,7 @@ import { tabStore } from '../../../../stores/tabStore';
 import {
   createDynamicBlockShell,
   focusBlockSource,
+  shieldWidgetInteraction,
 } from '../../../../utils/dynamicBlockUtils';
 import {
   blockOptionsToQueryFilter,
@@ -28,23 +29,20 @@ export class KnitQueryWidget extends WidgetType {
   private code: string;
   private from: number;
   private to: number;
-  private indexVersion: number;
   private ro?: ResizeObserver;
 
-  constructor(code: string, from: number, to: number, indexVersion: number) {
+  constructor(code: string, from: number, to: number, _indexVersion?: number) {
     super();
     this.code = code;
     this.from = from;
     this.to = to;
-    this.indexVersion = indexVersion;
   }
 
   eq(other: KnitQueryWidget): boolean {
     return (
       other.code === this.code &&
       other.from === this.from &&
-      other.to === this.to &&
-      other.indexVersion === this.indexVersion
+      other.to === this.to
     );
   }
 
@@ -120,9 +118,7 @@ export class KnitQueryWidget extends WidgetType {
           btn.textContent = value || row.title;
           btn.setAttribute('data-tooltip', row.path);
           bindHoverPreviewTarget(btn, row.path);
-          btn.addEventListener('mousedown', (e) => {
-            if (e.button === 1) e.preventDefault();
-          });
+          shieldWidgetInteraction(btn);
           btn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();

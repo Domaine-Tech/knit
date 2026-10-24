@@ -103,7 +103,8 @@ export class KnitTocWidget extends WidgetType {
         btn.textContent = h.title;
         btn.setAttribute('data-tooltip', `Aller à : ${h.title}`);
         btn.addEventListener('mousedown', (e) => {
-          if (e.button === 1) e.preventDefault();
+          e.preventDefault();
+          e.stopPropagation();
         });
         btn.addEventListener('click', (e) => {
           e.preventDefault();

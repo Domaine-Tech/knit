@@ -65,7 +65,12 @@ export class CheckboxWidget extends WidgetType {
       span.title = 'Tâche à faire (cliquer pour valider)';
     }
 
-    span.onclick = (e) => {
+    // Empêche le focus/sélection parasite (surtout dans les blocs replace)
+    span.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
+    span.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
 
@@ -74,7 +79,7 @@ export class CheckboxWidget extends WidgetType {
       view.dispatch({
         changes: { from: this.from, to: this.to, insert: `[${nextStatus}]` },
       });
-    };
+    });
 
     return span;
   }

@@ -410,6 +410,34 @@ function renderGfmTableHtml(tableLines: string[]): string {
 /**
  * Normalise un texte ou un titre de section en identifiant slug sécurisé (compatible GitHub/Obsidian)
  */
+/**
+ * Frontmatter YAML minimal `clé: valeur` (une ligne).
+ * Retourne aussi le corps hors du bloc `---` pour l'indexation locale.
+ */
+export function parseSimpleFrontmatter(content: string): {
+  fields: Record<string, string>;
+  body: string;
+} {
+  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
+  if (!match) {
+    return { fields: {}, body: content };
+  }
+  const fields: Record<string, string> = {};
+  for (const line of match[1].split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const idx = trimmed.indexOf(':');
+    if (idx <= 0) continue;
+    const key = trimmed.slice(0, idx).trim();
+    const value = trimmed
+      .slice(idx + 1)
+      .trim()
+      .replace(/^["']|["']$/g, '');
+    if (key) fields[key] = value;
+  }
+  return { fields, body: match[2] ?? '' };
+}
+
 export function slugify(text: string): string {
   return text
     .toLowerCase()

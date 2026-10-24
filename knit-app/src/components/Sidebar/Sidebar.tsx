@@ -12,6 +12,8 @@ import { GlobalSearchPane } from './GlobalSearchPane';
 import { TagExplorerPane } from './TagExplorerPane';
 import { MiniCalendarWidget } from '../Calendar/MiniCalendarWidget';
 import { CalendarSidebarPane } from './CalendarSidebarPane';
+import { TrashPane } from './TrashPane';
+import { HistoryPane } from './HistoryPane';
 import {
   buildCreateInFolderMenuItem,
   buildCreateInFolderMenuItems,
@@ -48,6 +50,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     filterText,
     setFilterText,
     filtered,
+    showHiddenFiles,
+    toggleShowHiddenFiles,
     isCreatingFile,
     setIsCreatingFile,
     newFileName,
@@ -108,6 +112,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         label: "Actualiser l'arborescence",
         icon: 'sync',
         onClick: reloadTree,
+      },
+      {
+        id: 'toggle-hidden',
+        label: showHiddenFiles
+          ? 'Masquer les fichiers système'
+          : 'Afficher les fichiers masqués',
+        icon: showHiddenFiles ? 'eye-off' : 'eye',
+        onClick: toggleShowHiddenFiles,
       },
       { id: 'div-sidebar-2', divider: true },
       ...(vaultRoot
@@ -221,8 +233,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <DuotoneIcon name="plus" size={14} />
           </button>
           <button
+            onClick={toggleShowHiddenFiles}
+            data-tooltip={
+              showHiddenFiles
+                ? 'Masquer les fichiers système (kit IA, dotfiles)'
+                : 'Afficher les fichiers masqués (kit IA, dotfiles)'
+            }
+            style={{
+              padding: 4,
+              borderRadius: 'var(--knit-radius-xs)',
+              color: showHiddenFiles ? 'var(--knit-primary)' : 'var(--knit-text-secondary)',
+            }}
+            onMouseEnter={(e) => {
+              if (!showHiddenFiles) e.currentTarget.style.color = 'var(--knit-text)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = showHiddenFiles
+                ? 'var(--knit-primary)'
+                : 'var(--knit-text-secondary)';
+            }}
+          >
+            <DuotoneIcon name={showHiddenFiles ? 'eye' : 'eye-off'} size={14} />
+          </button>
+          <button
             onClick={reloadTree}
-            title="Actualiser l'arborescence"
+            data-tooltip="Actualiser l'arborescence"
             style={{
               padding: 4,
               borderRadius: 'var(--knit-radius-xs)',
@@ -341,6 +376,42 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
           <DuotoneIcon name="calendar" size={13} />
           <span>Agenda</span>
+        </button>
+
+        <button
+          onClick={() => setSidebarTab('trash')}
+          data-tooltip="Corbeille du coffre"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '7px 6px',
+            border: 'none',
+            borderBottom: activeTab === 'trash' ? '2px solid var(--knit-primary)' : '2px solid transparent',
+            backgroundColor: 'transparent',
+            color: activeTab === 'trash' ? 'var(--knit-primary)' : 'var(--knit-text-secondary)',
+            cursor: 'pointer',
+          }}
+        >
+          <DuotoneIcon name="trash" size={13} />
+        </button>
+
+        <button
+          onClick={() => setSidebarTab('history')}
+          data-tooltip="Historique de versions"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '7px 6px',
+            border: 'none',
+            borderBottom: activeTab === 'history' ? '2px solid var(--knit-primary)' : '2px solid transparent',
+            backgroundColor: 'transparent',
+            color: activeTab === 'history' ? 'var(--knit-primary)' : 'var(--knit-text-secondary)',
+            cursor: 'pointer',
+          }}
+        >
+          <DuotoneIcon name="sync" size={13} />
         </button>
       </div>
 
@@ -494,44 +565,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
         />
       )}
 
+      {activeTab === 'trash' && <TrashPane />}
+
+      {activeTab === 'history' && <HistoryPane />}
+
       {activeTab === 'files' && (
         <MiniCalendarWidget
           onSelectFile={onSelectFile}
           onOpenGlobalAgenda={onOpenGlobalAgenda}
         />
       )}
-
-      {/* Pied de sidebar : bouton ouvrir dossier */}
-      <div
-        style={{
-          padding: '10px 12px',
-          borderTop: '1px solid var(--knit-border)',
-        }}
-      >
-        <button
-          onClick={pickAndOpenVault}
-          style={{
-            width: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 6,
-            padding: '6px 10px',
-            backgroundColor: 'var(--knit-surface)',
-            border: '1px solid var(--knit-border)',
-            borderRadius: 'var(--knit-radius-sm)',
-            fontSize: 12,
-            fontWeight: 500,
-            color: 'var(--knit-text)',
-            transition: 'background var(--knit-transition-fast)',
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--knit-surface-hover)')}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'var(--knit-surface)')}
-        >
-          <DuotoneIcon name="folder-open" size={14} />
-          <span>Ouvrir un coffre...</span>
-        </button>
-      </div>
 
       <SidebarRenameModal
         renameTarget={renameTarget}

@@ -176,6 +176,34 @@ export class CRDTManager {
     return doc.getText('codemirror');
   }
 
+  /** Décode un snapshot Yjs Base64 vers le texte `codemirror` (aperçu historique). */
+  public textFromSnapshotBase64(yjsSnapshotBase64: string): string {
+    const bytes = base64ToUint8Array(yjsSnapshotBase64);
+    const doc = new Y.Doc();
+    try {
+      Y.applyUpdate(doc, bytes);
+      return doc.getText('codemirror').toString();
+    } finally {
+      doc.destroy();
+    }
+  }
+
+  /**
+   * Restaure le contenu d'un document ouvert depuis un snapshot compacté.
+   * Origine `snapshot-restore` : broadcast P2P conservé (hors p2p/init/snapshot-load).
+   */
+  public restoreDocFromSnapshot(path: string, yjsSnapshotBase64: string): void {
+    const text = this.textFromSnapshotBase64(yjsSnapshotBase64);
+    const doc = this.getDoc(path);
+    const ytext = doc.getText('codemirror');
+    doc.transact(() => {
+      ytext.delete(0, ytext.length);
+      if (text.length > 0) {
+        ytext.insert(0, text);
+      }
+    }, 'snapshot-restore');
+  }
+
   public initDocument(path: string, initialContent: string): Y.Text {
     const doc = this.getDoc(path);
     const ytext = doc.getText('codemirror');

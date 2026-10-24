@@ -323,6 +323,36 @@ export function useCodeMirrorEditor({
       });
 
       viewRef.current = view;
+
+      // Téléportation vers le curseur d'un pair (avatars sidebar B-035)
+      const onTeleport = (ev: Event) => {
+        const detail = (ev as CustomEvent<{ path: string; peerId: string }>).detail;
+        if (!detail || detail.path !== path || !viewRef.current) return;
+        const awareness = crdtManager.getAwareness(path);
+        const states = awareness.getStates();
+        for (const [, state] of states) {
+          const user = state.user as { name?: string } | undefined;
+          const peerMatch =
+            (state as { peerId?: string }).peerId === detail.peerId ||
+            user?.name === detail.peerId;
+          // y-codemirror stocke cursor dans state.cursor / selection
+          const cursor = (state as { cursor?: { anchor?: number; head?: number } }).cursor;
+          const sel = (state as { anchor?: number; head?: number });
+          const pos = cursor?.head ?? cursor?.anchor ?? sel.head ?? sel.anchor;
+          if (typeof pos === 'number' && (peerMatch || states.size <= 2)) {
+            const safe = Math.max(0, Math.min(pos, viewRef.current.state.doc.length));
+            viewRef.current.dispatch({
+              selection: { anchor: safe },
+              effects: EditorView.scrollIntoView(safe, { y: 'center' }),
+            });
+            break;
+          }
+        }
+      };
+      window.addEventListener('knit-teleport-to-peer', onTeleport);
+      (view as unknown as { __knitTeleport?: () => void }).__knitTeleport = () => {
+        window.removeEventListener('knit-teleport-to-peer', onTeleport);
+      };
     } catch (err) {
       console.error('Erreur montage CodeMirror EditorView :', err);
     }
@@ -342,6 +372,9 @@ export function useCodeMirrorEditor({
       }
       if (viewRef.current) {
         try {
+          const cleanup = (viewRef.current as unknown as { __knitTeleport?: () => void })
+            .__knitTeleport;
+          cleanup?.();
           viewRef.current.destroy();
         } catch {
           // Ignorer

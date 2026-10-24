@@ -51,6 +51,8 @@ export type IconName =
   | 'command'
   | 'download'
   | 'filter'
+  | 'eye'
+  | 'eye-off'
   | 'sort'
   | 'knit'
   | 'logo'
@@ -63,8 +65,19 @@ export type IconName =
 
 export type ThemeMode = 'light' | 'dark';
 
-/** Onglets du panneau latéral (fichiers / recherche / tags / agenda). */
-export type SidebarTab = 'files' | 'search' | 'tags' | 'calendar';
+/** Préférence thème (auto = suit l'OS). */
+export type ThemePreference = 'light' | 'dark' | 'auto';
+
+/** Narrowing sûr de la préférence thème (config locale / Wizard). */
+export function parseThemePreference(
+  raw: string | null | undefined,
+  fallback: ThemePreference = 'auto'
+): ThemePreference {
+  return raw === 'light' || raw === 'dark' || raw === 'auto' ? raw : fallback;
+}
+
+/** Onglets du panneau latéral (fichiers / recherche / tags / agenda / corbeille / historique). */
+export type SidebarTab = 'files' | 'search' | 'tags' | 'calendar' | 'trash' | 'history';
 
 /** Options du hook `useSidebarTree`. */
 export interface UseSidebarTreeOptions {

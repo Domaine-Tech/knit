@@ -4,21 +4,6 @@
 
 import type { FrontmatterIndexEntry, GalleryCard, GallerySource } from '../types';
 
-/** Frontmatter YAML minimal `clé: valeur` (une ligne). */
-export function parseSimpleFrontmatter(content: string): Record<string, string> {
-  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  if (!match) return {};
-  const fields: Record<string, string> = {};
-  for (const line of match[1].split('\n')) {
-    const idx = line.indexOf(':');
-    if (idx <= 0) continue;
-    const key = line.slice(0, idx).trim();
-    const val = line.slice(idx + 1).trim().replace(/^["']|["']$/g, '');
-    if (key) fields[key] = val;
-  }
-  return fields;
-}
-
 export function parseGalleryItems(
   content: string,
   hostPath: string,

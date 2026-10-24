@@ -8,6 +8,8 @@ import { networkStore } from '../../stores/networkStore';
 import { COLLABORATIVE_PALETTE } from '../../theme/theme';
 import { NetworkModal } from '../Network/NetworkModal';
 import { ProfileModal } from '../Profile/ProfileModal';
+import { SettingsModal } from '../Modal/SettingsModal';
+import { VaultSwitcherModal } from '../Modal/VaultSwitcherModal';
 import { WindowControls } from './WindowControls';
 import { getAppVersion, APP_VERSION } from '../../utils';
 import { debugStore } from '../../stores/debugStore';
@@ -18,8 +20,11 @@ interface HeaderProps {
   hue: number;
   onOpenQuickSwitcher: () => void;
   onOpenCommandPalette: () => void;
+  /** Ferme le coffre et affiche le Wizard. */
+  onRequestWizard?: () => void;
   onThemeToggle: () => void;
   onHueChange: (newHue: number) => void;
+  onThemeChange?: (theme: ThemeMode) => void;
   onSave: () => void;
   canSave: boolean;
   isZenMode?: boolean;
@@ -33,8 +38,10 @@ export const Header: React.FC<HeaderProps> = ({
   hue,
   onOpenQuickSwitcher,
   onOpenCommandPalette,
+  onRequestWizard,
   onThemeToggle,
   onHueChange,
+  onThemeChange,
   onSave,
   canSave,
   isZenMode = false,
@@ -45,6 +52,8 @@ export const Header: React.FC<HeaderProps> = ({
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
   const [isNetworkModalOpen, setIsNetworkModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isVaultSwitcherOpen, setIsVaultSwitcherOpen] = useState(false);
   const [appVersion, setAppVersion] = useState(APP_VERSION);
   const [, setTick] = useState(0);
   const { isDebugActive } = useDebugMode();
@@ -63,6 +72,18 @@ export const Header: React.FC<HeaderProps> = ({
     return networkStore.subscribe(() => {
       setTick((t) => t + 1);
     });
+  }, []);
+
+  useEffect(() => {
+    return vaultStore.subscribe(() => {
+      setTick((t) => t + 1);
+    });
+  }, []);
+
+  useEffect(() => {
+    const openSwitcher = () => setIsVaultSwitcherOpen(true);
+    window.addEventListener('knit-open-vault-switcher', openSwitcher);
+    return () => window.removeEventListener('knit-open-vault-switcher', openSwitcher);
   }, []);
 
   const handleHeaderContextMenu = (e: React.MouseEvent) => {
@@ -102,13 +123,31 @@ export const Header: React.FC<HeaderProps> = ({
         onClick: () => setIsProfileModalOpen(true),
       },
       {
+        id: 'header-vault-switcher',
+        label: 'Changer de coffre-fort…',
+        icon: 'vault',
+        onClick: () => setIsVaultSwitcherOpen(true),
+      },
+      {
         id: 'header-open-vault',
-        label: 'Ouvrir un coffre-fort...',
+        label: 'Ouvrir un dossier…',
         icon: 'folder-open',
-        onClick: () => vaultStore.pickAndOpenVault(),
+        onClick: () => {
+          void vaultStore.pickAndOpenVaultSmart();
+        },
+      },
+      {
+        id: 'header-wizard',
+        label: 'Créer / rejoindre un coffre…',
+        icon: 'plus',
+        onClick: () => {
+          void vaultStore.openWizard().then(() => onRequestWizard?.());
+        },
       },
     ]);
   };
+
+  const vaultLabel = vaultStore.vaultName || 'Aucun coffre';
 
   return (
     <header
@@ -126,7 +165,7 @@ export const Header: React.FC<HeaderProps> = ({
         flexShrink: 0,
       }}
     >
-      {/* Contrôles de gauche : Marque Knit & Coffre-fort */}
+      {/* Contrôles de gauche : Marque Knit & sélecteur de coffre */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <div
           style={{
@@ -138,7 +177,6 @@ export const Header: React.FC<HeaderProps> = ({
             color: 'var(--knit-text)',
             cursor: 'default',
           }}
-          title={`Knit — Éditeur Markdown Local-First P2P${vaultStore.vaultPath ? ` (${vaultStore.vaultPath})` : ''}`}
         >
           <DuotoneIcon name="knit" size={18} style={{ color: 'var(--knit-primary)' }} />
           <span style={{ letterSpacing: '-0.01em' }}>Knit</span>
@@ -156,11 +194,43 @@ export const Header: React.FC<HeaderProps> = ({
               userSelect: 'none',
               marginLeft: 2,
             }}
-            title={`Knit v${appVersion} — Sprint 6`}
+            data-tooltip={`Knit v${appVersion}`}
           >
             v{appVersion}
           </span>
         </div>
+        <button
+          type="button"
+          className="knit-btn"
+          data-tooltip="Changer de coffre-fort"
+          data-shortcut="Ctrl+Shift+O"
+          onClick={() => setIsVaultSwitcherOpen(true)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            maxWidth: 220,
+            padding: '3px 8px',
+            fontSize: 11,
+            fontWeight: 600,
+            color: 'var(--knit-text-secondary)',
+            border: '1px solid var(--knit-border)',
+            borderRadius: 'var(--knit-radius-sm)',
+            backgroundColor: 'transparent',
+          }}
+        >
+          <DuotoneIcon name="vault" size={13} />
+          <span
+            style={{
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {vaultLabel}
+          </span>
+          <DuotoneIcon name="chevron-down" size={11} />
+        </button>
       </div>
 
       {/* Contrôles de droite : Outils et boutons de fenêtre */}
@@ -366,8 +436,27 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         <button
+          type="button"
+          onClick={() => setIsSettingsOpen(true)}
+          data-tooltip="Paramètres"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 6,
+            borderRadius: 'var(--knit-radius-sm)',
+            backgroundColor: 'transparent',
+            border: '1px solid var(--knit-border)',
+            cursor: 'pointer',
+            color: 'var(--knit-text-secondary)',
+          }}
+        >
+          <DuotoneIcon name="slider" size={14} />
+        </button>
+
+        <button
           onClick={() => setIsNetworkModalOpen(true)}
-          title="Réseau P2P Iroh & Collaborateurs — Cliquez pour afficher les pairs et votre invitation"
+          data-tooltip="Réseau P2P Iroh & Collaborateurs"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -501,6 +590,29 @@ export const Header: React.FC<HeaderProps> = ({
 
       <NetworkModal isOpen={isNetworkModalOpen} onClose={() => setIsNetworkModalOpen(false)} />
       <ProfileModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} />
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        theme={theme}
+        hue={hue}
+        onThemeChange={(t) => {
+          if (onThemeChange) onThemeChange(t);
+          else onThemeToggle();
+        }}
+        onHueChange={onHueChange}
+      />
+      <VaultSwitcherModal
+        isOpen={isVaultSwitcherOpen}
+        onClose={() => setIsVaultSwitcherOpen(false)}
+        onOpenWizard={() => {
+          setIsVaultSwitcherOpen(false);
+          // openWizard déjà appelé par le modal « Créer / Rejoindre » ;
+          // garde-fou si d'autres actions ne font que demander le Wizard
+          if (!vaultStore.needsWizard) {
+            onRequestWizard?.();
+          }
+        }}
+      />
     </header>
   );
 };

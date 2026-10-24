@@ -21,6 +21,18 @@ export function isKnitDynamicLang(lang: string): boolean {
 }
 
 /**
+ * Empêche CodeMirror de placer le curseur dans un widget `Decoration.replace`.
+ * Sans cela, un clic (case à cocher, select…) fait entrer la sélection dans le fence
+ * → bascule source + saut de scroll (« rechargement »).
+ */
+export function shieldWidgetInteraction(el: HTMLElement): void {
+  el.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  });
+}
+
+/**
  * Crée un SVG Duotone inline (widgets CodeMirror hors React).
  */
 export function createDocTypeIconSvg(docType: string, size = 14): SVGSVGElement {
@@ -187,15 +199,15 @@ export function createDynamicBlockShell(
 ): DynamicBlockShell {
   const container = document.createElement('div');
   container.className = `knit-dynamic-block knit-dynamic-${lang}`;
-  container.setAttribute('data-tooltip', 'Cliquer pour éditer le bloc source');
+  container.setAttribute('data-tooltip', 'Double-cliquer pour éditer le bloc source');
+
+  // Tout clic dans le widget ne doit pas déplacer la sélection CM dans le fence
+  shieldWidgetInteraction(container);
 
   const badge = document.createElement('button');
   badge.type = 'button';
   badge.className = 'knit-dynamic-badge knit-btn';
   badge.textContent = lang;
-  badge.addEventListener('mousedown', (e) => {
-    if (e.button === 1) e.preventDefault();
-  });
   badge.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();

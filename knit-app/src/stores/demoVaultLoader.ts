@@ -14,6 +14,20 @@ const rawMarkdownModules = import.meta.glob('../../../demo_vault/**/*.md', {
   eager: true,
 }) as Record<string, string>;
 
+// Meta coffre (dots) — masqués UI par défaut, visibles via toggle œil
+const rawMetaDotModules = import.meta.glob(
+  [
+    '../../../demo_vault/.knitshare',
+    '../../../demo_vault/.knitshare.example',
+    '../../../demo_vault/.knit/**/*.{md,yaml,yml,json,txt}',
+  ],
+  {
+    query: '?raw',
+    import: 'default',
+    eager: true,
+  }
+) as Record<string, string>;
+
 // SVG en brut → data URL (affichage fiable hors dépendance au serveur Vite)
 const svgRawModules = import.meta.glob('../../../demo_vault/**/*.svg', {
   query: '?raw',
@@ -153,6 +167,13 @@ for (const [moduleKey, content] of Object.entries(rawMarkdownModules)) {
   const relPath = normalizeDemoRelPath(moduleKey);
   DEMO_CONTENTS[relPath] = content;
   registerFileNode(relPath, fileNameExtension(relPath) || 'md');
+}
+
+for (const [moduleKey, content] of Object.entries(rawMetaDotModules)) {
+  const relPath = normalizeDemoRelPath(moduleKey);
+  if (!relPath || relPath.startsWith('.knit/')) continue;
+  DEMO_CONTENTS[relPath] = content;
+  registerFileNode(relPath, fileNameExtension(relPath) || '');
 }
 
 for (const [moduleKey, svg] of Object.entries(svgRawModules)) {

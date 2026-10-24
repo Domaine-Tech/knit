@@ -7,6 +7,7 @@ import {
   createDynamicBlockShell,
   focusBlockSource,
   formatRelativeMtime,
+  shieldWidgetInteraction,
 } from '../../../../utils/dynamicBlockUtils';
 import { parseBlockOptions } from '../../../../utils/queryEngine';
 import { bindHoverPreviewTarget, clearHoverPreview } from '../../../../utils';
@@ -23,9 +24,7 @@ async function openIndexedFile(path: string): Promise<void> {
 function bindFileOpenButton(btn: HTMLButtonElement, path: string): void {
   btn.setAttribute('data-tooltip', path);
   bindHoverPreviewTarget(btn, path);
-  btn.addEventListener('mousedown', (e) => {
-    if (e.button === 1) e.preventDefault();
-  });
+  shieldWidgetInteraction(btn);
   btn.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -67,23 +66,20 @@ export class KnitFilesWidget extends WidgetType {
   private code: string;
   private from: number;
   private to: number;
-  private indexVersion: number;
   private ro?: ResizeObserver;
 
-  constructor(code: string, from: number, to: number, indexVersion: number) {
+  constructor(code: string, from: number, to: number, _indexVersion?: number) {
     super();
     this.code = code;
     this.from = from;
     this.to = to;
-    this.indexVersion = indexVersion;
   }
 
   eq(other: KnitFilesWidget): boolean {
     return (
       other.code === this.code &&
       other.from === this.from &&
-      other.to === this.to &&
-      other.indexVersion === this.indexVersion
+      other.to === this.to
     );
   }
 
