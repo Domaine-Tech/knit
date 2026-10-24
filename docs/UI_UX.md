@@ -101,9 +101,11 @@ Pour garantir que l'application ne dégage **jamais** la sensation d'un template
 Knit intègre un système multi-onglets ultra-rapide respectant **100% des conventions universelles** des navigateurs modernes et des meilleurs IDE (VS Code, Obsidian, Chrome).
 
 ```
-┌──────┬──────────────────────┬──────────────────────┬──────┐
-│  📌  │ 📄 architecture.md × │ 📄 accueil.md      × │  +   │
-└──────┴──────────────────────┴──────────────────────┴──────┘
+┌────────────────────────────────────────────────────────────┐
+│  (pin)  [ architecture.md × ]  [ accueil.md × ]  +   │ </> │
+└────────────────────────────────────────────────────────────┘
+  Pastilles flottantes (rayon 10px) dans une bande --knit-bg,
+  avec 4px d'air au-dessus du document (style Chrome récent).
 ```
 
 ### 1. Conventions Souris (Comportement Naturel & Molette)
@@ -134,12 +136,15 @@ Knit intègre un système multi-onglets ultra-rapide respectant **100% des conve
 | **`Ctrl + \`** | Diviser la vue en deux panneaux verticaux (Split View) |
 | **`Ctrl + Clic`** | Sur un WikiLink `[[...]]` ou un fichier : ouvre dans un nouvel onglet |
 
-### 3. Anatomie Visuelle & États des Onglets
-- **Onglet Actif** : surface opaque nette (`--knit-surface`), bordure inférieure ou supérieure fine de 2px liée à `--knit-primary`, texte à 100% d'opacité.
-- **Onglet Inactif** : fond discret (`--knit-bg`), texte atténué (`--knit-text-secondary`). Au survol : passage fluide en `--knit-surface-hover`.
-- **Onglet Épinglé (Pinned Tab)** : réduit à une icône ou un pictogramme fixe tout à gauche, sans bouton de fermeture accidentelle.
-- **Indicateur de modifications / Présence** :
-  - Si un collaborateur ou un agent IA édite ce document en arrière-plan : petite pastille de couleur miniature discrète sur le bord de l'onglet.
+### 3. Anatomie Visuelle & États des Onglets (Pastilles Flottantes)
+- **Forme** : pastilles entièrement arrondies (`--knit-radius-md`), flottant dans la bande `--knit-bg` avec un espace de 4px au-dessus du document (inspiré Chrome récent, sans trapèze).
+- **Onglet Actif** : fond `--knit-surface`, bordure 1px `--knit-border`, ombre très légère, texte 100%. Pas de filet d'accent coloré en haut (micro-contraste).
+- **Onglet Inactif** : fond transparent, texte `--knit-text-secondary`. Au survol : `--knit-surface-hover`.
+- **Onglet Épinglé (Pinned Tab)** : icône seule (~32px), regroupé à gauche du strip, sans croix de fermeture. Le glisser-déposer ne mélange pas épinglés et onglets normaux.
+- **Croix de fermeture** : visible au survol de l'onglet (et toujours sur l'actif). Sur un onglet sale inactif, un point `--knit-primary` remplace la croix jusqu'au survol.
+- **Aperçu** : titre en italique ; double-clic fige ou bascule l'épinglage.
+- **Débordement** : scroll horizontal sans barre visible, masques en dégradé aux bords, onglet actif ramené dans le viewport.
+- **Indicateur de présence** (prévu) : si un collaborateur édite en arrière-plan, pastille de couleur miniature sur le bord de l'onglet.
 
 ### 4. Doc-Driven Views & TabBar Universelle Permanente
 Knit rompt avec l'ergonomie rigide où l'utilisateur doit changer manuellement de vue :

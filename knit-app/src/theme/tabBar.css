@@ -1,0 +1,289 @@
+/* ---------------------------------------------------------------------------
+ * TabBar — pastilles flottantes type Chrome (tokens Knit)
+ * --------------------------------------------------------------------------- */
+
+.knit-tabbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 40px;
+  background-color: var(--knit-bg);
+  border-bottom: 1px solid var(--knit-border);
+  border-top: 1.5px solid transparent;
+  user-select: none;
+  padding: 0 8px 0 4px;
+  flex-shrink: 0;
+  transition: border-top 0.15s ease;
+  gap: 4px;
+}
+
+.knit-tabbar.is-split-focused {
+  border-top-color: var(--knit-primary);
+}
+
+.knit-tabbar-strip {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  gap: 4px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex: 1;
+  min-width: 0;
+  padding: 4px 0;
+  scrollbar-width: none;
+}
+
+.knit-tabbar-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.knit-tabbar-strip.is-overflow-start::before,
+.knit-tabbar-strip.is-overflow-end::after {
+  content: '';
+  position: sticky;
+  top: 0;
+  bottom: 0;
+  width: 16px;
+  flex-shrink: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.knit-tabbar-strip.is-overflow-start::before {
+  left: 0;
+  margin-right: -16px;
+  background: linear-gradient(to right, var(--knit-bg), transparent);
+}
+
+.knit-tabbar-strip.is-overflow-end::after {
+  right: 0;
+  margin-left: -16px;
+  background: linear-gradient(to left, var(--knit-bg), transparent);
+}
+
+.knit-tab {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: var(--knit-radius-md);
+  background-color: transparent;
+  border: 1px solid transparent;
+  color: var(--knit-text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    background-color var(--knit-transition-fast),
+    color var(--knit-transition-fast),
+    border-color var(--knit-transition-fast),
+    box-shadow var(--knit-transition-fast),
+    opacity var(--knit-transition-fast);
+  max-width: 200px;
+  min-width: 120px;
+  flex-shrink: 1;
+  position: relative;
+  box-sizing: border-box;
+  touch-action: none;
+}
+
+.knit-tab:hover {
+  background-color: var(--knit-surface-hover);
+  color: var(--knit-text);
+}
+
+.knit-tab.is-active {
+  background-color: var(--knit-surface);
+  border-color: var(--knit-border);
+  color: var(--knit-text);
+  font-weight: 600;
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--knit-text) 6%, transparent);
+  flex-shrink: 0;
+}
+
+.knit-tab.is-dragging {
+  z-index: 5;
+  opacity: 0.92;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--knit-text) 12%, transparent);
+  background-color: var(--knit-surface);
+  border-color: var(--knit-border);
+  pointer-events: none;
+}
+
+.knit-tab.is-drag-shifting {
+  transition: transform 80ms ease;
+}
+
+.knit-tab.is-pinned {
+  min-width: 32px;
+  max-width: 32px;
+  width: 32px;
+  padding: 0;
+  justify-content: center;
+  gap: 0;
+  flex-shrink: 0;
+}
+
+.knit-tab-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+  font-weight: inherit;
+}
+
+.knit-tab.is-preview .knit-tab-title {
+  font-style: italic;
+  font-weight: 400;
+}
+
+.knit-tab.is-pinned .knit-tab-title,
+.knit-tab.is-pinned .knit-tab-close,
+.knit-tab.is-pinned .knit-tab-dirty {
+  display: none;
+}
+
+.knit-tab-trailing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.knit-tab-dirty {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: var(--knit-primary);
+  flex-shrink: 0;
+}
+
+.knit-tab-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  border-radius: var(--knit-radius-xs);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0;
+  flex-shrink: 0;
+}
+
+.knit-tab.is-active .knit-tab-close,
+.knit-tab:hover .knit-tab-close {
+  opacity: 0.7;
+}
+
+.knit-tab.is-dirty:not(:hover):not(.is-active) .knit-tab-close {
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+}
+
+.knit-tab.is-dirty:not(:hover):not(.is-active) .knit-tab-dirty {
+  display: block;
+}
+
+.knit-tab.is-dirty.is-active .knit-tab-dirty,
+.knit-tab.is-dirty:hover .knit-tab-dirty {
+  display: none;
+}
+
+.knit-tab:not(.is-dirty) .knit-tab-dirty {
+  display: none;
+}
+
+.knit-tab-close:hover {
+  opacity: 1 !important;
+  background-color: var(--knit-surface-active);
+}
+
+.knit-tabbar-add {
+  margin-left: 2px;
+  padding: 4px 6px;
+  border-radius: var(--knit-radius-xs);
+  color: var(--knit-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.knit-tabbar-add:hover {
+  color: var(--knit-text);
+  background-color: var(--knit-surface-hover);
+}
+
+.knit-tabbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding-left: 8px;
+  margin-left: 2px;
+  border-left: 1px solid var(--knit-border);
+  height: 24px;
+}
+
+.knit-tabbar-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: var(--knit-radius-xs);
+  border: 1px solid var(--knit-border);
+  background-color: var(--knit-surface);
+  color: var(--knit-text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--knit-transition-fast);
+}
+
+.knit-tabbar-action.is-source-active {
+  background-color: var(--knit-primary-alpha);
+  color: var(--knit-primary);
+}
+
+.knit-tabbar-action.is-split-active {
+  background-color: var(--knit-primary-alpha);
+  color: var(--knit-primary);
+}
+
+.knit-tabbar-action-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 6px;
+  border-radius: var(--knit-radius-xs);
+  border: 1px solid var(--knit-border);
+  background-color: transparent;
+  color: var(--knit-text-muted);
+  cursor: pointer;
+  transition: color var(--knit-transition-fast), background-color var(--knit-transition-fast);
+}
+
+.knit-tabbar-action-icon:hover {
+  color: var(--knit-text);
+  background-color: var(--knit-surface-hover);
+}
+
+.knit-tabbar-action-icon.is-split-active {
+  background-color: var(--knit-primary-alpha);
+  color: var(--knit-primary);
+  border-color: transparent;
+}

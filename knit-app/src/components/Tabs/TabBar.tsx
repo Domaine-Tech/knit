@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { Tab } from '../../types';
 import { tabStore } from '../../stores/tabStore';
 import { vaultStore } from '../../stores/vaultStore';
 import { contextMenu } from '../../stores/contextMenuStore';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
+import { useTabStripDrag } from '../../hooks';
 import {
   buildCloseTabsMenuItems,
   buildConvertDocTypeMenuItem,
@@ -35,29 +36,69 @@ export const TabBar: React.FC<TabBarProps> = ({
   onToggleSplit,
   onCloseSplit,
 }) => {
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const stripRef = useRef<HTMLDivElement>(null);
+  const activeTabElRef = useRef<HTMLDivElement | null>(null);
+  const [overflow, setOverflow] = useState({ start: false, end: false });
 
   const activeTab = tabs.find((t) => t.id === activeTabId);
 
-  // Empêche l'icône de scroll compass sur clic molette (la fermeture est gérée par onAuxClick)
+  const handleReorder = useCallback(
+    (fromIndex: number, toIndex: number) => {
+      tabStore.reorderTabs(fromIndex, toIndex, groupId);
+    },
+    [groupId]
+  );
+
+  const handleActivate = useCallback(
+    (tabId: string) => {
+      tabStore.setActiveTab(tabId, groupId);
+    },
+    [groupId]
+  );
+
+  const { getTabTransform, isDraggingIndex, consumeDragClickGuard, onTabPointerDown } =
+    useTabStripDrag({
+      tabs,
+      onReorder: handleReorder,
+    });
+
+  const updateOverflow = useCallback(() => {
+    const el = stripRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setOverflow({
+      start: scrollLeft > 2,
+      end: scrollLeft + clientWidth < scrollWidth - 2,
+    });
+  }, []);
+
+  useEffect(() => {
+    updateOverflow();
+    const el = stripRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', updateOverflow, { passive: true });
+    const ro = new ResizeObserver(updateOverflow);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener('scroll', updateOverflow);
+      ro.disconnect();
+    };
+  }, [tabs.length, updateOverflow]);
+
+  useEffect(() => {
+    activeTabElRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      inline: 'nearest',
+      block: 'nearest',
+    });
+  }, [activeTabId]);
+
   const handleMouseDown = preventMiddleCompass;
 
-  const handleDragStart = (index: number) => {
-    setDraggedIndex(index);
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-  };
-
-  const handleDrop = (targetIndex: number) => {
-    if (draggedIndex !== null && draggedIndex !== targetIndex) {
-      tabStore.reorderTabs(draggedIndex, targetIndex, groupId);
-    }
-    setDraggedIndex(null);
-  };
-
   const getTabIcon = (tab: Tab) => {
+    if (tab.isPinned) {
+      return <DuotoneIcon name="pin" size={13} style={{ color: 'var(--knit-primary)' }} />;
+    }
     const icon = docTypeToIconName(tab.docType);
     const colored =
       tab.docType !== 'note' && tab.docType !== 'image'
@@ -126,14 +167,14 @@ export const TabBar: React.FC<TabBarProps> = ({
         id: 'pin',
         label: tab.isPinned ? "Détacher l'onglet (Non épinglé)" : "Épingler l'onglet",
         icon: 'pin' as const,
-        onClick: () => tabStore.pinTab(tab.id),
+        onClick: () => tabStore.pinTab(tab.id, groupId),
       },
       { id: 'div-tab-pin', divider: true },
       ...buildCloseTabsMenuItems({
         tabId: tab.id,
         tabIndex: index,
         tabsCount: tabs.length,
-        onClose: () => tabStore.closeTab(tab.id),
+        onClose: () => tabStore.closeTab(tab.id, groupId),
         onCloseOthers: () => tabStore.closeOtherTabs(tab.id),
         onCloseToRight: () => tabStore.closeTabsToTheRight(tab.id),
         onCloseAll: () => tabStore.closeAllTabs(),
@@ -201,56 +242,73 @@ export const TabBar: React.FC<TabBarProps> = ({
     ]);
   };
 
+  const stripClass = [
+    'knit-tabbar-strip',
+    overflow.start ? 'is-overflow-start' : '',
+    overflow.end ? 'is-overflow-end' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  const barClass = ['knit-tabbar', isSplit && isFocused ? 'is-split-focused' : '']
+    .filter(Boolean)
+    .join(' ');
+
   return (
     <div
+      className={barClass}
       onContextMenu={handleBarContextMenu}
       onMouseDown={handleMouseDown}
       onClick={() => tabStore.setFocusedGroup(groupId)}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        height: 38,
-        backgroundColor: 'var(--knit-bg)',
-        borderBottom: '1px solid var(--knit-border)',
-        borderTop: (isSplit && isFocused) ? '1.5px solid var(--knit-primary)' : '1.5px solid transparent',
-        userSelect: 'none',
-        paddingLeft: 4,
-        paddingRight: 8,
-        flexShrink: 0,
-        transition: 'border-top 0.15s ease',
-      }}
       onDoubleClick={(e) => {
-        // Double clic sur zone vide crée une nouvelle note
         if (e.target === e.currentTarget && onNewNote) {
           onNewNote();
         }
       }}
     >
-      {/* Zone gauche : Onglets et bouton + */}
       <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          height: '100%',
-          gap: 2,
-          overflowX: 'auto',
-          overflowY: 'hidden',
-          flex: 1,
-          minWidth: 0,
-        }}
+        ref={stripRef}
+        className={stripClass}
+        role="tablist"
+        aria-label="Onglets ouverts"
       >
         {tabs.map((tab, index) => {
           const isActive = tab.id === activeTabId;
+          const isDragging = isDraggingIndex(index);
+          const transform = getTabTransform(index);
+          const tabClass = [
+            'knit-tab',
+            isActive ? 'is-active' : '',
+            tab.isPreview ? 'is-preview' : '',
+            tab.isPinned ? 'is-pinned' : '',
+            tab.isDirty ? 'is-dirty' : '',
+            isDragging ? 'is-dragging' : '',
+            transform && !isDragging ? 'is-drag-shifting' : '',
+          ]
+            .filter(Boolean)
+            .join(' ');
+
+          const tooltipParts = [
+            tab.path,
+            tab.isPreview ? 'Mode aperçu — double-clic pour figer' : '',
+            tab.isPinned ? 'Épinglé' : '',
+          ].filter(Boolean);
 
           return (
             <div
               key={tab.id}
-              draggable
-              onDragStart={() => handleDragStart(index)}
-              onDragOver={handleDragOver}
-              onDrop={() => handleDrop(index)}
+              ref={isActive ? (node) => { activeTabElRef.current = node; } : undefined}
+              role="tab"
+              aria-selected={isActive}
+              aria-label={tab.title}
+              className={tabClass}
+              style={transform ? { transform } : undefined}
+              onPointerDown={(e) => onTabPointerDown(e, index)}
               onMouseDown={handleMouseDown}
+              onClick={() => {
+                if (consumeDragClickGuard()) return;
+                handleActivate(tab.id);
+              }}
               onContextMenu={(e) => handleTabContextMenu(e, tab, index)}
               onAuxClick={(e) => {
                 if (isMiddleButton(e)) {
@@ -259,142 +317,70 @@ export const TabBar: React.FC<TabBarProps> = ({
                   tabStore.closeTab(tab.id, groupId);
                 }
               }}
-              onClick={() => tabStore.setActiveTab(tab.id, groupId)}
               onDoubleClick={() => tabStore.pinTab(tab.id, groupId)}
-              title={`${tab.path}${tab.isPreview ? ' (Mode aperçu - Double-clic pour figer)' : ''}${tab.isPinned ? ' (Épinglé)' : ''}`}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 7,
-                height: 32,
-                padding: '0 10px',
-                borderRadius: 'var(--knit-radius-sm) var(--knit-radius-sm) 0 0',
-                backgroundColor: isActive ? 'var(--knit-surface)' : 'transparent',
-                borderLeft: '1px solid transparent',
-                borderRight: '1px solid transparent',
-                borderTop: isActive ? '1.5px solid var(--knit-primary)' : '1.5px solid transparent',
-                borderBottom: isActive ? '1px solid var(--knit-surface)' : 'none',
-                color: isActive ? 'var(--knit-text)' : 'var(--knit-text-secondary)',
-                fontSize: 13,
-                cursor: 'pointer',
-                transition: 'background var(--knit-transition-fast), color var(--knit-transition-fast)',
-                maxWidth: 220,
-                minWidth: 90,
-                position: 'relative',
-                top: 1,
-                flexShrink: 0,
-              }}
+              data-tooltip={tooltipParts.join(' · ')}
             >
-              {tab.isPinned ? (
-                <DuotoneIcon name="pin" size={13} style={{ color: 'var(--knit-primary)' }} />
-              ) : (
-                getTabIcon(tab)
+              {getTabIcon(tab)}
+
+              {!tab.isPinned && (
+                <span className="knit-tab-title">{tab.title}</span>
               )}
 
-              <span
-                style={{
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  flex: 1,
-                  fontStyle: tab.isPreview ? 'italic' : 'normal',
-                  fontWeight: isActive ? 600 : 400,
-                }}
-              >
-                {tab.title}
-              </span>
-
-              {tab.isDirty && (
-                <div
-                  title="Modifications non sauvegardées"
-                  style={{
-                    width: 7,
-                    height: 7,
-                    borderRadius: '50%',
-                    backgroundColor: 'var(--knit-primary)',
-                    flexShrink: 0,
-                  }}
-                />
+              {!tab.isPinned && (
+                <span className="knit-tab-trailing">
+                  {tab.isDirty && (
+                    <span
+                      className="knit-tab-dirty"
+                      data-tooltip="Modifications non sauvegardées"
+                    />
+                  )}
+                  <button
+                    type="button"
+                    className="knit-tab-close"
+                    data-tooltip="Fermer"
+                    data-shortcut="Ctrl+W"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      tabStore.closeTab(tab.id, groupId);
+                    }}
+                    onPointerDown={(e) => e.stopPropagation()}
+                  >
+                    <DuotoneIcon name="close" size={12} />
+                  </button>
+                </span>
               )}
-
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  tabStore.closeTab(tab.id, groupId);
-                }}
-                title="Fermer (Ctrl+W ou clic molette)"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: 2,
-                  borderRadius: 'var(--knit-radius-xs)',
-                  color: 'inherit',
-                  opacity: isActive ? 0.8 : 0.4,
-                  flexShrink: 0,
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.opacity = isActive ? '0.8' : '0.4')
-                }
-              >
-                <DuotoneIcon name="close" size={12} />
-              </button>
             </div>
           );
         })}
 
         <button
+          type="button"
+          className="knit-tabbar-add"
           onClick={showCreateDocMenu}
           onContextMenu={showCreateDocMenu}
           data-tooltip="Nouveau document (tous les types)"
-          style={{
-            marginLeft: 4,
-            padding: '4px 6px',
-            borderRadius: 'var(--knit-radius-xs)',
-            color: 'var(--knit-text-secondary)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-            flexShrink: 0,
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--knit-text)')}
-          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--knit-text-secondary)')}
         >
           <DuotoneIcon name="plus" size={14} />
         </button>
       </div>
 
-      {/* Zone droite : Bouton universel Source </> ↔ Rendu et Split View */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+      <div className="knit-tabbar-actions">
         {activeTab && activeTab.docType !== 'image' && (
           <button
+            type="button"
+            className={[
+              'knit-tabbar-action',
+              activeTab.viewMode === 'source' ? 'is-source-active' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
             onClick={() => tabStore.toggleViewMode(activeTab.id, groupId)}
             data-tooltip={
               activeTab.viewMode === 'visual'
-                ? 'Basculer vers le code Markdown brut (Ctrl+E)'
-                : 'Basculer vers la vue visuelle riche (Ctrl+E)'
+                ? 'Basculer vers le code Markdown brut'
+                : 'Basculer vers la vue visuelle riche'
             }
             data-shortcut="Ctrl+E"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 5,
-              padding: '2px 8px',
-              borderRadius: 'var(--knit-radius-xs)',
-              border: '1px solid var(--knit-border)',
-              backgroundColor:
-                activeTab.viewMode === 'source' ? 'var(--knit-primary-alpha)' : 'var(--knit-surface)',
-              color:
-                activeTab.viewMode === 'source' ? 'var(--knit-primary)' : 'var(--knit-text-secondary)',
-              fontSize: 11,
-              fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'all var(--knit-transition-fast)',
-            }}
           >
             {activeTab.viewMode === 'visual' ? (
               <>
@@ -412,51 +398,36 @@ export const TabBar: React.FC<TabBarProps> = ({
 
         {groupId === 2 ? (
           <button
+            type="button"
+            className="knit-tabbar-action-icon"
             onClick={() => {
               if (onCloseSplit) onCloseSplit();
               else tabStore.closeSplit();
             }}
-            data-tooltip="Fermer ce panneau scindé (Ctrl+\)"
-            data-shortcut="Ctrl+\"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '3px 6px',
-              borderRadius: 'var(--knit-radius-xs)',
-              border: '1px solid var(--knit-border)',
-              backgroundColor: 'transparent',
-              color: 'var(--knit-text-muted)',
-              cursor: 'pointer',
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--knit-text)')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--knit-text-muted)')}
+            data-tooltip="Fermer ce panneau scindé"
+            data-shortcut="Ctrl+\\"
           >
             <DuotoneIcon name="close" size={13} />
           </button>
         ) : (
           <button
+            type="button"
+            className={[
+              'knit-tabbar-action-icon',
+              isSplit ? 'is-split-active' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
             onClick={() => {
               if (onToggleSplit) onToggleSplit();
               else tabStore.toggleSplit();
             }}
             data-tooltip={
               isSplit
-                ? 'Fermer le panneau scindé (Ctrl+\\)'
-                : 'Scinder l’espace de travail en 2 panneaux (Ctrl+\\)'
+                ? 'Fermer le panneau scindé'
+                : 'Scinder l’espace de travail en 2 panneaux'
             }
-            data-shortcut="Ctrl+\"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '3px 6px',
-              borderRadius: 'var(--knit-radius-xs)',
-              border: '1px solid var(--knit-border)',
-              backgroundColor: isSplit ? 'var(--knit-primary-alpha)' : 'transparent',
-              color: isSplit ? 'var(--knit-primary)' : 'var(--knit-text-muted)',
-              cursor: 'pointer',
-            }}
+            data-shortcut="Ctrl+\\"
           >
             <DuotoneIcon name="split" size={13} />
           </button>

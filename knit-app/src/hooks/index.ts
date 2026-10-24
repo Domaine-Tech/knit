@@ -25,3 +25,4 @@ export * from './useClampedHoverPos';
 export * from './useHoverBodyPointerProps';
 export * from './useCanvasViewport';
 export * from './useCanvasDocument';
+export * from './useTabStripDrag';

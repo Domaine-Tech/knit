@@ -239,11 +239,16 @@ class TabStore {
   public pinTab(id: string, group: 1 | 2 = 1) {
     const targetList = group === 2 ? this.group2Tabs : this.tabs;
     const tab = targetList.find((t) => t.id === id);
-    if (tab) {
-      tab.isPreview = false;
-      tab.isPinned = !tab.isPinned;
-      this.notify();
-    }
+    if (!tab) return;
+
+    tab.isPreview = false;
+    tab.isPinned = !tab.isPinned;
+
+    // Tous les épinglés à gauche (ordre relatif conservé dans chaque groupe).
+    const pinned = targetList.filter((t) => t.isPinned);
+    const rest = targetList.filter((t) => !t.isPinned);
+    targetList.splice(0, targetList.length, ...pinned, ...rest);
+    this.notify();
   }
 
   public toggleViewMode(id?: string, group?: 1 | 2) {
@@ -420,6 +425,13 @@ class TabStore {
   public reorderTabs(fromIndex: number, toIndex: number, group: 1 | 2 = 1) {
     const list = group === 2 ? this.group2Tabs : this.tabs;
     if (fromIndex < 0 || fromIndex >= list.length || toIndex < 0 || toIndex >= list.length) {
+      return;
+    }
+    // Ne pas mélanger épinglés et non-épinglés.
+    const pinnedCount = list.reduce((n, t) => n + (t.isPinned ? 1 : 0), 0);
+    const fromPinned = fromIndex < pinnedCount;
+    const toPinned = toIndex < pinnedCount;
+    if (fromPinned !== toPinned) {
       return;
     }
     const [moved] = list.splice(fromIndex, 1);
