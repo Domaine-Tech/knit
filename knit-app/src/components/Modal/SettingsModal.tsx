@@ -14,6 +14,9 @@ import {
   type ThemePreference,
   type TrashMode,
 } from '../../types';
+import { checkForUpdates, type KnitUpdateInfo } from '../../utils/updater';
+import { APP_VERSION, getAppVersion } from '../../utils/version';
+import { UpdateModal } from '../Updater/UpdateModal';
 
 export interface SettingsModalProps {
   isOpen: boolean;
@@ -36,6 +39,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [trashMode, setTrashMode] = useState<TrashMode>('os');
   const [lanOnly, setLanOnly] = useState(false);
   const [tick, setTick] = useState(0);
+  const [appVersion, setAppVersion] = useState(APP_VERSION);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [updateInfo, setUpdateInfo] = useState<KnitUpdateInfo | null>(null);
+  const [updateModalOpen, setUpdateModalOpen] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -43,7 +50,25 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setThemePref(parseThemePreference(cfg.theme));
     setTrashMode(parseTrashMode(cfg.trash_mode));
     setLanOnly(Boolean(cfg.lan_only));
+    void getAppVersion().then(setAppVersion);
   }, [isOpen]);
+
+  const handleCheckUpdates = async () => {
+    setCheckingUpdate(true);
+    try {
+      const result = await checkForUpdates();
+      setAppVersion(result.currentVersion);
+      if (result.available) {
+        setUpdateInfo(result.update);
+        setUpdateModalOpen(true);
+        toast.info('Mise à jour disponible', `Version ${result.update.version}`);
+      } else {
+        toast.info('À jour', `Knit ${result.currentVersion} est la dernière version.`);
+      }
+    } finally {
+      setCheckingUpdate(false);
+    }
+  };
 
   useEffect(() => {
     return networkStore.subscribe(() => setTick((t) => t + 1));
@@ -183,6 +208,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         <section style={{ marginBottom: 20 }}>
           <div className="knit-label" style={{ marginBottom: 8 }}>
+            Mises à jour
+          </div>
+          <p style={{ margin: '0 0 10px', fontSize: 12, color: 'var(--knit-text-muted)' }}>
+            Version installée : {appVersion}
+          </p>
+          <button
+            type="button"
+            className="knit-btn"
+            disabled={checkingUpdate}
+            onClick={() => void handleCheckUpdates()}
+            data-tooltip="Interroger GitHub Releases"
+          >
+            <DuotoneIcon name="download" size={14} />
+            <span style={{ marginLeft: 6 }}>
+              {checkingUpdate ? 'Recherche…' : 'Rechercher des mises à jour'}
+            </span>
+          </button>
+        </section>
+
+        <section style={{ marginBottom: 20 }}>
+          <div className="knit-label" style={{ marginBottom: 8 }}>
             Réseau
           </div>
           <label
@@ -215,6 +261,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
         </section>
       </div>
+
+      {updateInfo ? (
+        <UpdateModal
+          isOpen={updateModalOpen}
+          onClose={() => setUpdateModalOpen(false)}
+          currentVersion={appVersion}
+          update={updateInfo}
+        />
+      ) : null}
     </div>
   );
 };

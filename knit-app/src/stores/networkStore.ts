@@ -2,7 +2,12 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import type { UnlistenFn } from '@tauri-apps/api/event';
 import { toast } from './toastStore';
-import { isTauriEnvironment, uint8ArrayToBase64, base64ToUint8Array } from '../utils';
+import {
+  isTauriEnvironment,
+  uint8ArrayToBase64,
+  base64ToUint8Array,
+  notifySystem,
+} from '../utils';
 import { COLLABORATIVE_PALETTE } from '../theme/theme';
 
 import {
@@ -43,6 +48,18 @@ class NetworkStore {
 
   private notify() {
     this.listeners.forEach((l) => l());
+  }
+
+  /** Met à jour le tooltip tray (offline / lan / connected). */
+  private syncTrayStatus(): void {
+    if (!isTauriEnvironment()) return;
+    let status: 'offline' | 'lan' | 'connected' = 'offline';
+    if (this.isNetworkActive) {
+      status = this.connectedPeers.length > 0 ? 'connected' : 'lan';
+    }
+    void invoke('set_tray_network_status', { status }).catch(() => {
+      /* tray optionnel */
+    });
   }
 
   public onRemoteYjsUpdate(listener: (docId: string, update: Uint8Array, fromPeer: string) => void): () => void {
@@ -116,12 +133,21 @@ class NetworkStore {
       // Écouter les événements réseau P2P
       const unlistenConnected = await listen<ConnectedPeerInfo>('p2p_peer_connected', (event) => {
         const peer = event.payload;
+        const wasEmpty = this.connectedPeers.length === 0;
         this.connectedPeers = [...this.connectedPeers.filter((p) => p.peer_id !== peer.peer_id), peer];
         if (peer.avatar?.type === 'custom' && peer.avatar.blake3_hash) {
           this.loadPeerAvatar(vaultPath, peer.peer_id, peer.avatar.blake3_hash);
         }
         this.notify();
+        this.syncTrayStatus();
         toast.info(`Pair connecté : ${peer.display_name} (${peer.initials})`);
+        void notifySystem(
+          'Knit — nouveau pair',
+          `${peer.display_name} (${peer.initials}) s'est connecté`
+        );
+        if (wasEmpty) {
+          void notifySystem('Knit — synchronisation', 'Première synchronisation P2P en cours');
+        }
       });
       this.unlistenFns.push(unlistenConnected);
 
@@ -132,6 +158,7 @@ class NetworkStore {
         this.activeFileByPeer.delete(peer_id);
         this.peerAvatarDataUrls.delete(peer_id);
         this.notify();
+        this.syncTrayStatus();
         if (disconnected) {
           toast.info(`Pair déconnecté : ${disconnected.display_name}`);
         }
@@ -249,6 +276,7 @@ class NetworkStore {
         }
       }
       this.notify();
+      this.syncTrayStatus();
     } catch (e: unknown) {
       console.error('Erreur démarrage réseau P2P:', e);
       toast.error(`Erreur réseau P2P : ${e}`);
@@ -278,6 +306,7 @@ class NetworkStore {
     this.invitationCode = null;
     this.pinCode = null;
     this.notify();
+    this.syncTrayStatus();
   }
 
   /**

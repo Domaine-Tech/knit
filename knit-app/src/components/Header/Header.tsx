@@ -11,9 +11,13 @@ import { ProfileModal } from '../Profile/ProfileModal';
 import { SettingsModal } from '../Modal/SettingsModal';
 import { VaultSwitcherModal } from '../Modal/VaultSwitcherModal';
 import { WindowControls } from './WindowControls';
-import { getAppVersion, APP_VERSION } from '../../utils';
+import { getAppVersion, APP_VERSION, isTauriEnvironment } from '../../utils';
+import { checkForUpdates } from '../../utils/updater';
 import { debugStore } from '../../stores/debugStore';
 import { useDebugMode } from '../../hooks';
+import { toast } from '../../stores/toastStore';
+import { UpdateModal } from '../Updater/UpdateModal';
+import type { KnitUpdateInfo } from '../../utils/updater';
 
 interface HeaderProps {
   theme: ThemeMode;
@@ -55,6 +59,8 @@ export const Header: React.FC<HeaderProps> = ({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isVaultSwitcherOpen, setIsVaultSwitcherOpen] = useState(false);
   const [appVersion, setAppVersion] = useState(APP_VERSION);
+  const [startupUpdate, setStartupUpdate] = useState<KnitUpdateInfo | null>(null);
+  const [startupUpdateOpen, setStartupUpdateOpen] = useState(false);
   const [, setTick] = useState(0);
   const { isDebugActive } = useDebugMode();
 
@@ -66,6 +72,36 @@ export const Header: React.FC<HeaderProps> = ({
 
   useEffect(() => {
     getAppVersion().then(setAppVersion);
+  }, []);
+
+  useEffect(() => {
+    if (!isTauriEnvironment()) return;
+    let cancelled = false;
+    void (async () => {
+      const result = await checkForUpdates();
+      if (cancelled || !result.available) return;
+      setStartupUpdate(result.update);
+      setStartupUpdateOpen(true);
+      toast.info('Mise à jour disponible', `Version ${result.update.version}`);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isTauriEnvironment()) return;
+    let unlisten: (() => void) | undefined;
+    void import('@tauri-apps/api/event').then(({ listen }) => {
+      void listen('knit-open-settings', () => {
+        setIsSettingsOpen(true);
+      }).then((fn) => {
+        unlisten = fn;
+      });
+    });
+    return () => {
+      unlisten?.();
+    };
   }, []);
 
   useEffect(() => {
@@ -613,6 +649,14 @@ export const Header: React.FC<HeaderProps> = ({
           }
         }}
       />
+      {startupUpdate ? (
+        <UpdateModal
+          isOpen={startupUpdateOpen}
+          onClose={() => setStartupUpdateOpen(false)}
+          currentVersion={appVersion}
+          update={startupUpdate}
+        />
+      ) : null}
     </header>
   );
 };

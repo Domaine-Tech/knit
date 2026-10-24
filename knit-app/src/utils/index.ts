@@ -35,3 +35,6 @@ export * from './taskMetaUtils';
 export * from './vaultIndexUtils';
 export * from './qrSvg';
 export * from './vaultTreeVisibility';
+export * from './updater';
+export * from './systemNotification';
+export * from './treeFlatten';

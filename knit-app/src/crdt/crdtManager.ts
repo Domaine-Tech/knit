@@ -8,6 +8,7 @@ import diff from 'fast-diff';
 import { Awareness, encodeAwarenessUpdate, applyAwarenessUpdate } from 'y-protocols/awareness';
 import { networkStore } from '../stores/networkStore';
 import { vaultStore } from '../stores/vaultStore';
+import { tabStore } from '../stores/tabStore';
 import { isTauriEnvironment, uint8ArrayToBase64, base64ToUint8Array } from '../utils';
 import { invoke } from '@tauri-apps/api/core';
 
@@ -17,12 +18,16 @@ import type {
   AwarenessChangeEvent,
 } from '../types';
 
+/** Plafond souple B-050 : max Y.Doc en mémoire (éviction LRU des docs sans abonné). */
+export const CRDT_DOC_LRU_MAX = 20;
 
 export class CRDTManager {
   private docs: Map<string, Y.Doc> = new Map();
   private awarenessMap: Map<string, Awareness> = new Map();
   private fileObservers: Map<string, Set<(content: string) => void>> = new Map();
   private opCounts: Map<string, number> = new Map();
+  /** Ordre d'accès LRU (plus récent en fin de liste). */
+  private lruOrder: string[] = [];
   private initializedP2P: boolean = false;
 
   constructor() {
@@ -70,9 +75,50 @@ export class CRDTManager {
     });
   }
 
+  private touchLru(path: string): void {
+    this.lruOrder = this.lruOrder.filter((p) => p !== path);
+    this.lruOrder.push(path);
+  }
+
+  private protectedPaths(): Set<string> {
+    const paths = new Set<string>();
+    for (const t of [...tabStore.tabs, ...tabStore.group2Tabs]) {
+      paths.add(t.path);
+    }
+    return paths;
+  }
+
+  /**
+   * Évince les documents les moins récemment utilisés sans abonné ni onglet ouvert.
+   * Plafond souple : si tous les docs sont protégés, on n'évince pas.
+   */
+  private evictLruIfNeeded(): void {
+    const protectedPaths = this.protectedPaths();
+    while (this.docs.size > CRDT_DOC_LRU_MAX) {
+      const candidate = this.lruOrder.find((p) => {
+        if (protectedPaths.has(p)) return false;
+        const observers = this.fileObservers.get(p);
+        return !observers || observers.size === 0;
+      });
+      if (!candidate) break;
+      this.removeDoc(candidate);
+    }
+  }
+
+  /** Nombre de Y.Doc actuellement en mémoire (tests / debug). */
+  public getDocCount(): number {
+    return this.docs.size;
+  }
+
+  /** Liste ordonnée LRU (tests). */
+  public getLruOrder(): readonly string[] {
+    return this.lruOrder;
+  }
+
   public getDoc(path: string): Y.Doc {
     let doc = this.docs.get(path);
     if (!doc) {
+      this.evictLruIfNeeded();
       doc = new Y.Doc();
       this.docs.set(path, doc);
       const createdDoc = doc;
@@ -97,6 +143,8 @@ export class CRDTManager {
         networkStore.sendSyncRequest(path, stateVector);
       }
     }
+    this.touchLru(path);
+    this.evictLruIfNeeded();
     return doc;
   }
 
@@ -308,6 +356,8 @@ export class CRDTManager {
       this.awarenessMap.delete(path);
     }
     this.fileObservers.delete(path);
+    this.opCounts.delete(path);
+    this.lruOrder = this.lruOrder.filter((p) => p !== path);
   }
 }
 

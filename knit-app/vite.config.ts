@@ -22,4 +22,36 @@ export default defineConfig({
       ],
     },
   },
+  build: {
+    minify: true,
+    target: 'esnext',
+    cssCodeSplit: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/mermaid') || id.includes('node_modules/dagre')) {
+            return 'mermaid'
+          }
+          if (
+            id.includes('node_modules/yjs') ||
+            id.includes('node_modules/y-protocols') ||
+            id.includes('node_modules/y-codemirror') ||
+            id.includes('node_modules/lib0')
+          ) {
+            return 'yjs'
+          }
+          if (
+            id.includes('node_modules/@codemirror') ||
+            id.includes('node_modules/@lezer') ||
+            id.includes('node_modules/style-mod')
+          ) {
+            return 'codemirror'
+          }
+          if (id.includes('node_modules/react-dom') || id.includes('node_modules/react/')) {
+            return 'react-vendor'
+          }
+        },
+      },
+    },
+  },
 })

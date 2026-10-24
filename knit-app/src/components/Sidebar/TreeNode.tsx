@@ -29,6 +29,11 @@ interface TreeNodeProps {
   depth?: number;
   defaultExpanded?: boolean;
   searchQuery?: string;
+  /** Mode virtualisé : une seule ligne, pas de récursion enfants. */
+  leafMode?: boolean;
+  /** Ouverture contrôlée (leafMode). */
+  controlledOpen?: boolean;
+  onToggleOpen?: () => void;
 }
 
 // Surlignage discret et élégant des termes recherchés selon les tokens Knit
@@ -80,6 +85,9 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
   depth = 0,
   defaultExpanded = false,
   searchQuery = '',
+  leafMode = false,
+  controlledOpen,
+  onToggleOpen,
 }) => {
   // Par défaut sur les gros coffres, les dossiers commencent FERMÉS
   // Sauf si un fichier/dossier actif ou sélectionné est un *descendant*
@@ -103,9 +111,24 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
   }, []);
 
   // Déplié si l'utilisateur a explicitement cliqué, sinon auto : recherche active, "Déplier tout" ou parent de la note active
-  const isOpen = isManualOpen !== null
-    ? isManualOpen
-    : Boolean(defaultExpanded || isAncestorOfActive || isSearchActive);
+  const isOpen =
+    leafMode && controlledOpen !== undefined
+      ? controlledOpen
+      : isManualOpen !== null
+        ? isManualOpen
+        : Boolean(defaultExpanded || isAncestorOfActive || isSearchActive);
+
+  const toggleOpen = () => {
+    if (leafMode && onToggleOpen) {
+      onToggleOpen();
+      return;
+    }
+    setIsManualOpen((prev) => {
+      const currentlyOpen =
+        prev !== null ? prev : Boolean(defaultExpanded || isAncestorOfActive || isSearchActive);
+      return !currentlyOpen;
+    });
+  };
 
   const isSelected = selectedPath
     ? node.path === selectedPath
@@ -126,13 +149,7 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
     e.stopPropagation();
     onSelectTreeNode?.(node.path, node.is_dir, node.name);
     if (node.is_dir) {
-      // Basculer depuis l'état précédent (évite la course focus→sélection→re-render→clic)
-      setIsManualOpen((prev) => {
-        const currentlyOpen = prev !== null
-          ? prev
-          : Boolean(defaultExpanded || isAncestorOfActive || isSearchActive);
-        return !currentlyOpen;
-      });
+      toggleOpen();
     } else {
       // Simple clic -> aperçu
       onSelectFile(node.path, true);
@@ -151,12 +168,7 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
       e.preventDefault();
       e.stopPropagation();
       if (node.is_dir) {
-        setIsManualOpen((prev) => {
-          const currentlyOpen = prev !== null
-            ? prev
-            : Boolean(defaultExpanded || isAncestorOfActive || isSearchActive);
-          return !currentlyOpen;
-        });
+        toggleOpen();
       } else {
         onSelectFile(node.path, false);
       }
@@ -190,13 +202,14 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
           id: 'toggle-dir',
           label: isOpen ? 'Replier le dossier' : 'Déplier le dossier',
           icon: isOpen ? 'chevron-down' : 'chevron-right',
-          onClick: () => setIsManualOpen(!isOpen),
+          onClick: () => toggleOpen(),
         },
         { id: 'div-dir-1', divider: true },
         buildCreateInFolderMenuItem({
           parentDir: node.path,
           onCreated: (relPath, kind) => {
-            setIsManualOpen(true);
+            if (leafMode && onToggleOpen && !isOpen) onToggleOpen();
+            else setIsManualOpen(true);
             if (kind !== 'dir') {
               onSelectFile(relPath, false);
             }
@@ -500,7 +513,7 @@ export const TreeNode: React.FC<TreeNodeProps> = ({
         )}
       </div>
 
-      {node.is_dir && isOpen && node.children && (
+      {!leafMode && node.is_dir && isOpen && node.children && (
         <div>
           {node.children.map((child) => (
             <TreeNode

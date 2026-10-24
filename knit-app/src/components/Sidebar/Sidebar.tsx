@@ -2,7 +2,7 @@ import React from 'react';
 import type { FileNode, SidebarTab } from '../../types';
 import { useSidebarTree } from '../../hooks/useSidebarTree';
 import { useDelayedHoverPreview } from '../../hooks';
-import { TreeNode } from './TreeNode';
+import { VirtualFileTree } from './VirtualFileTree';
 import { SidebarPinnedSection } from './SidebarPinnedSection';
 import { SidebarCreateForm, SidebarRenameModal } from './SidebarCreateRenameForms';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
@@ -490,8 +490,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
             }}
             style={{
               flex: 1,
-              overflowY: 'auto',
-              overflowX: 'hidden',
+              minHeight: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
               padding: '4px 6px',
               outline: 'none',
             }}
@@ -521,21 +523,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {filterText ? `Aucun résultat pour "${filterText}"` : 'Coffre vide'}
               </div>
             ) : (
-              filtered.map((node) => (
-                <TreeNode
-                  key={`${node.id}-${treeKey}-${Boolean(filterText.trim())}`}
-                  node={node}
-                  activePath={activePath}
-                  selectedPath={selectedNode?.path ?? activePath}
-                  onSelectTreeNode={selectTreeNode}
-                  onSelectFile={onSelectFile}
-                  onMiddleClickFile={onMiddleClickFile}
-                  onRenameFile={startRename}
-                  onDeletePath={handleDelete}
-                  defaultExpanded={isAllExpanded || Boolean(filterText.trim())}
-                  searchQuery={filterText.trim()}
-                />
-              ))
+              <VirtualFileTree
+                nodes={filtered}
+                activePath={activePath}
+                selectedPath={selectedNode?.path ?? activePath}
+                treeKey={treeKey}
+                defaultExpanded={isAllExpanded || Boolean(filterText.trim())}
+                searchQuery={filterText.trim()}
+                onSelectTreeNode={selectTreeNode}
+                onSelectFile={onSelectFile}
+                onMiddleClickFile={onMiddleClickFile}
+                onRenameFile={startRename}
+                onDeletePath={handleDelete}
+              />
             )}
           </div>
         </>
