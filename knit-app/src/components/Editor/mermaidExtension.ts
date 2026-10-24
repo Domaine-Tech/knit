@@ -129,7 +129,9 @@ export function enhanceMermaidSvg(svgContainer: HTMLElement) {
 
   // 4. Débloquer tous les foreignObject globaux
   svgContainer.querySelectorAll('foreignObject').forEach((fo) => {
-    (fo as unknown as HTMLElement).style.overflow = 'visible';
+    if (fo instanceof SVGElement) {
+      fo.style.overflow = 'visible';
+    }
   });
 }
 

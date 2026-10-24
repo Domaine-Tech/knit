@@ -2,6 +2,28 @@
  * Types relatifs aux métadonnées Markdown, recherche, suggestions et tâches
  */
 
+import type { TaskStatus } from './kanban';
+import type { DocType } from './views';
+
+/**
+ * Statut YAML frontmatter (`statut:` / `status:`).
+ * Alias FR/EN normalisés côté parseurs (`todo` → `a-faire`, etc.).
+ */
+export type VaultTaskStatut =
+  | 'backlog'
+  | 'a-faire'
+  | 'en-cours'
+  | 'en-revue'
+  | 'termine'
+  | 'bloque';
+
+/**
+ * Priorité YAML frontmatter (`priorite:` / `priority:`).
+ * Distinct de `TaskPriority` inline (`!p1`…`!p3`).
+ * Inclut `critique` (legacy VISION/demo) et `urgente` (MARKDOWN_SPEC).
+ */
+export type VaultTaskPriorite = 'basse' | 'moyenne' | 'haute' | 'urgente' | 'critique';
+
 export interface HeadingItem {
   file_rel: string;
   level: number;
@@ -12,7 +34,7 @@ export interface HeadingItem {
 export interface SuggestDocItem {
   rel_path: string;
   title: string;
-  doc_type: string;
+  doc_type: DocType;
 }
 
 export interface SuggestTagItem {
@@ -44,8 +66,8 @@ export interface TaskCard {
   rel_path: string;
   id: string;
   titre: string;
-  statut: string;
-  priorite?: string;
+  statut: VaultTaskStatut;
+  priorite?: VaultTaskPriorite;
   assigne?: string;
   sprint?: string;
   echeance?: string;
@@ -63,7 +85,7 @@ export interface TagInfo {
 export interface IndexedInlineTask {
   path: string;
   lineIndex: number;
-  status: string;
+  status: TaskStatus;
   text: string;
   rawLine: string;
 }

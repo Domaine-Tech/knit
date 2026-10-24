@@ -3,7 +3,7 @@ import type { EditorView } from '@codemirror/view';
 import { networkStore } from '../../stores/networkStore';
 import { vaultStore } from '../../stores/vaultStore';
 import type { SuggestIndexData, HeadingItem, AutocompleteSourceProps } from '../../types';
-import { formatIsoDate, getNextDayOfWeek, slugify } from '../../utils';
+import { fileStem, formatIsoDate, getNextDayOfWeek, slugify } from '../../utils';
 
 export const EMOJI_DICTIONARY: Record<string, string> = {
   sparkles: '✨',
@@ -152,8 +152,8 @@ export function createKnitAutocompletion(sources: AutocompleteSourceProps) {
 
             const allHeadings = cachedSuggestIndex ? cachedSuggestIndex.headings : [];
             const matchingHeadings = allHeadings.filter((h) => {
-              const fileStem = h.file_rel.split('/').pop()?.replace(/\.md$/, '').toLowerCase() || '';
-              return fileStem === targetStem || h.file_rel.toLowerCase().includes(targetStem);
+              const stem = fileStem(h.file_rel).toLowerCase();
+              return stem === targetStem || h.file_rel.toLowerCase().includes(targetStem);
             });
 
             const options = matchingHeadings

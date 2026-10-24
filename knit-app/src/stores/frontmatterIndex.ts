@@ -10,7 +10,7 @@ import type {
   QueryResult,
   VaultOps,
 } from '../types';
-import { detectDocType, findFileMtimeMs, getFlatFiles } from '../utils';
+import { detectDocType, findFileMtimeMs, getFlatFiles, normalizeTaskStatus } from '../utils';
 import { runQuery, listFolderEntries } from '../utils/queryEngine';
 
 const TASK_LINE_RE = /^(\s*[-*]\s*)\[([ xX/\-?>!])\](\s+)(.*)$/;
@@ -224,7 +224,7 @@ class FrontmatterIndex {
             lines.forEach((rawLine, lineIndex) => {
               const m = rawLine.match(TASK_LINE_RE);
               if (!m) return;
-              const status = m[2] === 'X' ? 'x' : m[2];
+              const status = normalizeTaskStatus(m[2]);
               if (statusFilter && statusFilter !== 'all') {
                 if (statusFilter === 'todo' && status !== ' ') return;
                 if (statusFilter === 'done' && status !== 'x') return;

@@ -1,5 +1,6 @@
 import { vaultStore } from '../stores/vaultStore';
 import { copyTextWithToast } from './clipboardUtils';
+import { extractWikiTargets } from './markdownUtils';
 import { fileStem } from './treeUtils';
 
 /**
@@ -20,12 +21,7 @@ export async function packageContextForAI(
   const backlinks = await vaultStore.getBacklinks(path);
 
   // Extraction des WikiLinks pour ajouter le contexte lié
-  const wikiLinkRegex = /\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g;
-  const referencedDocs = new Set<string>();
-  let match: RegExpExecArray | null;
-  while ((match = wikiLinkRegex.exec(content)) !== null) {
-    referencedDocs.add(match[1].trim());
-  }
+  const referencedDocs = new Set(extractWikiTargets(content));
 
   let xml = `<document path="${path}" title="${title}">\n`;
 

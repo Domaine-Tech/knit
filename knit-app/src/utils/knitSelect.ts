@@ -3,18 +3,10 @@
  * Remplace les <select> natifs dont le popup OS n'est pas stylable.
  */
 
-import type { KnitSelectOption } from '../types';
+import type { KnitSelectDomOptions } from '../types';
 import { preventMiddleCompass } from './domUtils';
 
-export interface KnitSelectDomOptions {
-  value: string;
-  options: KnitSelectOption[];
-  onChange: (value: string) => void;
-  className?: string;
-  minWidth?: number | string;
-  /** Empêche la propagation vers CodeMirror / widgets parent */
-  stopEditorEvents?: boolean;
-}
+export type { KnitSelectDomOptions };
 
 let openMenuEl: HTMLElement | null = null;
 let openRootEl: HTMLElement | null = null;

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { vaultStore } from '../../stores/vaultStore';
-import { toIsoDate } from '../../utils/dateUtils';
+import { formatIsoDate } from '../../utils/dateUtils';
 import { priorityAccentColor } from '../../utils/calendarUtils';
 import { useCalendarIndex } from '../../hooks/useCalendarIndex';
 import type { CalendarEvent } from '../../types';
@@ -20,8 +20,8 @@ export const CalendarSidebarPane: React.FC<CalendarSidebarPaneProps> = ({
 }) => {
   const [cursor, setCursor] = useState(() => new Date());
   const { events, reload } = useCalendarIndex();
-  const [selectedDate, setSelectedDate] = useState<string>(() => toIsoDate(new Date()));
-  const [todayIso] = useState(() => toIsoDate(new Date()));
+  const [selectedDate, setSelectedDate] = useState<string>(() => formatIsoDate(new Date()));
+  const [todayIso] = useState(() => formatIsoDate(new Date()));
 
   const selectedDateEvents = useMemo(() => {
     return events.filter((e) => e.date === selectedDate);

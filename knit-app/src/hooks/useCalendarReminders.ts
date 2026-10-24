@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import type { CalendarEvent } from '../types';
 import { toast } from '../stores/toastStore';
-import { toIsoDate } from '../utils';
+import { formatIsoDate } from '../utils';
 
 /**
  * Toast discret 15 min avant une échéance horodatée (une fois / événement / session).
@@ -11,7 +11,7 @@ export function useCalendarReminders(events: CalendarEvent[]): void {
     const notified = new Set<string>();
     const tick = () => {
       const now = new Date();
-      const today = toIsoDate(now);
+      const today = formatIsoDate(now);
       const mins = now.getHours() * 60 + now.getMinutes();
       for (const ev of events) {
         if (ev.date !== today || !ev.startTime || ev.completed) continue;

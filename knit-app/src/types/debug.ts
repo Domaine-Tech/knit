@@ -148,8 +148,6 @@ export interface GalleryDebugReport {
   cardsCount: number;
   source: GallerySource;
   uniqueTags: number;
-  draggedIndex: number | null;
-  targetIndex: number | null;
 }
 
 export interface GraphDebugReport {

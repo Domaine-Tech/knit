@@ -107,3 +107,14 @@ export interface KnitSelectOption {
   value: string;
   label: string;
 }
+
+/** Options du sélecteur DOM (`createKnitSelectDom`). */
+export interface KnitSelectDomOptions {
+  value: string;
+  options: KnitSelectOption[];
+  onChange: (value: string) => void;
+  className?: string;
+  minWidth?: number | string;
+  /** Empêche la propagation vers CodeMirror / widgets parent */
+  stopEditorEvents?: boolean;
+}

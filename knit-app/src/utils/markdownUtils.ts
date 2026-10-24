@@ -174,6 +174,20 @@ export function findTableDelimiterOffsets(lineText: string): number[] {
 }
 
 /**
+ * Extrait les cibles WikiLink `[[note]]` / `[[note#ancre|alias]]` (stem sans `#`/`|`).
+ * Helper canonique — graphe, AI context et autres consommateurs délèguent ici.
+ */
+export function extractWikiTargets(content: string): string[] {
+  const targets: string[] = [];
+  const re = /\[\[([^\]|#]+)(?:[|#][^\]]*)?\]\]/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(content)) !== null) {
+    targets.push(m[1].trim());
+  }
+  return targets;
+}
+
+/**
  * Résout un WikiLink interne `[[cible|alias]]` / `[[cible#ancre]]` en cible navigable.
  * Ne gère pas les ancres locales pures `[[#titre]]` (filePath reste `#…`).
  */

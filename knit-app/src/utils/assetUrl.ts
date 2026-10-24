@@ -7,6 +7,7 @@ import { convertFileSrc } from '@tauri-apps/api/core';
 import { DEMO_ASSET_URLS } from '../stores/demoVaultLoader';
 import { vaultStore } from '../stores/vaultStore';
 import { isTauriEnvironment } from './env';
+import { normalizeRelPath } from './treeUtils';
 
 const REMOTE_OR_DATA_RE = /^(https?:|data:|blob:|asset:|tauri:|\/\/)/i;
 
@@ -46,8 +47,8 @@ function contentToDisplayUrl(relPath: string, content: string): string {
   return trimmed;
 }
 
-function normalizeRelPath(url: string): string {
-  return url.trim().replace(/\\/g, '/').replace(/^\/+/, '').replace(/^<\s*|\s*>$/g, '');
+function normalizeAssetRelPath(url: string): string {
+  return normalizeRelPath(url.trim(), { stripAngles: true });
 }
 
 function isDemoVaultPath(vaultPath: string | null): boolean {
@@ -81,7 +82,7 @@ export function resolveAssetUrl(url: string): string {
     return raw;
   }
 
-  const relPath = normalizeRelPath(raw);
+  const relPath = normalizeAssetRelPath(raw);
 
   const bundled = lookupBundledAsset(relPath);
   if (bundled) {

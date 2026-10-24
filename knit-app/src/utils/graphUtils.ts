@@ -3,18 +3,10 @@
  */
 
 import type { GraphData, GraphEdge, GraphNode } from '../types';
+import { extractWikiTargets } from './markdownUtils';
 import { fileStem } from './treeUtils';
 
-/** Extrait les cibles wikilink `[[note]]` d'un contenu. */
-export function extractWikiTargets(content: string): string[] {
-  const targets: string[] = [];
-  const re = /\[\[([^\]|#]+)(?:[|#][^\]]*)?\]\]/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(content)) !== null) {
-    targets.push(m[1].trim());
-  }
-  return targets;
-}
+export { extractWikiTargets };
 
 export function buildLocalGraph(
   centerPath: string,

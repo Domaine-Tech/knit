@@ -9,8 +9,13 @@ import {
   createDefaultKanbanMarkdown,
   fileStem,
   isTauriEnvironment,
+  normalizeRelPath,
+  normalizeSuggestIndexData,
+  normalizeTaskCard,
   slugify,
   copyTextWithToast,
+  type RawSuggestDocItem,
+  type RawTaskCard,
 } from '../utils';
 import type {
   HeadingItem,
@@ -100,7 +105,7 @@ export async function getBacklinks(ops: VaultOps, relPath: string): Promise<stri
     if (!ops.currentVaultPath) return [];
 
     if (!isTauriEnvironment()) {
-      const targetStem = relPath.split('/').pop()?.replace(/\.md$/, '') || '';
+      const targetStem = fileStem(relPath);
       const backlinks: string[] = [];
       for (const [p, c] of Object.entries(ops.localContents)) {
         if (p === relPath) continue;
@@ -129,8 +134,8 @@ export async function getBacklinks(ops: VaultOps, relPath: string): Promise<stri
 
 export function getAbsolutePath(ops: VaultOps, relPath: string = ''): string {
     if (!ops.currentVaultPath) return relPath;
-    const cleanRel = relPath.replace(/\\/g, '/').replace(/^\/+/, '');
-    const cleanVault = ops.currentVaultPath.replace(/\\/g, '/').replace(/\/+$/, '');
+    const cleanRel = normalizeRelPath(relPath);
+    const cleanVault = normalizeRelPath(ops.currentVaultPath).replace(/\/+$/, '');
     return cleanRel ? `${cleanVault}/${cleanRel}` : cleanVault;
   }
 
@@ -211,33 +216,35 @@ export async function getVaultTasks(ops: VaultOps): Promise<TaskCard[]> {
         if (!relPath.endsWith('.md')) continue;
         const fm = await ops.parseFrontmatter(content);
         if (fm.fields['statut'] || relPath.includes('taches/')) {
-          const statut = (fm.fields['statut'] || 'a-faire').toLowerCase();
-          const id = fm.fields['id'] || relPath.split('/').pop()?.replace('.md', '') || 'task';
+          const id = fm.fields['id'] || fileStem(relPath) || 'task';
           const titre = fm.fields['titre'] || fm.body.split('\n')[0].replace(/^#+\s*/, '') || id;
           const tags = fm.fields['tags']
             ? fm.fields['tags'].replace(/[[\]]/g, '').split(',').map((t) => t.trim().replace(/^#/, '')).filter(Boolean)
             : [];
-          tasks.push({
-            rel_path: relPath,
-            id,
-            titre,
-            statut,
-            priorite: fm.fields['priorite'],
-            assigne: fm.fields['assigne'],
-            sprint: fm.fields['sprint'],
-            echeance: fm.fields['echeance'],
-            tags,
-            snippet: fm.body.slice(0, 100),
-          });
+          tasks.push(
+            normalizeTaskCard({
+              rel_path: relPath,
+              id,
+              titre,
+              statut: fm.fields['statut'] || 'a-faire',
+              priorite: fm.fields['priorite'],
+              assigne: fm.fields['assigne'],
+              sprint: fm.fields['sprint'],
+              echeance: fm.fields['echeance'],
+              tags,
+              snippet: fm.body.slice(0, 100),
+            })
+          );
         }
       }
       return tasks.sort((a, b) => a.id.localeCompare(b.id));
     }
 
     try {
-      return await invoke<TaskCard[]>('get_vault_tasks', {
+      const raw = await invoke<RawTaskCard[]>('get_vault_tasks', {
         vaultPath: ops.currentVaultPath,
       });
+      return raw.map(normalizeTaskCard);
     } catch (err: unknown) {
       console.warn('Erreur récupération des tâches :', err);
       return [];
@@ -367,10 +374,15 @@ export async function getSuggestIndex(ops: VaultOps): Promise<SuggestIndexData> 
 
     if (isTauriEnvironment()) {
       try {
-        return await invoke<SuggestIndexData>('get_suggest_index', {
+        const raw = await invoke<{
+          docs: RawSuggestDocItem[];
+          headings: HeadingItem[];
+          tags: SuggestIndexData['tags'];
+        }>('get_suggest_index', {
           vaultPath: ops.currentVaultPath,
         });
-      } catch (err) {
+        return normalizeSuggestIndexData(raw);
+      } catch (err: unknown) {
         console.debug('Fallback local pour get_suggest_index :', err);
       }
     }
@@ -381,7 +393,7 @@ export async function getSuggestIndex(ops: VaultOps): Promise<SuggestIndexData> 
 
     for (const [p, c] of Object.entries(ops.localContents)) {
       if (!p.endsWith('.md')) continue;
-      const title = p.split('/').pop()?.replace(/\.md$/, '') || p;
+      const title = fileStem(p) || p;
       const doc_type = detectDocType(c, p);
       docs.push({ rel_path: p, title, doc_type });
 
@@ -441,7 +453,7 @@ export async function convertDocumentType(
         const fmPart = fmMatch ? fmMatch[0] : '';
         const bodyPart = fmMatch ? newContent.slice(fmMatch[0].length).trim() : newContent.trim();
 
-        let h1Title = relPath.split('/').pop()?.replace(/\.md$/, '') || 'Kanban';
+        let h1Title = fileStem(relPath) || 'Kanban';
         let remainingBody = bodyPart;
         const h1Match = bodyPart.match(/^#\s+(.+)$/m);
         if (h1Match) {
@@ -524,7 +536,7 @@ export async function openExternalPath(_ops: VaultOps, pathOrUrl: string): Promi
       try {
         await invoke<void>('open_external_path', { pathOrUrl: clean });
         return;
-      } catch (err) {
+      } catch (err: unknown) {
         console.warn('Erreur open_external_path :', err);
       }
     }

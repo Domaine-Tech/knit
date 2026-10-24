@@ -12,7 +12,7 @@ import {
 import { LivePreviewDebugHUD } from './LivePreviewDebugHUD';
 import { debugStore } from '../../stores/debugStore';
 import { useDebugMode, useEditorLinks, useCodeMirrorEditor, useRegisterDebugStats } from '../../hooks';
-import { getFlatFiles, scrollHeadingIntoView, stripFrontmatterBody } from '../../utils';
+import { fileStem, getFlatFiles, scrollHeadingIntoView, stripFrontmatterBody } from '../../utils';
 import { EditorChrome } from './EditorChrome';
 import { buildEditorContextMenu } from './buildEditorContextMenu';
 
@@ -203,7 +203,7 @@ export const Editor: React.FC<EditorProps> = ({
       setBacklinks(bl);
     });
 
-    const currentTitle = path.split('/').pop()?.replace(/\.md$/, '') || '';
+    const currentTitle = fileStem(path);
     if (currentTitle.length >= 3) {
       const allFiles = getFlatFiles(vaultStore.files);
       const unlinked: string[] = [];

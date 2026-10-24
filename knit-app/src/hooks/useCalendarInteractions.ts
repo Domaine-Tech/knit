@@ -14,7 +14,7 @@ import {
   copyTextWithToast,
   fileNameFromPath,
   journalPathForDate,
-  toIsoDate,
+  formatIsoDate,
 } from '../utils';
 
 /**
@@ -225,14 +225,14 @@ export function useCalendarInteractions(
       const abs = vaultStore.getAbsolutePath(ev.relPath);
 
       const now = new Date();
-      const today = toIsoDate(now);
+      const today = formatIsoDate(now);
       const tomorrowDate = new Date(now);
       tomorrowDate.setDate(now.getDate() + 1);
-      const tomorrow = toIsoDate(tomorrowDate);
+      const tomorrow = formatIsoDate(tomorrowDate);
 
       const nextWeekDate = new Date(now);
       nextWeekDate.setDate(now.getDate() + 7);
-      const nextWeek = toIsoDate(nextWeekDate);
+      const nextWeek = formatIsoDate(nextWeekDate);
 
       contextMenu.show(e, [
         {

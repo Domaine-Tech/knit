@@ -1,11 +1,49 @@
 import type { MutableRefObject, RefObject } from 'react';
-import type { EditorView } from '@codemirror/view';
+import type { Decoration, EditorView } from '@codemirror/view';
 import type { IconName } from './ui';
 import type { DocType, ViewMode } from './views';
 
 /**
  * Types relatifs à l'éditeur CodeMirror 6, liens et autocomplétion de Knit
  */
+
+/** Élément de décoration Live Preview (ligne ou plage). */
+export interface DecItem {
+  from: number;
+  to: number;
+  deco: Decoration;
+  isLine?: boolean;
+}
+
+/** Résultat d'un scanner de bloc (table, fence, details…). */
+export interface BlockScanResult {
+  handled: boolean;
+  nextLine: number;
+  lineDecorations: DecItem[];
+  rangeDecorations: DecItem[];
+}
+
+/** Résultat d'un scanner de ligne (markup inline / callouts). */
+export interface LineScanResult {
+  lineDecorations: DecItem[];
+  rangeDecorations: DecItem[];
+  /** Si true, la ligne a déjà été consommée (continue). */
+  skipRest: boolean;
+  activeCalloutType: string | null;
+}
+
+/** Plage de lignes du frontmatter YAML (1-indexé CodeMirror). */
+export interface FrontmatterRange {
+  fmStart: number;
+  fmEnd: number;
+}
+
+/** Progression des cases à cocher hors frontmatter. */
+export interface TaskProgress {
+  totalTasks: number;
+  completedTasks: number;
+  firstH1LineEnd: number;
+}
 
 /** Variante éditeur : page (onglet + CRDT) ou preview (hover, sans Yjs). */
 export type EditorVariant = 'page' | 'preview';

@@ -25,7 +25,7 @@ export async function getCalendarIndex(ops: VaultOps): Promise<CalendarIndexData
         vaultPath: ops.currentVaultPath,
       });
       return normalizeCalendarIndex(data);
-    } catch (err) {
+    } catch (err: unknown) {
       console.debug('Fallback local pour get_calendar_index :', err);
     }
   }
@@ -52,7 +52,7 @@ export async function updateCalendarEventDate(
         newEnd: newEnd ?? null,
       });
       return;
-    } catch (err) {
+    } catch (err: unknown) {
       console.debug('Fallback local pour update_calendar_event_date :', err);
     }
   }

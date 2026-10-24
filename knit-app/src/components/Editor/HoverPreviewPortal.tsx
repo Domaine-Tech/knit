@@ -1,12 +1,12 @@
-import React, { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import React, { useEffect, useRef, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import type { HoverPreviewData } from '../../types';
 import {
-  clampPreviewPosition,
   hoverPreviewWidthForDocType,
   isMiddleButton,
   preventMiddleCompass,
 } from '../../utils';
+import { useClampedHoverPos, useHoverBodyPointerProps } from '../../hooks';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { DocTypeViewRouter } from '../Workspace/DocTypeViewRouter';
 import { ErrorBoundary } from '../Common/ErrorBoundary';
@@ -28,13 +28,6 @@ function modKeyLabel(): string {
   return typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
     ? 'Cmd'
     : 'Ctrl';
-}
-
-function resolveDataTarget(eventTarget: EventTarget | null): string | null {
-  const linkEl = (eventTarget as HTMLElement | null)?.closest(
-    '[data-target]'
-  ) as HTMLElement | null;
-  return linkEl?.getAttribute('data-target') ?? null;
 }
 
 /** Styles panneau partagés primary / nested (largeur DocType unique). */
@@ -122,46 +115,6 @@ function PreviewTitle({
   );
 }
 
-/** Handlers nested / clic partagés (HTML stubs et vues DocType). */
-function useHoverBodyPointerProps(
-  isPinned: boolean,
-  showNestedHoverPreview: ((target: string, x: number, y: number) => void | Promise<void>) | undefined,
-  hideNestedHoverPreview: (() => void) | undefined,
-  navigateAndHide: (target: string, hideNested?: boolean) => void
-) {
-  return {
-    onMouseMove: (e: React.MouseEvent) => {
-      if (!isPinned || !showNestedHoverPreview || !hideNestedHoverPreview) return;
-      const target = resolveDataTarget(e.target);
-      if (target) {
-        void showNestedHoverPreview(target, e.clientX, e.clientY);
-      } else {
-        hideNestedHoverPreview();
-      }
-    },
-    onMouseLeave: () => {
-      hideNestedHoverPreview?.();
-    },
-    onClick: (e: React.MouseEvent) => {
-      if (!isPinned) return;
-      const target = resolveDataTarget(e.target);
-      if (!target) return;
-      e.preventDefault();
-      e.stopPropagation();
-      navigateAndHide(target, true);
-    },
-    onMouseDown: preventMiddleCompass,
-    onAuxClick: (e: React.MouseEvent) => {
-      if (!isPinned || !isMiddleButton(e)) return;
-      const target = resolveDataTarget(e.target);
-      if (!target) return;
-      e.preventDefault();
-      e.stopPropagation();
-      navigateAndHide(target, true);
-    },
-  };
-}
-
 function PreviewBody({
   preview,
   isPinned,
@@ -219,51 +172,6 @@ function PreviewBody({
       {...pointerProps}
     />
   );
-}
-
-function useClampedHoverPos(
-  preview: HoverPreviewData | null,
-  rootRef: React.RefObject<HTMLDivElement | null>,
-  panelWidth: number,
-  reclampToken?: unknown
-): { x: number; y: number } {
-  const [clamped, setClamped] = useState<{
-    x: number;
-    y: number;
-    srcX: number;
-    srcY: number;
-  } | null>(null);
-
-  useLayoutEffect(() => {
-    if (!preview) {
-      setClamped(null);
-      return;
-    }
-    const root = rootRef.current;
-    if (!root) return;
-    const rect = root.getBoundingClientRect();
-    const next = clampPreviewPosition(preview.originX, preview.originY, {
-      width: rect.width || panelWidth,
-      height: rect.height > 1 ? rect.height : undefined,
-      docType: preview.docType,
-    });
-    setClamped({
-      x: next.x,
-      y: next.y,
-      srcX: preview.originX,
-      srcY: preview.originY,
-    });
-  }, [preview, panelWidth, rootRef, reclampToken]);
-
-  const matches =
-    clamped !== null &&
-    preview !== null &&
-    clamped.srcX === preview.originX &&
-    clamped.srcY === preview.originY;
-  return {
-    x: matches ? clamped.x : (preview?.x ?? 0),
-    y: matches ? clamped.y : (preview?.y ?? 0),
-  };
 }
 
 /**

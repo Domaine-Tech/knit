@@ -31,3 +31,4 @@ export * from './livePreviewVisualLock';
 export * from './debugUtils';
 export * from './journalUtils';
 export * from './galleryUtils';
+export * from './taskMetaUtils';

@@ -10,6 +10,7 @@ import {
   useRegisterDebugStats,
 } from '../../hooks';
 import { GraphDebugHUD } from './GraphDebugHUD';
+import { DocViewChrome } from '../Workspace/DocViewChrome';
 
 interface GraphViewProps {
   centerPath: string;
@@ -108,61 +109,57 @@ export const GraphView: React.FC<GraphViewProps> = ({ centerPath, onOpenFile, on
         minWidth: 0,
       }}
     >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          padding: '8px 12px',
-          borderBottom: '1px solid var(--knit-border)',
-        }}
-      >
-        <DuotoneIcon name="graph" size={14} />
-        <strong style={{ fontSize: 12 }}>Graphe local</strong>
-        <span style={{ fontSize: 10, color: 'var(--knit-text-muted)' }}>
-          {data.nodes.length} nœuds • {data.edges.length} liens
-        </span>
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
-          <button
-            type="button"
-            className="knit-btn"
-            onClick={resetView}
-            style={{ fontSize: 10, padding: '2px 7px' }}
-            data-tooltip="Recentrer la vue sur la note active"
-          >
-            Recentrer
-          </button>
-          <button
-            type="button"
-            className="knit-btn"
-            onClick={() => setZoom((z) => Math.min(2.5, z * 1.25))}
-            style={{ padding: '2px 6px' }}
-            data-tooltip="Zoom avant (+25%)"
-          >
-            <DuotoneIcon name="plus" size={11} />
-          </button>
-          <button
-            type="button"
-            className="knit-btn"
-            onClick={() => setZoom((z) => Math.max(0.3, z / 1.25))}
-            style={{ padding: '2px 6px' }}
-            data-tooltip="Zoom arrière (-25%)"
-          >
-            <DuotoneIcon name="minus" size={11} />
-          </button>
-          {onClose && (
+      <DocViewChrome
+        icon="graph"
+        title="Graphe local"
+        subtitle={
+          <span style={{ fontSize: 10, color: 'var(--knit-text-muted)' }}>
+            {data.nodes.length} nœuds • {data.edges.length} liens
+          </span>
+        }
+        trailing={
+          <>
             <button
               type="button"
               className="knit-btn"
-              onClick={onClose}
-              style={{ padding: 3 }}
-              data-tooltip="Fermer le graphe local"
+              onClick={resetView}
+              style={{ fontSize: 10, padding: '2px 7px' }}
+              data-tooltip="Recentrer la vue sur la note active"
             >
-              <DuotoneIcon name="close" size={12} />
+              Recentrer
             </button>
-          )}
-        </div>
-      </div>
+            <button
+              type="button"
+              className="knit-btn"
+              onClick={() => setZoom((z) => Math.min(2.5, z * 1.25))}
+              style={{ padding: '2px 6px' }}
+              data-tooltip="Zoom avant (+25%)"
+            >
+              <DuotoneIcon name="plus" size={11} />
+            </button>
+            <button
+              type="button"
+              className="knit-btn"
+              onClick={() => setZoom((z) => Math.max(0.3, z / 1.25))}
+              style={{ padding: '2px 6px' }}
+              data-tooltip="Zoom arrière (-25%)"
+            >
+              <DuotoneIcon name="minus" size={11} />
+            </button>
+            {onClose && (
+              <button
+                type="button"
+                className="knit-btn"
+                onClick={onClose}
+                style={{ padding: 3 }}
+                data-tooltip="Fermer le graphe local"
+              >
+                <DuotoneIcon name="close" size={12} />
+              </button>
+            )}
+          </>
+        }
+      />
 
       <svg
         width="100%"

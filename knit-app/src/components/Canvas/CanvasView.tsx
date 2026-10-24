@@ -1,14 +1,15 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo } from 'react';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { toast } from '../../stores/toastStore';
-import { copyDebugJson, dumpDebugConsole, fileStem } from '../../utils';
-import { useDebugMode, useDelayedHoverPreview, useRegisterDebugStats } from '../../hooks';
-import type { CanvasData, CanvasDebugReport, CanvasNode } from '../../types';
+import { copyDebugJson, dumpDebugConsole, fileStem, isCanvasParseOk } from '../../utils';
 import {
-  isCanvasParseOk,
-  parseCanvasContent,
-  serializeCanvasContent,
-} from '../../utils/canvasUtils';
+  useCanvasDocument,
+  useCanvasViewport,
+  useDebugMode,
+  useDelayedHoverPreview,
+  useRegisterDebugStats,
+} from '../../hooks';
+import type { CanvasData, CanvasDebugReport, CanvasNode } from '../../types';
 import { CanvasDebugHUD } from './CanvasDebugHUD';
 import { DocViewChrome } from '../Workspace/DocViewChrome';
 
@@ -33,69 +34,31 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
   readOnly = false,
   compactChrome = false,
 }) => {
-  const [data, setData] = useState<CanvasData>(() => parseCanvasContent(content));
-  const [pan, setPan] = useState({ x: 40, y: 40 });
-  const [zoom, setZoom] = useState(1);
-  const [activeDragNodeId, setActiveDragNodeId] = useState<string | null>(null);
-  const [isDragOverCanvas, setIsDragOverCanvas] = useState(false);
-  const dragRef = useRef<{ id: string; ox: number; oy: number } | null>(null);
-  const spaceRef = useRef<HTMLDivElement>(null);
-  const lastContentRef = useRef(content);
   const hoverPreview = useDelayedHoverPreview(0);
-
-  useEffect(() => {
-    if (content !== lastContentRef.current) {
-      lastContentRef.current = content;
-      queueMicrotask(() => {
-        setData(parseCanvasContent(content));
-      });
-    }
-  }, [content]);
-
-  const persist = useCallback(
-    (next: CanvasData) => {
-      setData(next);
-      if (readOnly) return;
-      onUpdateContent(path, serializeCanvasContent(content, next));
-    },
-    [content, onUpdateContent, path, readOnly]
-  );
-
-  const onNodePointerDown = (e: React.PointerEvent, node: CanvasNode) => {
-    if (readOnly) return;
-    e.stopPropagation();
-    hoverPreview.cancel(true);
-    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-    dragRef.current = {
-      id: node.id,
-      ox: e.clientX / zoom - node.x - pan.x / zoom,
-      oy: e.clientY / zoom - node.y - pan.y / zoom,
-    };
-    setActiveDragNodeId(node.id);
-  };
-
-  const onPointerMove = (e: React.PointerEvent) => {
-    if (!dragRef.current) return;
-    const { id, ox, oy } = dragRef.current;
-    const x = e.clientX / zoom - pan.x / zoom - ox;
-    const y = e.clientY / zoom - pan.y / zoom - oy;
-    setData((prev) => ({
-      ...prev,
-      nodes: prev.nodes.map((n) => (n.id === id ? { ...n, x, y } : n)),
-    }));
-  };
-
-  const onPointerUp = () => {
-    if (!dragRef.current) return;
-    dragRef.current = null;
-    setActiveDragNodeId(null);
-    setData((prev) => {
-      if (!readOnly) {
-        onUpdateContent(path, serializeCanvasContent(content, prev));
-      }
-      return prev;
-    });
-  };
+  const { data, setData, persist, writeContent } = useCanvasDocument({
+    path,
+    content,
+    onUpdateContent,
+    readOnly,
+  });
+  const {
+    pan,
+    zoom,
+    setZoom,
+    activeDragNodeId,
+    isDragOverCanvas,
+    setIsDragOverCanvas,
+    spaceRef,
+    onNodePointerDown,
+    onPointerMove,
+    onPointerUp,
+    onWheel,
+  } = useCanvasViewport({
+    setData,
+    writeContent,
+    readOnly,
+    onCancelHover: () => hoverPreview.cancel(true),
+  });
 
   const { isDebugActive, toggleDebug } = useDebugMode();
   const parseOk = useMemo(() => isCanvasParseOk(content), [content]);
@@ -233,14 +196,7 @@ export const CanvasView: React.FC<CanvasViewProps> = ({
         }}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
-        onWheel={(e) => {
-          if (e.ctrlKey || e.metaKey) {
-            e.preventDefault();
-            setZoom((z) => Math.max(0.4, Math.min(2, z - e.deltaY * 0.001)));
-          } else {
-            setPan((p) => ({ x: p.x - e.deltaX, y: p.y - e.deltaY }));
-          }
-        }}
+        onWheel={onWheel}
       >
         {isDragOverCanvas && (
           <div

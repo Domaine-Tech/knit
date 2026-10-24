@@ -1,13 +1,10 @@
 import type { Text } from '@codemirror/state';
 import { Decoration } from '@codemirror/view';
+import type { DecItem, FrontmatterRange, TaskProgress } from '../../../../types';
 import { FrontmatterPropertiesWidget } from '../widgets/frontmatterWidget';
 import { ProgressBarWidget } from '../widgets/progressBarWidget';
-import type { DecItem } from './types';
 
-export interface FrontmatterRange {
-  fmStart: number;
-  fmEnd: number;
-}
+export type { FrontmatterRange, TaskProgress };
 
 /** Détecte la plage de lignes du frontmatter YAML (1-indexé CodeMirror). */
 export function detectFrontmatterRange(doc: Text): FrontmatterRange {
@@ -23,12 +20,6 @@ export function detectFrontmatterRange(doc: Text): FrontmatterRange {
     }
   }
   return { fmStart, fmEnd };
-}
-
-export interface TaskProgress {
-  totalTasks: number;
-  completedTasks: number;
-  firstH1LineEnd: number;
 }
 
 /** Compte les tâches et localise le premier H1 (hors frontmatter). */

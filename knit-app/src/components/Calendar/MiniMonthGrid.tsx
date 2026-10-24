@@ -5,7 +5,7 @@ import {
   collectDatesWithEvents,
   pad2,
 } from '../../utils/calendarUtils';
-import { toIsoDate } from '../../utils/dateUtils';
+import { formatIsoDate } from '../../utils/dateUtils';
 import type { CalendarEvent } from '../../types';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 
@@ -40,7 +40,7 @@ export const MiniMonthGrid: React.FC<MiniMonthGridProps> = ({
 }) => {
   const year = cursor.getFullYear();
   const month = cursor.getMonth();
-  const todayIso = useMemo(() => toIsoDate(new Date()), []);
+  const todayIso = useMemo(() => formatIsoDate(new Date()), []);
   const datesWithEvents = useMemo(() => collectDatesWithEvents(events), [events]);
   const cells = useMemo(() => buildMonthGridCells(year, month), [year, month]);
 
@@ -109,7 +109,7 @@ export const MiniMonthGrid: React.FC<MiniMonthGridProps> = ({
             onClick={() => {
               const now = new Date();
               onCursorChange(now);
-              onDayClick(toIsoDate(now));
+              onDayClick(formatIsoDate(now));
             }}
             style={{ padding: '2px 6px', fontSize: 10 }}
           >

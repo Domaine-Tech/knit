@@ -26,13 +26,6 @@ export const GalleryDebugHUD: React.FC<GalleryDebugHUDProps> = ({
         { label: `source: ${report.source}` },
         { label: `${report.uniqueTags} tags` },
       ]}
-      meta={
-        report.draggedIndex !== null || report.targetIndex !== null ? (
-          <span style={{ fontSize: 11, color: 'var(--knit-text-muted)' }}>
-            DnD {report.draggedIndex ?? '—'} → {report.targetIndex ?? '—'}
-          </span>
-        ) : undefined
-      }
       filePath={report.path}
       onCopyJson={onCopyJson}
       onDumpConsole={onDumpConsole}

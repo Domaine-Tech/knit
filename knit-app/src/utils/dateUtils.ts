@@ -10,9 +10,6 @@ export function formatIsoDate(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-/** Alias Agenda — même sémantique que `formatIsoDate`. */
-export const toIsoDate = formatIsoDate;
-
 /**
  * Prochaine occurrence d'un jour de la semaine.
  * Convention JavaScript : 0 = dimanche, 1 = lundi, ..., 6 = samedi.

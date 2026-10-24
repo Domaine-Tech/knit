@@ -24,7 +24,7 @@ import {
   journalPathForDate,
   preventMiddleCompass,
   startOfWeek,
-  toIsoDate,
+  formatIsoDate,
 } from '../../utils';
 import {
   useCalendarIndex,
@@ -96,7 +96,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     [readOnly]
   );
 
-  const [todayIso] = useState(() => toIsoDate(new Date()));
+  const [todayIso] = useState(() => formatIsoDate(new Date()));
 
   useEffect(() => {
     if (!initialDate || !/^\d{4}-\d{2}-\d{2}$/.test(initialDate)) return;
@@ -189,7 +189,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       viewMode,
       scopeMode,
       folderScope,
-      cursorIso: toIsoDate(cursor),
+      cursorIso: formatIsoDate(cursor),
       eventsTotal: events.length,
       eventsFiltered: filtered.length,
       filterMode,
@@ -245,11 +245,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     return Array.from({ length: 7 }, (_, i) => {
       const d = new Date(start);
       d.setDate(start.getDate() + i);
-      return { date: d, iso: toIsoDate(d) };
+      return { date: d, iso: formatIsoDate(d) };
     });
   }, [cursor]);
 
-  const dayIso = toIsoDate(cursor);
+  const dayIso = formatIsoDate(cursor);
 
   const eventsByDate = useMemo(() => {
     const map = new Map<string, CalendarEvent[]>();

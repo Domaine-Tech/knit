@@ -69,7 +69,7 @@ class DebugStore {
     this.listeners.forEach((l) => {
       try {
         l();
-      } catch (err) {
+      } catch (err: unknown) {
         console.error('[DebugStore] Erreur notification listener:', err);
       }
     });

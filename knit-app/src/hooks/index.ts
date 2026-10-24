@@ -21,3 +21,7 @@ export * from './useCalendarInteractions';
 export * from './useCalendarReminders';
 export * from './useLocalGraphData';
 export * from './useGraphViewport';
+export * from './useClampedHoverPos';
+export * from './useHoverBodyPointerProps';
+export * from './useCanvasViewport';
+export * from './useCanvasDocument';

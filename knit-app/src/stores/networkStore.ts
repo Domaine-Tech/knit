@@ -100,7 +100,7 @@ class NetworkStore {
       try {
         const code = await invoke<string>('get_p2p_invitation_code');
         this.invitationCode = code;
-      } catch (err) {
+      } catch (err: unknown) {
         console.warn('Impossible de récupérer le code invitation:', err);
       }
 
@@ -240,7 +240,7 @@ class NetworkStore {
         }
       }
       this.notify();
-    } catch (e) {
+    } catch (e: unknown) {
       console.error('Erreur démarrage réseau P2P:', e);
       toast.error(`Erreur réseau P2P : ${e}`);
     }
@@ -257,7 +257,7 @@ class NetworkStore {
     if (isTauriEnvironment()) {
       try {
         await invoke<void>('stop_p2p_network');
-      } catch (err) {
+      } catch (err: unknown) {
         console.warn('Erreur arrêt réseau:', err);
       }
     }
@@ -297,7 +297,7 @@ class NetworkStore {
       this.notify();
       toast.success(`Connecté avec succès à ${peer.display_name} !`);
       return peer;
-    } catch (err) {
+    } catch (err: unknown) {
       toast.error(`Échec de la connexion : ${err}`);
       throw err;
     }
@@ -312,7 +312,7 @@ class NetworkStore {
     try {
       const b64 = uint8ArrayToBase64(update);
       await invoke<void>('broadcast_yjs_update', { docId, updateBase64: b64 });
-    } catch (err) {
+    } catch (err: unknown) {
       console.warn('Erreur broadcast Yjs update:', err);
     }
   }
@@ -326,7 +326,7 @@ class NetworkStore {
     try {
       const b64 = uint8ArrayToBase64(awareness);
       await invoke<void>('broadcast_awareness', { docId, awarenessBase64: b64 });
-    } catch (err) {
+    } catch (err: unknown) {
       console.warn('Erreur broadcast awareness:', err);
     }
   }
@@ -339,7 +339,7 @@ class NetworkStore {
 
     try {
       return await invoke<boolean>('sync_asset_from_peers', { relPath, blake3Hash });
-    } catch (err) {
+    } catch (err: unknown) {
       console.warn('Erreur sync asset:', err);
       return false;
     }
@@ -395,7 +395,7 @@ class NetworkStore {
       }
       this.notify();
       return profile;
-    } catch (err) {
+    } catch (err: unknown) {
       console.warn('Erreur chargement profil:', err);
       throw err;
     }
@@ -413,7 +413,7 @@ class NetworkStore {
         this.notify();
       }
       return identity;
-    } catch (err) {
+    } catch (err: unknown) {
       console.warn('Erreur get_local_peer_identity:', err);
       return this.localIdentity;
     }
@@ -429,7 +429,7 @@ class NetworkStore {
         vaultPath,
         hash: hash || null,
       });
-    } catch (err) {
+    } catch (err: unknown) {
       console.warn('Erreur chargement avatar base64:', err);
       return null;
     }
@@ -463,7 +463,7 @@ class NetworkStore {
     try {
       await invoke<void>('save_user_profile', { vaultPath, profile });
       toast.success('Profil utilisateur enregistré');
-    } catch (err) {
+    } catch (err: unknown) {
       toast.error(`Erreur enregistrement profil: ${err}`);
       throw err;
     }
@@ -504,7 +504,7 @@ class NetworkStore {
       }
       toast.success('Photo de profil mise à jour');
       return avatar;
-    } catch (err) {
+    } catch (err: unknown) {
       toast.error(`Échec du téléversement de l'avatar: ${err}`);
       throw err;
     }
@@ -533,7 +533,7 @@ class NetworkStore {
       }
       toast.info('Avatar réinitialisé aux initiales');
       return avatar;
-    } catch (err) {
+    } catch (err: unknown) {
       toast.error(`Erreur réinitialisation avatar: ${err}`);
       throw err;
     }
@@ -557,7 +557,7 @@ class NetworkStore {
         toast.info('Aucun dépôt .git détecté à la racine du coffre');
       }
       return ok;
-    } catch (err) {
+    } catch (err: unknown) {
       toast.error(`Erreur auto-configuration Git: ${err}`);
       return false;
     }
@@ -572,7 +572,7 @@ class NetworkStore {
     try {
       const stateVectorBase64 = uint8ArrayToBase64(stateVector);
       await invoke<void>('send_p2p_sync_step1', { docId, stateVectorBase64 });
-    } catch (err) {
+    } catch (err: unknown) {
       console.warn('Erreur envoi SyncStep1:', err);
     }
   }
@@ -586,7 +586,7 @@ class NetworkStore {
     try {
       const updateBase64 = uint8ArrayToBase64(update);
       await invoke<void>('send_p2p_sync_step2', { peerId, docId, updateBase64 });
-    } catch (err) {
+    } catch (err: unknown) {
       console.warn('Erreur envoi SyncStep2:', err);
     }
   }
@@ -595,7 +595,7 @@ class NetworkStore {
     this.unlistenFns.forEach((unlisten) => {
       try {
         unlisten();
-      } catch (err) {
+      } catch (err: unknown) {
         console.warn('Erreur unlisten:', err);
       }
     });

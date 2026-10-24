@@ -109,7 +109,7 @@ export class CRDTManager {
         vaultPath,
         docId: path,
       });
-    } catch (err) {
+    } catch (err: unknown) {
       console.warn('Erreur list_doc_snapshots:', err);
       return [];
     }
@@ -135,7 +135,7 @@ export class CRDTManager {
           yjsSnapshotBase64,
         });
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.warn('Erreur lors de la compaction du snapshot Yjs:', err);
     }
   }
@@ -191,7 +191,7 @@ export class CRDTManager {
             try {
               const bytes = base64ToUint8Array(snapshot.yjs_snapshot_base64);
               Y.applyUpdate(doc, bytes, 'snapshot-load');
-            } catch (err) {
+            } catch (err: unknown) {
               console.warn('Erreur chargement snapshot compacté:', err);
             }
           }

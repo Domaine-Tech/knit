@@ -15,9 +15,16 @@ const MEDIA_EXTENSIONS = new Set([
   'ico',
 ]);
 
-/** Normalise les séparateurs Windows vers `/` et retire le slash initial. */
-export function normalizeRelPath(relPath: string): string {
-  return relPath.replace(/\\/g, '/').replace(/^\/+/, '');
+/**
+ * Normalise les séparateurs Windows vers `/` et retire le slash initial.
+ * Optionnellement retire les chevrons Markdown `<…>` (URLs/chemins image).
+ */
+export function normalizeRelPath(relPath: string, opts?: { stripAngles?: boolean }): string {
+  let out = relPath.replace(/\\/g, '/').replace(/^\/+/, '');
+  if (opts?.stripAngles) {
+    out = out.trim().replace(/^<\s*|\s*>$/g, '');
+  }
+  return out;
 }
 
 /** Nom de fichier (dernier segment) d'un chemin relatif. */
