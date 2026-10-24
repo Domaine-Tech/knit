@@ -36,3 +36,9 @@ Thumbs.db
 *.log
 .env
 .env.local
+
+# === Updater Minisign (jamais committer la clé privée) ===
+*.key
+knit-updater.key
+knit-app/knit-updater.key
+knit-app/knit-updater.key.pub

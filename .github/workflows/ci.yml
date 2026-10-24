@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, master, develop]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: Frontend (lint + build)
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: knit-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: knit-app/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+      - name: Garde-fou flatten 50k
+        run: npx --yes tsx src/utils/treeFlatten.test.ts
+      - name: Garde-fou LRU CRDT
+        run: npx --yes tsx src/crdt/crdtLru.test.ts
+
+  rust:
+    name: Rust (check + test)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            .
+            knit-app/src-tauri
+      - name: Dépendances système (WebKit)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libssl-dev
+      - name: cargo test --workspace
+        run: cargo test --workspace
+
+  # Après CI vert sur main/master : crée le tag vX.Y.Z s'il n'existe pas encore.
+  # Le push du tag déclenche automatiquement .github/workflows/release.yml.
+  tag-if-needed:
+    name: Tag SemVer (déclenche Release)
+    needs: [frontend, rust]
+    if: >
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Lire la version workspace et tagger si absent
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          VERSION=$(grep -E '^version\s*=' Cargo.toml | head -n1 | sed -E 's/.*"([^"]+)".*/\1/')
+          TAG="v${VERSION}"
+          echo "Version Cargo.toml = ${VERSION} → tag ${TAG}"
+          if git rev-parse "refs/tags/${TAG}" >/dev/null 2>&1; then
+            echo "Le tag ${TAG} existe déjà — aucune action."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${TAG}" -m "Release ${TAG}"
+          git push origin "refs/tags/${TAG}"
+          echo "Tag ${TAG} poussé — Release multi-OS démarrée."

@@ -1,12 +1,73 @@
 mod commands;
 
 use commands::*;
+use tauri::{
+    menu::{Menu, MenuItem},
+    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
+    Emitter, Manager,
+};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .manage(AppState::default())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .setup(|app| {
+            let show_i = MenuItem::with_id(app, "show", "Ouvrir", true, None::<&str>)?;
+            let settings_i =
+                MenuItem::with_id(app, "settings", "Paramètres", true, None::<&str>)?;
+            let quit_i = MenuItem::with_id(app, "quit", "Quitter", true, None::<&str>)?;
+            let menu = Menu::with_items(app, &[&show_i, &settings_i, &quit_i])?;
+
+            let icon = app
+                .default_window_icon()
+                .cloned()
+                .ok_or_else(|| "Icône fenêtre manquante pour le tray".to_string())?;
+
+            let _tray = TrayIconBuilder::with_id("main")
+                .icon(icon)
+                .menu(&menu)
+                .tooltip("Knit — hors-ligne")
+                .on_menu_event(|app, event| match event.id.as_ref() {
+                    "show" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
+                    "settings" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                            let _ = window.emit("knit-open-settings", ());
+                        }
+                    }
+                    "quit" => {
+                        app.exit(0);
+                    }
+                    _ => {}
+                })
+                .on_tray_icon_event(|tray, event| {
+                    if let TrayIconEvent::Click {
+                        button: MouseButton::Left,
+                        button_state: MouseButtonState::Up,
+                        ..
+                    } = event
+                    {
+                        let app = tray.app_handle();
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
+                })
+                .build(app)?;
+
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             get_vault_tree,
             read_vault_file,
@@ -71,6 +132,7 @@ pub fn run() {
             invalidate_vault_index,
             index_markdown_content,
             open_external_path,
+            set_tray_network_status,
         ])
         .run(tauri::generate_context!())
         .expect("Erreur lors de l'exécution de l'application Knit Tauri");

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Categories=Office;TextEditor;
+Comment=Espace de travail collaboratif local-first en Markdown pur
+Exec=knit %u
+Icon=knit
+Name=Knit
+Terminal=false
+Type=Application
+MimeType=text/markdown;text/x-markdown;

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-set-tray-network-status"
+description = "Enables the set_tray_network_status command without any pre-configured scope."
+commands.allow = ["set_tray_network_status"]
+
+[[permission]]
+identifier = "deny-set-tray-network-status"
+description = "Denies the set_tray_network_status command without any pre-configured scope."
+commands.deny = ["set_tray_network_status"]

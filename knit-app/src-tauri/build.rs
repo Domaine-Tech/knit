@@ -66,6 +66,7 @@ fn main() {
             "invalidate_vault_index",
             "index_markdown_content",
             "open_external_path",
+            "set_tray_network_status",
         ]),
     );
     tauri_build::try_build(attributes).expect("Erreur lors de la compilation de tauri-build");

@@ -2,11 +2,13 @@ mod vault;
 mod watcher;
 mod network;
 mod markdown;
+mod system;
 
 pub use vault::*;
 pub use watcher::*;
 pub use network::*;
 pub use markdown::*;
+pub use system::*;
 
 use knit_core::error::{KnitError, Result as KnitResult};
 use knit_core::network::KnitNetworkNode;
