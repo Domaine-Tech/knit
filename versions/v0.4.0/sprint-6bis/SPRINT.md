@@ -90,6 +90,6 @@ Compléments livrés sur la branche 6bis après la DoD Dataview, avant le bump `
 
 ### Ce qu'on peut améliorer
 
-- Enrichir `KnitSuggestIndex` Rust pour partager un seul index FM (éviter double scan à long terme) — **B-057**.
+- ~~Enrichir `KnitSuggestIndex` Rust pour partager un seul index FM — **B-057**~~ → livré (2026-10-24) via `vault_index.rs` / `get_vault_index`.
 - Bump SemVer `0.4.0` reporté à la livraison complète (6bis + 6ter) : runtime reste en `0.3.0`.
 - Galerie multi-médias / zoom image : hors scope 6bis (vue image unitaire seulement).

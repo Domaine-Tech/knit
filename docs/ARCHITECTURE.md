@@ -86,8 +86,9 @@ knit/
 │   │   │   ├── mod.rs
 │   │   │   ├── frontmatter.rs # YAML frontmatter
 │   │   │   ├── diff.rs     # Calcul de diff texte
-│   │   │   ├── suggest.rs  # Index incrémental d'autocomplétion (KnitSuggestIndex < 2ms)
-│   │   │   └── calendar.rs # Index temporel du coffre (KnitCalendarIndex @dates, @heures, @assignations)
+│   │   │   ├── suggest.rs  # Projection autocomplétion (KnitSuggestIndex < 2ms)
+│   │   │   ├── calendar.rs # Projection agenda (KnitCalendarIndex @dates, @heures, @assignations)
+│   │   │   └── vault_index.rs # Scan unique B-057 (FM + suggest + tâches + agenda)
 │   │   └── vault/          # Gestion du coffre-fort
 │   │       ├── mod.rs
 │   │       ├── init.rs     # Création / jonction de vault
@@ -200,7 +201,8 @@ graph TD
 Le moteur d'interception de blocs de code dans l'éditeur CodeMirror 6 utilise des décorations `WidgetType` réactives :
 - **Blocs Mermaid** (Sprint 6) : ```` ```mermaid ```` → rendu en SVG vectoriel interactif inline avec debounce 300ms.
 - **Blocs Dynamiques & Requêtes** (Sprint 6bis — livré) : ```` ```knit-files ````, ```` ```knit-query ````, ```` ```knit-toc ````, ```` ```knit-tasks ```` → interrogent l'index Frontmatter en mémoire (`frontmatterIndex` / `vaultStore.queryFiles()`) et projettent une table, une liste ou un sommaire en temps réel sans altérer le disque.
-- **Invalidation** : rebuild par lots au chargement du coffre ; `upsert` / `remove` sur write, watcher et suppression.
+- **Index coffre unifié (B-057)** : un seul parcours Rust (`get_vault_index` / `vault_index.rs`) hydrate FM, suggest, tâches inline et agenda ; `queryFiles()` reste synchrone sur la Map TS.
+- **Invalidation** : `invalidate_vault_index` + rebuild au chargement / watcher ; `upsert` unitaire via `index_markdown_content`.
 - **Mutations** : `knit-tasks` bascule une case source via Yjs (`crdtManager`) ou `writeFile` ; `knit-query` peut réécrire `statut:` via `updateFrontmatter`.
 - **Assistant tableaux GFM (B-047)** : mini-toolbar (+ ligne / colonne, alignement, supprimer) + `formatTableColumns` dans l'éditeur.
 - En mode Source `</>`, le bloc de code brut redevient directement modifiable en texte simple.

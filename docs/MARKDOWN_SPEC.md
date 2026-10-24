@@ -333,7 +333,9 @@ status: todo
 group_by: file
 ```
 ````
-- Cocher une case dans le bloc dynamique coche instantanément la case dans le fichier `.md` d'origine via CRDT / Yjs !
+- Cocher une case dans le bloc dynamique coche instantanément la case dans le fichier `.md` d'origine via CRDT / Yjs.
+- **Ordre d'affichage** : fichiers A→Z, puis n° de ligne (stable — cocher ne réordonne pas les groupes).
+- **`status: all`** : la tâche reste dans la liste (case mise à jour). **`status: todo`** : cocher retire la ligne du filtre (comportement attendu). **`group_by: file`** : si plus aucune tâche visible dans un fichier, le groupe disparaît.
 
 ---
 

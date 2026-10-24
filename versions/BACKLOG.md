@@ -154,7 +154,7 @@
 | # | Tâche | Priorité | Statut | Sprint |
 |---|---|---|---|---|
 | B-047a | Toolbar tableaux : alignement G/C/D sur la **colonne sous curseur** (avec badge Col. X/Y) | 🟡 | ✅ | Sprint 6bis |
-| B-057 | Unifier l'index Frontmatter TS avec `KnitSuggestIndex` Rust (éviter double scan à long terme) | 🟠 | 💡 | — |
+| B-057 | Unifier l'index Frontmatter TS avec `KnitSuggestIndex` Rust (éviter double scan à long terme) | 🟠 | ✅ | — |
 | B-058 | Extraire `useSidebarTree` / `useNetworkSession` (découplage P2 Prompt 9 — Sidebar ~743 L, NetworkModal ~521 L) | 🟡 | ✅ | Prompt 1 |
 
 ### Sprint 6ter — Vues Immersives (Canvas, Calendrier & Diaporama)
@@ -178,17 +178,17 @@
 
 | # | Tâche | Priorité | Statut | Sprint |
 |---|---|---|---|---|
-| B-032 | Wizard d'initialisation : flux "Créer un coffre-fort" | 🔴 | 📋 | Sprint 7 |
-| B-033 | Wizard d'initialisation : flux "Rejoindre un coffre-fort" | 🔴 | 📋 | Sprint 7 |
-| B-034 | Page de paramètres (thème, hue, réseau) | 🟠 | 📋 | Sprint 7 |
-| B-034a | Corbeille 100% intégrée (.knit/trash/) : réglage dans les paramètres (OS vs Knit), volet dédié avec prévisualisation, restauration ciblée et vidage | 🟠 | 📋 | Sprint 7 |
-| B-035 | Présence collaborative (avatars sidebar, infobulle, téléportation, curseurs sobres) | 🟡 | 📋 | Sprint 7 |
-| B-035b | Volet Historique de versions & Time Travel (Diff visuel + Restauration) | 🟠 | 📋 | Sprint 7 |
-| B-036 | Créer le fichier `.knitshare` et la structure par défaut | 🟠 | 📋 | Sprint 7 |
-| B-017b | Appairage P2P LAN Simplifié (Code PIN éphémère à 6 chiffres & QR Code dynamique pour inviter sans clé 64 chars) | 🟠 | 📋 | Sprint 7 |
-| B-043 | Kit Universel Multi-Agents IA & Registre de Mémoire Persistante (`.knit/AI_MEMORY.md`, Cursor `.cursor/rules/`, Claude `CLAUDE.md`, Antigravity `.agents/skills/`, Copilot, etc.) | 🔴 | 📋 | Sprint 7 |
-| B-043a | Playbook d'exploitation Knit pour agents IA (à l'init du coffre) : doc générée (`GUIDE_IA.md` ou section riche de `KNIT.md`) pour maximiser les capacités Knit au service de l'humain — tâches B-054, Doc-Driven Views, blocs `knit-*`, slash, WikiLinks, assets, conventions de dossiers, handoff `AI_MEMORY` ; coché avec B-043 dans le Wizard | 🔴 | 📋 | Sprint 7 |
-| B-051 | Mode "Réseau Local Strict / Air-Gapped" (LAN-Only Toggle désactivant les relays WAN) | 🟡 | 📋 | Sprint 7 |
+| B-032 | Wizard d'initialisation : flux "Créer un coffre-fort" | 🔴 | ✅ | Sprint 7 |
+| B-033 | Wizard d'initialisation : flux "Rejoindre un coffre-fort" | 🔴 | ✅ | Sprint 7 |
+| B-034 | Page de paramètres (thème, hue, réseau) | 🟠 | ✅ | Sprint 7 |
+| B-034a | Corbeille 100% intégrée (.knit/trash/) : réglage dans les paramètres (OS vs Knit), volet dédié avec prévisualisation, restauration ciblée et vidage | 🟠 | ✅ | Sprint 7 |
+| B-035 | Présence collaborative (avatars sidebar, infobulle, téléportation, curseurs sobres) | 🟡 | ✅ | Sprint 7 |
+| B-035b | Volet Historique de versions & Time Travel (Diff visuel + Restauration) | 🟠 | ✅ | Sprint 7 |
+| B-036 | Créer le fichier `.knitshare` et la structure par défaut | 🟠 | ✅ | Sprint 7 |
+| B-017b | Appairage P2P LAN Simplifié (Code PIN éphémère à 6 chiffres & QR Code dynamique pour inviter sans clé 64 chars) | 🟠 | ✅ | Sprint 7 |
+| B-043 | Kit Universel Multi-Agents IA & Registre de Mémoire Persistante (`.knit/AI_MEMORY.md`, Cursor `.cursor/rules/`, Claude `CLAUDE.md`, Antigravity `.agents/skills/`, Copilot, etc.) | 🔴 | ✅ | Sprint 7 |
+| B-043a | Playbook d'exploitation Knit pour agents IA (à l'init du coffre) : doc générée (`GUIDE_IA.md` ou section riche de `KNIT.md`) pour maximiser les capacités Knit au service de l'humain — tâches B-054, Doc-Driven Views, blocs `knit-*`, slash, WikiLinks, assets, conventions de dossiers, handoff `AI_MEMORY` ; coché avec B-043 dans le Wizard | 🔴 | ✅ | Sprint 7 |
+| B-051 | Mode "Réseau Local Strict / Air-Gapped" (LAN-Only Toggle désactivant les relays WAN) | 🟡 | ✅ | Sprint 7 |
 
 ### Sprint 8 — Packaging Multi-OS, CI/CD Automatisée & Auto-Updater
 
@@ -206,6 +206,9 @@
 | B-041a | Virtualisation de l'arborescence (Windowing Sidebar pour 50 000+ notes sans lag) | 🟠 | 📋 | Sprint 8 |
 | B-050 | Cache LRU des Documents CRDT & Libération Mémoire (LRU Doc Cache max 20 Y.Docs) | 🟠 | 📋 | Sprint 8 |
 | B-042 | README final + screenshots + documentation utilisateur | 🟠 | 📋 | Sprint 8 |
+| B-114 | Réplication initiale du coffre au join (bootstrap arbre Markdown + snapshots via P2P après `prepare_join_vault`) | 🔴 | 💡 | Sprint 8+ |
+| B-115 | Visibilité arbre : build exclus ; `.knit`/dots listés (masqués UI, toggle œil) ; purge index/localContents à la bascule coffre | 🟡 | ✅ | UX post-S7 |
+| B-116 | Registre local des coffres + VaultSwitcher (`Ctrl+Shift+O`) ; Wizard si dossier sans `.knitshare` (Vite + Tauri) | 🟠 | ✅ | UX post-S7 |
 
 ---
 
