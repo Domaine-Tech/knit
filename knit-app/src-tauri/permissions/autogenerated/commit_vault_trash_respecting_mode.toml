@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-commit-vault-trash-respecting-mode"
+description = "Enables the commit_vault_trash_respecting_mode command without any pre-configured scope."
+commands.allow = ["commit_vault_trash_respecting_mode"]
+
+[[permission]]
+identifier = "deny-commit-vault-trash-respecting-mode"
+description = "Denies the commit_vault_trash_respecting_mode command without any pre-configured scope."
+commands.deny = ["commit_vault_trash_respecting_mode"]

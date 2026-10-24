@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-index-markdown-content"
+description = "Enables the index_markdown_content command without any pre-configured scope."
+commands.allow = ["index_markdown_content"]
+
+[[permission]]
+identifier = "deny-index-markdown-content"
+description = "Denies the index_markdown_content command without any pre-configured scope."
+commands.deny = ["index_markdown_content"]

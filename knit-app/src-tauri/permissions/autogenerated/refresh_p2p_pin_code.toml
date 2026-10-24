@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-refresh-p2p-pin-code"
+description = "Enables the refresh_p2p_pin_code command without any pre-configured scope."
+commands.allow = ["refresh_p2p_pin_code"]
+
+[[permission]]
+identifier = "deny-refresh-p2p-pin-code"
+description = "Denies the refresh_p2p_pin_code command without any pre-configured scope."
+commands.deny = ["refresh_p2p_pin_code"]

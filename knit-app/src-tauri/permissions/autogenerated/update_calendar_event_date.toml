@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-update-calendar-event-date"
+description = "Enables the update_calendar_event_date command without any pre-configured scope."
+commands.allow = ["update_calendar_event_date"]
+
+[[permission]]
+identifier = "deny-update-calendar-event-date"
+description = "Denies the update_calendar_event_date command without any pre-configured scope."
+commands.deny = ["update_calendar_event_date"]

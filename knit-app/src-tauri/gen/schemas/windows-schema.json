@@ -201,6 +201,18 @@
           "markdownDescription": "Enables the commit_vault_trash command without any pre-configured scope."
         },
         {
+          "description": "Enables the commit_vault_trash_respecting_mode command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-commit-vault-trash-respecting-mode",
+          "markdownDescription": "Enables the commit_vault_trash_respecting_mode command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the connect_p2p_by_pin command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-connect-p2p-by-pin",
+          "markdownDescription": "Enables the connect_p2p_by_pin command without any pre-configured scope."
+        },
+        {
           "description": "Enables the connect_p2p_peer command without any pre-configured scope.",
           "type": "string",
           "const": "allow-connect-p2p-peer",
@@ -223,6 +235,12 @@
           "type": "string",
           "const": "allow-delete-vault-path",
           "markdownDescription": "Enables the delete_vault_path command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the get_calendar_index command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-get-calendar-index",
+          "markdownDescription": "Enables the get_calendar_index command without any pre-configured scope."
         },
         {
           "description": "Enables the get_connected_peers command without any pre-configured scope.",
@@ -249,6 +267,12 @@
           "markdownDescription": "Enables the get_p2p_invitation_code command without any pre-configured scope."
         },
         {
+          "description": "Enables the get_p2p_pin_code command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-get-p2p-pin-code",
+          "markdownDescription": "Enables the get_p2p_pin_code command without any pre-configured scope."
+        },
+        {
           "description": "Enables the get_suggest_index command without any pre-configured scope.",
           "type": "string",
           "const": "allow-get-suggest-index",
@@ -259,6 +283,18 @@
           "type": "string",
           "const": "allow-get-user-profile",
           "markdownDescription": "Enables the get_user_profile command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the get_vault_config command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-get-vault-config",
+          "markdownDescription": "Enables the get_vault_config command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the get_vault_index command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-get-vault-index",
+          "markdownDescription": "Enables the get_vault_index command without any pre-configured scope."
         },
         {
           "description": "Enables the get_vault_tags command without any pre-configured scope.",
@@ -279,10 +315,40 @@
           "markdownDescription": "Enables the get_vault_tree command without any pre-configured scope."
         },
         {
+          "description": "Enables the index_markdown_content command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-index-markdown-content",
+          "markdownDescription": "Enables the index_markdown_content command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the init_vault command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-init-vault",
+          "markdownDescription": "Enables the init_vault command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the invalidate_vault_index command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-invalidate-vault-index",
+          "markdownDescription": "Enables the invalidate_vault_index command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the is_vault_initialized command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-is-vault-initialized",
+          "markdownDescription": "Enables the is_vault_initialized command without any pre-configured scope."
+        },
+        {
           "description": "Enables the list_doc_snapshots command without any pre-configured scope.",
           "type": "string",
           "const": "allow-list-doc-snapshots",
           "markdownDescription": "Enables the list_doc_snapshots command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the list_vault_trash command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-list-vault-trash",
+          "markdownDescription": "Enables the list_vault_trash command without any pre-configured scope."
         },
         {
           "description": "Enables the load_avatar_base64 command without any pre-configured scope.",
@@ -315,6 +381,30 @@
           "markdownDescription": "Enables the pick_vault_folder command without any pre-configured scope."
         },
         {
+          "description": "Enables the prepare_join_vault command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-prepare-join-vault",
+          "markdownDescription": "Enables the prepare_join_vault command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the purge_all_vault_trash command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-purge-all-vault-trash",
+          "markdownDescription": "Enables the purge_all_vault_trash command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the purge_vault_trash_item command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-purge-vault-trash-item",
+          "markdownDescription": "Enables the purge_vault_trash_item command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the read_trash_preview command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-read-trash-preview",
+          "markdownDescription": "Enables the read_trash_preview command without any pre-configured scope."
+        },
+        {
           "description": "Enables the read_vault_file command without any pre-configured scope.",
           "type": "string",
           "const": "allow-read-vault-file",
@@ -325,6 +415,12 @@
           "type": "string",
           "const": "allow-recover-vault-trash",
           "markdownDescription": "Enables the recover_vault_trash command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the refresh_p2p_pin_code command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-refresh-p2p-pin-code",
+          "markdownDescription": "Enables the refresh_p2p_pin_code command without any pre-configured scope."
         },
         {
           "description": "Enables the rename_vault_file command without any pre-configured scope.",
@@ -367,6 +463,12 @@
           "type": "string",
           "const": "allow-save-vault-asset",
           "markdownDescription": "Enables the save_vault_asset command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the save_vault_config command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-save-vault-config",
+          "markdownDescription": "Enables the save_vault_config command without any pre-configured scope."
         },
         {
           "description": "Enables the search_vault command without any pre-configured scope.",
@@ -423,6 +525,12 @@
           "markdownDescription": "Enables the trash_vault_path command without any pre-configured scope."
         },
         {
+          "description": "Enables the update_calendar_event_date command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-update-calendar-event-date",
+          "markdownDescription": "Enables the update_calendar_event_date command without any pre-configured scope."
+        },
+        {
           "description": "Enables the update_frontmatter command without any pre-configured scope.",
           "type": "string",
           "const": "allow-update-frontmatter",
@@ -471,6 +579,18 @@
           "markdownDescription": "Denies the commit_vault_trash command without any pre-configured scope."
         },
         {
+          "description": "Denies the commit_vault_trash_respecting_mode command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-commit-vault-trash-respecting-mode",
+          "markdownDescription": "Denies the commit_vault_trash_respecting_mode command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the connect_p2p_by_pin command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-connect-p2p-by-pin",
+          "markdownDescription": "Denies the connect_p2p_by_pin command without any pre-configured scope."
+        },
+        {
           "description": "Denies the connect_p2p_peer command without any pre-configured scope.",
           "type": "string",
           "const": "deny-connect-p2p-peer",
@@ -493,6 +613,12 @@
           "type": "string",
           "const": "deny-delete-vault-path",
           "markdownDescription": "Denies the delete_vault_path command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_calendar_index command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-get-calendar-index",
+          "markdownDescription": "Denies the get_calendar_index command without any pre-configured scope."
         },
         {
           "description": "Denies the get_connected_peers command without any pre-configured scope.",
@@ -519,6 +645,12 @@
           "markdownDescription": "Denies the get_p2p_invitation_code command without any pre-configured scope."
         },
         {
+          "description": "Denies the get_p2p_pin_code command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-get-p2p-pin-code",
+          "markdownDescription": "Denies the get_p2p_pin_code command without any pre-configured scope."
+        },
+        {
           "description": "Denies the get_suggest_index command without any pre-configured scope.",
           "type": "string",
           "const": "deny-get-suggest-index",
@@ -529,6 +661,18 @@
           "type": "string",
           "const": "deny-get-user-profile",
           "markdownDescription": "Denies the get_user_profile command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_vault_config command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-get-vault-config",
+          "markdownDescription": "Denies the get_vault_config command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_vault_index command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-get-vault-index",
+          "markdownDescription": "Denies the get_vault_index command without any pre-configured scope."
         },
         {
           "description": "Denies the get_vault_tags command without any pre-configured scope.",
@@ -549,10 +693,40 @@
           "markdownDescription": "Denies the get_vault_tree command without any pre-configured scope."
         },
         {
+          "description": "Denies the index_markdown_content command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-index-markdown-content",
+          "markdownDescription": "Denies the index_markdown_content command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the init_vault command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-init-vault",
+          "markdownDescription": "Denies the init_vault command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the invalidate_vault_index command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-invalidate-vault-index",
+          "markdownDescription": "Denies the invalidate_vault_index command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the is_vault_initialized command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-is-vault-initialized",
+          "markdownDescription": "Denies the is_vault_initialized command without any pre-configured scope."
+        },
+        {
           "description": "Denies the list_doc_snapshots command without any pre-configured scope.",
           "type": "string",
           "const": "deny-list-doc-snapshots",
           "markdownDescription": "Denies the list_doc_snapshots command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the list_vault_trash command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-list-vault-trash",
+          "markdownDescription": "Denies the list_vault_trash command without any pre-configured scope."
         },
         {
           "description": "Denies the load_avatar_base64 command without any pre-configured scope.",
@@ -585,6 +759,30 @@
           "markdownDescription": "Denies the pick_vault_folder command without any pre-configured scope."
         },
         {
+          "description": "Denies the prepare_join_vault command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-prepare-join-vault",
+          "markdownDescription": "Denies the prepare_join_vault command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the purge_all_vault_trash command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-purge-all-vault-trash",
+          "markdownDescription": "Denies the purge_all_vault_trash command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the purge_vault_trash_item command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-purge-vault-trash-item",
+          "markdownDescription": "Denies the purge_vault_trash_item command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the read_trash_preview command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-read-trash-preview",
+          "markdownDescription": "Denies the read_trash_preview command without any pre-configured scope."
+        },
+        {
           "description": "Denies the read_vault_file command without any pre-configured scope.",
           "type": "string",
           "const": "deny-read-vault-file",
@@ -595,6 +793,12 @@
           "type": "string",
           "const": "deny-recover-vault-trash",
           "markdownDescription": "Denies the recover_vault_trash command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the refresh_p2p_pin_code command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-refresh-p2p-pin-code",
+          "markdownDescription": "Denies the refresh_p2p_pin_code command without any pre-configured scope."
         },
         {
           "description": "Denies the rename_vault_file command without any pre-configured scope.",
@@ -637,6 +841,12 @@
           "type": "string",
           "const": "deny-save-vault-asset",
           "markdownDescription": "Denies the save_vault_asset command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the save_vault_config command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-save-vault-config",
+          "markdownDescription": "Denies the save_vault_config command without any pre-configured scope."
         },
         {
           "description": "Denies the search_vault command without any pre-configured scope.",
@@ -691,6 +901,12 @@
           "type": "string",
           "const": "deny-trash-vault-path",
           "markdownDescription": "Denies the trash_vault_path command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the update_calendar_event_date command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-update-calendar-event-date",
+          "markdownDescription": "Denies the update_calendar_event_date command without any pre-configured scope."
         },
         {
           "description": "Denies the update_frontmatter command without any pre-configured scope.",

@@ -1,13 +1,15 @@
 use crate::commands::{ipc, AppState};
 use knit_core::markdown::{
-    build_calendar_index as core_build_calendar_index,
-    build_suggest_index as core_build_suggest_index,
+    build_and_cache_vault_index as core_build_vault_index,
     collect_vault_tags as core_collect_tags, collect_vault_tasks as core_collect_tasks,
-    find_backlinks_in_vault, parse_frontmatter as core_parse_fm,
-    search_vault as core_search_vault, update_calendar_event_date as core_update_calendar_date,
+    find_backlinks_in_vault, get_cached_vault_index as core_get_cached_vault_index,
+    index_markdown_file as core_index_markdown_file,
+    invalidate_vault_index_cache as core_invalidate_vault_index,
+    parse_frontmatter as core_parse_fm, search_vault as core_search_vault,
+    update_calendar_event_date as core_update_calendar_date,
     update_frontmatter_field as core_update_fm,
     update_task_status as core_update_task_status, CalendarIndexData, FileSearchResult,
-    FrontmatterDoc, SuggestIndexData, TagInfo, TaskCard,
+    FrontmatterDoc, IndexedMarkdownSlice, SuggestIndexData, TagInfo, TaskCard, VaultIndexData,
 };
 use std::path::Path;
 
@@ -64,15 +66,36 @@ pub async fn get_vault_tags(vault_path: String) -> Result<Vec<TagInfo>, String> 
 }
 
 #[tauri::command]
+pub async fn get_vault_index(vault_path: String) -> Result<VaultIndexData, String> {
+    let p = Path::new(&vault_path);
+    ipc(core_build_vault_index(p))
+}
+
+#[tauri::command]
+pub async fn invalidate_vault_index() -> Result<u64, String> {
+    Ok(core_invalidate_vault_index())
+}
+
+#[tauri::command]
+pub async fn index_markdown_content(
+    rel_path: String,
+    content: String,
+    mtime: Option<u64>,
+) -> Result<IndexedMarkdownSlice, String> {
+    Ok(core_index_markdown_file(&rel_path, &content, mtime))
+}
+
+#[tauri::command]
 pub async fn get_suggest_index(vault_path: String) -> Result<SuggestIndexData, String> {
     let p = Path::new(&vault_path);
-    ipc(core_build_suggest_index(p))
+    // Vue cache sur le scan unifié (B-057) — pas de second parcours disque.
+    ipc(core_get_cached_vault_index(p).map(|idx| idx.suggest))
 }
 
 #[tauri::command]
 pub async fn get_calendar_index(vault_path: String) -> Result<CalendarIndexData, String> {
     let p = Path::new(&vault_path);
-    ipc(core_build_calendar_index(p))
+    ipc(core_get_cached_vault_index(p).map(|idx| idx.calendar))
 }
 
 #[tauri::command]

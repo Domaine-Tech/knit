@@ -64,12 +64,14 @@ pub async fn start_p2p_network(
     let path = Path::new(&vault_path);
     let guard = state.guard.clone();
 
+    let lan_only = knit_core::vault::load_vault_config(path).lan_only;
     let node = ipc(KnitNetworkNode::start(
         path,
         &display_name,
         vault_name.as_deref(),
         guard,
         true,
+        lan_only,
     )
     .await)?;
 
@@ -151,6 +153,28 @@ pub async fn stop_p2p_network(state: tauri::State<'_, AppState>) -> Result<(), S
 #[tauri::command]
 pub async fn get_p2p_invitation_code(state: tauri::State<'_, AppState>) -> Result<String, String> {
     with_network_node(&state, |node| async move { ipc(node.get_invitation_code()) }).await
+}
+
+#[tauri::command]
+pub async fn get_p2p_pin_code(state: tauri::State<'_, AppState>) -> Result<Option<String>, String> {
+    with_network_node_opt(&state, None, |node| async move { Ok(node.get_pin_code().await) }).await
+}
+
+#[tauri::command]
+pub async fn refresh_p2p_pin_code(state: tauri::State<'_, AppState>) -> Result<String, String> {
+    with_network_node(&state, |node| async move { Ok(node.refresh_pin_code().await) }).await
+}
+
+#[tauri::command]
+pub async fn connect_p2p_by_pin(
+    state: tauri::State<'_, AppState>,
+    pin: String,
+) -> Result<ConnectedPeerInfo, String> {
+    with_network_node(&state, |node| async move {
+        let invitation = ipc(node.resolve_pin_to_invitation(&pin).await)?;
+        ipc(node.connect_by_ticket(&invitation).await)
+    })
+    .await
 }
 
 #[tauri::command]

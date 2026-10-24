@@ -1,7 +1,9 @@
 use crate::commands::{ipc, AppState};
 use base64::Engine;
 use knit_core::markdown::LinkRefactorReport;
-use knit_core::vault::{self, FileNode};
+use knit_core::vault::{
+    self, FileNode, InitVaultOptions, InitVaultResult, TrashMode, TrashRecord, VaultLocalConfig,
+};
 use std::path::Path;
 use tauri_plugin_dialog::DialogExt;
 
@@ -115,6 +117,88 @@ pub async fn pick_vault_folder(app: tauri::AppHandle) -> Result<Option<String>, 
         Some(path) => Ok(Some(path.to_string())),
         None => Ok(None),
     }
+}
+
+#[tauri::command]
+pub async fn is_vault_initialized(vault_path: String) -> Result<bool, String> {
+    Ok(vault::is_vault_initialized(Path::new(&vault_path)))
+}
+
+#[tauri::command]
+pub async fn init_vault(
+    vault_path: String,
+    options: InitVaultOptions,
+) -> Result<InitVaultResult, String> {
+    let path = Path::new(&vault_path);
+    ipc(vault::init_vault(path, &options))
+}
+
+#[tauri::command]
+pub async fn prepare_join_vault(
+    vault_path: String,
+    vault_name: String,
+) -> Result<InitVaultResult, String> {
+    let path = Path::new(&vault_path);
+    ipc(vault::prepare_join_vault(path, &vault_name))
+}
+
+#[tauri::command]
+pub async fn get_vault_config(vault_path: String) -> Result<VaultLocalConfig, String> {
+    let path = Path::new(&vault_path);
+    Ok(vault::load_vault_config(path))
+}
+
+#[tauri::command]
+pub async fn save_vault_config(
+    vault_path: String,
+    config: VaultLocalConfig,
+) -> Result<(), String> {
+    let path = Path::new(&vault_path);
+    ipc(vault::save_vault_config(path, &config))
+}
+
+#[tauri::command]
+pub async fn list_vault_trash(vault_path: String) -> Result<Vec<TrashRecord>, String> {
+    let path = Path::new(&vault_path);
+    ipc(vault::list_trash_records(path))
+}
+
+#[tauri::command]
+pub async fn purge_vault_trash_item(
+    vault_path: String,
+    trash_id: String,
+) -> Result<(), String> {
+    let path = Path::new(&vault_path);
+    ipc(vault::purge_trash_item(path, &trash_id))
+}
+
+#[tauri::command]
+pub async fn purge_all_vault_trash(vault_path: String) -> Result<usize, String> {
+    let path = Path::new(&vault_path);
+    ipc(vault::purge_all_trash(path))
+}
+
+#[tauri::command]
+pub async fn read_trash_preview(
+    vault_path: String,
+    trash_id: String,
+) -> Result<Option<String>, String> {
+    let path = Path::new(&vault_path);
+    ipc(vault::read_trash_preview(path, &trash_id))
+}
+
+/// Commit vers OS uniquement si le mode corbeille est `os`.
+#[tauri::command]
+pub async fn commit_vault_trash_respecting_mode(
+    vault_path: String,
+    trash_id: String,
+) -> Result<(), String> {
+    let path = Path::new(&vault_path);
+    let cfg = vault::load_vault_config(path);
+    if cfg.trash_mode == TrashMode::Knit {
+        return Ok(());
+    }
+    ipc(vault::commit_trash_to_os(path, &trash_id))
 }
 
 #[tauri::command]
