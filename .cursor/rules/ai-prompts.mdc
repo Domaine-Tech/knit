@@ -16,7 +16,7 @@ Lorsque l'utilisateur saisit dans le chat ou Composer une commande du type :
 - `fait prompt 8` / `prompt 8` : Stratégie de Tests, Couverture & Assurance Qualité
 - `fait prompt 9` / `prompt 9` : Audit & Centralisation : Types, Utilitaires & Moteur CRDT
 - `fait prompt 10` / `prompt 10` / `réalise sprint X` / `clôture sprint X` : Réalisation, Audit d'Avancement & Clôture de Sprint
-- `fait prompt 11` / `prompt 11` / `commit et push` / `smart commit` / `push` : Commit & Push Intelligent (qualité, 6 versions, **bump PATCH si push main** → Release CI)
+- `fait prompt 11` / `prompt 11` / `commit et push` / `smart commit` / `push` : Commit & Push Intelligent (update deps majeurs + DevSecOps, qualité, 6 versions, **bump PATCH si push main** → Release CI)
 - `fait prompt 12` / `prompt 12` / `audit typage` : Audit Typage Strict (TS/Rust — zéro any, null-safety, IPC)
 - `fait prompt bonus` / `meta prompt` : Méta-Prompt d'Orchestration sur Mesure
 

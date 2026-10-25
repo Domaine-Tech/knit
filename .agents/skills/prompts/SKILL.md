@@ -68,7 +68,7 @@ Ce skill permet d'exécuter instantanément l'un des 12 prompts spécialisés de
   - *Réf* : [docs/PROMPTS_IA.md#prompt-10](file:///d:/Dev/Repos/knit/docs/PROMPTS_IA.md#-prompt-10--r%C3%A9alisation-audit-davancement--cl%C3%B4ture-de-sprint-sprint-x)
 - **Prompt 11** : **Commit & Push Intelligent** (`fait prompt 11` / `commit et push` / `push`)
   - *Rôle* : Lead DevOps, Release Engineer & Git Master
-  - *Action clé* : évaluer version vs docs/tags ; **bump PATCH** sur push `main` pour relancer Release
+  - *Action clé* : **update deps Rust+npm (majeurs inclus)** + DevSecOps (`audit`/`deny`/gitleaks) ; évaluer version vs docs/tags ; **bump PATCH** sur push `main` pour relancer Release
   - *Réf* : [docs/PROMPTS_IA.md#prompt-11](file:///d:/Dev/Repos/knit/docs/PROMPTS_IA.md#-prompt-11--commit--push-intelligent-qualit%C3%A9-alignement-versions--commits-atomiques)
 
 ### 🧩 Méta-Outils

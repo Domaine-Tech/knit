@@ -53,7 +53,7 @@ Knit est une application collaborative local-first et peer-to-peer (P2P) pour la
       5. `knit-app/package.json` et racine `package.json` : `"version": "X.Y.Z"`
       6. `knit-app/src/utils/version.ts` : `export const APP_VERSION = 'X.Y.Z'`
     - Vérifier également la concordance documentaire : `versions/vX.Y.Z/CHANGELOG.md`, `versions/vX.Y.Z/sprint-N/SPRINT.md`, `versions/VERSIONING.md` et `.knit/AI_MEMORY.md`.
-    - **Push `main`/`master`** : évaluer version vs docs/tags ; **bump PATCH** (dernier chiffre) pour relancer Release CI — détails dans `versions/VERSIONING.md` §1bis et Prompt 11.
+    - **Push `main`/`master`** : update deps Rust+npm (majeurs inclus) + DevSecOps ; évaluer version vs docs/tags ; **bump PATCH** (dernier chiffre) pour relancer Release CI — détails dans `versions/VERSIONING.md` §1bis / §1ter et Prompt 11.
 14. **Zéro Émoji dans l'Interface Utilisateur (UI) & le Code** :
     - Interdiction formelle d'introduire des émojis Unicode dans les composants React, menus contextuels, barres d'outils, boutons, en-têtes, onglets, notifications toasts, badges, ou templates Markdown par défaut.
     - Toujours recourir aux icônes vectorielles sobres (`DuotoneIcon` ou SVG purs) pour garantir une esthétique professionnelle et soignée (style Linear / Obsidian).

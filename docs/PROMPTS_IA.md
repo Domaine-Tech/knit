@@ -861,6 +861,12 @@ Invariants et règles obligatoires avant tout commit & push :
 4. Règle Zéro-Émoji UI (`DuotoneIcon`).
 5. Santé du code : `npm run lint`, `cargo check --workspace` (ou équivalent CI déjà vert).
 6. **Push main = bump PATCH** (voir rules) pour relancer Release / builds installateurs.
+7. **Mise à jour des paquets (obligatoire avant push `main`/`master`)** — politique « tout y compris majeurs » :
+   - Rust : monter les deps directes dans `knit-core/Cargo.toml` / `knit-app/src-tauri/Cargo.toml` + `cargo update` ; corriger les cassures API ; `cargo check --workspace` + `cargo test --workspace`.
+   - npm : `npm outdated` / `npm update` dans `knit-app` + bump majeurs (`package.json`) si disponibles ; `npm run lint` + `npx tsc -b` + `npm run test:unit`.
+   - DevSecOps local : `npm audit --audit-level=high`, `cargo audit`, `cargo deny check advisories licenses sources` (config `deny.toml` + `.cargo/audit.toml`).
+   - Commit dédié recommandé : `chore(deps): mise à jour des dépendances` (séparé du bump SemVer si possible).
+8. CI DevSecOps (job `devsecops`) : gitleaks + npm audit + cargo audit + cargo deny — bloquant pour `tag-if-needed`.
 </context>
 
 <rules>
@@ -874,8 +880,9 @@ Invariants et règles obligatoires avant tout commit & push :
    - Mettre à jour changelog + `AI_MEMORY` pour le patch.
    - Inclure le bump dans un commit dédié `chore(release): bump X.Y.Z` (ou le dernier commit du lot).
    - Expliquer que CI → `tag-if-needed` → workflow Release (draft multi-OS).
-5. MINOR/MAJOR : uniquement sur demande explicite de l'utilisateur.
+5. MINOR/MAJOR SemVer app : uniquement sur demande explicite de l'utilisateur.
 6. Ne jamais committer de secrets / clés Minisign privées.
+7. **Deps** : ne pas pusher sur `main` sans avoir tenté la mise à jour des paquets (Rust + npm, majeurs inclus) et sans que `cargo deny` / `cargo audit` / `npm audit` soient verts (ou ignores documentés dans `deny.toml` / `.cargo/audit.toml`).
 </rules>
 
 <step_by_step_instructions>
@@ -883,31 +890,38 @@ Invariants et règles obligatoires avant tout commit & push :
 - `git status` / `git diff` / branche courante / remote tracking.
 - Exclure secrets, `.key`, cache `.knit/`.
 
-Étape 2 : Évaluation Version vs Documentation
+Étape 2 : Mise à Jour des Paquets (Rust + npm, y compris majeurs)
+- Inventaire : `cargo outdated` / `npm outdated` (ou équivalent).
+- Appliquer les bumps + `cargo update` / `npm update` ; corriger compilations / tests.
+- Vérifier DevSecOps local (`npm audit`, `cargo audit`, `cargo deny check`).
+- Documenter tout ignore RUSTSEC temporaire (raison + suivi upstream).
+
+Étape 3 : Évaluation Version vs Documentation
 - Lire `versions/VERSIONING.md`, CHANGELOG/sprint de la version courante, `AI_MEMORY`.
 - Comparer : 6 sources code ↔ doc ↔ `git tag --list 'v*' --sort=-v:refname | head`.
 - Décider : bump PATCH oui/non (push main + tag déjà existant pour la version courante → oui).
 
-Étape 3 : Contrôle Qualité Pré-Commit
-- Lint / cargo check si pertinent ; zéro emoji UI sur le diff.
+Étape 4 : Contrôle Qualité Pré-Commit
+- Lint / cargo check / tests unitaires ; zéro emoji UI sur le diff.
 
-Étape 4 : Bump PATCH (si applicable) + Structuration des Commits
+Étape 5 : Bump PATCH (si applicable) + Structuration des Commits
 - Appliquer le bump sur les 6 fichiers + docs.
-- Découper les commits atomiques ; message de bump : `chore(release): bump à X.Y.Z`.
+- Découper les commits atomiques (deps / feat / docs / `chore(release): bump à X.Y.Z`).
 
-Étape 5 : Plan d'Exécution
+Étape 6 : Plan d'Exécution
 - Séquence `git add` / `git commit` / `git push origin main`.
-- Rappeler le suivi : Actions CI → tag `vX.Y.Z` → Release.
+- Rappeler le suivi : Actions CI (frontend + rust + **devsecops**) → tag `vX.Y.Z` → Release.
 </step_by_step_instructions>
 
 <output_format>
 Structure ta réponse avec les sections suivantes :
 1. Bilan de l'Arbre Git
-2. Évaluation Version (code / doc / dernier tag) + décision bump PATCH oui/non et numéro cible
-3. Sanity Check & Alignement des 6 Versions
-4. Découpage des Commits Atomiques (incl. bump si besoin)
-5. Commandes Git prêtes à exécuter
-6. Demande de validation (sauf go déjà donné) + lien Actions attendu après push
+2. Bilan Mise à Jour des Paquets (Rust / npm / audits)
+3. Évaluation Version (code / doc / dernier tag) + décision bump PATCH oui/non et numéro cible
+4. Sanity Check & Alignement des 6 Versions
+5. Découpage des Commits Atomiques (incl. deps + bump si besoin)
+6. Commandes Git prêtes à exécuter
+7. Demande de validation (sauf go déjà donné) + lien Actions attendu après push
 </output_format>
 ```
 

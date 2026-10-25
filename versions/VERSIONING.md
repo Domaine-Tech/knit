@@ -95,6 +95,11 @@ Pour éviter toute désynchronisation, **la gestion des versions est strictement
    - Ne jamais committer une mise à jour de version partielle (ex: modifier `package.json` sans `Cargo.toml` et `tauri.conf.json`).
    - Consulter `versions/VERSIONING.md`, le `CHANGELOG` / sprint actifs et le tag Git le plus récent (`git tag --list 'v*' --sort=-v:refname`).
 
+1ter. **Mise à jour des paquets (Prompt 11 / push `main`)** :
+   - Avant un push vers `main`/`master`, mettre à jour les dépendances **Rust et npm**, **y compris les majeurs** quand disponibles (`notify`, `ed25519-dalek`, TypeScript, etc.), puis valider `cargo check` / `cargo test` / `npm run lint` / `tsc` / `test:unit`.
+   - Exécuter les contrôles DevSecOps : `npm audit --audit-level=high`, `cargo audit`, `cargo deny check advisories licenses sources` (`deny.toml`, `.cargo/audit.toml`).
+   - Les ignores RUSTSEC doivent être documentés (raison + suivi upstream). Le job CI `devsecops` (gitleaks + audits + deny) est **bloquant** pour `tag-if-needed`.
+
 1bis. **Push sur `main` / `master` → bump PATCH obligatoire (relance Release)** :
    - **SemVer** : `MAJOR.MINOR.PATCH` — le « dernier chiffre » est le **PATCH** (`1.0.0` → `1.0.1`).
    - **Quand** : dès qu'un agent exécute un `git push` (ou `commit et push` / Prompt 11) vers **`main` ou `master`**, après évaluation doc ↔ code.

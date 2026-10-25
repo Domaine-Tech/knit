@@ -89,7 +89,7 @@ Pour toute modification du frontend React (`knit-app`) :
      5. `knit-app/package.json` & `package.json` (racine) : `"version": "X.Y.Z"`.
      6. `knit-app/src/utils/version.ts` : `export const APP_VERSION = 'X.Y.Z'` (fallback Web/Dev & affichage runtime).
    - **Documentation & Sprints** : Le dossier `versions/vX.Y.Z/` (`CHANGELOG.md`, `sprint-N/SPRINT.md`), `versions/VERSIONING.md` et `.knit/AI_MEMORY.md` doivent refléter le même numéro de version. Zéro désynchronisation tolérée.
-   - **Push sur `main`/`master` (Prompt 11 / « push »)** : évaluer version vs docs/tags ; **bumper le PATCH** (dernier chiffre SemVer, ex. `1.0.0` → `1.0.1`) sur les 6 sources + changelog pour relancer CI → tag → Release multi-OS. Voir `versions/VERSIONING.md` §1bis. Exceptions : tag absent pour la version courante (première livraison), refus utilisateur, branche hors main.
+   - **Push sur `main`/`master` (Prompt 11 / « push »)** : **mettre à jour les paquets Rust+npm (majeurs inclus)** + contrôles DevSecOps (`npm audit`, `cargo audit`, `cargo deny`, CI gitleaks) ; évaluer version vs docs/tags ; **bumper le PATCH** (dernier chiffre SemVer, ex. `1.0.0` → `1.0.1`) sur les 6 sources + changelog pour relancer CI → tag → Release multi-OS. Voir `versions/VERSIONING.md` §1bis / §1ter. Exceptions bump : tag absent pour la version courante (première livraison), refus utilisateur, branche hors main.
 
 9. **Mode Debug Global Unifié & Inspecteurs Multi-Vues (B-056)** :
    - **Bouton unique Header** : Il ne doit exister qu'un seul bouton de debug global dans le Header (dans Header.tsx relié à debugStore.ts). Aucun bouton local dupliqué dans la TabBar ou les sous-vues.
