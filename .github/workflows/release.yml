@@ -44,7 +44,7 @@ jobs:
           echo "Release tag = ${TAG}"
 
   create-release:
-    name: Create GitHub Release draft
+    name: Create GitHub Release
     needs: meta
     runs-on: ubuntu-22.04
     permissions:
@@ -54,7 +54,7 @@ jobs:
         with:
           ref: ${{ needs.meta.outputs.tag }}
           fetch-depth: 0
-      - name: Create or reuse draft release
+      - name: Create or reuse release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -64,8 +64,9 @@ jobs:
             echo "Release ${TAG} already exists."
           else
             NOTES=$'Voir le changelog dans versions/.\nArtefacts signes Minisign - latest.json pour l auto-updater.'
-            gh release create "${TAG}" --draft --title "Knit ${TAG}" --notes "${NOTES}"
-            echo "Draft release ${TAG} created."
+            # Publiée (pas draft) : /releases/latest/download/latest.json doit être accessible à l'updater.
+            gh release create "${TAG}" --title "Knit ${TAG}" --notes "${NOTES}"
+            echo "Release ${TAG} created (published)."
           fi
 
   publish:
@@ -137,6 +138,7 @@ jobs:
           releaseBody: |
             Voir le changelog dans `versions/`.
             Artefacts signes Minisign — `latest.json` pour l'auto-updater.
-          releaseDraft: true
+          # false : canal updater (/releases/latest/) ignore les drafts
+          releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
