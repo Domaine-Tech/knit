@@ -61,6 +61,10 @@ Tout agent IA intervenant sur le dépôt doit appliquer ce protocole de vérific
 1. **Avant tout commit Git ou `git push`** :
    - Vérifier que la version n'a pas été modifiée unilatéralement dans un seul fichier.
    - S'assurer que le runtime web/dev et le runtime natif pointent sur la même version.
+   - Évaluer la version courante vs `versions/VERSIONING.md` / CHANGELOG / tags Git.
+1bis. **Push sur `main`/`master`** :
+   - **Bump PATCH** (dernier chiffre SemVer, ex. `1.0.0` → `1.0.1`) sur les 6 sources + changelog pour relancer CI → tag → Release multi-OS.
+   - Détails et exceptions : `versions/VERSIONING.md` §1bis ; Prompt 11.
 2. **Lors de la construction / cadrage d'un sprint** (`versions/vX.Y.Z/sprint-N/SPRINT.md`) :
    - Vérifier que la version cible du sprint correspond bien à la version du workspace ou préparer le bump SemVer.
 3. **À la livraison d'un sprint ou d'une version** (`Statut: ✅ Terminé` ou bump de version) :

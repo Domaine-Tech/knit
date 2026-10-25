@@ -89,6 +89,7 @@ Pour toute modification du frontend React (`knit-app`) :
      5. `knit-app/package.json` & `package.json` (racine) : `"version": "X.Y.Z"`.
      6. `knit-app/src/utils/version.ts` : `export const APP_VERSION = 'X.Y.Z'` (fallback Web/Dev & affichage runtime).
    - **Documentation & Sprints** : Le dossier `versions/vX.Y.Z/` (`CHANGELOG.md`, `sprint-N/SPRINT.md`), `versions/VERSIONING.md` et `.knit/AI_MEMORY.md` doivent refléter le même numéro de version. Zéro désynchronisation tolérée.
+   - **Push sur `main`/`master` (Prompt 11 / « push »)** : évaluer version vs docs/tags ; **bumper le PATCH** (dernier chiffre SemVer, ex. `1.0.0` → `1.0.1`) sur les 6 sources + changelog pour relancer CI → tag → Release multi-OS. Voir `versions/VERSIONING.md` §1bis. Exceptions : tag absent pour la version courante (première livraison), refus utilisateur, branche hors main.
 
 9. **Mode Debug Global Unifié & Inspecteurs Multi-Vues (B-056)** :
    - **Bouton unique Header** : Il ne doit exister qu'un seul bouton de debug global dans le Header (dans Header.tsx relié à debugStore.ts). Aucun bouton local dupliqué dans la TabBar ou les sous-vues.
@@ -96,7 +97,7 @@ Pour toute modification du frontend React (`knit-app`) :
    - **Pattern bijectif des blocs de code** : Suivre le pattern universel des tableaux : widget unifié CodeBlockCardWidget quand le curseur est hors du bloc, et affichage complet en mode source dès que le curseur entre dans le bloc, évitant tout artefact de surlignage horizontal .cm-activeLine.
 
 10. **Déclencheur Rapide des Prompts Standardisés (`docs/PROMPTS_IA.md`)** :
-    - Dès que l'utilisateur écrit `fait prompt X` ou `prompt X` (1 à 12 ou bonus), `réalise sprint X`, `commit et push` ou `audit typage` dans le chat / Composer :
+    - Dès que l'utilisateur écrit `fait prompt X` ou `prompt X` (1 à 12 ou bonus), `réalise sprint X`, `commit et push`, `push` ou `audit typage` dans le chat / Composer :
     - Charger immédiatement le prompt défini dans `docs/PROMPTS_IA.md` (1: Refactoring, 2: Performance, 3: Traduction/i18n, 4: Sécurité, 5: UX/Killer App, 6: Alignement Code/Doc/Versions, 7: Collaboration P2P, 8: Tests & QA, 9: Centralisation Types/Utils/CRDT, 10: Réalisation & Clôture de Sprint, 11: Commit & Push Intelligent, 12: Audit Typage Strict).
     - Endosser le rôle expert associé et activer le **STRICT MODE PLAN** (aucun fichier modifié au 1er tour).
     - Fournir un diagnostic clair et un plan d'action ordonné avec cases à cocher `[ ]`, en demandant validation avant exécution.

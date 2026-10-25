@@ -1,6 +1,6 @@
 ---
 name: prompts-ia
-description: Déclencheur et exécuteur automatique des 12 prompts IA standardisés et catégorisés en Mode Plan (Refactoring, Performance, Traduction/i18n, Sécurité, UX/Killer App, Alignement Code/Doc/Versions, Collaboration P2P, Tests & QA, Centralisation Types/Utils/CRDT, Réalisation & Clôture de Sprint, Commit & Push Intelligent, Audit Typage Strict) définis dans docs/PROMPTS_IA.md. S'active lorsque l'utilisateur demande "fait prompt X", "exécute le prompt X", "réalise sprint X", "commit et push", "audit typage" ou mentionne un prompt du référentiel.
+description: Déclencheur et exécuteur automatique des 12 prompts IA standardisés et catégorisés en Mode Plan (Refactoring, Performance, Traduction/i18n, Sécurité, UX/Killer App, Alignement Code/Doc/Versions, Collaboration P2P, Tests & QA, Centralisation Types/Utils/CRDT, Réalisation & Clôture de Sprint, Commit & Push Intelligent avec bump PATCH sur main, Audit Typage Strict) définis dans docs/PROMPTS_IA.md. S'active lorsque l'utilisateur demande "fait prompt X", "exécute le prompt X", "réalise sprint X", "commit et push", "push", "audit typage" ou mentionne un prompt du référentiel.
 ---
 
 # Skill : Prompts IA Standardisés & Mode Plan (Knit)
@@ -16,7 +16,7 @@ Ce skill permet d'exécuter instantanément l'un des 12 prompts spécialisés de
 - `fait prompt 8` / `prompt 8`
 - `fait prompt 9` / `prompt 9` (Centralisation Types, Utils, Hooks React & Moteur CRDT)
 - `fait prompt 10` / `prompt 10` / `réalise sprint X` / `exécute sprint X` / `clôture sprint X` (Audit & Clôture de Sprint)
-- `fait prompt 11` / `prompt 11` / `commit et push` / `smart commit` (Commit & Push Intelligent)
+- `fait prompt 11` / `prompt 11` / `commit et push` / `smart commit` / `push` (Commit & Push Intelligent — bump PATCH si main)
 - `fait prompt 12` / `prompt 12` / `audit typage` (Audit Typage Strict TS/Rust)
 - `fait prompt bonus` / `meta prompt`
 
@@ -66,8 +66,9 @@ Ce skill permet d'exécuter instantanément l'un des 12 prompts spécialisés de
 - **Prompt 10** : **Réalisation & Clôture de Sprint (X)** (`fait prompt 10` / `réalise sprint X`)
   - *Rôle* : Lead Agile Delivery Manager & Principal Full-Stack Engineer
   - *Réf* : [docs/PROMPTS_IA.md#prompt-10](file:///d:/Dev/Repos/knit/docs/PROMPTS_IA.md#-prompt-10--r%C3%A9alisation-audit-davancement--cl%C3%B4ture-de-sprint-sprint-x)
-- **Prompt 11** : **Commit & Push Intelligent** (`fait prompt 11` / `commit et push`)
+- **Prompt 11** : **Commit & Push Intelligent** (`fait prompt 11` / `commit et push` / `push`)
   - *Rôle* : Lead DevOps, Release Engineer & Git Master
+  - *Action clé* : évaluer version vs docs/tags ; **bump PATCH** sur push `main` pour relancer Release
   - *Réf* : [docs/PROMPTS_IA.md#prompt-11](file:///d:/Dev/Repos/knit/docs/PROMPTS_IA.md#-prompt-11--commit--push-intelligent-qualit%C3%A9-alignement-versions--commits-atomiques)
 
 ### 🧩 Méta-Outils

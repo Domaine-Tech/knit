@@ -53,6 +53,7 @@ Knit est une application collaborative local-first et peer-to-peer (P2P) pour la
       5. `knit-app/package.json` et racine `package.json` : `"version": "X.Y.Z"`
       6. `knit-app/src/utils/version.ts` : `export const APP_VERSION = 'X.Y.Z'`
     - Vérifier également la concordance documentaire : `versions/vX.Y.Z/CHANGELOG.md`, `versions/vX.Y.Z/sprint-N/SPRINT.md`, `versions/VERSIONING.md` et `.knit/AI_MEMORY.md`.
+    - **Push `main`/`master`** : évaluer version vs docs/tags ; **bump PATCH** (dernier chiffre) pour relancer Release CI — détails dans `versions/VERSIONING.md` §1bis et Prompt 11.
 14. **Zéro Émoji dans l'Interface Utilisateur (UI) & le Code** :
     - Interdiction formelle d'introduire des émojis Unicode dans les composants React, menus contextuels, barres d'outils, boutons, en-têtes, onglets, notifications toasts, badges, ou templates Markdown par défaut.
     - Toujours recourir aux icônes vectorielles sobres (`DuotoneIcon` ou SVG purs) pour garantir une esthétique professionnelle et soignée (style Linear / Obsidian).
@@ -61,7 +62,7 @@ Knit est une application collaborative local-first et peer-to-peer (P2P) pour la
     - Un seul déclencheur global dans le Header (knit-app/src/components/Header.tsx) couplé à src/stores/debugStore.ts et window.__KNIT_DEBUG__. Ne jamais insérer de bouton de debug dans les onglets ou vues locales.
     - Assure la mesure temps réel pixel-perfect (0px décalage) de CodeMirror 6 et le rendu bijectif unifié des blocs de code Markdown (carte unifiée en lecture, source intégrale au clic).
 16. **Déclencheur Rapide des Prompts Standardisés (`docs/PROMPTS_IA.md`)** :
-    - Dès que l'utilisateur demande `fait prompt X` ou `prompt X` (1 à 12 ou bonus), `réalise sprint X`, `commit et push` ou `audit typage`, charger immédiatement la spécification dans `docs/PROMPTS_IA.md`.
+    - Dès que l'utilisateur demande `fait prompt X` ou `prompt X` (1 à 12 ou bonus), `réalise sprint X`, `commit et push`, `push` ou `audit typage`, charger immédiatement la spécification dans `docs/PROMPTS_IA.md`.
     - Adopter le rôle expert, appliquer le **STRICT MODE PLAN** (analyse en lecture seule, aucune écriture sans validation), produire un plan d'action détaillé par phases avec cases à cocher `[ ]` et attendre la validation explicite de l'utilisateur.
 17. **Centralisation du Typage (`src/types/`) & Registre DocTypes** :
     - Tout type ou interface de domaine (`FileNode`, `Tab`, `UserProfile`, `KanbanBoard`, `TaskStatus`, `DocType`, etc.) doit obligatoirement résider dans `knit-app/src/types/` (`vault.ts`, `markdown.ts`, `network.ts`, `kanban.ts`, `views.ts`) et être réexporté via `src/types/index.ts`. Zéro duplication tolérée dans les stores ou composants.

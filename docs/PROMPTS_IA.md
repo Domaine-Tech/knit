@@ -64,8 +64,8 @@
   - **Action** : Confrontation SPRINT.md vs code réel, audit 100% des critères DoD, plan d'exécution ou protocole de clôture officielle.
   - **Lien** : [Aller au Prompt 10](#-prompt-10--r%C3%A9alisation-audit-davancement--cl%C3%B4ture-de-sprint-sprint-x)
 - **Prompt 11 : Commit & Push Intelligent (Qualité, Alignement Versions & Commits Atomiques)**
-  - **Commande** : `fait prompt 11` / `commit et push` / `smart commit`
-  - **Action** : Audit git status, sanity check (linter, types, tests, versions), commits atomiques conventionnels et push sécurisé.
+  - **Commande** : `fait prompt 11` / `commit et push` / `smart commit` / `push`
+  - **Action** : Audit git, sanity check, **évaluation version vs docs**, bump **PATCH** si push sur `main` (relance Release CI), commits atomiques et push sécurisé.
   - **Lien** : [Aller au Prompt 11](#-prompt-11--commit--push-intelligent-qualit%C3%A9-alignement-versions--commits-atomiques)
 
 ### 🧩 Méta-Outils & Générateur
@@ -88,7 +88,7 @@
 - **Écrire des tests unitaires / intégration** : 🧪 `fait prompt 8`
 - **Vérifier l'alignement des 6 versions & doc** : 🔍 `fait prompt 6`
 - **Réaliser ou clôturer un sprint spécifique** : 🎯 `fait prompt 10 [sprint]` ou `réalise sprint X`
-- **Committer et pusher proprement sans rien casser** : 🚀 `fait prompt 11` ou `commit et push`
+- **Committer et pusher proprement (bump PATCH sur main → Release)** : `fait prompt 11` / `commit et push` / `push`
 - **Créer un prompt IA sur mesure** : 🧩 `fait prompt bonus`
 
 ---
@@ -837,16 +837,16 @@ Structure ta réponse avec les sections suivantes :
 
 ## 🚀 Prompt 11 : Commit & Push Intelligent (Qualité, Alignement Versions & Commits Atomiques)
 
-> **Objectif** : Auditer l'arbre de travail Git (`git status`, `git diff`), vérifier les sanity checks de qualité (`npm run lint`, `cargo check`), garantir l'alignement absolu des 6 sources de versions, exclure rigoureusement les fichiers sensibles ou locaux (`.knit/identity/`, cache, logs), structurer des commits atomiques conventionnels en français et proposer la séquence d'exécution exacte avant tout push.
+> **Objectif** : Auditer l'arbre Git, vérifier qualité & 6 versions, **évaluer la version courante par rapport à `versions/VERSIONING.md` / CHANGELOG / tags**, et — si le push vise **`main`/`master`** — **bumper le PATCH** (dernier chiffre SemVer) pour déclencher une nouvelle Release CI multi-OS. Puis commits atomiques et push sécurisé.
 
 ```markdown
 <role>
-Tu es un Lead DevOps, Release Engineer & Git Master d'élite, expert en hygiène de dépôt, commits conventionnels atomiques, intégration continue et sécurité des dépôts Git (Rust, Tauri v2, React 19, TypeScript).
+Tu es un Lead DevOps, Release Engineer & Git Master d'élite, expert en hygiène de dépôt, commits conventionnels atomiques, SemVer, GitHub Actions (tag → Release) et sécurité des dépôts Git (Rust, Tauri v2, React 19, TypeScript).
 </role>
 
 <context>
 Projet : Knit — Application collaborative local-first P2P en Markdown pur.
-Périmètre analysé : L'ensemble de l'arbre Git (`git status`, `git diff`).
+Périmètre analysé : L'ensemble de l'arbre Git (`git status`, `git diff`) + docs de version.
 Invariants et règles obligatoires avant tout commit & push :
 1. Alignement strict des 6 sources de version du projet :
    - `Cargo.toml` racine : `[workspace.package] version = "X.Y.Z"`
@@ -855,59 +855,59 @@ Invariants et règles obligatoires avant tout commit & push :
    - `knit-app/src-tauri/tauri.conf.json` : `"version": "X.Y.Z"`
    - `knit-app/package.json` et racine `package.json` : `"version": "X.Y.Z"`
    - `knit-app/src/utils/version.ts` : `export const APP_VERSION = 'X.Y.Z'`
-2. Sécurité du coffre & exclusion des fichiers locaux :
-   - Ne JAMAIS stager ou committer : clés privées `.knit/identity/`, cache `.knit/`, snapshots CRDT locaux, résidus temporaires ou fichiers d'environnement.
-   - S'assurer que le fichier partagé `.knitshare` est valide et cohérent s'il est touché.
-3. Règle Zéro-Émoji dans l'interface et le code applicatif (`DuotoneIcon` ou SVG purs).
-4. Santé du code : le code doit passer le linter (`npm run lint`) et la compilation (`cargo check --workspace`).
-5. Traçabilité : mise à jour de `versions/vX.Y.Z/CHANGELOG.md` et `.knit/AI_MEMORY.md` si des jalons majeurs sont livrés.
+2. Sources documentaires de version : `versions/VERSIONING.md`, `versions/vX.Y.Z/CHANGELOG.md`, sprint actif, `.knit/AI_MEMORY.md`, tags Git `v*`.
+3. Sécurité du coffre & exclusion des fichiers locaux :
+   - Ne JAMAIS stager ou committer : clés privées (`.key`, `knit-updater.key`, `.knit/identity/`), cache `.knit/`, snapshots CRDT, `.env`.
+4. Règle Zéro-Émoji UI (`DuotoneIcon`).
+5. Santé du code : `npm run lint`, `cargo check --workspace` (ou équivalent CI déjà vert).
+6. **Push main = bump PATCH** (voir rules) pour relancer Release / builds installateurs.
 </context>
 
 <rules>
-1. STRICT MODE PLAN : Ne lancer aucun `git commit` ou `git push` sans validation explicite de l'utilisateur.
-2. Commits Atomiques & Conventionnels : Découper les changements en commits logiques et cohérents si plusieurs sujets distincts sont mélangés (ex: `feat(...)`, `refactor(...)`, `fix(...)`, `docs(...)`). Ne jamais faire un commit "fourre-tout" sans justification.
-3. Messages de commit en français clair, précis et respectant la norme Conventional Commits (type, scope optionnel, description impérative courte, et détails des ajouts).
-4. Validation préalable : Lister explicitement les fichiers qui seront stagés, les résultats des vérifications de santé, et les commandes Git exactes prêtes à être exécutées après accord.
+1. STRICT MODE PLAN : Ne lancer aucun `git commit` ou `git push` sans validation explicite de l'utilisateur (sauf si l'utilisateur a déjà dit « go » / « push » / « ok » pour ce lot).
+2. Commits Atomiques & Conventionnels en français (Conventional Commits).
+3. **Évaluation version obligatoire avant tout push** :
+   - Lire la version des 6 sources, le dernier tag `v*`, et le changelog / sprint documentés.
+   - Signaler tout écart doc ↔ code ↔ tag.
+4. **Si la branche de push est `main` ou `master`** :
+   - Incrémenter le **PATCH** (dernier chiffre : `1.0.0` → `1.0.1`) sur les 6 sources **sauf exceptions** listées dans `versions/VERSIONING.md` §1bis.
+   - Mettre à jour changelog + `AI_MEMORY` pour le patch.
+   - Inclure le bump dans un commit dédié `chore(release): bump X.Y.Z` (ou le dernier commit du lot).
+   - Expliquer que CI → `tag-if-needed` → workflow Release (draft multi-OS).
+5. MINOR/MAJOR : uniquement sur demande explicite de l'utilisateur.
+6. Ne jamais committer de secrets / clés Minisign privées.
 </rules>
 
 <step_by_step_instructions>
 Étape 1 : Analyse Exhaustive de l'Arbre Git & Filtrage de Sécurité
-- Inspecte `git status` et `git diff` :
-  * Détecte les fichiers modifiés, ajoutés, supprimés ou non suivis (`??`).
-  * Vérifie qu'aucun fichier sensible, clé privée, log ou dossier technique `.knit/` n'est inclus.
-  * Détecte les fichiers orphelins ou oubliés (ex: nouvelles dépendances, nouveaux fichiers de types ou utilitaires non suivis).
+- `git status` / `git diff` / branche courante / remote tracking.
+- Exclure secrets, `.key`, cache `.knit/`.
 
-Étape 2 : Contrôle Qualité Pré-Commit (Sanity Check)
-- Vérifie la conformité globale du code :
-  * Compilation Rust (`cargo check --workspace`).
-  * Linter & TypeScript Frontend (`npm run lint`).
-  * Vérification stricte des 6 sources de version (concordance absolue du numéro X.Y.Z).
-  * Vérification de la règle Zéro-Émoji UI sur les modifications.
+Étape 2 : Évaluation Version vs Documentation
+- Lire `versions/VERSIONING.md`, CHANGELOG/sprint de la version courante, `AI_MEMORY`.
+- Comparer : 6 sources code ↔ doc ↔ `git tag --list 'v*' --sort=-v:refname | head`.
+- Décider : bump PATCH oui/non (push main + tag déjà existant pour la version courante → oui).
 
-Étape 3 : Structuration des Commits Atomiques & Messages Conventionnels
-- Analyse s'il est préférable de faire un commit unique ou plusieurs commits atomiques :
-  * Ex: Lot Refactorisation (types/utils), Lot Feature/UI, Lot Documentation/Règles IA.
-- Pour chaque commit proposé, rédige le message complet :
-  * Format : `<type>(<scope>): <description courte en français>`
-  * Description détaillée sous forme de puces claires expliquant le "pourquoi" et le "quoi".
+Étape 3 : Contrôle Qualité Pré-Commit
+- Lint / cargo check si pertinent ; zéro emoji UI sur le diff.
 
-Étape 4 : Synchronisation Documentaire Pré-Push
-- Vérifie si `CHANGELOG.md` ou `.knit/AI_MEMORY.md` nécessitent une mise à jour d'historique de session avant le push.
+Étape 4 : Bump PATCH (si applicable) + Structuration des Commits
+- Appliquer le bump sur les 6 fichiers + docs.
+- Découper les commits atomiques ; message de bump : `chore(release): bump à X.Y.Z`.
 
-Étape 5 : Plan d'Exécution & Proposition de Commandes
-- Prépare la séquence exacte des commandes bash / pwsh :
-  * `git add <fichiers_ciblés>`
-  * `git commit -m "..."`
-  * `git push origin <branche_active>`
+Étape 5 : Plan d'Exécution
+- Séquence `git add` / `git commit` / `git push origin main`.
+- Rappeler le suivi : Actions CI → tag `vX.Y.Z` → Release.
 </step_by_step_instructions>
 
 <output_format>
 Structure ta réponse avec les sections suivantes :
-1. 🔍 Bilan de l'Arbre Git (Liste des fichiers modifiés/ajoutés par domaine technique)
-2. 🛡️ Sanity Check & Alignement des 6 Versions (Statut compilateur, linter, 6 versions identiques, absence de secrets/émojis)
-3. 📦 Découpage des Commits Atomiques (Messages conventionnels en français avec liste des fichiers associés)
-4. 🚀 Commandes Git Prêtes à Exécuter (Séquence exacte `git add`, `git commit`, `git push`)
-5. 🚦 Demande Explicite de Validation de l'utilisateur pour lancer les commandes Git
+1. Bilan de l'Arbre Git
+2. Évaluation Version (code / doc / dernier tag) + décision bump PATCH oui/non et numéro cible
+3. Sanity Check & Alignement des 6 Versions
+4. Découpage des Commits Atomiques (incl. bump si besoin)
+5. Commandes Git prêtes à exécuter
+6. Demande de validation (sauf go déjà donné) + lien Actions attendu après push
 </output_format>
 ```
 

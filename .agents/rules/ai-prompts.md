@@ -13,7 +13,7 @@ Lorsqu'un utilisateur tape dans le chat une commande courte du type :
 - `fait prompt 8` / `exécute prompt 8` / `prompt 8` : Stratégie de Tests, Couverture & Assurance Qualité
 - `fait prompt 9` / `exécute prompt 9` / `prompt 9` : Audit & Centralisation : Types, Utilitaires & Moteur CRDT
 - `fait prompt 10` / `exécute prompt 10` / `prompt 10` / `réalise sprint X` / `clôture sprint X` : Réalisation, Audit d'Avancement & Clôture de Sprint
-- `fait prompt 11` / `exécute prompt 11` / `prompt 11` / `commit et push` / `smart commit` : Commit & Push Intelligent
+- `fait prompt 11` / `exécute prompt 11` / `prompt 11` / `commit et push` / `smart commit` / `push` : Commit & Push Intelligent (évaluer version vs docs ; **bump PATCH** si push `main` → Release CI)
 - `fait prompt 12` / `exécute prompt 12` / `prompt 12` / `audit typage` : Audit Typage Strict (TS/Rust — zéro any, null-safety, IPC)
 - `fait prompt bonus` / `meta prompt` : Méta-Prompt d'Orchestration sur Mesure
 
