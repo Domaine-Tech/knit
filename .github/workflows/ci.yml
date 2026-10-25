@@ -87,15 +87,18 @@ jobs:
           workspaces: |
             .
             knit-app/src-tauri
+      # rustsec/audit-check parse du JSON fragile (« Unexpected end of JSON input »).
+      # Appel direct : respecte `.cargo/audit.toml` et échoue clairement.
       - name: cargo audit (RUSTSEC)
-        uses: rustsec/audit-check@v2.0.0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -f Cargo.lock
+          cargo install cargo-audit --locked --force
+          cargo audit
       - name: cargo deny (advisories + licenses + sources)
         uses: EmbarkStudios/cargo-deny-action@v2
         with:
           command: check advisories licenses sources
-          arguments: --all-features
 
   # Après CI vert sur main/master : crée le tag vX.Y.Z s'il n'existe pas encore,
   # puis déclenche Release via workflow_dispatch.
