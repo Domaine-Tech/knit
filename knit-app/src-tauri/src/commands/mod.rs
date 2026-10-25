@@ -14,6 +14,8 @@ use knit_core::error::{KnitError, Result as KnitResult};
 use knit_core::network::KnitNetworkNode;
 use knit_core::watcher::{VaultWatcher, WriteGuard};
 use std::sync::{Arc, Mutex};
+use tauri::menu::MenuItem;
+use tauri::Wry;
 
 /// Convertit un Result knit-core en erreur IPC String (contrat frontend inchangé).
 pub fn ipc<T>(result: KnitResult<T>) -> Result<T, String> {
@@ -24,6 +26,8 @@ pub struct AppState {
     pub guard: WriteGuard,
     pub watcher: Arc<Mutex<Option<VaultWatcher>>>,
     pub network_node: Arc<tokio::sync::RwLock<Option<Arc<KnitNetworkNode>>>>,
+    /// Entrée tray « Redémarrer pour appliquer » (activée seulement si update ready).
+    pub tray_relaunch_item: Mutex<Option<MenuItem<Wry>>>,
 }
 
 impl Default for AppState {
@@ -32,6 +36,7 @@ impl Default for AppState {
             guard: WriteGuard::new(),
             watcher: Arc::new(Mutex::new(None)),
             network_node: Arc::new(tokio::sync::RwLock::new(None)),
+            tray_relaunch_item: Mutex::new(None),
         }
     }
 }

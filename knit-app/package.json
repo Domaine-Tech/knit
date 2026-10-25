@@ -1,7 +1,7 @@
 {
   "name": "knit-app",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,7 +9,7 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "tauri": "tauri",
-    "test:unit": "npx --yes tsx src/utils/treeFlatten.test.ts && npx --yes tsx src/crdt/crdtLru.test.ts"
+    "test:unit": "npx --yes tsx src/utils/treeFlatten.test.ts && npx --yes tsx src/crdt/crdtLru.test.ts && npx --yes tsx src/utils/updaterLogic.test.ts"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.3",

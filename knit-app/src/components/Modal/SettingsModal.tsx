@@ -14,9 +14,10 @@ import {
   type ThemePreference,
   type TrashMode,
 } from '../../types';
-import { checkForUpdates, type KnitUpdateInfo } from '../../utils/updater';
 import { APP_VERSION, getAppVersion } from '../../utils/version';
-import { UpdateModal } from '../Updater/UpdateModal';
+import { isTauriEnvironment } from '../../utils/env';
+import { updateStore } from '../../stores/updateStore';
+import type { UpdatePolicy } from '../../types/updater';
 
 export interface SettingsModalProps {
   isOpen: boolean;
@@ -40,9 +41,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [lanOnly, setLanOnly] = useState(false);
   const [tick, setTick] = useState(0);
   const [appVersion, setAppVersion] = useState(APP_VERSION);
-  const [checkingUpdate, setCheckingUpdate] = useState(false);
-  const [updateInfo, setUpdateInfo] = useState<KnitUpdateInfo | null>(null);
-  const [updateModalOpen, setUpdateModalOpen] = useState(false);
+  const [updateSnap, setUpdateSnap] = useState(() => updateStore.getSnapshot());
 
   useEffect(() => {
     if (!isOpen) return;
@@ -51,28 +50,28 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setTrashMode(parseTrashMode(cfg.trash_mode));
     setLanOnly(Boolean(cfg.lan_only));
     void getAppVersion().then(setAppVersion);
+    setUpdateSnap(updateStore.getSnapshot());
   }, [isOpen]);
 
+  useEffect(() => {
+    return updateStore.subscribe(() => setUpdateSnap(updateStore.getSnapshot()));
+  }, []);
+
   const handleCheckUpdates = async () => {
-    setCheckingUpdate(true);
-    try {
-      const result = await checkForUpdates();
-      setAppVersion(result.currentVersion);
-      if (result.available) {
-        setUpdateInfo(result.update);
-        setUpdateModalOpen(true);
-        toast.info('Mise à jour disponible', `Version ${result.update.version}`);
-      } else {
-        toast.info('À jour', `Knit ${result.currentVersion} est la dernière version.`);
-      }
-    } finally {
-      setCheckingUpdate(false);
-    }
+    await updateStore.check({ force: true, silent: false });
+    const snap = updateStore.getSnapshot();
+    if (snap.currentVersion) setAppVersion(snap.currentVersion);
   };
 
   useEffect(() => {
     return networkStore.subscribe(() => setTick((t) => t + 1));
   }, []);
+
+  const lastCheckedLabel = updateSnap.lastCheckedAt
+    ? new Date(updateSnap.lastCheckedAt).toLocaleString()
+    : 'Jamais';
+  const checkingUpdate = updateSnap.status === 'checking';
+  const tauri = isTauriEnvironment();
 
   if (!isOpen) return null;
 
@@ -212,13 +211,39 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
           <p style={{ margin: '0 0 10px', fontSize: 12, color: 'var(--knit-text-muted)' }}>
             Version installée : {appVersion}
+            <br />
+            Dernière vérification : {lastCheckedLabel}
+            {updateSnap.error ? (
+              <>
+                <br />
+                <span style={{ color: 'var(--knit-danger, #c44)' }}>{updateSnap.error}</span>
+              </>
+            ) : null}
           </p>
+          <div style={{ marginBottom: 10 }}>
+            <div className="knit-label" style={{ marginBottom: 6, fontSize: 11 }}>
+              Politique
+            </div>
+            <KnitSelect
+              value={updateSnap.policy}
+              onChange={(v) => updateStore.setPolicy(v as UpdatePolicy)}
+              options={[
+                { value: 'auto', label: 'Automatique (téléchargement silencieux)' },
+                { value: 'notify', label: 'Notifier uniquement' },
+                { value: 'manual', label: 'Manuel uniquement' },
+              ]}
+            />
+          </div>
           <button
             type="button"
             className="knit-btn"
-            disabled={checkingUpdate}
+            disabled={checkingUpdate || !tauri}
             onClick={() => void handleCheckUpdates()}
-            data-tooltip="Interroger GitHub Releases"
+            data-tooltip={
+              tauri
+                ? 'Interroger GitHub Releases'
+                : 'Disponible dans l’application installée'
+            }
           >
             <DuotoneIcon name="download" size={14} />
             <span style={{ marginLeft: 6 }}>
@@ -262,14 +287,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </section>
       </div>
 
-      {updateInfo ? (
-        <UpdateModal
-          isOpen={updateModalOpen}
-          onClose={() => setUpdateModalOpen(false)}
-          currentVersion={appVersion}
-          update={updateInfo}
-        />
-      ) : null}
     </div>
   );
 };

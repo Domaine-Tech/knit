@@ -29,3 +29,23 @@ Une paire locale peut exister dans `knit-app/knit-updater.key` (gitignored) pour
 Les releases publient `latest.json` via `tauri-apps/tauri-action` :
 
 `https://github.com/Domaine-Tech/knit/releases/latest/download/latest.json`
+
+## Expérience utilisateur (Sprint 9)
+
+Le canal Minisign / `latest.json` est inchangé. L’UI orchestre un flux non bloquant :
+
+| Politique (`localStorage` `knit-update-policy`) | Comportement |
+|---|---|
+| `auto` (défaut) | Contrôle ~8 s après le lancement, puis toutes les 6 h. Téléchargement silencieux. Toast « prêt » + bandeau Header + action Redémarrer. |
+| `notify` | Même rythme de contrôle. Toast + modale de notes ; installation uniquement au clic. |
+| `manual` | Aucun contrôle automatique. Bouton Paramètres / entrée tray uniquement. |
+
+États exposés : `idle` → `checking` → `upToDate` | `available` | `failed` → `downloading` → `ready`.
+
+- **Ignorer cette version** : clé `knit-update-skip-version` ; une version ultérieure réveille la notification.
+- **Plus tard** (soft-dismiss session) : ferme la modale sans ignorer la version ; les contrôles silencieux (6 h) ne rouvrent ni toast ni modale jusqu’au prochain lancement. Le bandeau peut rester visible.
+- **Hors Tauri (Vite)** : no-op ; bouton Paramètres désactivé.
+- **Tray** : « Vérifier les mises à jour » (`knit-check-updates`) toujours actif ; « Redémarrer pour appliquer » (`knit-relaunch-for-update`) activé uniquement si l’état est `ready` (`set_tray_relaunch_enabled`). Un clic hors `ready` affiche un toast d’information (pas de relance).
+- Préférence **machine** : jamais synchronisée via `.knitshare` ni écrite dans le Markdown du coffre.
+
+Windows : `plugins.updater.windows.installMode = passive` (installeur silencieux / non bloquant).

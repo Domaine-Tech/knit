@@ -1,5 +1,7 @@
 use tauri::{AppHandle, Manager};
 
+use super::AppState;
+
 /// Met à jour le tooltip (et le titre) de l'icône tray selon l'état réseau.
 /// `status` : `offline` | `lan` | `connected`
 #[tauri::command]
@@ -25,5 +27,20 @@ pub async fn set_tray_network_status(app: AppHandle, status: String) -> Result<(
 
     // Focus window helper for frontend-triggered show (unused payload)
     let _ = app.get_webview_window("main");
+    Ok(())
+}
+
+/// Active ou désactive l'entrée tray « Redémarrer pour appliquer ».
+#[tauri::command]
+pub async fn set_tray_relaunch_enabled(app: AppHandle, enabled: bool) -> Result<(), String> {
+    let state = app.state::<AppState>();
+    let guard = state
+        .tray_relaunch_item
+        .lock()
+        .map_err(|e| format!("tray relaunch lock: {e}"))?;
+    if let Some(item) = guard.as_ref() {
+        item.set_enabled(enabled)
+            .map_err(|e| format!("tray relaunch enabled: {e}"))?;
+    }
     Ok(())
 }

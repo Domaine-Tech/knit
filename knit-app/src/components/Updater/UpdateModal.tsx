@@ -1,18 +1,19 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { contextMenu } from '../../stores/contextMenuStore';
+import { updateStore } from '../../stores/updateStore';
 import { copyTextWithToast } from '../../utils/clipboardUtils';
-import {
-  downloadAndInstallUpdate,
-  relaunchApp,
-  type KnitUpdateInfo,
-} from '../../utils/updater';
+import { updateProgressPercent } from '../../utils/updaterLogic';
+import type { KnitUpdateInfo, UpdateProgress, UpdateStatus } from '../../types/updater';
 
 export interface UpdateModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentVersion: string;
   update: KnitUpdateInfo;
+  status: UpdateStatus;
+  progress: UpdateProgress;
+  error: string | null;
 }
 
 export const UpdateModal: React.FC<UpdateModalProps> = ({
@@ -20,35 +21,22 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
   onClose,
   currentVersion,
   update,
+  status,
+  progress,
+  error,
 }) => {
-  const [installing, setInstalling] = useState(false);
-  const [progressLabel, setProgressLabel] = useState<string | null>(null);
-  const [readyToRelaunch, setReadyToRelaunch] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
   if (!isOpen) return null;
 
-  const handleInstall = async () => {
-    setInstalling(true);
-    setError(null);
-    setProgressLabel('Téléchargement…');
-    const ok = await downloadAndInstallUpdate((p) => {
-      if (p.total != null && p.total > 0) {
-        const pct = Math.min(100, Math.round((p.downloaded / p.total) * 100));
-        setProgressLabel(`Téléchargement… ${pct} %`);
-      } else {
-        setProgressLabel('Téléchargement en cours…');
-      }
-    });
-    setInstalling(false);
-    if (ok) {
-      setProgressLabel('Mise à jour prête');
-      setReadyToRelaunch(true);
-    } else {
-      setError('Échec du téléchargement ou de la vérification de signature.');
-      setProgressLabel(null);
-    }
-  };
+  const installing = status === 'downloading';
+  const ready = status === 'ready';
+  const pct = updateProgressPercent(progress);
+
+  const progressLabel = (() => {
+    if (ready) return 'Mise à jour prête';
+    if (!installing) return null;
+    if (pct != null) return `Téléchargement… ${pct} %`;
+    return 'Téléchargement en cours…';
+  })();
 
   return (
     <div
@@ -149,26 +137,73 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
           </pre>
         ) : null}
 
-        {progressLabel ? (
-          <p style={{ margin: '0 0 12px', fontSize: 12, color: 'var(--knit-text-muted)' }}>
-            {progressLabel}
-          </p>
-        ) : null}
+        {(installing || ready) && (
+          <div style={{ margin: '0 0 12px' }}>
+            {progressLabel ? (
+              <p style={{ margin: '0 0 6px', fontSize: 12, color: 'var(--knit-text-muted)' }}>
+                {progressLabel}
+              </p>
+            ) : null}
+            <div
+              role="progressbar"
+              aria-valuenow={pct ?? undefined}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              style={{
+                height: 6,
+                borderRadius: 3,
+                background: 'var(--knit-border)',
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                style={{
+                  height: '100%',
+                  width: ready ? '100%' : pct != null ? `${pct}%` : '30%',
+                  background: 'var(--knit-primary)',
+                  borderRadius: 3,
+                  transition: 'width 120ms linear',
+                  opacity: pct == null && !ready ? 0.7 : 1,
+                }}
+              />
+            </div>
+          </div>
+        )}
+
         {error ? (
           <p style={{ margin: '0 0 12px', fontSize: 12, color: 'var(--knit-danger, #c44)' }}>
             {error}
           </p>
         ) : null}
 
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-          <button type="button" className="knit-btn" onClick={onClose} disabled={installing}>
-            Plus tard
-          </button>
-          {readyToRelaunch ? (
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+          {!ready && (
+            <>
+              <button
+                type="button"
+                className="knit-btn"
+                onClick={() => updateStore.dismissForSession()}
+                disabled={installing}
+                data-tooltip="Reporter jusqu’au prochain lancement"
+              >
+                Plus tard
+              </button>
+              <button
+                type="button"
+                className="knit-btn"
+                onClick={() => updateStore.skipCurrentVersion()}
+                disabled={installing}
+                data-tooltip="Ne plus proposer cette version"
+              >
+                Ignorer
+              </button>
+            </>
+          )}
+          {ready ? (
             <button
               type="button"
               className="knit-btn knit-btn-primary"
-              onClick={() => void relaunchApp()}
+              onClick={() => void updateStore.relaunch()}
             >
               Redémarrer
             </button>
@@ -176,7 +211,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
             <button
               type="button"
               className="knit-btn knit-btn-primary"
-              onClick={() => void handleInstall()}
+              onClick={() => void updateStore.install()}
               disabled={installing}
             >
               {installing ? 'Installation…' : 'Installer'}

@@ -19,8 +19,39 @@ pub fn run() {
             let show_i = MenuItem::with_id(app, "show", "Ouvrir", true, None::<&str>)?;
             let settings_i =
                 MenuItem::with_id(app, "settings", "Paramètres", true, None::<&str>)?;
+            let check_updates_i = MenuItem::with_id(
+                app,
+                "check-updates",
+                "Vérifier les mises à jour",
+                true,
+                None::<&str>,
+            )?;
+            let relaunch_update_i = MenuItem::with_id(
+                app,
+                "relaunch-update",
+                "Redémarrer pour appliquer",
+                false,
+                None::<&str>,
+            )?;
+            {
+                let state = app.state::<AppState>();
+                *state
+                    .tray_relaunch_item
+                    .lock()
+                    .map_err(|e| format!("tray relaunch lock: {e}"))? =
+                    Some(relaunch_update_i.clone());
+            }
             let quit_i = MenuItem::with_id(app, "quit", "Quitter", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&show_i, &settings_i, &quit_i])?;
+            let menu = Menu::with_items(
+                app,
+                &[
+                    &show_i,
+                    &settings_i,
+                    &check_updates_i,
+                    &relaunch_update_i,
+                    &quit_i,
+                ],
+            )?;
 
             let icon = app
                 .default_window_icon()
@@ -43,6 +74,20 @@ pub fn run() {
                             let _ = window.show();
                             let _ = window.set_focus();
                             let _ = window.emit("knit-open-settings", ());
+                        }
+                    }
+                    "check-updates" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                            let _ = window.emit("knit-check-updates", ());
+                        }
+                    }
+                    "relaunch-update" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                            let _ = window.emit("knit-relaunch-for-update", ());
                         }
                     }
                     "quit" => {
@@ -133,6 +178,7 @@ pub fn run() {
             index_markdown_content,
             open_external_path,
             set_tray_network_status,
+            set_tray_relaunch_enabled,
         ])
         .run(tauri::generate_context!())
         .expect("Erreur lors de l'exécution de l'application Knit Tauri");

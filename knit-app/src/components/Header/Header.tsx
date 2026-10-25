@@ -12,12 +12,11 @@ import { SettingsModal } from '../Modal/SettingsModal';
 import { VaultSwitcherModal } from '../Modal/VaultSwitcherModal';
 import { WindowControls } from './WindowControls';
 import { getAppVersion, APP_VERSION, isTauriEnvironment } from '../../utils';
-import { checkForUpdates } from '../../utils/updater';
 import { debugStore } from '../../stores/debugStore';
 import { useDebugMode } from '../../hooks';
-import { toast } from '../../stores/toastStore';
+import { updateStore } from '../../stores/updateStore';
 import { UpdateModal } from '../Updater/UpdateModal';
-import type { KnitUpdateInfo } from '../../utils/updater';
+import { UpdateBanner } from '../Updater/UpdateBanner';
 
 interface HeaderProps {
   theme: ThemeMode;
@@ -59,8 +58,7 @@ export const Header: React.FC<HeaderProps> = ({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isVaultSwitcherOpen, setIsVaultSwitcherOpen] = useState(false);
   const [appVersion, setAppVersion] = useState(APP_VERSION);
-  const [startupUpdate, setStartupUpdate] = useState<KnitUpdateInfo | null>(null);
-  const [startupUpdateOpen, setStartupUpdateOpen] = useState(false);
+  const [updateSnap, setUpdateSnap] = useState(() => updateStore.getSnapshot());
   const [, setTick] = useState(0);
   const { isDebugActive } = useDebugMode();
 
@@ -75,32 +73,33 @@ export const Header: React.FC<HeaderProps> = ({
   }, []);
 
   useEffect(() => {
+    return updateStore.subscribe(() => setUpdateSnap(updateStore.getSnapshot()));
+  }, []);
+
+  useEffect(() => {
     if (!isTauriEnvironment()) return;
-    let cancelled = false;
-    void (async () => {
-      const result = await checkForUpdates();
-      if (cancelled || !result.available) return;
-      setStartupUpdate(result.update);
-      setStartupUpdateOpen(true);
-      toast.info('Mise à jour disponible', `Version ${result.update.version}`);
-    })();
+    updateStore.startBackgroundChecks();
     return () => {
-      cancelled = true;
+      updateStore.stopBackgroundChecks();
     };
   }, []);
 
   useEffect(() => {
     if (!isTauriEnvironment()) return;
-    let unlisten: (() => void) | undefined;
+    const unsubs: Array<() => void> = [];
     void import('@tauri-apps/api/event').then(({ listen }) => {
       void listen('knit-open-settings', () => {
         setIsSettingsOpen(true);
-      }).then((fn) => {
-        unlisten = fn;
-      });
+      }).then((fn) => unsubs.push(fn));
+      void listen('knit-check-updates', () => {
+        void updateStore.check({ force: true, silent: false });
+      }).then((fn) => unsubs.push(fn));
+      void listen('knit-relaunch-for-update', () => {
+        void updateStore.relaunchIfReady();
+      }).then((fn) => unsubs.push(fn));
     });
     return () => {
-      unlisten?.();
+      unsubs.forEach((fn) => fn());
     };
   }, []);
 
@@ -234,6 +233,11 @@ export const Header: React.FC<HeaderProps> = ({
           >
             v{appVersion}
           </span>
+          <UpdateBanner
+            status={updateSnap.status}
+            update={updateSnap.available}
+            progress={updateSnap.progress}
+          />
         </div>
         <button
           type="button"
@@ -649,12 +653,15 @@ export const Header: React.FC<HeaderProps> = ({
           }
         }}
       />
-      {startupUpdate ? (
+      {updateSnap.available ? (
         <UpdateModal
-          isOpen={startupUpdateOpen}
-          onClose={() => setStartupUpdateOpen(false)}
-          currentVersion={appVersion}
-          update={startupUpdate}
+          isOpen={updateSnap.modalOpen}
+          onClose={() => updateStore.closeModal()}
+          currentVersion={updateSnap.currentVersion ?? appVersion}
+          update={updateSnap.available}
+          status={updateSnap.status}
+          progress={updateSnap.progress}
+          error={updateSnap.error}
         />
       ) : null}
     </header>

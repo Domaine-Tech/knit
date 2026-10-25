@@ -21,3 +21,4 @@ export * from './calendar';
 export * from './canvas';
 export * from './graph';
 export * from './gallery';
+export * from './updater';

@@ -67,6 +67,7 @@ fn main() {
             "index_markdown_content",
             "open_external_path",
             "set_tray_network_status",
+            "set_tray_relaunch_enabled",
         ]),
     );
     tauri_build::try_build(attributes).expect("Erreur lors de la compilation de tauri-build");
