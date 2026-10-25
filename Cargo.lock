@@ -2714,7 +2714,7 @@ dependencies = [
 
 [[package]]
 name = "knit-app"
-version = "1.1.1"
+version = "1.1.2"
 dependencies = [
  "base64 0.23.1",
  "knit-core",
@@ -2731,7 +2731,7 @@ dependencies = [
 
 [[package]]
 name = "knit-core"
-version = "1.1.1"
+version = "1.1.2"
 dependencies = [
  "base64 0.23.1",
  "blake3",

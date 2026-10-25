@@ -4,7 +4,7 @@ import { getVersion } from '@tauri-apps/api/app';
  * Version de l'application Knit.
  * Synchronisée avec root Cargo.toml, tauri.conf.json et package.json.
  */
-export const APP_VERSION = '1.1.1';
+export const APP_VERSION = '1.1.2';
 
 let cachedVersion: string | null = null;
 

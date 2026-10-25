@@ -17,11 +17,13 @@
 - **ADR-16** : Prompt 11 = update deps majeurs + DevSecOps CI (`deny.toml`, gitleaks).
 
 ## 3. Historique Récent
-- **[2026-10-25]** : Runtime **1.1.1** (deps + DevSecOps) pour tester updater depuis 1.1.0 installé.
+- **[2026-10-25]** : Runtime **1.1.2** — licence MIT/Apache, UX Paramètres, updater confirm-si-actif ; repo public.
+- **[2026-10-25]** : `Domaine-Tech/knit` public ; `latest.json` OK ; Release v1.1.1.
+- **[2026-10-25]** : Runtime **1.1.1** (deps + DevSecOps).
 - **[2026-10-25]** : Sprint 9 / Release draft **v1.1.0** (installer OK).
-- **[2026-10-24]** : Sprint 8 livré.
 
 ## 4. Tâches Actives
-- [ ] Publier draft Release `v1.1.1` → tester updater in-app (politique auto/notify).
+- [x] Repo **public** + Release `v1.1.1` ; bump **1.1.2** (licence + UX + updater busy).
+- [ ] Tester updater in-app 1.1.0/1.1.1 → **1.1.2** après Release CI.
 - [ ] Suivre bump `tauri-plugin-updater` (lever ignores zip).
 - [ ] **B-114** réplication join.
