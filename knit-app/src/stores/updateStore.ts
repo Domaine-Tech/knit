@@ -14,6 +14,8 @@ import {
   UPDATE_POLICY_KEY,
   UPDATE_SKIP_KEY,
   UPDATE_STARTUP_DELAY_MS,
+  formatUpdateError,
+  isUserBusy,
   isVersionSkipped,
 } from '../utils/updaterLogic';
 import { toast } from './toastStore';
@@ -64,10 +66,59 @@ class UpdateStore {
   private dismissedUntilRelaunchVersion: string | null = null;
   /** Dernier état synchronisé vers l'entrée tray « Redémarrer ». */
   private lastTrayRelaunchEnabled: boolean | null = null;
+  /** Dernière activité clavier/souris (ms epoch) — pour éviter l’install auto en pleine frappe. */
+  private lastActivityAt: number | null = null;
+  private activityCleanup: (() => void) | null = null;
+  private activityThrottleTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     this.policy = this.readPolicy();
     this.skippedVersion = this.readSkipped();
+  }
+
+  private touchActivity = (): void => {
+    if (this.activityThrottleTimer != null) return;
+    this.lastActivityAt = Date.now();
+    this.activityThrottleTimer = setTimeout(() => {
+      this.activityThrottleTimer = null;
+    }, 1_000);
+  };
+
+  private bindActivityTracking(): void {
+    if (typeof window === 'undefined' || this.activityCleanup) return;
+    const opts: AddEventListenerOptions = { capture: true, passive: true };
+    const events = ['keydown', 'pointerdown', 'pointermove', 'wheel', 'touchstart'] as const;
+    for (const ev of events) {
+      window.addEventListener(ev, this.touchActivity, opts);
+    }
+    this.activityCleanup = () => {
+      for (const ev of events) {
+        window.removeEventListener(ev, this.touchActivity, opts);
+      }
+    };
+  }
+
+  private unbindActivityTracking(): void {
+    this.activityCleanup?.();
+    this.activityCleanup = null;
+    if (this.activityThrottleTimer != null) {
+      clearTimeout(this.activityThrottleTimer);
+      this.activityThrottleTimer = null;
+    }
+  }
+
+  /** L’utilisateur a interagi récemment (éditeur, souris, etc.). */
+  public isUserCurrentlyBusy(): boolean {
+    return isUserBusy(this.lastActivityAt);
+  }
+
+  private promptUserToConfirmUpdate(version: string): void {
+    toast.info(
+      'Mise à jour disponible',
+      `Knit ${version} est prêt à être préparé. Confirmez pour télécharger sans interrompre votre travail.`
+    );
+    this.modalOpen = true;
+    this.notify();
   }
 
   public subscribe(listener: UpdateListener): () => void {
@@ -175,6 +226,7 @@ class UpdateStore {
   public startBackgroundChecks(): void {
     if (this.started || !isTauriEnvironment()) return;
     this.started = true;
+    this.bindActivityTracking();
 
     if (this.policy !== 'manual') {
       this.startupTimer = setTimeout(() => {
@@ -194,6 +246,7 @@ class UpdateStore {
       clearInterval(this.intervalId);
       this.intervalId = null;
     }
+    this.unbindActivityTracking();
     this.started = false;
   }
 
@@ -257,12 +310,13 @@ class UpdateStore {
     this.lastCheckedAt = Date.now();
 
     if (!result.ok) {
+      const friendly = formatUpdateError(result.error);
       this.status = 'failed';
-      this.error = result.error;
+      this.error = friendly;
       this.available = null;
       this.notify();
       if (!silent) {
-        toast.error('Vérification impossible', result.error);
+        toast.error('Vérification impossible', friendly);
       }
       return;
     }
@@ -298,16 +352,24 @@ class UpdateStore {
     this.error = null;
     this.notify();
 
-    if (this.policy === 'auto') {
-      if (this.autoHandledVersion !== result.update.version) {
-        this.autoHandledVersion = result.update.version;
-        void this.install({ silent: true });
-      }
-      return;
-    }
-
     const softDismissed =
       silent && this.dismissedUntilRelaunchVersion === result.update.version;
+
+    if (this.policy === 'auto') {
+      if (this.autoHandledVersion === result.update.version) {
+        return;
+      }
+      // En pleine activité : demander validation (comme notify) au lieu d’installer en silence.
+      if (this.isUserCurrentlyBusy()) {
+        if (!softDismissed) {
+          this.promptUserToConfirmUpdate(result.update.version);
+        }
+        return;
+      }
+      this.autoHandledVersion = result.update.version;
+      void this.install({ silent: true });
+      return;
+    }
 
     if (softDismissed) {
       /* bandeau possible ; pas de toast / modale jusqu'au prochain lancement */
@@ -315,9 +377,7 @@ class UpdateStore {
     }
 
     if (this.policy === 'notify' || !silent) {
-      toast.info('Mise à jour disponible', `Version ${result.update.version}`);
-      this.modalOpen = true;
-      this.notify();
+      this.promptUserToConfirmUpdate(result.update.version);
     } else if (silent && this.policy === 'manual') {
       /* pas de notification auto */
     } else if (silent) {
@@ -344,10 +404,11 @@ class UpdateStore {
     this.installInFlight = false;
 
     if (!result.ok) {
+      const friendly = formatUpdateError(result.error);
       this.status = 'failed';
-      this.error = result.error;
+      this.error = friendly;
       this.notify();
-      toast.error('Mise à jour échouée', result.error);
+      toast.error('Mise à jour échouée', friendly);
       return;
     }
 

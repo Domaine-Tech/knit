@@ -360,6 +360,40 @@ export const DuotoneIcon: React.FC<DuotoneIconProps> = ({
           </>
         );
 
+      case 'settings':
+        // Engrenage qui remplit le viewBox — stroke fort pour 14–18px
+        return (
+          <>
+            <path
+              fillRule="evenodd"
+              d="M200 64 L220 120 L292 120 L312 64 L352 80 L360 140 L424 168 L400 220 L448 256 L400 292 L424 344 L360 372 L352 432 L312 448 L292 392 L220 392 L200 448 L160 432 L152 372 L88 344 L112 292 L64 256 L112 220 L88 168 L152 140 L160 80 Z M256 184 A72 72 0 1 0 256 328 A72 72 0 1 0 256 184 Z"
+              fill={secondaryFill}
+              fillOpacity="0.22"
+              stroke={primaryStroke}
+              strokeWidth="40"
+              strokeLinejoin="round"
+            />
+          </>
+        );
+
+      case 'palette':
+        return (
+          <>
+            <path
+              d="M256 80 C160 80 88 152 88 248 C88 320 136 368 200 368 L240 368 C252 368 256 376 256 388 C256 412 236 432 212 432 C300 432 384 360 384 248 C384 152 328 80 256 80 Z"
+              fill={secondaryFill}
+              fillOpacity="0.2"
+              stroke={primaryStroke}
+              strokeWidth="28"
+              strokeLinejoin="round"
+            />
+            <circle cx="176" cy="220" r="28" fill={secondaryFill} fillOpacity="0.35" stroke={primaryStroke} strokeWidth="20" />
+            <circle cx="256" cy="168" r="28" fill={secondaryFill} fillOpacity="0.35" stroke={primaryStroke} strokeWidth="20" />
+            <circle cx="336" cy="220" r="28" fill={secondaryFill} fillOpacity="0.35" stroke={primaryStroke} strokeWidth="20" />
+            <circle cx="300" cy="300" r="28" fill={secondaryFill} fillOpacity="0.35" stroke={primaryStroke} strokeWidth="20" />
+          </>
+        );
+
       case 'split':
         return (
           <>

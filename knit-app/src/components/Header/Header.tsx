@@ -433,16 +433,21 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
 
 
-        {/* Sélecteur de couleur d'accent (dot cliquable avec popover 3x3 + slider) */}
+        {/* Teinte d’accent — pastille seule (évite le doublon avec l’icône Paramètres) */}
         <div style={{ position: 'relative' }}>
           <button
+            type="button"
             onClick={() => setIsColorPickerOpen((prev) => !prev)}
-            title={`Couleur d'accent (${hue}°) — Cliquez pour ouvrir la palette`}
+            data-tooltip={`Teinte d'accent (${hue}°)`}
+            aria-label={`Teinte d'accent ${hue} degrés`}
+            aria-expanded={isColorPickerOpen}
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 6,
-              padding: '3px 8px',
+              justifyContent: 'center',
+              width: 30,
+              height: 30,
+              padding: 0,
               borderRadius: 'var(--knit-radius-sm)',
               backgroundColor: isColorPickerOpen ? 'var(--knit-surface-hover)' : 'transparent',
               border: '1px solid var(--knit-border)',
@@ -454,17 +459,17 @@ export const Header: React.FC<HeaderProps> = ({
               if (!isColorPickerOpen) e.currentTarget.style.backgroundColor = 'transparent';
             }}
           >
-            <div
+            <span
+              aria-hidden
               style={{
                 width: 14,
                 height: 14,
                 borderRadius: '50%',
                 backgroundColor: 'var(--knit-primary)',
                 border: '1px solid var(--knit-border)',
-                flexShrink: 0,
+                boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.12)',
               }}
             />
-            <DuotoneIcon name="slider" size={13} style={{ color: 'var(--knit-text-secondary)' }} />
           </button>
 
           <ColorPickerPopover
@@ -479,19 +484,22 @@ export const Header: React.FC<HeaderProps> = ({
           type="button"
           onClick={() => setIsSettingsOpen(true)}
           data-tooltip="Paramètres"
+          aria-label="Paramètres"
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: 6,
+            width: 30,
+            height: 30,
+            padding: 0,
             borderRadius: 'var(--knit-radius-sm)',
-            backgroundColor: 'transparent',
+            backgroundColor: isSettingsOpen ? 'var(--knit-surface-hover)' : 'transparent',
             border: '1px solid var(--knit-border)',
             cursor: 'pointer',
             color: 'var(--knit-text-secondary)',
           }}
         >
-          <DuotoneIcon name="slider" size={14} />
+          <DuotoneIcon name="slider" size={15} />
         </button>
 
         <button

@@ -29,6 +29,8 @@ export type IconName =
   | 'edit'
   | 'split'
   | 'slider'
+  | 'settings'
+  | 'palette'
   | 'vault'
   | 'collapse-all'
   | 'expand-all'

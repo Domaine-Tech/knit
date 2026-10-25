@@ -36,7 +36,7 @@ Le canal Minisign / `latest.json` est inchangé. L’UI orchestre un flux non bl
 
 | Politique (`localStorage` `knit-update-policy`) | Comportement |
 |---|---|
-| `auto` (défaut) | Contrôle ~8 s après le lancement, puis toutes les 6 h. Téléchargement silencieux. Toast « prêt » + bandeau Header + action Redémarrer. |
+| `auto` (défaut) | Contrôle ~8 s après le lancement, puis toutes les 6 h. Si l’utilisateur est **inactif** (~45 s sans clavier/souris) : téléchargement silencieux. S’il **travaille** : toast + modale de confirmation (pas d’install auto). Toast « prêt » + bandeau + Redémarrer. |
 | `notify` | Même rythme de contrôle. Toast + modale de notes ; installation uniquement au clic. |
 | `manual` | Aucun contrôle automatique. Bouton Paramètres / entrée tray uniquement. |
 

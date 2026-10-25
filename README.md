@@ -9,7 +9,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Domaine-Tech/knit/releases"><img src="https://img.shields.io/badge/version-v1.0.0-8B5CF6?style=flat-square" alt="Version" /></a>
+  <a href="https://github.com/Domaine-Tech/knit/releases"><img src="https://img.shields.io/badge/version-v1.1.2-8B5CF6?style=flat-square" alt="Version" /></a>
+  <a href="LICENSE-MIT"><img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-green?style=flat-square" alt="License MIT OR Apache-2.0" /></a>
   <a href="https://tauri.app/"><img src="https://img.shields.io/badge/Tauri-v2.12-24C8D5?style=flat-square&logo=tauri&logoColor=white" alt="Tauri v2" /></a>
   <a href="https://www.rust-lang.org/"><img src="https://img.shields.io/badge/Rust-2021-DEA584?style=flat-square&logo=rust&logoColor=white" alt="Rust 2021" /></a>
   <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React 19" /></a>
@@ -222,4 +223,6 @@ Consultez le **[Backlog Global](versions/BACKLOG.md)** pour le détail de l'ense
 
 ## 📄 Licence
 
-Ce projet est distribué sous licence MIT. Vos notes, vos données et vos coffres restent votre propriété exclusive à vie.
+Knit est distribué sous licence duale **[MIT](LICENSE-MIT)** **OU** **[Apache-2.0](LICENSE-APACHE)** (au choix du licencié), conformément à `license = "MIT OR Apache-2.0"` dans `Cargo.toml`.
+
+Vos notes, vos données et vos coffres restent votre propriété exclusive à vie.
