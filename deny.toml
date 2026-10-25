@@ -1,0 +1,53 @@
+# cargo-deny — politique DevSecOps Knit
+# Docs : https://embarkstudios.github.io/cargo-deny/
+
+[graph]
+all-features = false
+no-default-features = false
+
+[advisories]
+yanked = "warn"
+# "workspace" = seulement nos crates ; transitifs unmaintained/unsound = warn via cargo audit.
+unmaintained = "workspace"
+unsound = "workspace"
+# Ignore uniquement avec justification + suivi upstream (revue 2026-10-25).
+ignore = [
+    # zip 4.x imposé par tauri-plugin-updater ^2 — fix upstream >= zip 9.
+    { id = "RUSTSEC-2026-0367", reason = "Transitif tauri-plugin-updater (zip ^4) ; attendre bump Tauri" },
+    { id = "RUSTSEC-2026-0368", reason = "Transitif tauri-plugin-updater (zip ^4) ; attendre bump Tauri" },
+    { id = "RUSTSEC-2026-0369", reason = "Transitif tauri-plugin-updater (zip ^4) ; attendre bump Tauri" },
+]
+
+[licenses]
+confidence-threshold = 0.8
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Unicode-3.0",
+    "Zlib",
+    "CC0-1.0",
+    "MPL-2.0",
+    "0BSD",
+    "BSL-1.0",
+    "CDLA-Permissive-2.0",
+    "Unlicense",
+]
+exceptions = []
+
+[bans]
+multiple-versions = "warn"
+wildcards = "allow"
+highlight = "all"
+deny = []
+skip = []
+skip-tree = []
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "warn"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []

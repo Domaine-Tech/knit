@@ -1,0 +1,8 @@
+# Ignorés tant que tauri-plugin-updater force zip ^4 (revue 2026-10-25).
+# Suivi : https://github.com/tauri-apps/plugins-workspace
+[advisories]
+ignore = [
+    "RUSTSEC-2026-0367",
+    "RUSTSEC-2026-0368",
+    "RUSTSEC-2026-0369",
+]

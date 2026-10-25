@@ -26,10 +26,8 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run build
-      - name: Garde-fou flatten 50k
-        run: npx --yes tsx src/utils/treeFlatten.test.ts
-      - name: Garde-fou LRU CRDT
-        run: npx --yes tsx src/crdt/crdtLru.test.ts
+      - name: Tests unitaires (flatten, LRU, updater)
+        run: npm run test:unit
 
   rust:
     name: Rust (check + test)
@@ -54,12 +52,57 @@ jobs:
       - name: cargo test --workspace
         run: cargo test --workspace
 
+  # DevSecOps renforcé : audits npm/cargo, licences (cargo-deny), secrets (gitleaks).
+  # Bloque le tag/Release si critique.
+  devsecops:
+    name: DevSecOps (audit + deny + secrets)
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Gitleaks (secrets)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: knit-app/package-lock.json
+      - name: npm audit (high+)
+        working-directory: knit-app
+        run: |
+          npm ci
+          npm audit --audit-level=high
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            .
+            knit-app/src-tauri
+      - name: cargo audit (RUSTSEC)
+        uses: rustsec/audit-check@v2.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: cargo deny (advisories + licenses + sources)
+        uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check advisories licenses sources
+          arguments: --all-features
+
   # Après CI vert sur main/master : crée le tag vX.Y.Z s'il n'existe pas encore,
   # puis déclenche Release via workflow_dispatch.
   # (Un push de tag avec GITHUB_TOKEN ne déclenche PAS d'autres workflows — limite GitHub.)
   tag-if-needed:
     name: Tag SemVer (déclenche Release)
-    needs: [frontend, rust]
+    needs: [frontend, rust, devsecops]
     if: >
       github.event_name == 'push' &&
       (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
