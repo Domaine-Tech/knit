@@ -1,7 +1,7 @@
 {
   "name": "knit-app",
   "private": true,
-  "version": "1.1.0",
+  "version": "1.1.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -39,12 +39,12 @@
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.12.3",
-    "@types/node": "^24.13.3",
+    "@types/node": "^26.6.5",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
     "oxlint": "^1.81.0",
-    "typescript": "~6.0.2",
+    "typescript": "^7.0.2",
     "vite": "^8.3.0"
   }
 }

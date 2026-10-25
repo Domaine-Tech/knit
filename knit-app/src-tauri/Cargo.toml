@@ -1,8 +1,9 @@
 [package]
 name = "knit-app"
 version.workspace = true
-description = "Knit Desktop Application"
 edition.workspace = true
+license.workspace = true
+description = "Knit Desktop Application"
 
 [lib]
 name = "knit_app_lib"
@@ -21,4 +22,4 @@ tauri-plugin-notification = "2.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1", features = ["full"] }
-base64 = "0.22"
+base64 = "0.23"
