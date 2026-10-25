@@ -7,17 +7,16 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag SemVer à publier (ex: v1.0.0). Vide = version Cargo.toml.'
+        description: 'Tag SemVer a publier (ex: v1.0.0). Vide = version Cargo.toml.'
         required: false
         type: string
 
-# Requis pour créer/mettre à jour une GitHub Release + uploader les artefacts.
 permissions:
   contents: write
 
 jobs:
   meta:
-    name: Résoudre le tag
+    name: Resolve tag
     runs-on: ubuntu-22.04
     outputs:
       tag: ${{ steps.meta.outputs.tag }}
@@ -25,7 +24,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Résoudre le tag de release
+      - name: Resolve release tag
         id: meta
         shell: bash
         run: |
@@ -44,9 +43,8 @@ jobs:
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
           echo "Release tag = ${TAG}"
 
-  # Une seule création de Release (évite la course entre jobs matrix).
   create-release:
-    name: Créer la GitHub Release (draft)
+    name: Create GitHub Release draft
     needs: meta
     runs-on: ubuntu-22.04
     permissions:
@@ -56,21 +54,18 @@ jobs:
         with:
           ref: ${{ needs.meta.outputs.tag }}
           fetch-depth: 0
-      - name: Créer ou réutiliser la release draft
+      - name: Create or reuse draft release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           TAG="${{ needs.meta.outputs.tag }}"
           if gh release view "${TAG}" >/dev/null 2>&1; then
-            echo "Release ${TAG} existe déjà."
+            echo "Release ${TAG} already exists."
           else
-            gh release create "${TAG}" \
-              --draft \
-              --title "Knit ${TAG}" \
-              --notes "Voir le changelog dans \`versions/\`.
-Artefacts signés Minisign — \`latest.json\` pour l'auto-updater."
-            echo "Release draft ${TAG} créée."
+            NOTES=$'Voir le changelog dans versions/.\nArtefacts signes Minisign - latest.json pour l auto-updater.'
+            gh release create "${TAG}" --draft --title "Knit ${TAG}" --notes "${NOTES}"
+            echo "Draft release ${TAG} created."
           fi
 
   publish:
@@ -83,7 +78,6 @@ Artefacts signés Minisign — \`latest.json\` pour l'auto-updater."
             args: ''
           - platform: macos-latest
             args: '--target universal-apple-darwin'
-          # AppImage via linuxdeploy est fragile sur les runners ; le .deb reste le livrable Linux prioritaire.
           - platform: ubuntu-22.04
             args: '--bundles deb'
     runs-on: ${{ matrix.platform }}
@@ -95,7 +89,7 @@ Artefacts signés Minisign — \`latest.json\` pour l'auto-updater."
           ref: ${{ needs.meta.outputs.tag }}
           fetch-depth: 0
 
-      - name: Installer dépendances Linux
+      - name: Install Linux dependencies
         if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
@@ -125,11 +119,11 @@ Artefacts signés Minisign — \`latest.json\` pour l'auto-updater."
           cache: npm
           cache-dependency-path: knit-app/package-lock.json
 
-      - name: Installer frontend
+      - name: Install frontend
         working-directory: knit-app
         run: npm ci
 
-      - name: Build & uploader (tauri-action)
+      - name: Build and upload (tauri-action)
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -142,7 +136,7 @@ Artefacts signés Minisign — \`latest.json\` pour l'auto-updater."
           releaseName: 'Knit ${{ needs.meta.outputs.tag }}'
           releaseBody: |
             Voir le changelog dans `versions/`.
-            Artefacts signés Minisign — `latest.json` pour l'auto-updater.
+            Artefacts signes Minisign — `latest.json` pour l'auto-updater.
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
