@@ -14,7 +14,7 @@
 |---|---|
 | **MAJOR** | Changement incompatible (format de vault, protocole P2P) |
 | **MINOR** | Nouvelle fonctionnalité rétrocompatible |
-| **PATCH** | Correction de bug |
+| **PATCH** | Correction de bug **ou** push sur `main` pour relancer une Release CI (voir §1bis) |
 
 ### Structure des sprints
 
@@ -53,11 +53,16 @@ versions/
 │   └── sprint-6ter/
 │       └── SPRINT.md
 │
-└── v1.0.0/                 # Version 1.0.0 — Production Release
+├── v1.0.0/                 # Version 1.0.0 — Production Release
+│   ├── CHANGELOG.md
+│   ├── sprint-7/
+│   │   └── SPRINT.md
+│   └── sprint-8/
+│       └── SPRINT.md
+│
+└── v1.1.0/                 # Version 1.1.0 — Mise à jour fluide
     ├── CHANGELOG.md
-    ├── sprint-7/
-    │   └── SPRINT.md
-    └── sprint-8/
+    └── sprint-9/
         └── SPRINT.md
 ```
 
@@ -88,6 +93,15 @@ Pour éviter toute désynchronisation, **la gestion des versions est strictement
 1. **Lors d'un Commit Git ou `git push`** :
    - Vérifier que la version est parfaitement alignée sur l'ensemble des 6 fichiers.
    - Ne jamais committer une mise à jour de version partielle (ex: modifier `package.json` sans `Cargo.toml` et `tauri.conf.json`).
+   - Consulter `versions/VERSIONING.md`, le `CHANGELOG` / sprint actifs et le tag Git le plus récent (`git tag --list 'v*' --sort=-v:refname`).
+
+1bis. **Push sur `main` / `master` → bump PATCH obligatoire (relance Release)** :
+   - **SemVer** : `MAJOR.MINOR.PATCH` — le « dernier chiffre » est le **PATCH** (`1.0.0` → `1.0.1`).
+   - **Quand** : dès qu'un agent exécute un `git push` (ou `commit et push` / Prompt 11) vers **`main` ou `master`**, après évaluation doc ↔ code.
+   - **Quoi** : incrémenter le PATCH sur les **6 sources**, mettre à jour `versions/vX.Y.Z/CHANGELOG.md` (ou créer le dossier patch si besoin), `.knit/AI_MEMORY.md`, puis pusher.
+   - **Effet CI** : après CI verte, le job `tag-if-needed` crée `vX.Y.Z` s'il n'existe pas et déclenche le workflow **Release** (builds multi-OS + draft GitHub Release).
+   - **Exceptions** (pas de bump) : push hors `main`/`master` ; push purement documentaire de règles IA sans livrable ; l'utilisateur refuse explicitement le bump ; le tag de la version courante n'existe pas encore et le push vise justement à le créer (ex. première livraison `1.0.0`).
+   - **MINOR / MAJOR** : uniquement sur consigne explicite (nouvelle feature rétrocompatible / breaking) — jamais silencieux au push.
 
 2. **Lors de la Construction / Cadrage d'un Sprint** (`SPRINT.md`) :
    - Vérifier que le numéro de version cible (`| **Version** | vX.Y.Z |`) correspond bien au jalon planifié dans `versions/VERSIONING.md`.
@@ -233,4 +247,7 @@ gantt
     section v1.0.0 — Production
     Sprint 7 : s7, after done, 14d
     Sprint 8 : s8, after s7, 14d
+
+    section v1.1.0 — Mise à jour fluide
+    Sprint 9 : s9, after s8, 14d
 ```

@@ -3,7 +3,7 @@
 > Ce fichier est la source de vérité pour toutes les tâches du projet.
 > Il peut être modifié **à tout moment**, y compris en milieu de sprint.
 >
-> Dernière mise à jour : 2026-10-18
+> Dernière mise à jour : 2026-10-25
 
 ---
 
@@ -209,6 +209,20 @@
 | B-114 | Réplication initiale du coffre au join (bootstrap arbre Markdown + snapshots via P2P après `prepare_join_vault`) | 🔴 | 💡 | Sprint 8+ |
 | B-115 | Visibilité arbre : build exclus ; `.knit`/dots listés (masqués UI, toggle œil) ; purge index/localContents à la bascule coffre | 🟡 | ✅ | UX post-S7 |
 | B-116 | Registre local des coffres + VaultSwitcher (`Ctrl+Shift+O`) ; Wizard si dossier sans `.knitshare` (Vite + Tauri) | 🟠 | ✅ | UX post-S7 |
+
+---
+
+## v1.1.0 — Mise à Jour Fluide
+
+### Sprint 9 — Vérification non bloquante & auto-update moderne
+
+| # | Tâche | Priorité | Statut | Sprint |
+|---|---|---|---|---|
+| B-117 | Vérification non bloquante (démarrage différé ~8 s, intervalle 6 h, manuel) et états d'erreur distincts | 🔴 | ✅ | Sprint 9 |
+| B-118 | Téléchargement arrière-plan, politique `auto \| notify \| manual`, ignorer une version | 🔴 | ✅ | Sprint 9 |
+| B-119 | UI : bandeau Header, barre de progression, toast de redémarrage, modale de notes | 🟠 | ✅ | Sprint 9 |
+| B-120 | Entrées tray « Vérifier les mises à jour » / « Redémarrer pour appliquer » | 🟠 | ✅ | Sprint 9 |
+| B-121 | Tests de la logique pure (progression cumulée, skip, no-op web) | 🟡 | ✅ | Sprint 9 |
 
 ---
 
