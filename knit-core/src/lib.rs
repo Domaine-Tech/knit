@@ -155,7 +155,8 @@ mod tests {
         vault::tree::create_file(vault_root, "doc.markdown", None).expect("create doc.markdown");
         vault::tree::create_file(vault_root, "KNIT.md", Some("instructions")).expect("create KNIT.md");
 
-        // Fichiers et dossiers cachés (commençant par '.') ignorés
+        // B-115 : les dots / kit IA / `.knitshare` sont listés par le scan Rust
+        // (masquage UI côté frontend via vaultTreeVisibility).
         vault::tree::create_file(vault_root, ".knitshare", Some("vault_name: test")).expect("create .knitshare");
         vault::tree::create_file(vault_root, ".gitignore", Some("target/")).expect("create .gitignore");
         vault::tree::create_dir(vault_root, ".cursor").expect("create .cursor dir");
@@ -169,9 +170,9 @@ mod tests {
         assert!(names.contains(&"note.md".to_string()));
         assert!(names.contains(&"doc.markdown".to_string()));
         assert!(names.contains(&"KNIT.md".to_string()));
-        assert!(!names.contains(&".knitshare".to_string()));
-        assert!(!names.contains(&".gitignore".to_string()));
-        assert!(!names.contains(&".cursor".to_string()));
+        assert!(names.contains(&".knitshare".to_string()));
+        assert!(names.contains(&".gitignore".to_string()));
+        assert!(names.contains(&".cursor".to_string()));
         assert!(!names.contains(&"archive.zip".to_string()));
     }
 
