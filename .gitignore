@@ -1,7 +1,7 @@
 # === Rust / Cargo ===
 target/
 **/*.rs.bk
-Cargo.lock
+# Cargo.lock VERSIONNÉ (binaire / Tauri) — requis pour CI audit/deny & builds reproductibles.
 
 # === Node / Frontend ===
 node_modules/
