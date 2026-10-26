@@ -2,13 +2,19 @@ import React, { useEffect, useState } from 'react';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { RecentVaultList } from '../Vault/RecentVaultList';
 import { vaultStore } from '../../stores/vaultStore';
+import { networkStore } from '../../stores/networkStore';
 import { vaultRegistry } from '../../stores/vaultRegistry';
 import { isTauriEnvironment } from '../../utils/env';
+import { isUnnamedDisplay } from '../../utils/profileUtils';
 import type { RegisteredVault } from '../../types';
 
 export interface WizardHomeProps {
   busy: boolean;
   pendingInitPath?: string | null;
+  firstName: string;
+  lastName: string;
+  onFirstNameChange: (value: string) => void;
+  onLastNameChange: (value: string) => void;
   onCreate: () => void;
   onJoin: () => void;
   onVaultOpened: () => void;
@@ -52,6 +58,10 @@ const linkBtnStyle: React.CSSProperties = {
 export const WizardHome: React.FC<WizardHomeProps> = ({
   busy,
   pendingInitPath,
+  firstName,
+  lastName,
+  onFirstNameChange,
+  onLastNameChange,
   onCreate,
   onJoin,
   onVaultOpened,
@@ -62,9 +72,17 @@ export const WizardHome: React.FC<WizardHomeProps> = ({
   void registryTick;
   const recent = vaultRegistry.list();
 
+  const openDemo = () => {
+    const name = `${firstName.trim()} ${lastName.trim()}`.trim();
+    if (name && !isUnnamedDisplay(name)) {
+      networkStore.pendingDisplayName = name;
+    }
+    void vaultStore.openDemoVault().then(onVaultOpened);
+  };
+
   const handleOpen = (entry: RegisteredVault) => {
     if (entry.isDemo) {
-      void vaultStore.openDemoVault().then(onVaultOpened);
+      openDemo();
     } else {
       onOpenExisting(entry.path);
     }
@@ -94,6 +112,37 @@ export const WizardHome: React.FC<WizardHomeProps> = ({
       </div>
 
       <div style={{ padding: '16px 18px', borderBottom: '1px solid var(--knit-border)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 4 }}>
+          <div>
+            <label className="knit-label" htmlFor="knit-person-first" style={{ marginBottom: 4 }}>
+              Prénom
+            </label>
+            <input
+              id="knit-person-first"
+              className="knit-input"
+              value={firstName}
+              onChange={(e) => onFirstNameChange(e.target.value)}
+              placeholder="Alice"
+              style={{ width: '100%' }}
+            />
+          </div>
+          <div>
+            <label className="knit-label" htmlFor="knit-person-last" style={{ marginBottom: 4 }}>
+              Nom
+            </label>
+            <input
+              id="knit-person-last"
+              className="knit-input"
+              value={lastName}
+              onChange={(e) => onLastNameChange(e.target.value)}
+              placeholder="Martin"
+              style={{ width: '100%' }}
+            />
+          </div>
+        </div>
+        <p style={{ fontSize: 11, color: 'var(--knit-text-muted)', margin: '0 0 12px' }}>
+          Les autres vous voient sous ce nom. Rôle, e-mail et photo se règlent ensuite dans le profil.
+        </p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           <button type="button" className="knit-btn" onClick={onCreate} style={cardBtnStyle}>
             <div style={cardIconWrap}>
@@ -127,7 +176,7 @@ export const WizardHome: React.FC<WizardHomeProps> = ({
           <button
             type="button"
             disabled={busy}
-            onClick={() => void vaultStore.openDemoVault().then(onVaultOpened)}
+            onClick={openDemo}
             style={linkBtnStyle}
             data-tooltip="Banc d’essai en mémoire"
           >

@@ -1,9 +1,7 @@
 /**
- * Types relatifs au réseau P2P, identités des collaborateurs et profils utilisateur
+ * Types relatifs au réseau P2P, identités des collaborateurs et profils utilisateur.
+ * Les helpers purs (`isUnnamedDisplay`, `DEMO_LAN_PIN`) vivent dans `utils/profileUtils`.
  */
-
-/** PIN LAN factice en mode Vite (démo) — source unique pour Wizard / networkStore. */
-export const DEMO_LAN_PIN = '482915';
 
 export interface PeerIdentity {
   peer_id: string;
@@ -57,6 +55,21 @@ export interface ConnectedPeerInfo {
   role?: string;
   status_message?: string;
   avatar?: AvatarInfo;
+}
+
+export interface ReplicationReport {
+  copied: number;
+  skipped: number;
+  divergent: string[];
+  vault_name: string;
+  vault_id: string;
+}
+
+/** Événement Tauri `p2p_replication_progress` pendant la copie d'un coffre. */
+export interface ReplicationProgress {
+  done: number;
+  total: number;
+  rel_path: string;
 }
 
 export interface DiscoveredLanPeer {

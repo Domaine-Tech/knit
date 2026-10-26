@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNetworkSession } from '../../hooks/useNetworkSession';
 import { contextMenu } from '../../stores/contextMenuStore';
+import { networkStore } from '../../stores/networkStore';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { ProfileModal } from '../Profile/ProfileModal';
 import { NetworkInvitePanel } from './NetworkInvitePanel';
@@ -41,25 +42,13 @@ export const NetworkModal: React.FC<NetworkModalProps> = ({ isOpen, onClose }) =
     e.preventDefault();
     contextMenu.show(e, [
       {
-        id: 'copy-ticket',
-        label: 'Copier le code d’invitation',
+        id: 'copy-vault-id',
+        label: 'Copier l’identifiant du coffre',
         icon: 'copy',
-        disabled: !myCode,
-        onClick: () => void handleCopyCode(),
-      },
-      {
-        id: 'copy-pin',
-        label: 'Copier le PIN LAN',
-        icon: 'copy',
-        disabled: !pinCode,
-        onClick: () => void handleCopyPin(),
-      },
-      {
-        id: 'refresh-pin',
-        label: 'Rafraîchir le PIN',
-        icon: 'sync',
-        disabled: isRefreshingPin || !isNetworkActive,
-        onClick: () => void handleRefreshPin(),
+        disabled: !networkStore.vaultId,
+        onClick: () => {
+          if (networkStore.vaultId) void navigator.clipboard.writeText(networkStore.vaultId);
+        },
       },
       {
         id: 'close',

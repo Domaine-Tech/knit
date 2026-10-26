@@ -5,6 +5,27 @@ use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 pub const ALPN_SYNC: &[u8] = b"/knit/sync/1";
 pub const ALPN_BLOBS: &[u8] = b"/knit/blobs/1";
 
+/// Version de protocole annoncée au handshake (identifiant de coffre + manifeste).
+pub const PROTOCOL_VERSION: &str = "1.2.0";
+
+/// Refuse un pair qui n'annonce pas exactement la version de protocole courante.
+/// Appelé avant l'enregistrement du pair et avant toute trame `YjsUpdate`.
+pub fn require_protocol_version(version: &str) -> Result<()> {
+    if version == PROTOCOL_VERSION {
+        return Ok(());
+    }
+    Err(KnitError::Network(format!(
+        "Version de protocole {version} refusée. Attendu {PROTOCOL_VERSION}."
+    )))
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ManifestEntry {
+    pub rel_path: String,
+    pub size: u64,
+    pub xxh3: String,
+}
+
 /// Limite maximale par trame réseau (16 Mo) pour parer aux attaques par déni de mémoire
 pub const MAX_FRAME_SIZE: u32 = 16 * 1024 * 1024;
 
@@ -20,6 +41,8 @@ pub enum KnitSyncMessage {
         profile: Option<crate::vault::identity::PeerProfileSummary>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         endpoint_addr: Option<iroh::EndpointAddr>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        vault_id: Option<String>,
     },
     HandshakeAck {
         peer_id: String,
@@ -29,6 +52,20 @@ pub enum KnitSyncMessage {
         profile: Option<crate::vault::identity::PeerProfileSummary>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         endpoint_addr: Option<iroh::EndpointAddr>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        vault_id: Option<String>,
+    },
+    VaultManifestRequest,
+    VaultManifest {
+        entries: Vec<ManifestEntry>,
+    },
+    VaultFileRequest {
+        rel_path: String,
+    },
+    VaultFile {
+        rel_path: String,
+        #[serde(with = "serde_bytes")]
+        content: Vec<u8>,
     },
     ProfileUpdate {
         profile: crate::vault::identity::PeerProfileSummary,
@@ -157,9 +194,10 @@ mod tests {
             peer_id: "node_test_123".to_string(),
             display_name: "Thomas".to_string(),
             vault_name: Some("Mon Super Coffre".to_string()),
-            version: "0.2.0".to_string(),
+            version: PROTOCOL_VERSION.to_string(),
             profile: None,
             endpoint_addr: None,
+            vault_id: Some("vault-test".to_string()),
         };
 
         let mut buffer = Vec::new();
@@ -169,5 +207,14 @@ mod tests {
         let decoded = read_sync_frame(&mut cursor).await.expect("read");
 
         assert_eq!(msg, decoded);
+    }
+
+    #[test]
+    fn protocol_1_2_0_is_required_and_same_vault_id_links() {
+        assert!(require_protocol_version("0.2.0").is_err());
+        assert!(require_protocol_version(PROTOCOL_VERSION).is_ok());
+        assert!(
+            crate::vault::share::vault_link_decision(Some("coffre-a"), Some("coffre-a")).unwrap()
+        );
     }
 }

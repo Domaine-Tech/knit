@@ -1,8 +1,11 @@
 pub mod assets;
 pub mod config;
+pub mod crdt_state;
 pub mod hash;
 pub mod identity;
 pub mod init;
+pub mod person;
+pub mod share;
 pub mod init_templates;
 pub mod snapshot;
 pub mod tree;

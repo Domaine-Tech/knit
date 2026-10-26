@@ -25,21 +25,10 @@ import {
   type UpdatePolicy,
   type UpdateProgress,
   type UpdateStatus,
+  type UpdateStoreSnapshot,
 } from '../types/updater';
 
 type UpdateListener = () => void;
-
-export interface UpdateStoreSnapshot {
-  status: UpdateStatus;
-  policy: UpdatePolicy;
-  currentVersion: string | null;
-  available: KnitUpdateInfo | null;
-  progress: UpdateProgress;
-  lastCheckedAt: number | null;
-  error: string | null;
-  modalOpen: boolean;
-  skippedVersion: string | null;
-}
 
 class UpdateStore {
   private status: UpdateStatus = 'idle';

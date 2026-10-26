@@ -13,11 +13,11 @@ import {
   normalizeSuggestIndexData,
   normalizeTaskCard,
   copyTextWithToast,
-  type RawSuggestDocItem,
-  type RawTaskCard,
 } from '../utils';
 import type {
   HeadingItem,
+  RawSuggestDocItem,
+  RawTaskCard,
   SuggestIndexData,
   FrontmatterDoc,
   SearchSnippet,

@@ -1,18 +1,21 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { invoke } from '@tauri-apps/api/core';
 import { contextMenu } from '../../stores/contextMenuStore';
 import { applyHue, applyTheme, DEFAULT_HUE } from '../../theme/theme';
 import { isTauriEnvironment } from '../../utils/env';
+import { DEMO_LAN_PIN, isUnnamedDisplay } from '../../utils';
 import { vaultStore } from '../../stores/vaultStore';
 import { networkStore } from '../../stores/networkStore';
 import { vaultConfigStore } from '../../stores/vaultConfigStore';
 import { vaultNameFromPath, vaultRegistry } from '../../stores/vaultRegistry';
-import { pickVaultFolderPath } from '../../stores/vaultIo';
+import {
+  initVault,
+  inspectJoinFolder,
+  pickVaultFolderPath,
+  prepareJoinVault,
+} from '../../stores/vaultIo';
 import { toast } from '../../stores/toastStore';
 import {
-  DEMO_LAN_PIN,
   type InitVaultOptions,
-  type InitVaultResult,
   type ThemeMode,
   type ThemePreference,
 } from '../../types';
@@ -52,6 +55,17 @@ export const Wizard: React.FC<WizardProps> = ({ onVaultOpened, pendingInitPath }
 
   const [joinCode, setJoinCode] = useState('');
   const [joinFolder, setJoinFolder] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [joinHostName, setJoinHostName] = useState('');
+  const [joinVaultName, setJoinVaultName] = useState('');
+
+  const applyPersonHint = useCallback(() => {
+    const name = `${firstName.trim()} ${lastName.trim()}`.trim();
+    if (name && !isUnnamedDisplay(name)) {
+      networkStore.pendingDisplayName = name;
+    }
+  }, [firstName, lastName]);
 
   useEffect(() => {
     if (!pendingInitPath) return;
@@ -79,6 +93,7 @@ export const Wizard: React.FC<WizardProps> = ({ onVaultOpened, pendingInitPath }
       setBusy(true);
       setError(null);
       try {
+        applyPersonHint();
         const result = await vaultStore.openOrInitVault(path);
         if (result === 'needs_init') {
           setFolderPath(path);
@@ -93,7 +108,7 @@ export const Wizard: React.FC<WizardProps> = ({ onVaultOpened, pendingInitPath }
         setBusy(false);
       }
     },
-    [onVaultOpened]
+    [applyPersonHint, onVaultOpened]
   );
 
   const finishCreate = useCallback(async () => {
@@ -104,6 +119,7 @@ export const Wizard: React.FC<WizardProps> = ({ onVaultOpened, pendingInitPath }
     setBusy(true);
     setError(null);
     try {
+      applyPersonHint();
       const options: InitVaultOptions = {
         vault_name: vaultName.trim() || 'Mon Projet',
         create_default_structure: createStructure,
@@ -114,10 +130,7 @@ export const Wizard: React.FC<WizardProps> = ({ onVaultOpened, pendingInitPath }
       };
 
       if (isTauriEnvironment()) {
-        await invoke<InitVaultResult>('init_vault', {
-          vaultPath: folderPath,
-          options,
-        });
+        await initVault(folderPath, options);
       }
 
       applyHue(hue);
@@ -162,6 +175,7 @@ export const Wizard: React.FC<WizardProps> = ({ onVaultOpened, pendingInitPath }
     hue,
     themePref,
     pendingInitPath,
+    applyPersonHint,
   ]);
 
   const finishJoin = useCallback(async () => {
@@ -176,30 +190,30 @@ export const Wizard: React.FC<WizardProps> = ({ onVaultOpened, pendingInitPath }
     setBusy(true);
     setError(null);
     setJoinStep(2);
-    setSyncProgress(10);
-    setSyncStatus('Préparation du dossier local…');
+    setSyncProgress(15);
+    setSyncStatus('Vérification du dossier local…');
     try {
-      const nameGuess = 'Coffre partagé';
+      applyPersonHint();
       if (isTauriEnvironment()) {
-        await invoke<InitVaultResult>('prepare_join_vault', {
-          vaultPath: joinFolder,
-          vaultName: nameGuess,
-        });
+        const report = await inspectJoinFolder(joinFolder);
+        if (!report.accepted) {
+          setError(report.reason);
+          setJoinStep(1);
+          return;
+        }
+        await prepareJoinVault(joinFolder, 'Coffre partagé');
       }
-      setSyncProgress(35);
-      setSyncStatus('Ouverture du coffre…');
+      setSyncProgress(40);
+      setSyncStatus('Connexion au pair…');
       await vaultStore.openVault(joinFolder);
       await vaultConfigStore.load(joinFolder);
-
-      setSyncProgress(70);
-      setSyncStatus('Connexion au pair…');
-      await networkStore.connectPeer(joinCode.trim());
-      setSyncProgress(100);
-      setSyncStatus('Connecté au pair');
-      vaultRegistry.touch(joinFolder, nameGuess);
+      const peer = await networkStore.connectPeer(joinCode.trim());
+      const remoteName = peer.vault_name?.trim() || 'Coffre partagé';
+      setJoinHostName(peer.display_name);
+      setJoinVaultName(remoteName);
+      setSyncProgress(55);
+      setSyncStatus(`Connecté à ${peer.display_name}`);
       vaultStore.clearPendingInit();
-      toast.success('Coffre rejoint', joinFolder);
-      setTimeout(() => onVaultOpened(), 400);
     } catch (e: unknown) {
       setError(String(e));
       setSyncStatus('Échec de la connexion');
@@ -207,7 +221,39 @@ export const Wizard: React.FC<WizardProps> = ({ onVaultOpened, pendingInitPath }
     } finally {
       setBusy(false);
     }
-  }, [joinFolder, joinCode, onVaultOpened]);
+  }, [joinFolder, joinCode, applyPersonHint]);
+
+  const confirmReplication = useCallback(async () => {
+    setBusy(true);
+    setError(null);
+    setSyncStatus('Copie des notes…');
+    try {
+      if (isTauriEnvironment()) {
+        const report = await networkStore.replicateVault(({ done, total, rel_path }) => {
+          if (total > 0) setSyncProgress(55 + Math.round((done / total) * 40));
+          if (rel_path) setSyncStatus(`Réception de ${rel_path}`);
+        });
+        vaultRegistry.touch(joinFolder, report.vault_name || joinVaultName);
+        await vaultStore.reloadTree();
+        if (report.divergent.length > 0) {
+          toast.info(`${report.divergent.length} fichier(s) local(aux) conservé(s)`);
+        }
+        setSyncStatus(
+          report.copied > 0
+            ? `${report.copied} fichier(s) copié(s)`
+            : 'Coffre déjà à jour'
+        );
+      }
+      setSyncProgress(100);
+      toast.success('Coffre rejoint', joinVaultName || joinFolder);
+      setTimeout(() => onVaultOpened(), 400);
+    } catch (e: unknown) {
+      setError(String(e));
+      setSyncStatus('La copie a échoué. Le dossier local n’a pas été écrasé.');
+    } finally {
+      setBusy(false);
+    }
+  }, [joinFolder, joinVaultName, onVaultOpened]);
 
   const showContext = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -222,32 +268,12 @@ export const Wizard: React.FC<WizardProps> = ({ onVaultOpened, pendingInitPath }
         },
       },
       {
-        id: 'copy-invite',
-        label: 'Copier le code d’invitation',
-        icon: 'share',
-        disabled: !invitationCode,
-        onClick: () => {
-          if (invitationCode) void navigator.clipboard.writeText(invitationCode);
-        },
-      },
-      {
-        id: 'copy-pin',
-        label: 'Copier le PIN LAN',
+        id: 'copy-vault-id',
+        label: 'Copier l’identifiant du coffre',
         icon: 'copy',
-        disabled: !pinCode,
+        disabled: !networkStore.vaultId,
         onClick: () => {
-          if (pinCode) void navigator.clipboard.writeText(pinCode);
-        },
-      },
-      {
-        id: 'refresh-pin',
-        label: 'Rafraîchir le PIN',
-        icon: 'sync',
-        disabled: !pinCode,
-        onClick: () => {
-          void networkStore.refreshPinCode().then((pin) => {
-            if (pin) setPinCode(pin);
-          });
+          if (networkStore.vaultId) void navigator.clipboard.writeText(networkStore.vaultId);
         },
       },
     ]);
@@ -256,6 +282,7 @@ export const Wizard: React.FC<WizardProps> = ({ onVaultOpened, pendingInitPath }
   return (
     <div
       className="knit-wizard"
+      data-tauri-drag-region="deep"
       onContextMenu={showContext}
       onMouseDown={(e) => {
         if (e.button === 1) e.preventDefault();
@@ -290,6 +317,10 @@ export const Wizard: React.FC<WizardProps> = ({ onVaultOpened, pendingInitPath }
           <WizardHome
             busy={busy}
             pendingInitPath={pendingInitPath}
+            firstName={firstName}
+            lastName={lastName}
+            onFirstNameChange={setFirstName}
+            onLastNameChange={setLastName}
             onCreate={() => {
               setFlow('create');
               setCreateStep(1);
@@ -351,6 +382,13 @@ export const Wizard: React.FC<WizardProps> = ({ onVaultOpened, pendingInitPath }
                 onJoinFolderChange={setJoinFolder}
                 onPickFolder={() => void pickFolder(setJoinFolder)}
                 onFinishJoin={() => void finishJoin()}
+                firstName={firstName}
+                lastName={lastName}
+                onFirstNameChange={setFirstName}
+                onLastNameChange={setLastName}
+                joinHostName={joinHostName}
+                joinVaultName={joinVaultName}
+                onConfirmCopy={() => void confirmReplication()}
               />
             )}
 

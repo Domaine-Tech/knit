@@ -5,10 +5,13 @@ use crate::network::blobs::{
 use crate::network::invitation::{create_invitation, InvitationTicket};
 use crate::network::mdns::{DiscoveredLanPeer, MdnsService};
 use crate::network::protocol::{KnitSyncMessage, ALPN_BLOBS, ALPN_SYNC};
+use crate::network::manifest::{file_xxh3_hex, write_replicated_file};
+use crate::network::protocol::ManifestEntry;
 use crate::vault::identity::{
-    load_or_create_profile, load_or_generate_identity, save_profile, AvatarInfo, PeerIdentity,
-    PeerProfileSummary, UserProfile,
+    compute_initials, save_profile_in, AvatarInfo, PeerIdentity, PeerProfileSummary, UserProfile,
 };
+use crate::vault::person::acquire_person_session;
+use crate::vault::share::{prepare_share_for_session, read_vault_share, VaultShare};
 use crate::watcher::guard::WriteGuard;
 use iroh::endpoint::Connection;
 use iroh::{Endpoint, EndpointAddr, PublicKey, SecretKey};
@@ -76,6 +79,20 @@ pub enum RemoteNetworkEvent {
         from_peer: String,
     },
     LanPeerDiscovered(DiscoveredLanPeer),
+    ReplicationProgress {
+        done: u32,
+        total: u32,
+        rel_path: String,
+    },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ReplicationReport {
+    pub copied: u32,
+    pub skipped: u32,
+    pub divergent: Vec<String>,
+    pub vault_name: String,
+    pub vault_id: String,
 }
 
 pub(crate) struct PeerSession {
@@ -88,10 +105,15 @@ pub(crate) struct PeerSession {
 pub struct KnitNetworkNode {
     pub endpoint: Endpoint,
     pub vault_root: PathBuf,
-    pub identity: PeerIdentity,
+    pub identity: std::sync::RwLock<PeerIdentity>,
     pub profile: Arc<RwLock<UserProfile>>,
     pub secret_key: SecretKey,
-    pub vault_name: Option<String>,
+    pub person_dir: PathBuf,
+    pub vault_name: std::sync::RwLock<Option<String>>,
+    pub vault_id: std::sync::RwLock<Option<String>>,
+    person_session: std::sync::Mutex<crate::vault::person::PersonSession>,
+    pub(crate) manifest_slot: std::sync::Mutex<Option<tokio::sync::oneshot::Sender<Vec<ManifestEntry>>>>,
+    pub(crate) file_slot: std::sync::Mutex<Option<(String, tokio::sync::oneshot::Sender<Vec<u8>>)>>,
     pub guard: WriteGuard,
     /// Mode LAN strict : relays WAN Iroh désactivés (B-051).
     pub lan_only: bool,
@@ -107,19 +129,25 @@ pub struct KnitNetworkNode {
 
 impl KnitNetworkNode {
     /// Initialise et démarre le nœud P2P Iroh pour un coffre-fort donné.
+    /// L'identité est celle de la personne (répertoire de profils), pas celle du dossier.
     /// Si `lan_only` est vrai, les relays WAN N0 sont désactivés (preset `N0DisableRelay`).
     pub async fn start(
         vault_root: &Path,
-        display_name: &str,
-        vault_name: Option<&str>,
+        profiles_root: &Path,
+        display_name_hint: &str,
         guard: WriteGuard,
         enable_mdns: bool,
         lan_only: bool,
     ) -> Result<Arc<Self>> {
-        let secret_key = load_or_generate_identity(vault_root)?;
+        let person = acquire_person_session(profiles_root, vault_root, display_name_hint)?;
+        let secret_key = person.secret_key.clone();
+        let profile = person.profile.clone();
+        let person_dir = person.dir.clone();
         let pubkey = secret_key.public();
-        let identity = PeerIdentity::from_public_key(&pubkey, display_name);
-        let profile = load_or_create_profile(vault_root, display_name)?;
+        let identity = PeerIdentity::from_public_key(&pubkey, &profile.display_name);
+        let share = prepare_share_for_session(vault_root)?;
+        let vault_name = Some(share.nom.clone());
+        let vault_id = share.id.clone();
 
         // Liaison de l'endpoint Iroh : relays N0 ou mode air-gap LAN
         let builder = if lan_only {
@@ -140,10 +168,15 @@ impl KnitNetworkNode {
         let node = Arc::new(Self {
             endpoint: endpoint.clone(),
             vault_root: vault_root.to_path_buf(),
-            identity: identity.clone(),
+            identity: std::sync::RwLock::new(identity.clone()),
             profile: Arc::new(RwLock::new(profile)),
             secret_key,
-            vault_name: vault_name.map(|s| s.to_string()),
+            person_dir,
+            vault_name: std::sync::RwLock::new(vault_name.clone()),
+            vault_id: std::sync::RwLock::new(vault_id),
+            person_session: std::sync::Mutex::new(person),
+            manifest_slot: std::sync::Mutex::new(None),
+            file_slot: std::sync::Mutex::new(None),
             guard,
             lan_only,
             pin_code: Arc::new(RwLock::new(Some(pin_code.clone()))),
@@ -168,14 +201,15 @@ impl KnitNetworkNode {
 
         // 3. Activer mDNS pour la découverte LAN si demandé
         if enable_mdns {
-            let invitation_code = create_invitation(&endpoint, vault_name).ok();
+            let invitation_code = create_invitation(&endpoint, vault_name.as_deref()).ok();
             let my_peer_id = pubkey.to_string();
             let port = endpoint.addr().ip_addrs().next().map(|ip| ip.port()).unwrap_or(0);
+            let announced_name = identity.display_name.clone();
 
             if let Ok(mdns_svc) = MdnsService::new(my_peer_id) {
                 let _ = mdns_svc.register(
-                    display_name,
-                    vault_name,
+                    &announced_name,
+                    vault_name.as_deref(),
                     port,
                     invitation_code.as_deref(),
                     Some(pin_code.as_str()),
@@ -209,9 +243,31 @@ impl KnitNetworkNode {
         self.events_tx.subscribe()
     }
 
+    pub fn peer_identity(&self) -> PeerIdentity {
+        self.identity
+            .read()
+            .unwrap_or_else(|e| e.into_inner())
+            .clone()
+    }
+
+    pub fn current_vault_name(&self) -> Option<String> {
+        self.vault_name
+            .read()
+            .unwrap_or_else(|e| e.into_inner())
+            .clone()
+    }
+
+    pub fn current_vault_id(&self) -> Option<String> {
+        self.vault_id
+            .read()
+            .unwrap_or_else(|e| e.into_inner())
+            .clone()
+    }
+
     /// Génère un ticket d'invitation WAN `knit://join/...`
     pub fn get_invitation_code(&self) -> Result<String> {
-        create_invitation(&self.endpoint, self.vault_name.as_deref())
+        let name = self.current_vault_name();
+        create_invitation(&self.endpoint, name.as_deref())
     }
 
     /// PIN LAN éphémère à 6 chiffres (B-017b).
@@ -228,7 +284,7 @@ impl KnitNetworkNode {
         }
 
         // Republier l'annonce mDNS avec le nouveau PIN (unregister + register)
-        let invitation = create_invitation(&self.endpoint, self.vault_name.as_deref()).ok();
+        let invitation = create_invitation(&self.endpoint, self.current_vault_name().as_deref()).ok();
         let port = self
             .endpoint
             .addr()
@@ -239,9 +295,10 @@ impl KnitNetworkNode {
         let mut mdns_lock = self.mdns.lock().await;
         if let Some(mdns) = mdns_lock.as_mut() {
             let _ = mdns.unregister();
+            let announced = self.peer_identity();
             let _ = mdns.register(
-                &self.identity.display_name,
-                self.vault_name.as_deref(),
+                &announced.display_name,
+                self.current_vault_name().as_deref(),
                 port,
                 invitation.as_deref(),
                 Some(pin.as_str()),
@@ -326,15 +383,144 @@ impl KnitNetworkNode {
         .await
     }
 
-    /// Met à jour le profil local et le sauvegarde dans `.knit/identity/profile.json`
+    /// Met à jour le profil personne et le rediffuse (handshake suivant, mDNS, pairs déjà connectés).
     pub async fn update_local_profile(&self, new_profile: UserProfile) -> Result<()> {
-        save_profile(&self.vault_root, &new_profile)?;
+        save_profile_in(&self.person_dir, &new_profile)?;
+        let _ = crate::vault::identity::configure_vault_git_author(
+            &self.vault_root,
+            &new_profile.display_name,
+            &new_profile.email,
+        );
         {
             let mut lock = self.profile.write().await;
             *lock = new_profile.clone();
         }
+        {
+            let mut identity = self.identity.write().unwrap_or_else(|e| e.into_inner());
+            identity.display_name = new_profile.display_name.clone();
+            identity.initials = compute_initials(&new_profile.display_name);
+        }
         self.broadcast_profile_update(&new_profile).await;
+        self.republish_mdns().await;
         Ok(())
+    }
+
+    async fn republish_mdns(&self) {
+        let invitation = create_invitation(&self.endpoint, self.current_vault_name().as_deref()).ok();
+        let port = self
+            .endpoint
+            .addr()
+            .ip_addrs()
+            .next()
+            .map(|ip| ip.port())
+            .unwrap_or(0);
+        let pin = self.pin_code.read().await.clone();
+        let announced = self.peer_identity();
+        let mut mdns_lock = self.mdns.lock().await;
+        if let Some(mdns) = mdns_lock.as_mut() {
+            let _ = mdns.unregister();
+            let _ = mdns.register(
+                &announced.display_name,
+                self.current_vault_name().as_deref(),
+                port,
+                invitation.as_deref(),
+                pin.as_deref(),
+            );
+        }
+    }
+
+    pub async fn reload_share_from_disk(&self) -> Result<VaultShare> {
+        let share = read_vault_share(&self.vault_root)?;
+        *self.vault_id.write().unwrap_or_else(|e| e.into_inner()) = share.id.clone();
+        *self.vault_name.write().unwrap_or_else(|e| e.into_inner()) = Some(share.nom.clone());
+        Ok(share)
+    }
+
+    /// Tire les fichiers manquants du premier pair. N'écrase pas un fichier déjà différent.
+    pub async fn replicate_from_peers(self: &Arc<Self>) -> Result<ReplicationReport> {
+        let sender = {
+            let peers = self.active_peers.read().await;
+            peers.values().next().map(|p| p.send_tx.clone())
+        };
+        let Some(sender) = sender else {
+            return Err(KnitError::Network(
+                "Aucun pair connecté pour répliquer le coffre".into(),
+            ));
+        };
+
+        let (tx, rx) = tokio::sync::oneshot::channel();
+        {
+            let mut slot = self.manifest_slot.lock().unwrap_or_else(|e| e.into_inner());
+            *slot = Some(tx);
+        }
+        sender
+            .send(crate::network::protocol::KnitSyncMessage::VaultManifestRequest)
+            .await
+            .map_err(|_| KnitError::Network("Pair injoignable".into()))?;
+
+        let entries = tokio::time::timeout(std::time::Duration::from_secs(20), rx)
+            .await
+            .map_err(|_| KnitError::Network("Délai dépassé en attendant le manifeste".into()))?
+            .map_err(|_| KnitError::Network("Manifeste interrompu".into()))?;
+
+        let joining = self.current_vault_id().is_none();
+        let total = entries.len() as u32;
+        let mut copied = 0u32;
+        let mut skipped = 0u32;
+        let mut divergent = Vec::new();
+
+        for (index, entry) in entries.iter().enumerate() {
+            let _ = self.events_tx.send(RemoteNetworkEvent::ReplicationProgress {
+                done: index as u32,
+                total,
+                rel_path: entry.rel_path.clone(),
+            });
+            let local_path = self.vault_root.join(entry.rel_path.replace('/', std::path::MAIN_SEPARATOR_STR));
+            if local_path.is_file() {
+                let existing = std::fs::read(&local_path).unwrap_or_default();
+                if file_xxh3_hex(&existing) == entry.xxh3 {
+                    skipped += 1;
+                    continue;
+                }
+                let adopt_share = joining && entry.rel_path == ".knitshare";
+                if !adopt_share {
+                    divergent.push(entry.rel_path.clone());
+                    continue;
+                }
+            }
+
+            let (ftx, frx) = tokio::sync::oneshot::channel();
+            {
+                let mut slot = self.file_slot.lock().unwrap_or_else(|e| e.into_inner());
+                *slot = Some((entry.rel_path.clone(), ftx));
+            }
+            sender
+                .send(crate::network::protocol::KnitSyncMessage::VaultFileRequest {
+                    rel_path: entry.rel_path.clone(),
+                })
+                .await
+                .map_err(|_| KnitError::Network("Pair injoignable".into()))?;
+            let content = tokio::time::timeout(std::time::Duration::from_secs(30), frx)
+                .await
+                .map_err(|_| KnitError::Network(format!("Délai dépassé pour {}", entry.rel_path)))?
+                .map_err(|_| KnitError::Network(format!("Transfert interrompu pour {}", entry.rel_path)))?;
+            write_replicated_file(&self.vault_root, &entry.rel_path, &content, &self.guard)?;
+            copied += 1;
+        }
+
+        let share = self.reload_share_from_disk().await?;
+        let _ = self.events_tx.send(RemoteNetworkEvent::ReplicationProgress {
+            done: total,
+            total,
+            rel_path: String::new(),
+        });
+        Ok(ReplicationReport {
+            copied,
+            skipped,
+            divergent,
+            vault_name: share.nom,
+            vault_id: share.id.unwrap_or_default(),
+        })
     }
 
     /// Retourne une copie du profil local
@@ -411,6 +597,9 @@ impl KnitNetworkNode {
         if let Some(mdns) = lock.take() {
             let _ = mdns.unregister();
         }
+        if let Ok(session) = self.person_session.lock() {
+            let _ = session.lock_file.unlock();
+        }
     }
 }
 
@@ -428,7 +617,30 @@ fn generate_lan_pin() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::vault::identity::{load_or_create_profile, save_profile};
+    use std::path::Path;
     use tempfile::tempdir;
+
+    fn seed_vault(dir: &Path, id: &str, nom: &str) {
+        std::fs::write(
+            dir.join(".knitshare"),
+            format!("nom: \"{nom}\"\nid: \"{id}\"\nversion: 2\n"),
+        )
+        .expect("knitshare");
+    }
+
+    async fn start_node(
+        dir: &Path,
+        name: &str,
+        id: &str,
+        nom: &str,
+        guard: WriteGuard,
+    ) -> Arc<KnitNetworkNode> {
+        seed_vault(dir, id, nom);
+        KnitNetworkNode::start(dir, &dir.join("profiles"), name, guard, false, false)
+            .await
+            .expect("start")
+    }
 
     #[tokio::test]
     async fn test_two_nodes_p2p_collaboration() {
@@ -438,29 +650,8 @@ mod tests {
         let guard1 = WriteGuard::new();
         let guard2 = WriteGuard::new();
 
-        // Démarrer Node 1 (Thomas)
-        let node1 = KnitNetworkNode::start(
-            dir1.path(),
-            "Thomas",
-            Some("Vault Alpha"),
-            guard1,
-            false,
-            false,
-        )
-        .await
-        .expect("start node 1");
-
-        // Démarrer Node 2 (Alice)
-        let node2 = KnitNetworkNode::start(
-            dir2.path(),
-            "Alice",
-            Some("Vault Alpha"),
-            guard2,
-            false,
-            false,
-        )
-        .await
-        .expect("start node 2");
+        let node1 = start_node(dir1.path(), "Thomas", "vault-alpha", "Vault Alpha", guard1).await;
+        let node2 = start_node(dir2.path(), "Alice", "vault-alpha", "Vault Alpha", guard2).await;
 
         let mut rx1 = node1.subscribe_events();
         let mut rx2 = node2.subscribe_events();
@@ -477,7 +668,7 @@ mod tests {
         match ev1 {
             RemoteNetworkEvent::PeerConnected(info) => {
                 assert_eq!(info.display_name, "Alice");
-                assert_eq!(info.peer_id, node2.identity.peer_id);
+                assert_eq!(info.peer_id, node2.peer_identity().peer_id);
             }
             other => panic!("Attendu PeerConnected mais reçu: {:?}", other),
         }
@@ -486,7 +677,7 @@ mod tests {
         match ev2_connect {
             RemoteNetworkEvent::PeerConnected(info) => {
                 assert_eq!(info.display_name, "Thomas");
-                assert_eq!(info.peer_id, node1.identity.peer_id);
+                assert_eq!(info.peer_id, node1.peer_identity().peer_id);
             }
             other => panic!("Attendu PeerConnected sur node 2 mais reçu: {:?}", other),
         }
@@ -505,7 +696,7 @@ mod tests {
             } => {
                 assert_eq!(received_doc, doc_id);
                 assert_eq!(received_update, test_update);
-                assert_eq!(from_peer, node1.identity.peer_id);
+                assert_eq!(from_peer, node1.peer_identity().peer_id);
             }
             other => panic!("Attendu YjsUpdate mais reçu: {:?}", other),
         }
@@ -523,7 +714,7 @@ mod tests {
             } => {
                 assert_eq!(received_doc, doc_id);
                 assert_eq!(received_awareness, test_awareness);
-                assert_eq!(from_peer, node2.identity.peer_id);
+                assert_eq!(from_peer, node2.peer_identity().peer_id);
             }
             other => panic!("Attendu YjsAwareness mais reçu: {:?}", other),
         }
@@ -547,13 +738,8 @@ mod tests {
         p1.share_email_p2p = false;
         save_profile(dir1.path(), &p1).expect("save p1");
 
-        let node1 = KnitNetworkNode::start(dir1.path(), "Thomas H.", Some("Vault"), guard1, false, false)
-            .await
-            .expect("start 1");
-
-        let node2 = KnitNetworkNode::start(dir2.path(), "Alice", Some("Vault"), guard2, false, false)
-            .await
-            .expect("start 2");
+        let node1 = start_node(dir1.path(), "Thomas H.", "vault-shared", "Vault", guard1).await;
+        let node2 = start_node(dir2.path(), "Alice", "vault-shared", "Vault", guard2).await;
 
         let mut rx2 = node2.subscribe_events();
         let ticket = node1.get_invitation_code().expect("ticket");
@@ -570,7 +756,7 @@ mod tests {
         let mut received_profile = None;
         while let Ok(ev) = rx2.recv().await {
             if let RemoteNetworkEvent::ProfileUpdated { from_peer, profile } = ev {
-                assert_eq!(from_peer, node1.identity.peer_id);
+                assert_eq!(from_peer, node1.peer_identity().peer_id);
                 received_profile = Some(profile);
                 break;
             }
@@ -590,13 +776,8 @@ mod tests {
         let guard1 = WriteGuard::new();
         let guard2 = WriteGuard::new();
 
-        let node1 = KnitNetworkNode::start(dir1.path(), "Node1", Some("TestVault"), guard1, false, false)
-            .await
-            .expect("start 1");
-
-        let node2 = KnitNetworkNode::start(dir2.path(), "Node2", Some("TestVault"), guard2, false, false)
-            .await
-            .expect("start 2");
+        let node1 = start_node(dir1.path(), "Node1", "vault-catchup", "TestVault", guard1).await;
+        let node2 = start_node(dir2.path(), "Node2", "vault-catchup", "TestVault", guard2).await;
 
         let ticket = node1.get_invitation_code().expect("ticket");
         node2.connect_by_ticket(&ticket).await.expect("connect");
@@ -620,7 +801,7 @@ mod tests {
             } => {
                 assert_eq!(req_doc, doc_id);
                 assert_eq!(state_vector, state_vector_node1);
-                assert_eq!(from_peer, node1.identity.peer_id);
+                assert_eq!(from_peer, node1.peer_identity().peer_id);
 
                 // Node 2 répond avec le delta calculé sur la base du vecteur d'état
                 let missing_update = vec![42, 43, 44, 45, 99];
@@ -638,7 +819,7 @@ mod tests {
             } => {
                 assert_eq!(resp_doc, doc_id);
                 assert_eq!(update, vec![42, 43, 44, 45, 99]);
-                assert_eq!(from_peer, node2.identity.peer_id);
+                assert_eq!(from_peer, node2.peer_identity().peer_id);
             }
             other => panic!("Attendu SyncResponseReceived mais reçu: {:?}", other),
         }
@@ -666,13 +847,9 @@ mod tests {
 
         let avatar_hash = avatar_info.blake3_hash.clone().expect("hash");
 
-        let node1 = KnitNetworkNode::start(dir1.path(), "Thomas", Some("Vault"), guard1, false, false)
-            .await
-            .expect("start 1");
+        let node1 = start_node(dir1.path(), "Thomas", "vault-avatar", "Vault", guard1).await;
 
-        let node2 = KnitNetworkNode::start(dir2.path(), "Alice", Some("Vault"), guard2, false, false)
-            .await
-            .expect("start 2");
+        let node2 = start_node(dir2.path(), "Alice", "vault-avatar", "Vault", guard2).await;
 
         let ticket = node1.get_invitation_code().expect("ticket");
         node2.connect_by_ticket(&ticket).await.expect("connect");

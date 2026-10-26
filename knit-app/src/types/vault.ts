@@ -4,6 +4,17 @@
 
 import type { UnlistenFn } from '@tauri-apps/api/event';
 
+export interface VaultShare {
+  id: string | null;
+  nom: string;
+}
+
+export interface JoinFolderReport {
+  accepted: boolean;
+  reason: string;
+  vault_name: string;
+}
+
 export interface FileNode {
   id: string;
   name: string;

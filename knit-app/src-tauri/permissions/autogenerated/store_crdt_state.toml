@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-store-crdt-state"
+description = "Enables the store_crdt_state command without any pre-configured scope."
+commands.allow = ["store_crdt_state"]
+
+[[permission]]
+identifier = "deny-store-crdt-state"
+description = "Denies the store_crdt_state command without any pre-configured scope."
+commands.deny = ["store_crdt_state"]

@@ -11,6 +11,8 @@ import { ToastContainer } from './components/Toast/ToastContainer';
 import { ContextMenuContainer } from './components/ContextMenu/ContextMenuContainer';
 import { TooltipContainer } from './components/Tooltip/TooltipContainer';
 import { Wizard } from './components/Wizard/Wizard';
+import { ProfileNameGate } from './components/Profile/ProfileNameGate';
+import { networkStore } from './stores/networkStore';
 import { applyTheme, applyHue } from './theme/theme';
 import { tabStore } from './stores/tabStore';
 import { vaultStore } from './stores/vaultStore';
@@ -20,6 +22,7 @@ export const App: React.FC = () => {
   const shell = useAppShell();
   /** Compteur de sync store → relecture synchrone de needsWizard à chaque notify. */
   const [, setVaultEpoch] = useState(0);
+  const [, setNetworkEpoch] = useState(0);
   const [pendingInitPath, setPendingInitPath] = useState<string | null>(
     () => vaultStore.pendingInitPath
   );
@@ -31,8 +34,10 @@ export const App: React.FC = () => {
     });
   }, []);
 
+  useEffect(() => networkStore.subscribe(() => setNetworkEpoch((n) => n + 1)), []);
+
   // Toujours dérivé du store (évite un shell « Coffre-fort » vide sans Wizard)
-  const needsWizard = vaultStore.needsWizard;
+  const needsWizard = vaultStore.needsWizard || networkStore.joining;
 
   const {
     theme,
@@ -423,6 +428,7 @@ export const App: React.FC = () => {
       {/* Hover Preview global (Agenda, Canvas, recherche — hors Editor) */}
       <HoverPreviewHost />
 
+      {networkStore.needsProfileName && <ProfileNameGate />}
       {/* Notifications Toast */}
       <ToastContainer />
 

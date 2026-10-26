@@ -4,9 +4,12 @@ use crate::network::blobs::{
 };
 use crate::network::node::{ConnectedPeerInfo, KnitNetworkNode, PeerSession, RemoteNetworkEvent};
 use crate::network::protocol::{
-    read_sync_frame, write_sync_frame, KnitSyncMessage, ALPN_BLOBS, ALPN_SYNC,
+    read_sync_frame, require_protocol_version, write_sync_frame, KnitSyncMessage, ALPN_BLOBS,
+    ALPN_SYNC, PROTOCOL_VERSION,
 };
-use crate::vault::identity::{PeerIdentity, PeerProfileSummary};
+use crate::network::manifest::{build_manifest, read_syncable_file};
+use crate::vault::identity::PeerIdentity;
+use crate::vault::share::vault_link_decision;
 use iroh::endpoint::{Connection, RecvStream, SendStream};
 use iroh::{EndpointAddr, PublicKey};
 use std::sync::Arc;
@@ -69,24 +72,30 @@ impl KnitNetworkNode {
     ) -> Result<ConnectedPeerInfo> {
         let (send_tx, mut send_rx) = mpsc::channel::<KnitSyncMessage>(256);
 
-        let my_profile = self.profile.read().await;
-        let my_summary = PeerProfileSummary::from_profile(&my_profile);
+        let my_profile = self.profile.read().await.clone();
+        let my_summary = crate::vault::identity::PeerProfileSummary::from_profile(&my_profile);
         let my_addr = self.endpoint.addr();
+        let local_identity = self.peer_identity();
+        let local_name = if my_profile.display_name.trim().is_empty() {
+            local_identity.display_name.clone()
+        } else {
+            my_profile.display_name.clone()
+        };
+        let local_vault_name = self.current_vault_name();
+        let local_vault_id = self.current_vault_id();
 
-        // Handshake
-        let (display_name, vault_name, peer_profile, received_addr) = if is_initiator {
-            // Envoyer Handshake avec son profil enrichi (respectant share_email_p2p) et son endpoint_addr
+        let (display_name, vault_name, peer_profile, received_addr, remote_vault_id) = if is_initiator {
             let handshake = KnitSyncMessage::Handshake {
-                peer_id: self.identity.peer_id.clone(),
-                display_name: self.identity.display_name.clone(),
-                vault_name: self.vault_name.clone(),
-                version: "0.2.0".to_string(),
-                profile: Some(my_summary),
-                endpoint_addr: Some(my_addr),
+                peer_id: local_identity.peer_id.clone(),
+                display_name: local_name.clone(),
+                vault_name: local_vault_name.clone(),
+                version: PROTOCOL_VERSION.to_string(),
+                profile: Some(my_summary.clone()),
+                endpoint_addr: Some(my_addr.clone()),
+                vault_id: local_vault_id.clone(),
             };
             write_sync_frame(&mut send_stream, &handshake).await?;
 
-            // Attendre HandshakeAck
             match read_sync_frame(&mut recv_stream).await? {
                 KnitSyncMessage::HandshakeAck {
                     peer_id: _,
@@ -94,7 +103,8 @@ impl KnitNetworkNode {
                     vault_name,
                     profile,
                     endpoint_addr,
-                } => (display_name, vault_name, profile, endpoint_addr),
+                    vault_id,
+                } => (display_name, vault_name, profile, endpoint_addr, vault_id),
                 other => {
                     return Err(KnitError::Network(format!(
                         "Attendu HandshakeAck mais reçu: {:?}",
@@ -103,16 +113,19 @@ impl KnitNetworkNode {
                 }
             }
         } else {
-            // Attendre Handshake
-            let (peer_name, peer_vault, profile, endpoint_addr) = match read_sync_frame(&mut recv_stream).await? {
+            let (peer_name, peer_vault, profile, endpoint_addr, vault_id) = match read_sync_frame(&mut recv_stream).await? {
                 KnitSyncMessage::Handshake {
                     peer_id: _,
                     display_name,
                     vault_name,
-                    version: _,
+                    version,
                     profile,
                     endpoint_addr,
-                } => (display_name, vault_name, profile, endpoint_addr),
+                    vault_id,
+                } => {
+                    require_protocol_version(&version)?;
+                    (display_name, vault_name, profile, endpoint_addr, vault_id)
+                }
                 other => {
                     return Err(KnitError::Network(format!(
                         "Attendu Handshake mais reçu: {:?}",
@@ -121,19 +134,26 @@ impl KnitNetworkNode {
                 }
             };
 
-            // Répondre avec HandshakeAck
             let ack = KnitSyncMessage::HandshakeAck {
-                peer_id: self.identity.peer_id.clone(),
-                display_name: self.identity.display_name.clone(),
-                vault_name: self.vault_name.clone(),
+                peer_id: local_identity.peer_id.clone(),
+                display_name: local_name.clone(),
+                vault_name: local_vault_name.clone(),
                 profile: Some(my_summary),
                 endpoint_addr: Some(my_addr),
+                vault_id: local_vault_id.clone(),
             };
             write_sync_frame(&mut send_stream, &ack).await?;
 
-            (peer_name, peer_vault, profile, endpoint_addr)
+            (peer_name, peer_vault, profile, endpoint_addr, vault_id)
         };
 
+        vault_link_decision(local_vault_id.as_deref(), remote_vault_id.as_deref())?;
+
+        let announced_name = peer_profile
+            .as_ref()
+            .map(|p| p.display_name.trim().to_string())
+            .filter(|name| !name.is_empty())
+            .unwrap_or(display_name);
         let (first_name, last_name, email, role, status_message, avatar) = if let Some(p) = peer_profile {
             (
                 Some(p.first_name),
@@ -148,7 +168,7 @@ impl KnitNetworkNode {
         };
 
         let remote_peer_id = remote_id.to_string();
-        let peer_identity = PeerIdentity::from_public_key(&remote_id, &display_name);
+        let peer_identity = PeerIdentity::from_public_key(&remote_id, &announced_name);
 
         let now_sec = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -286,6 +306,50 @@ impl KnitNetworkNode {
                         let lock = node.active_peers.read().await;
                         if let Some(sess) = lock.get(&remote_id) {
                             let _ = sess.send_tx.send(KnitSyncMessage::Pong { timestamp_ms }).await;
+                        }
+                    }
+                    KnitSyncMessage::VaultManifestRequest => {
+                        if let Ok(entries) = build_manifest(&node.vault_root) {
+                            let lock = node.active_peers.read().await;
+                            if let Some(sess) = lock.get(&remote_id) {
+                                let _ = sess
+                                    .send_tx
+                                    .send(KnitSyncMessage::VaultManifest { entries })
+                                    .await;
+                            }
+                        }
+                    }
+                    KnitSyncMessage::VaultManifest { entries } => {
+                        if let Some(tx) = node
+                            .manifest_slot
+                            .lock()
+                            .unwrap_or_else(|e| e.into_inner())
+                            .take()
+                        {
+                            let _ = tx.send(entries);
+                        }
+                    }
+                    KnitSyncMessage::VaultFileRequest { rel_path } => {
+                        if let Ok(content) = read_syncable_file(&node.vault_root, &rel_path) {
+                            let lock = node.active_peers.read().await;
+                            if let Some(sess) = lock.get(&remote_id) {
+                                let _ = sess
+                                    .send_tx
+                                    .send(KnitSyncMessage::VaultFile { rel_path, content })
+                                    .await;
+                            }
+                        }
+                    }
+                    KnitSyncMessage::VaultFile { rel_path, content } => {
+                        if let Some((expected, tx)) = node
+                            .file_slot
+                            .lock()
+                            .unwrap_or_else(|e| e.into_inner())
+                            .take()
+                        {
+                            if expected == rel_path {
+                                let _ = tx.send(content);
+                            }
                         }
                     }
                     KnitSyncMessage::Pong { timestamp_ms: _ } => {

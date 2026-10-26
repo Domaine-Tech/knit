@@ -146,14 +146,11 @@ class VaultStore {
       recoverTrash: () => self.recoverTrash(),
     };
 
-    // Tauri + Vite : pas de coffre → Wizard. Dernier coffre valide → auto-ouverture.
+    // Pas de coffre, ou dernier choix = démo mémoire → Wizard.
+    // Un dossier réel est rouvert. Même règle en tauri dev et dans l'application installée.
     const savedPath = vaultRegistry.getLastPath();
-    if (savedPath) {
-      if (isDemoVaultPath(savedPath)) {
-        void this.openDemoVault();
-      } else {
-        void this.openOrInitVault(savedPath);
-      }
+    if (savedPath && !isDemoVaultPath(savedPath)) {
+      void this.openOrInitVault(savedPath);
     } else {
       this.currentVaultPath = null;
       this.files = [];

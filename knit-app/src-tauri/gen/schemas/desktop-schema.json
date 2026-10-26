@@ -297,6 +297,12 @@
           "markdownDescription": "Enables the get_vault_index command without any pre-configured scope."
         },
         {
+          "description": "Enables the get_vault_share command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-get-vault-share",
+          "markdownDescription": "Enables the get_vault_share command without any pre-configured scope."
+        },
+        {
           "description": "Enables the get_vault_tags command without any pre-configured scope.",
           "type": "string",
           "const": "allow-get-vault-tags",
@@ -327,6 +333,12 @@
           "markdownDescription": "Enables the init_vault command without any pre-configured scope."
         },
         {
+          "description": "Enables the inspect_join_folder command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-inspect-join-folder",
+          "markdownDescription": "Enables the inspect_join_folder command without any pre-configured scope."
+        },
+        {
           "description": "Enables the invalidate_vault_index command without any pre-configured scope.",
           "type": "string",
           "const": "allow-invalidate-vault-index",
@@ -355,6 +367,12 @@
           "type": "string",
           "const": "allow-load-avatar-base64",
           "markdownDescription": "Enables the load_avatar_base64 command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the load_crdt_state_cmd command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-load-crdt-state-cmd",
+          "markdownDescription": "Enables the load_crdt_state_cmd command without any pre-configured scope."
         },
         {
           "description": "Enables the load_latest_doc_snapshot command without any pre-configured scope.",
@@ -427,6 +445,12 @@
           "type": "string",
           "const": "allow-rename-vault-file",
           "markdownDescription": "Enables the rename_vault_file command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the replicate_vault command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-replicate-vault",
+          "markdownDescription": "Enables the replicate_vault command without any pre-configured scope."
         },
         {
           "description": "Enables the reset_user_avatar command without any pre-configured scope.",
@@ -523,6 +547,12 @@
           "type": "string",
           "const": "allow-stop-vault-watcher",
           "markdownDescription": "Enables the stop_vault_watcher command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the store_crdt_state command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-store-crdt-state",
+          "markdownDescription": "Enables the store_crdt_state command without any pre-configured scope."
         },
         {
           "description": "Enables the sync_asset_from_peers command without any pre-configured scope.",
@@ -687,6 +717,12 @@
           "markdownDescription": "Denies the get_vault_index command without any pre-configured scope."
         },
         {
+          "description": "Denies the get_vault_share command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-get-vault-share",
+          "markdownDescription": "Denies the get_vault_share command without any pre-configured scope."
+        },
+        {
           "description": "Denies the get_vault_tags command without any pre-configured scope.",
           "type": "string",
           "const": "deny-get-vault-tags",
@@ -717,6 +753,12 @@
           "markdownDescription": "Denies the init_vault command without any pre-configured scope."
         },
         {
+          "description": "Denies the inspect_join_folder command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-inspect-join-folder",
+          "markdownDescription": "Denies the inspect_join_folder command without any pre-configured scope."
+        },
+        {
           "description": "Denies the invalidate_vault_index command without any pre-configured scope.",
           "type": "string",
           "const": "deny-invalidate-vault-index",
@@ -745,6 +787,12 @@
           "type": "string",
           "const": "deny-load-avatar-base64",
           "markdownDescription": "Denies the load_avatar_base64 command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the load_crdt_state_cmd command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-load-crdt-state-cmd",
+          "markdownDescription": "Denies the load_crdt_state_cmd command without any pre-configured scope."
         },
         {
           "description": "Denies the load_latest_doc_snapshot command without any pre-configured scope.",
@@ -817,6 +865,12 @@
           "type": "string",
           "const": "deny-rename-vault-file",
           "markdownDescription": "Denies the rename_vault_file command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the replicate_vault command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-replicate-vault",
+          "markdownDescription": "Denies the replicate_vault command without any pre-configured scope."
         },
         {
           "description": "Denies the reset_user_avatar command without any pre-configured scope.",
@@ -913,6 +967,12 @@
           "type": "string",
           "const": "deny-stop-vault-watcher",
           "markdownDescription": "Denies the stop_vault_watcher command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the store_crdt_state command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-store-crdt-state",
+          "markdownDescription": "Denies the store_crdt_state command without any pre-configured scope."
         },
         {
           "description": "Denies the sync_asset_from_peers command without any pre-configured scope.",

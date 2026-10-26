@@ -8,6 +8,7 @@ import diff from 'fast-diff';
 import { Awareness, encodeAwarenessUpdate, applyAwarenessUpdate } from 'y-protocols/awareness';
 import { networkStore } from '../stores/networkStore';
 import { vaultStore } from '../stores/vaultStore';
+import { isDemoVaultPath } from '../stores/vaultRegistry';
 import { tabStore } from '../stores/tabStore';
 import { isTauriEnvironment, uint8ArrayToBase64, base64ToUint8Array } from '../utils';
 import { invoke } from '@tauri-apps/api/core';
@@ -17,6 +18,13 @@ import type {
   AwarenessUserState,
   AwarenessChangeEvent,
 } from '../types';
+
+/** Le coffre démo n'a pas de dossier : aucun snapshot ni état CRDT sur disque. */
+function diskVaultPath(): string | null {
+  const vaultPath = vaultStore.vaultPath;
+  if (!vaultPath || !isTauriEnvironment() || isDemoVaultPath(vaultPath)) return null;
+  return vaultPath;
+}
 
 /** Plafond souple B-050 : max Y.Doc en mémoire (éviction LRU des docs sans abonné). */
 export const CRDT_DOC_LRU_MAX = 20;
@@ -29,6 +37,8 @@ export class CRDTManager {
   /** Ordre d'accès LRU (plus récent en fin de liste). */
   private lruOrder: string[] = [];
   private initializedP2P: boolean = false;
+  /** Chaîne d'écriture par fichier fermé, pour ne pas mélanger deux updates. */
+  private closedChains: Map<string, Promise<void>> = new Map();
 
   constructor() {
     this.setupP2PListeners();
@@ -43,8 +53,11 @@ export class CRDTManager {
       const doc = this.docs.get(docId);
       if (doc) {
         Y.applyUpdate(doc, update, 'p2p');
+        return;
       }
+      void this.persistClosedUpdate(docId, update);
     });
+    networkStore.subscribe(() => this.syncLocalAwarenessUser());
 
     // Réception des requêtes de synchronisation (SyncStep1) après reconnexion ou déconnexion prolongée
     networkStore.onRemoteSyncRequest((docId, stateVector, fromPeer) => {
@@ -125,7 +138,12 @@ export class CRDTManager {
 
       // Brancher la diffusion automatique des modifications locales vers les pairs P2P
       createdDoc.on('update', (update: Uint8Array, origin: unknown) => {
-        if (origin !== 'p2p' && origin !== 'init' && origin !== 'snapshot-load') {
+        if (
+          origin !== 'p2p' &&
+          origin !== 'init' &&
+          origin !== 'snapshot-load' &&
+          origin !== 'crdt-state'
+        ) {
           networkStore.broadcastYjsUpdate(path, update);
 
           // Compteur d'opérations pour déclencher un snapshot compacté toutes les 200 opérations
@@ -150,8 +168,8 @@ export class CRDTManager {
 
   /** Liste les snapshots compactés d'un document (IPC `list_doc_snapshots`). */
   public async listDocSnapshots(path: string): Promise<DocSnapshot[]> {
-    const vaultPath = vaultStore.vaultPath;
-    if (!vaultPath || !isTauriEnvironment()) return [];
+    const vaultPath = diskVaultPath();
+    if (!vaultPath) return [];
     try {
       return await invoke<DocSnapshot[]>('list_doc_snapshots', {
         vaultPath,
@@ -174,8 +192,8 @@ export class CRDTManager {
       const stateVectorBase64 = uint8ArrayToBase64(stateVector);
       const yjsSnapshotBase64 = uint8ArrayToBase64(snapshotBytes);
 
-      const vaultPath = vaultStore.vaultPath;
-      if (vaultPath && isTauriEnvironment()) {
+      const vaultPath = diskVaultPath();
+      if (vaultPath) {
         await invoke<void>('save_doc_snapshot', {
           vaultPath,
           docId: path,
@@ -255,32 +273,92 @@ export class CRDTManager {
   public initDocument(path: string, initialContent: string): Y.Text {
     const doc = this.getDoc(path);
     const ytext = doc.getText('codemirror');
-
-    // Tenter de charger un snapshot compacté récent s'il existe dans .knit/snapshots/
-    if (isTauriEnvironment() && vaultStore.vaultPath && ytext.length === 0) {
-      invoke<DocSnapshot | null>('load_latest_doc_snapshot', {
-        vaultPath: vaultStore.vaultPath,
-        docId: path,
-      })
-        .then((snapshot) => {
-          if (snapshot && snapshot.yjs_snapshot_base64 && ytext.length === 0) {
-            try {
-              const bytes = base64ToUint8Array(snapshot.yjs_snapshot_base64);
-              Y.applyUpdate(doc, bytes, 'snapshot-load');
-            } catch (err: unknown) {
-              console.warn('Erreur chargement snapshot compacté:', err);
-            }
-          }
-        })
-        .catch(() => {});
+    if (ytext.length === 0) {
+      void this.hydrateDocument(path, doc, initialContent);
     }
+    return ytext;
+  }
 
+  private syncLocalAwarenessUser(): void {
+    const identity = networkStore.localIdentity;
+    if (!identity) return;
+    for (const awareness of this.awarenessMap.values()) {
+      const current = awareness.getLocalState()?.user as { name?: string } | undefined;
+      if (current?.name === identity.display_name) continue;
+      awareness.setLocalStateField('user', {
+        name: identity.display_name,
+        color: identity.color_hex,
+        initials: identity.initials,
+        colorIndex: identity.color_index,
+      });
+    }
+  }
+
+  private persistClosedUpdate(docId: string, update: Uint8Array): Promise<void> {
+    const previous = this.closedChains.get(docId) ?? Promise.resolve();
+    const next = previous
+      .then(async () => {
+        const vaultPath = diskVaultPath();
+        if (!vaultPath) return;
+        const existing = await invoke<string | null>('load_crdt_state_cmd', {
+          vaultPath,
+          docId,
+        });
+        const tmp = new Y.Doc();
+        try {
+          if (existing) Y.applyUpdate(tmp, base64ToUint8Array(existing));
+          Y.applyUpdate(tmp, update);
+          const full = Y.encodeStateAsUpdate(tmp);
+          await invoke<void>('store_crdt_state', {
+            vaultPath,
+            docId,
+            stateBase64: uint8ArrayToBase64(full),
+          });
+        } finally {
+          tmp.destroy();
+        }
+      })
+      .catch((err: unknown) => {
+        console.warn('Persistance CRDT fichier fermé:', err);
+      });
+    this.closedChains.set(docId, next);
+    return next;
+  }
+
+  private async hydrateDocument(path: string, doc: Y.Doc, initialContent: string): Promise<void> {
+    const ytext = doc.getText('codemirror');
+    const vaultPath = diskVaultPath();
+    if (vaultPath) {
+      try {
+        const stored = await invoke<string | null>('load_crdt_state_cmd', {
+          vaultPath,
+          docId: path,
+        });
+        if (stored && ytext.length === 0) {
+          Y.applyUpdate(doc, base64ToUint8Array(stored), 'crdt-state');
+          return;
+        }
+      } catch (err: unknown) {
+        console.warn('Rejeu crdt-state:', err);
+      }
+      try {
+        const snapshot = await invoke<DocSnapshot | null>('load_latest_doc_snapshot', {
+          vaultPath,
+          docId: path,
+        });
+        if (snapshot?.yjs_snapshot_base64 && ytext.length === 0) {
+          Y.applyUpdate(doc, base64ToUint8Array(snapshot.yjs_snapshot_base64), 'snapshot-load');
+          return;
+        }
+      } catch {
+        /* snapshot absent */
+      }
+    }
     if (ytext.length === 0 && initialContent.length > 0) {
       doc.transact(() => {
         ytext.insert(0, initialContent);
       }, 'init');
     }
-    return ytext;
   }
 
   public getContent(path: string): string {

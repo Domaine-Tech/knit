@@ -35,6 +35,7 @@ export const NetworkInvitePanel: React.FC<NetworkInvitePanelProps> = ({
 }) => {
   const showInviteContext = (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     contextMenu.show(e, [
       {
         id: 'copy-ticket',
@@ -109,8 +110,8 @@ export const NetworkInvitePanel: React.FC<NetworkInvitePanelProps> = ({
           </div>
         )}
         <div style={{ fontSize: 11, color: 'var(--knit-text-muted)', marginTop: 4 }}>
-          Partagez le ticket long, le PIN LAN ou le QR pour permettre à un collaborateur de rejoindre
-          vos documents via Iroh (QUIC direct ou relay).
+          Partagez le PIN ou le ticket pour qu’une autre personne connecte ce même coffre
+          depuis son propre dossier. Un coffre différent est refusé.
         </div>
       </div>
 
@@ -120,7 +121,7 @@ export const NetworkInvitePanel: React.FC<NetworkInvitePanelProps> = ({
           style={{ marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600 }}
         >
           <DuotoneIcon name="link" size={13} />
-          <span>Se connecter à un collaborateur</span>
+          <span>Connecter un pair de ce coffre</span>
         </label>
         <div style={{ display: 'flex', gap: 8 }}>
           <input

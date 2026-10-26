@@ -9,6 +9,7 @@ use crate::error::{KnitError, Result};
 
 use super::config::{save_vault_config, VaultLocalConfig};
 use super::init_templates as tpl;
+use super::share::{has_syncable_content, new_vault_id};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InitVaultOptions {
@@ -82,7 +83,6 @@ pub fn init_vault(vault_root: &Path, options: &InitVaultOptions) -> Result<InitV
     // .knit/ local
     for sub in [
         ".knit",
-        ".knit/identity",
         ".knit/crdt-state",
         ".knit/snapshots",
         ".knit/cache",
@@ -106,11 +106,11 @@ pub fn init_vault(vault_root: &Path, options: &InitVaultOptions) -> Result<InitV
         &mut created,
     )?;
 
-    // .knitshare partagé
+    // .knitshare partagé — id stable dès la création
     write_rel(
         vault_root,
         ".knitshare",
-        &tpl::knitshare_yaml(name),
+        &tpl::knitshare_yaml(name, Some(&new_vault_id())),
         &mut created,
     )?;
 
@@ -225,24 +225,52 @@ pub fn is_vault_initialized(vault_root: &Path) -> bool {
     vault_root.join(".knitshare").exists()
 }
 
-/// Prépare un dossier local pour rejoindre un coffre (structure minimale sans kit).
+/// Prépare un dossier local vide pour rejoindre un coffre.
+/// La coquille n'a pas d'`id` : il sera copié depuis l'hôte, après confirmation.
 pub fn prepare_join_vault(vault_root: &Path, vault_name: &str) -> Result<InitVaultResult> {
-    let opts = InitVaultOptions {
-        vault_name: vault_name.to_string(),
-        create_default_structure: false,
-        install_ai_kit: false,
-        init_git: false,
-        ..Default::default()
-    };
-    // Si déjà un coffre, on ouvre simplement
+    if has_syncable_content(vault_root) {
+        return Err(KnitError::Vault(
+            "Ce dossier contient déjà des fichiers. Choisissez un dossier vide pour ne pas écraser ce travail.".into(),
+        ));
+    }
     if vault_root.join(".knitshare").exists() {
+        let share = super::share::read_vault_share(vault_root)?;
         return Ok(InitVaultResult {
             vault_path: vault_root.to_string_lossy().to_string(),
-            vault_name: vault_name.to_string(),
+            vault_name: share.nom,
             created_files: vec![],
         });
     }
-    init_vault(vault_root, &opts)
+    if vault_name.trim().is_empty() {
+        return Err(KnitError::Vault(
+            "Le nom du coffre ne peut pas être vide".into(),
+        ));
+    }
+    fs::create_dir_all(vault_root).map_err(KnitError::from)?;
+    let mut created: Vec<String> = Vec::new();
+    for sub in [
+        ".knit",
+        ".knit/crdt-state",
+        ".knit/snapshots",
+        ".knit/cache",
+        ".knit/trash",
+    ] {
+        fs::create_dir_all(vault_root.join(sub)).map_err(KnitError::from)?;
+        created.push(format!("{sub}/"));
+    }
+    save_vault_config(vault_root, &VaultLocalConfig::default())?;
+    created.push(".knit/config.yaml".into());
+    write_rel(
+        vault_root,
+        ".knitshare",
+        &tpl::knitshare_yaml(vault_name.trim(), None),
+        &mut created,
+    )?;
+    Ok(InitVaultResult {
+        vault_path: vault_root.to_string_lossy().to_string(),
+        vault_name: vault_name.trim().to_string(),
+        created_files: created,
+    })
 }
 
 pub fn resolve_vault_path(path: &str) -> PathBuf {

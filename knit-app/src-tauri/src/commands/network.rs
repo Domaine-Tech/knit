@@ -1,10 +1,17 @@
 use crate::commands::{ipc, AppState};
 use base64::Engine;
 use knit_core::network::{ConnectedPeerInfo, KnitNetworkNode, RemoteNetworkEvent};
-use knit_core::vault::identity::{
-    configure_vault_git_author, load_or_create_profile, reset_custom_avatar, save_custom_avatar,
-    save_profile, AvatarInfo, PeerIdentity, UserProfile,
+use knit_core::network::ReplicationReport;
+use knit_core::vault::crdt_state::{
+    load_crdt_state as read_crdt_blob, store_crdt_state as write_crdt_blob,
 };
+use knit_core::vault::identity::{
+    configure_vault_git_author, load_or_generate_identity_in, save_avatar_in,
+    AvatarInfo, PeerIdentity, UserProfile, UNNAMED_DISPLAY_NAME,
+};
+use knit_core::vault::person::{peek_primary_profile, save_primary_profile};
+use std::path::PathBuf;
+use tauri::Manager;
 use knit_core::vault::snapshot::{
     create_and_save_snapshot, list_snapshots_for_doc, load_latest_snapshot, DocSnapshot,
 };
@@ -13,6 +20,31 @@ use std::sync::Arc;
 use tauri::Emitter;
 
 const P2P_INACTIVE: &str = "Le réseau P2P n'est pas actif pour ce coffre";
+
+fn profiles_root(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    let base = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    std::fs::create_dir_all(&base).map_err(|e| e.to_string())?;
+    Ok(base.join("profiles"))
+}
+
+fn unnamed_profile() -> UserProfile {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    UserProfile {
+        first_name: String::new(),
+        last_name: String::new(),
+        display_name: UNNAMED_DISPLAY_NAME.to_string(),
+        email: String::new(),
+        role: "Collaborateur".to_string(),
+        status_message: "En rédaction".to_string(),
+        share_email_p2p: false,
+        avatar: AvatarInfo::default(),
+        created_at_sec: now,
+        updated_at_sec: now,
+    }
+}
 
 fn decode_b64(label: &str, value: &str) -> Result<Vec<u8>, String> {
     base64::engine::general_purpose::STANDARD
@@ -65,10 +97,12 @@ pub async fn start_p2p_network(
     let guard = state.guard.clone();
 
     let lan_only = knit_core::vault::load_vault_config(path).lan_only;
+    let profiles = profiles_root(&app)?;
+    let _ = vault_name;
     let node = ipc(KnitNetworkNode::start(
         path,
+        &profiles,
         &display_name,
-        vault_name.as_deref(),
         guard,
         true,
         lan_only,
@@ -130,11 +164,17 @@ pub async fn start_p2p_network(
                         serde_json::json!({ "from_peer": from_peer, "profile": profile }),
                     );
                 }
+                RemoteNetworkEvent::ReplicationProgress { done, total, rel_path } => {
+                    let _ = app_handle.emit(
+                        "p2p_replication_progress",
+                        serde_json::json!({ "done": done, "total": total, "rel_path": rel_path }),
+                    );
+                }
             }
         }
     });
 
-    let identity = node.identity.clone();
+    let identity = node.peer_identity();
     let mut lock = state.network_node.write().await;
     *lock = Some(node);
 
@@ -243,41 +283,50 @@ pub async fn get_local_peer_identity(
     state: tauri::State<'_, AppState>,
 ) -> Result<Option<PeerIdentity>, String> {
     let lock = state.network_node.read().await;
-    Ok(lock.as_ref().map(|node| node.identity.clone()))
+    Ok(lock.as_ref().map(|node| node.peer_identity()))
 }
 
 #[tauri::command]
 pub async fn get_user_profile(
+    app: tauri::AppHandle,
     state: tauri::State<'_, AppState>,
     vault_path: String,
 ) -> Result<UserProfile, String> {
-    let path = Path::new(&vault_path);
+    let _ = vault_path;
     let lock = state.network_node.read().await;
     if let Some(node) = lock.as_ref() {
-        Ok(node.get_local_profile().await)
-    } else {
-        ipc(load_or_create_profile(path, "Moi"))
+        return Ok(node.get_local_profile().await);
     }
+    drop(lock);
+    let profiles = profiles_root(&app)?;
+    Ok(ipc(peek_primary_profile(&profiles))?.unwrap_or_else(unnamed_profile))
 }
 
 #[tauri::command]
 pub async fn save_user_profile(
+    app: tauri::AppHandle,
     state: tauri::State<'_, AppState>,
     vault_path: String,
     profile: UserProfile,
 ) -> Result<(), String> {
     let path = Path::new(&vault_path);
-    ipc(save_profile(path, &profile))?;
-
     let lock = state.network_node.read().await;
     if let Some(node) = lock.as_ref() {
         ipc(node.update_local_profile(profile).await)?;
+        return Ok(());
+    }
+    drop(lock);
+    let profiles = profiles_root(&app)?;
+    ipc(save_primary_profile(&profiles, &profile))?;
+    if !vault_path.is_empty() {
+        let _ = configure_vault_git_author(path, &profile.display_name, &profile.email);
     }
     Ok(())
 }
 
 #[tauri::command]
 pub async fn upload_user_avatar(
+    app: tauri::AppHandle,
     state: tauri::State<'_, AppState>,
     vault_path: String,
     image_base64: String,
@@ -288,7 +337,16 @@ pub async fn upload_user_avatar(
         .decode(&image_base64)
         .map_err(|e| format!("Base64 invalide: {}", e))?;
 
-    let avatar = ipc(save_custom_avatar(path, &bytes, &mime_type))?;
+    let person_dir = {
+        let lock = state.network_node.read().await;
+        if let Some(node) = lock.as_ref() {
+            node.person_dir.clone()
+        } else {
+            drop(lock);
+            profiles_root(&app)?.join("primary")
+        }
+    };
+    let avatar = ipc(save_avatar_in(&person_dir, path, &bytes, &mime_type))?;
 
     let lock = state.network_node.read().await;
     if let Some(node) = lock.as_ref() {
@@ -302,11 +360,20 @@ pub async fn upload_user_avatar(
 
 #[tauri::command]
 pub async fn reset_user_avatar(
+    app: tauri::AppHandle,
     state: tauri::State<'_, AppState>,
     vault_path: String,
 ) -> Result<AvatarInfo, String> {
-    let path = Path::new(&vault_path);
-    let avatar = ipc(reset_custom_avatar(path))?;
+    let person_dir = {
+        let lock = state.network_node.read().await;
+        if let Some(node) = lock.as_ref() {
+            node.person_dir.clone()
+        } else {
+            profiles_root(&app)?.join("primary")
+        }
+    };
+    let _ = vault_path;
+    let avatar = ipc(knit_core::vault::identity::reset_avatar_in(&person_dir))?;
 
     let lock = state.network_node.read().await;
     if let Some(node) = lock.as_ref() {
@@ -330,6 +397,7 @@ pub async fn apply_profile_to_git(
 
 #[tauri::command]
 pub async fn save_doc_snapshot(
+    app: tauri::AppHandle,
     state: tauri::State<'_, AppState>,
     vault_path: String,
     doc_id: String,
@@ -337,12 +405,16 @@ pub async fn save_doc_snapshot(
     yjs_snapshot_base64: String,
 ) -> Result<DocSnapshot, String> {
     let path = Path::new(&vault_path);
-    let profile = {
+    let (profile, secret) = {
         let lock = state.network_node.read().await;
         if let Some(node) = lock.as_ref() {
-            node.get_local_profile().await
+            (node.get_local_profile().await, node.secret_key.clone())
         } else {
-            ipc(load_or_create_profile(path, "Moi"))?
+            drop(lock);
+            let profiles = profiles_root(&app)?;
+            let profile = ipc(peek_primary_profile(&profiles))?.unwrap_or_else(unnamed_profile);
+            let secret = ipc(load_or_generate_identity_in(&profiles.join("primary")))?;
+            (profile, secret)
         }
     };
 
@@ -352,6 +424,7 @@ pub async fn save_doc_snapshot(
         &state_vector_base64,
         &yjs_snapshot_base64,
         &profile,
+        &secret,
     ))
 }
 
@@ -404,6 +477,8 @@ pub async fn send_p2p_sync_step2(
 
 #[tauri::command]
 pub async fn load_avatar_base64(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, AppState>,
     vault_path: String,
     hash: Option<String>,
 ) -> Result<Option<String>, String> {
@@ -419,14 +494,26 @@ pub async fn load_avatar_base64(
             return Ok(None);
         }
     } else {
-        let png = p.join(".knit").join("identity").join("avatar.png");
-        let jpg = p.join(".knit").join("identity").join("avatar.jpg");
-        if png.exists() {
-            png
-        } else if jpg.exists() {
-            jpg
+        let person_png = {
+            let lock = state.network_node.read().await;
+            if let Some(node) = lock.as_ref() {
+                node.person_dir.join("avatar.png")
+            } else {
+                profiles_root(&app)?.join("primary").join("avatar.png")
+            }
+        };
+        if person_png.exists() {
+            person_png
         } else {
-            return Ok(None);
+            let png = p.join(".knit").join("identity").join("avatar.png");
+            let jpg = p.join(".knit").join("identity").join("avatar.jpg");
+            if png.exists() {
+                png
+            } else if jpg.exists() {
+                jpg
+            } else {
+                return Ok(None);
+            }
         }
     };
 
@@ -438,4 +525,33 @@ pub async fn load_avatar_base64(
         "image/png"
     };
     Ok(Some(format!("data:{};base64,{}", mime, b64)))
+}
+
+#[tauri::command]
+pub async fn replicate_vault(state: tauri::State<'_, AppState>) -> Result<ReplicationReport, String> {
+    let lock = state.network_node.read().await;
+    let Some(node) = lock.as_ref().cloned() else {
+        return Err(P2P_INACTIVE.to_string());
+    };
+    drop(lock);
+    ipc(node.replicate_from_peers().await)
+}
+
+#[tauri::command]
+pub async fn store_crdt_state(
+    vault_path: String,
+    doc_id: String,
+    state_base64: String,
+) -> Result<(), String> {
+    let bytes = decode_b64("crdt", &state_base64)?;
+    ipc(write_crdt_blob(Path::new(&vault_path), &doc_id, &bytes))
+}
+
+#[tauri::command]
+pub async fn load_crdt_state_cmd(
+    vault_path: String,
+    doc_id: String,
+) -> Result<Option<String>, String> {
+    let bytes = ipc(read_crdt_blob(Path::new(&vault_path), &doc_id))?;
+    Ok(bytes.map(|b| base64::engine::general_purpose::STANDARD.encode(b)))
 }

@@ -39,3 +39,4 @@ export * from './updater';
 export * from './updaterLogic';
 export * from './systemNotification';
 export * from './treeFlatten';
+export * from './profileUtils';

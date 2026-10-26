@@ -3,6 +3,7 @@
 - Conserver le Markdown pur sans format propriétaire.
 - Préserver les frontmatters YAML (`type:`, `statut:`, `priorite:`, `titre:`, etc.).
 - Travailler directement dans les fichiers locaux sur disque.
+- `.knitshare` porte le `nom` du coffre et un `id` stable (`version: 2`). Ne pas fusionner deux coffres d'`id` différents. `.knit/` (cache, corbeille, état CRDT) ne se réplique pas. La clé et le profil de la personne ne sont pas dans ce dossier.
 - Respecter la règle Zéro-Émoji dans l'UI et le code applicatif (icônes vectorielles uniquement).
 
 ## Vues pilotées par le document (Doc-Driven Views)

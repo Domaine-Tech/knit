@@ -4,6 +4,7 @@ import type { ThemeMode } from '../../types';
 import { ColorPickerPopover } from './ColorPickerPopover';
 import { contextMenu } from '../../stores/contextMenuStore';
 import { vaultStore } from '../../stores/vaultStore';
+import { vaultRegistry } from '../../stores/vaultRegistry';
 import { networkStore } from '../../stores/networkStore';
 import { COLLABORATIVE_PALETTE } from '../../theme/theme';
 import { NetworkModal } from '../Network/NetworkModal';
@@ -116,6 +117,12 @@ export const Header: React.FC<HeaderProps> = ({
   }, []);
 
   useEffect(() => {
+    return vaultRegistry.subscribe(() => {
+      setTick((t) => t + 1);
+    });
+  }, []);
+
+  useEffect(() => {
     const openSwitcher = () => setIsVaultSwitcherOpen(true);
     window.addEventListener('knit-open-vault-switcher', openSwitcher);
     return () => window.removeEventListener('knit-open-vault-switcher', openSwitcher);
@@ -182,7 +189,11 @@ export const Header: React.FC<HeaderProps> = ({
     ]);
   };
 
-  const vaultLabel = vaultStore.vaultName || 'Aucun coffre';
+  const openedPath = vaultStore.vaultPath;
+  const sharedName = openedPath
+    ? vaultRegistry.list().find((entry) => entry.path === openedPath)?.name
+    : undefined;
+  const vaultLabel = sharedName || vaultStore.vaultName || 'Aucun coffre';
 
   return (
     <header
@@ -545,7 +556,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Badge Profil Utilisateur */}
         <button
           onClick={() => setIsProfileModalOpen(true)}
-          title={`Mon profil : ${networkStore.currentProfile?.display_name || 'Moi'} — Cliquez pour éditer`}
+          title={`Mon profil : ${networkStore.currentProfile?.display_name || 'Profil'} — Cliquez pour éditer`}
           style={{
             display: 'flex',
             alignItems: 'center',

@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-inspect-join-folder"
+description = "Enables the inspect_join_folder command without any pre-configured scope."
+commands.allow = ["inspect_join_folder"]
+
+[[permission]]
+identifier = "deny-inspect-join-folder"
+description = "Denies the inspect_join_folder command without any pre-configured scope."
+commands.deny = ["inspect_join_folder"]

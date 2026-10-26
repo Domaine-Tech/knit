@@ -9,6 +9,7 @@ import type {
   FrontmatterIndexEntry,
   IndexedInlineTask,
   IndexedMarkdownSlice,
+  RawIndexedMarkdownSlice,
   QueryFilter,
   QueryResult,
   SuggestIndexData,
@@ -202,15 +203,7 @@ class FrontmatterIndex {
       if (isTauriEnvironment() && ops.currentVaultPath && !isDemoVaultPath(ops.currentVaultPath)) {
         try {
           await invoke<number>('invalidate_vault_index');
-          const raw = await invoke<{
-            file: FrontmatterIndexEntry & { doc_type?: string; docType?: string };
-            headings: SuggestIndexData['headings'];
-            fileTags?: string[];
-            file_tags?: string[];
-            tasks: IndexedInlineTask[];
-            calendarEvents?: CalendarIndexData['events'];
-            calendar_events?: CalendarIndexData['events'];
-          }>('index_markdown_content', {
+          const raw = await invoke<RawIndexedMarkdownSlice>('index_markdown_content', {
             relPath: key,
             content,
             mtime,

@@ -1,7 +1,7 @@
 import React from 'react';
 import { DuotoneIcon } from '../Icons/DuotoneIcon';
 import { WizardHeader } from './WizardHeader';
-import { DEMO_LAN_PIN } from '../../types';
+import { DEMO_LAN_PIN } from '../../utils';
 
 export type JoinStep = 1 | 2;
 
@@ -18,6 +18,13 @@ export interface WizardJoinProps {
   onJoinFolderChange: (v: string) => void;
   onPickFolder: () => void;
   onFinishJoin: () => void;
+  firstName: string;
+  lastName: string;
+  onFirstNameChange: (value: string) => void;
+  onLastNameChange: (value: string) => void;
+  joinHostName: string;
+  joinVaultName: string;
+  onConfirmCopy: () => void;
 }
 
 export const WizardJoin: React.FC<WizardJoinProps> = ({
@@ -33,16 +40,29 @@ export const WizardJoin: React.FC<WizardJoinProps> = ({
   onJoinFolderChange,
   onPickFolder,
   onFinishJoin,
+  firstName,
+  lastName,
+  onFirstNameChange,
+  onLastNameChange,
+  joinHostName,
+  joinVaultName,
+  onConfirmCopy,
 }) => {
   if (step === 2) {
     return (
       <>
         <WizardHeader title="Connexion" step="2/2" onBack={() => onStepChange(1)} />
-        <div style={{ textAlign: 'center', padding: '24px 0' }}>
+        <div style={{ textAlign: 'center', padding: '12px 0 8px' }}>
           <DuotoneIcon name="sync" size={28} style={{ color: 'var(--knit-primary)' }} />
           <p style={{ fontSize: 13, color: 'var(--knit-text-muted)' }}>{syncStatus}</p>
+          {joinVaultName && (
+            <p style={{ fontSize: 13, margin: '8px 0 0' }}>
+              Coffre « {joinVaultName} »
+              {joinHostName ? ` — hôte ${joinHostName}` : ''}
+            </p>
+          )}
           <p style={{ fontSize: 11, color: 'var(--knit-text-muted)', marginTop: 8 }}>
-            La connexion P2P est établie. Les notes se synchronisent à l’ouverture des fichiers.
+            La copie n’écrase pas un dossier qui contient déjà un autre coffre.
           </p>
           <div
             style={{
@@ -62,6 +82,17 @@ export const WizardJoin: React.FC<WizardJoinProps> = ({
               }}
             />
           </div>
+          {syncProgress < 100 && (
+            <button
+              type="button"
+              className="knit-btn knit-btn-primary"
+              disabled={busy || !joinVaultName}
+              onClick={onConfirmCopy}
+              style={{ marginTop: 16 }}
+            >
+              {busy ? 'Copie…' : 'Récupérer les notes'}
+            </button>
+          )}
         </div>
       </>
     );
@@ -70,7 +101,38 @@ export const WizardJoin: React.FC<WizardJoinProps> = ({
   return (
     <>
       <WizardHeader title="Rejoindre un coffre-fort" step="1/2" onBack={onBackHome} />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
+        <div>
+          <label className="knit-label" htmlFor="knit-join-first" style={{ marginBottom: 4 }}>
+            Prénom
+          </label>
+          <input
+            id="knit-join-first"
+            className="knit-input"
+            value={firstName}
+            onChange={(e) => onFirstNameChange(e.target.value)}
+            placeholder="Alice"
+            style={{ width: '100%' }}
+          />
+        </div>
+        <div>
+          <label className="knit-label" htmlFor="knit-join-last" style={{ marginBottom: 4 }}>
+            Nom
+          </label>
+          <input
+            id="knit-join-last"
+            className="knit-input"
+            value={lastName}
+            onChange={(e) => onLastNameChange(e.target.value)}
+            placeholder="Martin"
+            style={{ width: '100%' }}
+          />
+        </div>
+      </div>
       <label className="knit-label">Code d’invitation ou PIN LAN</label>
+      <p style={{ fontSize: 11, color: 'var(--knit-text-muted)', marginTop: 0 }}>
+        Choisissez un dossier vide. Knit y recopiera le coffre distant, sans toucher à un autre travail.
+      </p>
       <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
         <input
           className="knit-input"

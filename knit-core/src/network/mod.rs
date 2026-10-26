@@ -2,6 +2,7 @@ pub mod blobs;
 pub mod broadcast;
 pub mod heartbeat;
 pub mod invitation;
+pub mod manifest;
 pub mod mdns;
 pub mod node;
 pub mod protocol;

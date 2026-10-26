@@ -27,6 +27,19 @@ export interface UpdateProgress {
   total: number | null;
 }
 
+/** Instantané lu par l'en-tête et les paramètres. */
+export interface UpdateStoreSnapshot {
+  status: UpdateStatus;
+  policy: UpdatePolicy;
+  currentVersion: string | null;
+  available: KnitUpdateInfo | null;
+  progress: UpdateProgress;
+  lastCheckedAt: number | null;
+  error: string | null;
+  modalOpen: boolean;
+  skippedVersion: string | null;
+}
+
 export function parseUpdatePolicy(
   raw: string | null | undefined,
   fallback: UpdatePolicy = 'auto'

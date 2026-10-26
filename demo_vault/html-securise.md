@@ -83,7 +83,8 @@ Troisieme vers — utile pour adresses ou poesie courte.
 Contenu masque jusqu'au clic :
 - Synchronisation **Iroh** (QUIC) de bout en bout
 - Fichiers `.md` en clair sur le disque local
-- `.knit/` strictement local ; `.knitshare` synchronise
+- `.knit/` strictement local ; la cle de personne est hors du coffre
+- `.knitshare` porte `nom` et `id`, replique entre les dossiers du meme coffre
 - Voir aussi [[wiki/architecture.md|Architecture Technique]]
 </details>
 

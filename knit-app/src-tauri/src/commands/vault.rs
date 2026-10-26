@@ -143,6 +143,20 @@ pub async fn prepare_join_vault(
 }
 
 #[tauri::command]
+pub async fn get_vault_share(vault_path: String) -> Result<knit_core::vault::share::VaultShare, String> {
+    ipc(knit_core::vault::share::read_vault_share(Path::new(&vault_path)))
+}
+
+#[tauri::command]
+pub async fn inspect_join_folder(
+    vault_path: String,
+) -> Result<knit_core::vault::share::JoinFolderReport, String> {
+    Ok(knit_core::vault::share::inspect_join_folder(Path::new(
+        &vault_path,
+    )))
+}
+
+#[tauri::command]
 pub async fn get_vault_config(vault_path: String) -> Result<VaultLocalConfig, String> {
     let path = Path::new(&vault_path);
     Ok(vault::load_vault_config(path))

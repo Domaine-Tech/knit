@@ -29,11 +29,32 @@ export interface RawIndexedInlineTask {
   raw_line?: string;
 }
 
+/** Payload brut IPC / scan local d'une tâche fichier avant normalisation. */
+export interface RawTaskCard {
+  rel_path: string;
+  id: string;
+  titre: string;
+  statut: string;
+  priorite?: string | null;
+  assigne?: string | null;
+  sprint?: string | null;
+  echeance?: string | null;
+  tags?: string[];
+  snippet?: string;
+}
+
+/** Document brut `get_suggest_index` / index coffre avant normalisation du `doc_type`. */
+export interface RawSuggestDocItem {
+  rel_path: string;
+  title: string;
+  doc_type: string;
+}
+
 /** Payload brut `get_vault_index` avant normalisation. */
 export interface RawVaultIndexData {
   generation: number;
   suggest: {
-    docs: Array<{ rel_path: string; title: string; doc_type: string }>;
+    docs: RawSuggestDocItem[];
     headings: HeadingItem[];
     tags: SuggestIndexData['tags'];
   };
@@ -81,6 +102,17 @@ export interface VaultIndexData {
   files: FrontmatterIndexEntry[];
   tasks: IndexedInlineTask[];
   calendar: CalendarIndexData;
+}
+
+/** Payload brut IPC `index_markdown_content` avant normalisation. */
+export interface RawIndexedMarkdownSlice {
+  file: RawFrontmatterFileEntry;
+  headings: HeadingItem[];
+  fileTags?: string[];
+  file_tags?: string[];
+  tasks: RawIndexedInlineTask[];
+  calendarEvents?: CalendarEvent[];
+  calendar_events?: CalendarEvent[];
 }
 
 /** Projection unitaire IPC `index_markdown_content`. */

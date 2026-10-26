@@ -1,5 +1,5 @@
 use crate::error::{KnitError, Result};
-use crate::vault::identity::{load_or_generate_identity, UserProfile};
+use crate::vault::identity::UserProfile;
 use base64::Engine;
 use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
 use iroh::PublicKey;
@@ -104,8 +104,8 @@ pub fn create_and_save_snapshot(
     state_vector_base64: &str,
     yjs_snapshot_base64: &str,
     profile: &UserProfile,
+    secret_key: &iroh::SecretKey,
 ) -> Result<DocSnapshot> {
-    let secret_key = load_or_generate_identity(vault_root)?;
     let peer_id = secret_key.public().to_string();
 
     let now = SystemTime::now()
@@ -123,7 +123,7 @@ pub fn create_and_save_snapshot(
         yjs_snapshot_base64,
     );
 
-    let signature = sign_snapshot_payload(&secret_key, &payload);
+    let signature = sign_snapshot_payload(secret_key, &payload);
 
     let author = SnapshotAuthor {
         peer_id,
@@ -261,12 +261,14 @@ mod tests {
         let yjs_snapshot = "yjs_snapshot_payload_abc_xyz";
 
         // 1. Création et signature du snapshot
+        let secret = crate::vault::identity::load_or_generate_identity(vault_root).expect("key");
         let snapshot = create_and_save_snapshot(
             vault_root,
             doc_id,
             state_vector,
             yjs_snapshot,
             &profile,
+            &secret,
         )
         .expect("create snapshot");
 
@@ -294,7 +296,7 @@ mod tests {
         // 5. Test du bornage de l'espace disque (pruning)
         let snap_dir = get_snapshots_dir(vault_root, doc_id).expect("snap dir");
         for _ in 0..10 {
-            create_and_save_snapshot(vault_root, doc_id, state_vector, yjs_snapshot, &profile)
+            create_and_save_snapshot(vault_root, doc_id, state_vector, yjs_snapshot, &profile, &secret)
                 .expect("snap loop");
         }
         let pruned = prune_old_snapshots(&snap_dir, 5).expect("prune");

@@ -9,10 +9,17 @@ import { isTauriEnvironment } from '../utils/env';
 import { hasFileNode } from '../utils';
 import { DEMO_FILES, DEMO_CONTENTS, DEMO_ASSET_URLS } from './demoVaultLoader';
 import { isDemoVaultPath, vaultRegistry } from './vaultRegistry';
-import type { FileNode, LinkRefactorReport, PickVaultOutcome, VaultOps } from '../types';
+import type {
+  FileNode,
+  InitVaultOptions,
+  InitVaultResult,
+  JoinFolderReport,
+  LinkRefactorReport,
+  PickVaultOutcome,
+  VaultOps,
+} from '../types';
 
 export { isDemoVaultPath };
-export type { PickVaultOutcome };
 
 /** Coffre démo mémoire (pas un chemin disque réel). */
 export function isVirtualDemoVault(ops: VaultOps): boolean {
@@ -46,6 +53,24 @@ export function cloneDemoFileTree(nodes: FileNode[]): FileNode[] {
 export async function pickVaultFolderPath(): Promise<string | null> {
   if (!isTauriEnvironment()) return null;
   return invoke<string | null>('pick_vault_folder');
+}
+
+export async function initVault(
+  vaultPath: string,
+  options: InitVaultOptions
+): Promise<InitVaultResult> {
+  return invoke<InitVaultResult>('init_vault', { vaultPath, options });
+}
+
+export async function inspectJoinFolder(vaultPath: string): Promise<JoinFolderReport> {
+  return invoke<JoinFolderReport>('inspect_join_folder', { vaultPath });
+}
+
+export async function prepareJoinVault(
+  vaultPath: string,
+  vaultName: string
+): Promise<InitVaultResult> {
+  return invoke<InitVaultResult>('prepare_join_vault', { vaultPath, vaultName });
 }
 
 export async function pickAndOpenVault(ops: VaultOps): Promise<boolean> {

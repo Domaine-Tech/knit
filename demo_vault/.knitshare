@@ -1,9 +1,11 @@
 # .knitshare — Configuration partagée du coffre-fort Knit
-# Ce fichier est synchronisé en P2P entre tous les pairs du coffre.
-# Il peut être lu et modifié aussi bien par les humains que par les agents IA.
+# Répliqué entre les dossiers locaux qui portent le même id.
+# Le dossier .knit/ et la clé de personne ne quittent pas la machine.
+# Lisible et modifiable par les humains comme par les agents IA.
 
 nom: "Knit Workspace"
-version: 1
+id: "a1b2c3d4-e5f6-4789-a012-3456789abcde"
+version: 2
 
 structure:
   wiki: "wiki/"

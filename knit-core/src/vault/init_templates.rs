@@ -1,14 +1,22 @@
 //! Templates générés dans un coffre utilisateur (kit agents + playbook).
 //! Contenu d'usage distinct des règles de développement du dépôt Knit.
 
-pub fn knitshare_yaml(vault_name: &str) -> String {
+pub fn knitshare_yaml(vault_name: &str, vault_id: Option<&str>) -> String {
+    let name = vault_name.replace('"', "'");
+    let id_line = match vault_id {
+        Some(id) if !id.trim().is_empty() => {
+            format!("id: \"{}\"\n", id.replace('"', "'"))
+        }
+        _ => String::new(),
+    };
     format!(
         r#"# .knitshare — Configuration partagée du coffre-fort Knit
-# Ce fichier est synchronisé en P2P entre tous les pairs du coffre.
-# Il peut être lu et modifié aussi bien par les humains que par les agents IA.
+# Répliqué entre les dossiers locaux qui portent le même id.
+# Le dossier .knit/ (profil machine, cache, corbeille) ne quitte pas cette machine.
+# Lisible et modifiable par les humains comme par les agents IA.
 
 nom: "{name}"
-version: 1
+{id_line}version: 2
 
 structure:
   wiki: "wiki/"
@@ -24,7 +32,8 @@ conventions:
 mermaid:
   theme_sync: true
 "#,
-        name = vault_name.replace('"', "'")
+        name = name,
+        id_line = id_line,
     )
 }
 
@@ -86,8 +95,8 @@ pub fn guide_ia_md() -> &'static str {
 
 ## Principes
 1. Markdown pur CommonMark / GFM sur disque — zéro balise HTML propriétaire.
-2. `.knit/` est local (clés, cache, snapshots, AI_MEMORY) — ne jamais le synchroniser ni le versionner.
-3. `.knitshare` est partagé et éditable à la main (YAML).
+2. `.knit/` est local (cache, corbeille, snapshots, état CRDT, AI_MEMORY) — ne jamais le synchroniser ni le versionner. La clé et le profil de la personne vivent dans le répertoire de l'application, pas dans le coffre.
+3. `.knitshare` porte le `nom`, l'`id` du coffre et les conventions. Il se réplique entre les dossiers du même id. Éditable à la main.
 4. Médias dans `assets/` via `![légende](assets/fichier.ext)`.
 
 ## Tâches étendues (7 statuts)
@@ -123,7 +132,7 @@ Coffre : **{name}**
 ## Règles absolues
 1. Écrire uniquement du Markdown / YAML lisible par un humain.
 2. Respecter le frontmatter YAML en tête de fichier (`---`).
-3. Ne jamais modifier ni versionner `.knit/` (identité, cache, snapshots, trash).
+3. Ne jamais modifier ni versionner `.knit/` (cache, corbeille, snapshots, état CRDT). La personne n'est pas dans le coffre. `.knitshare` porte `nom` et `id`.
 4. Placer les médias dans `assets/`.
 5. Lire `.knitshare` pour les conventions d'équipe (statuts, structure).
 6. Consulter `GUIDE_IA.md` pour les capacités avancées (tâches, vues, blocs).
@@ -148,8 +157,8 @@ pub fn cursorrules() -> &'static str {
     r#"# Knit — Règles Cursor (coffre utilisateur)
 
 - Markdown pur CommonMark + frontmatter YAML.
-- Ne jamais toucher `.knit/` (local : clés, cache, AI_MEMORY).
-- Config partagée : `.knitshare`.
+- Ne jamais toucher `.knit/` (local : cache, corbeille, état CRDT, AI_MEMORY).
+- Config partagée : `.knitshare` (`nom`, `id`).
 - Médias : `assets/`.
 - Tâches : 7 statuts `- [ ]` `/` `x` `-` `?` `>` `!`, priorités `!p1..p3`, dates `@YYYY-MM-DD`.
 - Vues : frontmatter `type: note|kanban|table|calendar|canvas|slides|gallery`.
@@ -169,7 +178,7 @@ alwaysApply: true
 
 - Markdown pur, frontmatter YAML intact.
 - Protéger `.knit/` (jamais synchronisé / versionné).
-- `.knitshare` = conventions d'équipe.
+- `.knitshare` = `nom`, `id` et conventions d'équipe.
 - Assets dans `assets/`.
 - Capacités : voir `GUIDE_IA.md`.
 "#
@@ -179,7 +188,7 @@ pub fn claude_md() -> &'static str {
     r#"# CLAUDE.md — Directives coffre Knit
 
 1. Markdown pur + YAML frontmatter.
-2. `.knit/` local confidentiel ; `.knitshare` synchronisé.
+2. `.knit/` local ; personne hors coffre ; `.knitshare` (`nom` + `id`) répliqué.
 3. Ne jamais injecter de balises HTML propriétaires.
 4. Tâches étendues, Doc-Driven Views et blocs `knit-*` : `GUIDE_IA.md`.
 5. Handoff : mettre à jour `.knit/AI_MEMORY.md` après chaque jalon.

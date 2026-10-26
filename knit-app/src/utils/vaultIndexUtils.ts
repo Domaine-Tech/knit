@@ -10,6 +10,7 @@ import type {
   IndexedMarkdownSlice,
   RawFrontmatterFileEntry,
   RawIndexedInlineTask,
+  RawIndexedMarkdownSlice,
   RawVaultIndexData,
   SuggestIndexData,
   VaultIndexData,
@@ -121,15 +122,7 @@ export function normalizeVaultIndexData(raw: RawVaultIndexData): VaultIndexData 
   };
 }
 
-export function normalizeIndexedMarkdownSlice(raw: {
-  file: RawFrontmatterFileEntry;
-  headings: HeadingItem[];
-  fileTags?: string[];
-  file_tags?: string[];
-  tasks: RawIndexedInlineTask[];
-  calendarEvents?: CalendarEvent[];
-  calendar_events?: CalendarEvent[];
-}): IndexedMarkdownSlice {
+export function normalizeIndexedMarkdownSlice(raw: RawIndexedMarkdownSlice): IndexedMarkdownSlice {
   return {
     file: normalizeFrontmatterFileEntry(raw.file),
     headings: raw.headings || [],

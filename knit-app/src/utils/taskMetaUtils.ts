@@ -6,6 +6,8 @@
 
 import type {
   DocType,
+  RawSuggestDocItem,
+  RawTaskCard,
   SuggestDocItem,
   SuggestIndexData,
   TaskCard,
@@ -61,26 +63,6 @@ const PRIORITE_ALIASES: Record<string, VaultTaskPriorite> = {
   '!p2': 'haute',
   '!p3': 'basse',
 };
-
-/** Payload brut IPC / scan local avant normalisation. */
-export interface RawTaskCard {
-  rel_path: string;
-  id: string;
-  titre: string;
-  statut: string;
-  priorite?: string | null;
-  assigne?: string | null;
-  sprint?: string | null;
-  echeance?: string | null;
-  tags?: string[];
-  snippet?: string;
-}
-
-export interface RawSuggestDocItem {
-  rel_path: string;
-  title: string;
-  doc_type: string;
-}
 
 export function parseVaultTaskStatut(
   raw: string | null | undefined,

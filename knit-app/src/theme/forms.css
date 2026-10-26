@@ -346,7 +346,7 @@ input[type="checkbox"]:checked::after {
   display: inline-flex !important;
   align-items: center !important;
   gap: 6px !important;
-  cursor: pointer !important;
+  cursor: default !important;
   color: var(--knit-text-secondary) !important;
   font-size: 11px !important;
   font-weight: 500 !important;
@@ -357,7 +357,10 @@ input[type="checkbox"]:checked::after {
               background-color var(--knit-transition-fast);
 }
 
-.knit-label:hover,
+.cm-search label {
+  cursor: pointer !important;
+}
+
 .cm-search label:hover {
   color: var(--knit-text) !important;
   background-color: var(--knit-surface-hover) !important;

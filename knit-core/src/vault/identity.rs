@@ -24,6 +24,15 @@ pub const COLLABORATIVE_PALETTE: [&str; 10] = [
 /// Couleur réservée aux agents IA externes (Cursor, Claude Code)
 pub const AI_AGENT_COLOR: &str = "#8B5CF6";
 
+/// Nom affiché tant que la personne n'a pas choisi le sien.
+pub const UNNAMED_DISPLAY_NAME: &str = "Collaborateur";
+
+/// Vrai pour un nom vide, le défaut historique « Moi », ou le défaut actuel.
+pub fn is_unnamed_display(name: &str) -> bool {
+    let trimmed = name.trim();
+    trimmed.is_empty() || trimmed == "Moi" || trimmed == UNNAMED_DISPLAY_NAME
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct AvatarInfo {
     #[serde(rename = "type")]
@@ -154,24 +163,38 @@ pub fn split_display_name(name: &str) -> (String, String) {
     }
 }
 
-/// Charge le profil utilisateur enrichi depuis `<vault>/.knit/identity/profile.json`
-/// ou le génère automatiquement avec les conventions par défaut si absent.
-pub fn load_or_create_profile(vault_root: &Path, default_name: &str) -> Result<UserProfile> {
-    let identity_dir = vault_root.join(".knit").join("identity");
-    if !identity_dir.exists() {
-        fs::create_dir_all(&identity_dir).map_err(KnitError::Io)?;
+pub fn vault_identity_dir(vault_root: &Path) -> std::path::PathBuf {
+    vault_root.join(".knit").join("identity")
+}
+
+/// Lit un profil sans le créer.
+pub fn read_profile_in(dir: &Path) -> Result<Option<UserProfile>> {
+    let profile_path = dir.join("profile.json");
+    if !profile_path.exists() {
+        return Ok(None);
+    }
+    let bytes = fs::read(&profile_path).map_err(KnitError::Io)?;
+    match serde_json::from_slice::<UserProfile>(&bytes) {
+        Ok(profile) => Ok(Some(profile)),
+        Err(_) => Ok(None),
+    }
+}
+
+/// Charge ou crée un profil dans un dossier d'identité (personne ou coffre legacy).
+pub fn load_or_create_profile_in(dir: &Path, default_name: &str) -> Result<UserProfile> {
+    if !dir.exists() {
+        fs::create_dir_all(dir).map_err(KnitError::Io)?;
+    }
+    if let Some(profile) = read_profile_in(dir)? {
+        return Ok(profile);
     }
 
-    let profile_path = identity_dir.join("profile.json");
-    if profile_path.exists() {
-        if let Ok(bytes) = fs::read(&profile_path) {
-            if let Ok(profile) = serde_json::from_slice::<UserProfile>(&bytes) {
-                return Ok(profile);
-            }
-        }
-    }
-
-    let (first, last) = split_display_name(default_name);
+    let name = if is_unnamed_display(default_name) {
+        UNNAMED_DISPLAY_NAME
+    } else {
+        default_name.trim()
+    };
+    let (first, last) = split_display_name(name);
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
@@ -180,37 +203,68 @@ pub fn load_or_create_profile(vault_root: &Path, default_name: &str) -> Result<U
     let profile = UserProfile {
         first_name: first,
         last_name: last,
-        display_name: default_name.to_string(),
+        display_name: name.to_string(),
         email: "".to_string(),
         role: "Collaborateur".to_string(),
-        status_message: "✍️ En rédaction".to_string(),
-        share_email_p2p: false, // Privacy mode Zéro-Fuite actif par défaut
+        status_message: "En rédaction".to_string(),
+        share_email_p2p: false,
         avatar: AvatarInfo::default(),
         created_at_sec: now,
         updated_at_sec: now,
     };
 
-    save_profile(vault_root, &profile)?;
+    save_profile_in(dir, &profile)?;
     Ok(profile)
+}
+
+/// Enregistre le profil dans `dir/profile.json` (sans toucher à Git).
+pub fn save_profile_in(dir: &Path, profile: &UserProfile) -> Result<()> {
+    if !dir.exists() {
+        fs::create_dir_all(dir).map_err(KnitError::Io)?;
+    }
+    let profile_path = dir.join("profile.json");
+    let json_bytes = serde_json::to_vec_pretty(profile)
+        .map_err(|e| KnitError::Vault(format!("Erreur d'encodage du profil: {}", e)))?;
+    fs::write(&profile_path, json_bytes).map_err(KnitError::Io)?;
+    Ok(())
+}
+
+/// Charge ou génère la clé Ed25519 dans `dir/keypair.bin`.
+pub fn load_or_generate_identity_in(dir: &Path) -> Result<SecretKey> {
+    if !dir.exists() {
+        fs::create_dir_all(dir).map_err(KnitError::Io)?;
+    }
+    let key_file = dir.join("keypair.bin");
+    if key_file.exists() {
+        let bytes = fs::read(&key_file).map_err(KnitError::Io)?;
+        if bytes.len() == 32 {
+            let mut key_bytes = [0u8; 32];
+            key_bytes.copy_from_slice(&bytes);
+            return Ok(SecretKey::from_bytes(&key_bytes));
+        }
+    }
+    let secret = SecretKey::generate();
+    let bytes = secret.to_bytes();
+    fs::write(&key_file, bytes).map_err(KnitError::Io)?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let _ = fs::set_permissions(&key_file, fs::Permissions::from_mode(0o600));
+    }
+    Ok(secret)
+}
+
+/// Charge le profil utilisateur enrichi depuis `<vault>/.knit/identity/profile.json`
+/// ou le génère automatiquement avec les conventions par défaut si absent.
+pub fn load_or_create_profile(vault_root: &Path, default_name: &str) -> Result<UserProfile> {
+    load_or_create_profile_in(&vault_identity_dir(vault_root), default_name)
 }
 
 /// Enregistre le profil utilisateur dans `<vault>/.knit/identity/profile.json`
 /// et propage éventuellement à la configuration Git locale si un dépôt `.git` existe.
 pub fn save_profile(vault_root: &Path, profile: &UserProfile) -> Result<()> {
-    let identity_dir = vault_root.join(".knit").join("identity");
-    if !identity_dir.exists() {
-        fs::create_dir_all(&identity_dir).map_err(KnitError::Io)?;
-    }
-
-    let profile_path = identity_dir.join("profile.json");
-    let json_bytes = serde_json::to_vec_pretty(profile)
-        .map_err(|e| KnitError::Vault(format!("Erreur d'encodage du profil: {}", e)))?;
-
-    fs::write(&profile_path, json_bytes).map_err(KnitError::Io)?;
-
-    // Tentative d'auto-configuration Git sans bloquer en cas d'absence de repo git
+    save_profile_in(&vault_identity_dir(vault_root), profile)?;
     let _ = configure_vault_git_author(vault_root, &profile.display_name, &profile.email);
-
     Ok(())
 }
 
@@ -246,7 +300,7 @@ pub fn save_custom_avatar(
     };
 
     // Mettre à jour le profil existant
-    if let Ok(mut profile) = load_or_create_profile(vault_root, "Moi") {
+    if let Ok(mut profile) = load_or_create_profile(vault_root, UNNAMED_DISPLAY_NAME) {
         profile.avatar = avatar_info.clone();
         profile.updated_at_sec = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -266,7 +320,7 @@ pub fn reset_custom_avatar(vault_root: &Path) -> Result<AvatarInfo> {
     }
 
     let default_avatar = AvatarInfo::default();
-    if let Ok(mut profile) = load_or_create_profile(vault_root, "Moi") {
+    if let Ok(mut profile) = load_or_create_profile(vault_root, UNNAMED_DISPLAY_NAME) {
         profile.avatar = default_avatar.clone();
         profile.updated_at_sec = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -305,33 +359,63 @@ pub fn configure_vault_git_author(vault_root: &Path, name: &str, email: &str) ->
 /// Charge la clé secrète Ed25519 persistée dans `<vault>/.knit/identity/keypair.bin`
 /// ou en génère une nouvelle si elle n'existe pas encore.
 pub fn load_or_generate_identity(vault_root: &Path) -> Result<SecretKey> {
-    let identity_dir = vault_root.join(".knit").join("identity");
-    if !identity_dir.exists() {
-        fs::create_dir_all(&identity_dir).map_err(KnitError::Io)?;
+    load_or_generate_identity_in(&vault_identity_dir(vault_root))
+}
+
+/// Avatar canonique dans le dossier personne, copie de distribution dans le cache du coffre.
+pub fn save_avatar_in(
+    person_dir: &Path,
+    vault_root: &Path,
+    image_bytes: &[u8],
+    mime_type: &str,
+) -> Result<AvatarInfo> {
+    if !person_dir.exists() {
+        fs::create_dir_all(person_dir).map_err(KnitError::Io)?;
     }
+    let blake3_hash = compute_blake3_hash(image_bytes);
+    fs::write(person_dir.join("avatar.png"), image_bytes).map_err(KnitError::Io)?;
 
-    let key_file = identity_dir.join("keypair.bin");
-    if key_file.exists() {
-        let bytes = fs::read(&key_file).map_err(KnitError::Io)?;
-        if bytes.len() == 32 {
-            let mut key_bytes = [0u8; 32];
-            key_bytes.copy_from_slice(&bytes);
-            return Ok(SecretKey::from_bytes(&key_bytes));
-        }
+    let avatars_cache_dir = vault_root.join(".knit").join("cache").join("avatars");
+    if !avatars_cache_dir.exists() {
+        let _ = fs::create_dir_all(&avatars_cache_dir);
     }
+    let _ = fs::write(
+        avatars_cache_dir.join(format!("{blake3_hash}.png")),
+        image_bytes,
+    );
 
-    // Génération d'une nouvelle clé Ed25519
-    let secret = SecretKey::generate();
-    let bytes = secret.to_bytes();
-    fs::write(&key_file, bytes).map_err(KnitError::Io)?;
+    let avatar_info = AvatarInfo {
+        avatar_type: "custom".to_string(),
+        blake3_hash: Some(blake3_hash),
+        mime_type: Some(mime_type.to_string()),
+    };
 
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let _ = fs::set_permissions(&key_file, fs::Permissions::from_mode(0o600));
+    if let Ok(mut profile) = load_or_create_profile_in(person_dir, UNNAMED_DISPLAY_NAME) {
+        profile.avatar = avatar_info.clone();
+        profile.updated_at_sec = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+        let _ = save_profile_in(person_dir, &profile);
     }
+    Ok(avatar_info)
+}
 
-    Ok(secret)
+pub fn reset_avatar_in(person_dir: &Path) -> Result<AvatarInfo> {
+    let avatar_file = person_dir.join("avatar.png");
+    if avatar_file.exists() {
+        let _ = fs::remove_file(avatar_file);
+    }
+    let default_avatar = AvatarInfo::default();
+    if let Ok(mut profile) = load_or_create_profile_in(person_dir, UNNAMED_DISPLAY_NAME) {
+        profile.avatar = default_avatar.clone();
+        profile.updated_at_sec = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+        let _ = save_profile_in(person_dir, &profile);
+    }
+    Ok(default_avatar)
 }
 
 #[cfg(test)]

@@ -2,17 +2,23 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import type { UnlistenFn } from '@tauri-apps/api/event';
 import { toast } from './toastStore';
+import { isDemoVaultPath } from './vaultRegistry';
 import {
   isTauriEnvironment,
   uint8ArrayToBase64,
   base64ToUint8Array,
   notifySystem,
+  DEMO_LAN_PIN,
+  initialsFromDisplayName,
+  isUnnamedDisplay,
 } from '../utils';
 import { COLLABORATIVE_PALETTE } from '../theme/theme';
 
 import {
-  DEMO_LAN_PIN,
   type PeerIdentity,
+  type ReplicationProgress,
+  type ReplicationReport,
+  type VaultShare,
   type AvatarInfo,
   type UserProfile,
   type PeerProfileSummary,
@@ -33,6 +39,14 @@ class NetworkStore {
   public connectedPeers: ConnectedPeerInfo[] = [];
   public discoveredLanPeers: DiscoveredLanPeer[] = [];
   public activeFileByPeer: Map<string, string> = new Map();
+  /** Id du coffre ouvert (`null` tant que le join n'a pas copié `.knitshare`). */
+  public vaultId: string | null = null;
+  /** Vrai pour une coquille de join qui attend la copie explicite. */
+  public joining = false;
+  /** Le profil personne n'a pas encore de nom choisi. */
+  public needsProfileName = false;
+  /** Nom saisi dans le wizard, appliqué au slot au démarrage réseau. */
+  public pendingDisplayName = '';
 
   private listeners: Set<NetworkListener> = new Set();
   private unlistenFns: UnlistenFn[] = [];
@@ -86,10 +100,16 @@ class NetworkStore {
    * Démarre le nœud réseau Iroh P2P pour le coffre actuel
    */
   public async startNetwork(vaultPath: string, displayName?: string, vaultName?: string): Promise<void> {
-    const savedName = displayName || localStorage.getItem('knit-display-name') || 'Moi';
+    const hint = (displayName || this.pendingDisplayName || '').trim();
+    this.pendingDisplayName = '';
+    const savedName = hint || 'Collaborateur';
+    const demoVault = isDemoVaultPath(vaultPath);
 
-    if (!isTauriEnvironment()) {
-      // Mode simulation pour développement Web
+    if (demoVault || !isTauriEnvironment()) {
+      // « Knit Demo Vault » n'est pas un dossier. L'envoyer à Rust le crée
+      // dans le répertoire courant (src-tauri en dev) et relance l'application.
+      this.joining = false;
+      if (demoVault) this.vaultId = 'demo';
       this.isNetworkActive = true;
       this.localIdentity = {
         peer_id: 'demo_peer_local_web',
@@ -100,6 +120,19 @@ class NetworkStore {
       };
       this.invitationCode = 'knit://join/demo_sample_ticket_web';
       this.pinCode = DEMO_LAN_PIN;
+      this.currentProfile = {
+        first_name: savedName.split(/\s+/)[0] ?? savedName,
+        last_name: savedName.split(/\s+/).slice(1).join(' '),
+        display_name: savedName,
+        email: '',
+        role: 'Collaborateur',
+        status_message: 'En rédaction',
+        share_email_p2p: false,
+        avatar: { type: 'initials' },
+        created_at_sec: Math.floor(Date.now() / 1000),
+        updated_at_sec: Math.floor(Date.now() / 1000),
+      };
+      this.needsProfileName = isUnnamedDisplay(savedName);
       this.notify();
       return;
     }
@@ -115,6 +148,19 @@ class NetworkStore {
 
       this.localIdentity = identity;
       this.isNetworkActive = true;
+      try {
+        const share = await invoke<VaultShare>('get_vault_share', { vaultPath });
+        this.vaultId = share.id;
+        this.joining = !share.id;
+        if (share.nom) {
+          const { vaultRegistry } = await import('./vaultRegistry');
+          vaultRegistry.touch(vaultPath, share.nom);
+        }
+      } catch (err: unknown) {
+        console.warn('Lecture .knitshare impossible:', err);
+        this.vaultId = null;
+        this.joining = false;
+      }
 
       // Récupérer le ticket d'invitation
       try {
@@ -148,13 +194,31 @@ class NetworkStore {
         if (wasEmpty) {
           void notifySystem('Knit — synchronisation', 'Première synchronisation P2P en cours');
         }
+        if (this.vaultId && !this.joining) {
+          void this.replicateVault()
+            .then(async (report) => {
+              if (report.copied > 0) {
+                const { vaultStore } = await import('./vaultStore');
+                await vaultStore.reloadTree();
+                toast.info(`${report.copied} fichier(s) reçu(s)`);
+              }
+              if (report.divergent.length > 0) {
+                toast.info(
+                  `${report.divergent.length} fichier(s) déjà différent(s) ont été conservés`
+                );
+              }
+            })
+            .catch(() => {
+              /* la réplication explicite du wizard signale l'erreur */
+            });
+        }
       });
       this.unlistenFns.push(unlistenConnected);
 
       const unlistenDisconnected = await listen<{ peer_id: string }>('p2p_peer_disconnected', (event) => {
         const { peer_id } = event.payload;
         const disconnected = this.connectedPeers.find((p) => p.peer_id === peer_id);
-        this.connectedPeers = this.connectedPeers.filter((p) => p.peer_id === peer_id);
+        this.connectedPeers = this.connectedPeers.filter((p) => p.peer_id !== peer_id);
         this.activeFileByPeer.delete(peer_id);
         this.peerAvatarDataUrls.delete(peer_id);
         this.notify();
@@ -370,6 +434,40 @@ class NetworkStore {
   }
 
   /**
+   * Copie les fichiers manquants du pair connecté. N'écrase pas un fichier divergent.
+   */
+  public async replicateVault(
+    onProgress?: (progress: ReplicationProgress) => void
+  ): Promise<ReplicationReport> {
+    if (!isTauriEnvironment()) {
+      return {
+        copied: 0,
+        skipped: 0,
+        divergent: [],
+        vault_name: 'Démo',
+        vault_id: 'demo',
+      };
+    }
+    let unlisten: UnlistenFn | null = null;
+    try {
+      if (onProgress) {
+        unlisten = await listen<ReplicationProgress>('p2p_replication_progress', (event) => {
+          onProgress(event.payload);
+        });
+      }
+      const report = await invoke<ReplicationReport>('replicate_vault');
+      if (report.vault_id) {
+        this.vaultId = report.vault_id;
+        this.joining = false;
+      }
+      this.notify();
+      return report;
+    } finally {
+      unlisten?.();
+    }
+  }
+
+  /**
    * Diffuse un delta Yjs binaire aux pairs connectés
    */
   public async broadcastYjsUpdate(docId: string, update: Uint8Array): Promise<void> {
@@ -431,9 +529,9 @@ class NetworkStore {
   public async loadProfile(vaultPath: string): Promise<UserProfile> {
     if (!isTauriEnvironment()) {
       const demoProfile: UserProfile = {
-        first_name: 'Moi',
+        first_name: 'Collaborateur',
         last_name: '',
-        display_name: 'Moi',
+        display_name: 'Collaborateur',
         email: '',
         role: 'Collaborateur',
         status_message: 'En rédaction',
@@ -443,6 +541,7 @@ class NetworkStore {
         updated_at_sec: Math.floor(Date.now() / 1000),
       };
       this.currentProfile = demoProfile;
+      this.needsProfileName = isUnnamedDisplay(demoProfile.display_name);
       this.notify();
       return demoProfile;
     }
@@ -450,9 +549,13 @@ class NetworkStore {
     try {
       const profile = await invoke<UserProfile>('get_user_profile', { vaultPath });
       this.currentProfile = profile;
+      this.needsProfileName = isUnnamedDisplay(profile.display_name);
       if (this.localIdentity) {
-        this.localIdentity.display_name = profile.display_name;
-        this.localIdentity.initials = (profile.first_name[0] || 'A') + (profile.last_name[0] || 'N');
+        this.localIdentity = {
+          ...this.localIdentity,
+          display_name: profile.display_name,
+          initials: initialsFromDisplayName(profile.display_name),
+        };
       }
       if (profile.avatar.type === 'custom') {
         this.avatarDataUrl = await this.loadAvatarBase64(vaultPath);
@@ -519,12 +622,17 @@ class NetworkStore {
   public async saveProfile(vaultPath: string, profile: UserProfile): Promise<void> {
     profile.updated_at_sec = Math.floor(Date.now() / 1000);
     this.currentProfile = profile;
+    this.needsProfileName = isUnnamedDisplay(profile.display_name);
     if (this.localIdentity) {
-      this.localIdentity.display_name = profile.display_name;
+      this.localIdentity = {
+        ...this.localIdentity,
+        display_name: profile.display_name,
+        initials: initialsFromDisplayName(profile.display_name),
+      };
     }
     this.notify();
 
-    if (!isTauriEnvironment()) return;
+    if (!isTauriEnvironment() || isDemoVaultPath(vaultPath)) return;
 
     try {
       await invoke<void>('save_user_profile', { vaultPath, profile });
