@@ -6,7 +6,7 @@ use crate::vault::identity::{
     is_unnamed_display, load_or_create_profile_in, load_or_generate_identity_in, read_profile_in,
     save_profile_in, vault_identity_dir, UserProfile, UNNAMED_DISPLAY_NAME,
 };
-use fs4::fs_std::FileExt;
+use fs4::FileExt;
 use iroh::SecretKey;
 use std::fs::{self, OpenOptions};
 use std::path::{Path, PathBuf};
@@ -40,7 +40,7 @@ pub fn acquire_person_session(
             .truncate(false)
             .open(&lock_path)
             .map_err(KnitError::Io)?;
-        if file.try_lock_exclusive().is_ok() {
+        if file.try_lock().is_ok() {
             let (secret_key, profile) = materialize_slot(&dir, vault_root, profiles_root, name_hint)?;
             return Ok(PersonSession {
                 slot_id: slot.to_string(),

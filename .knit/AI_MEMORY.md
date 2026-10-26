@@ -18,7 +18,8 @@
 - **ADR-17 (Sprint 10, livré)** : Personne = répertoire applicatif (slot verrouillé). Coffre = `id` + `nom` dans `.knitshare`. Join = manifeste, jamais d'écrasement d'un autre `id`. Handshake refuse toute version autre que `1.2.0`. App **1.2.0**.
 
 ## 3. Historique Récent
-- **[2026-10-26]** : Sprint 10 poussé en **1.2.0** (premier tag, pas de patch). Personne hors coffre, `id` de coffre, join par manifeste, CRDT des fichiers fermés.
+- **[2026-10-26]** : Sprint 10 poussé en **1.2.0** (premier tag, pas de patch). Deps : fs4 1.1, react-virtual 3.14.23. toml/generic-array restent bloqués par les parents.
+- **[2026-10-26]** : Personne hors coffre, `id` de coffre, join par manifeste, CRDT des fichiers fermés.
 - **[2026-10-26]** : Le démo n'est plus un dossier sous `src-tauri`. Le wizard revient si le dernier choix était le démo.
 - **[2026-10-25]** : Runtime **1.1.2** — licence MIT/Apache, UX Paramètres, updater confirm-si-actif ; repo public.
 
