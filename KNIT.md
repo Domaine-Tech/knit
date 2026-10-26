@@ -44,8 +44,8 @@ knit/
 - Les diagrammes utilisent Mermaid (blocs ```mermaid)
 
 ### Coffre-fort & Fichiers
-- **`.knit/`** : Dossier local technique (clés privées, cache, snapshots CRDT). Ne JAMAIS le versionner ou le modifier sans précaution.
-- **`.knitshare`** : Fichier partagé du coffre (conventions d'équipe, nom du coffre). Doit être versionné et synchronisé.
+- **`.knit/`** : Dossier local technique (cache, corbeille, snapshots, état CRDT). Ne JAMAIS le versionner. La clé et le profil de la personne ne sont pas dans le coffre : ils vivent dans le répertoire de données de l'application.
+- **`.knitshare`** : Fichier partagé du coffre (`nom`, `id` UUID, conventions, `version: 2`). Répliqué entre les dossiers locaux du même coffre. Doit être versionné. Un dossier déjà rempli qui porte un autre `id` ne doit pas être fusionné.
 - **`assets/`** : Répertoire dédié aux images et pièces jointes binaires (synchronisées via Iroh Blobs).
 - **Frontmatters YAML & Doc-Driven Views** : Préserver scrupuleusement la structure des métadonnées `---` en tête de fichier `.md` (champs `type:`, `statut:`, `priorite:`, etc.) selon la spécification [docs/MARKDOWN_SPEC.md](docs/MARKDOWN_SPEC.md). La vue est toujours pilotée par le document et résolue par onglet.
 

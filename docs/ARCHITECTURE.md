@@ -81,7 +81,9 @@ knit/
 │   │   │   ├── init.rs     # Création / jonction de vault
 │   │   │   ├── assets.rs   # Sauvegarde des images et pièces jointes
 │   │   │   ├── config.rs   # .knit/config.yaml
-│   │   │   └── identity.rs # Keypair Ed25519
+│   │   │   ├── identity.rs # Profil et clé (helpers)
+│   │   │   ├── person.rs   # Profil machine, verrou de slot
+│   │   │   └── share.rs    # id + nom du .knitshare
 │   │   ├── markdown/       # Parseur Markdown & Moteurs d'indexation
 │   │   │   ├── mod.rs
 │   │   │   ├── frontmatter.rs # YAML frontmatter
@@ -95,7 +97,9 @@ knit/
 │   │       ├── tree.rs     # Arborescence et filtrage de fichiers (markdown + médias)
 │   │       ├── assets.rs   # Sauvegarde des images et pièces jointes
 │   │       ├── config.rs   # .knit/config.yaml
-│   │       └── identity.rs # Keypair Ed25519
+│   │       ├── identity.rs # Profil et clé (helpers)
+│   │       ├── person.rs   # Profil machine, verrou de slot
+│   │       └── share.rs    # id + nom du .knitshare
 │   └── Cargo.toml
 │
 ├── knit-app/               # Application Tauri (interface graphique)
@@ -262,15 +266,11 @@ Knit maintient en mémoire un graphe orienté de toutes les relations entre docu
 mon-coffre-fort/
 ├── .knit/                   # ❌ PAS synchronisé (local uniquement)
 │   ├── config.yaml          #    Préférences personnelles (thème, hue)
-│   ├── identity/
-│   │   ├── keypair.bin      #    Clé privée Ed25519 de CE pair (chmod 0600)
-│   │   ├── profile.json     #    Profil local (nom, prénom, email, rôle, toggle privacy)
-│   │   └── avatar.png       #    Photo de profil personnalisée (optionnelle)
-│   ├── crdt-state/          #    État CRDT binaire
+│   ├── crdt-state/          #    Updates Yjs des fichiers fermés (local)
 │   ├── snapshots/           #    Snapshots compactés
 │   └── cache/               #    Cache local (mermaid SVGs, etc.)
 │
-├── .knitshare               # ✅ Synchronisé — config partagée du coffre
+├── .knitshare               # ✅ Répliqué — nom + id du coffre (pas la personne)
 ├── KNIT.md                  # ✅ Synchronisé — guide universel pour IA
 ├── .cursor/rules/knit.mdc   # ✅ Synchronisé — règles pour Cursor IDE
 ├── CLAUDE.md                # ✅ Synchronisé — instructions Claude Code
@@ -283,6 +283,8 @@ mon-coffre-fort/
 │   └── sprints/
 └── README.md                # ✅ Synchronisé
 ```
+
+La clé Ed25519 et le profil affiché (le nom que les autres voient) sont dans le répertoire de données de l'application, un slot verrouillé par fenêtre. Deux dossiers locaux ne partagent un coffre que s'ils portent le même `id` dans `.knitshare`. Un join copie les fichiers manquants après ce contrôle ; un dossier déjà occupé par un autre coffre n'est pas écrasé.
 
 ### Format des tâches
 

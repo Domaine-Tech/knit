@@ -316,15 +316,13 @@ Tu as raison de vouloir un `.knit/` à la racine du coffre-fort, comme Obsidian 
 ```
 .knit/
 ├── config.yaml              # Configuration locale du coffre-fort
-├── identity/                # Identité de CE pair (clé privée)
-│   └── keypair.bin          # ⚠️ NE JAMAIS SYNCHRONISER - unique par machine
-├── crdt-state/              # État CRDT binaire persisté
-│   └── docs/                # Un fichier binaire par document CRDT
-├── snapshots/               # Snapshots compactés pour la resync
-│   └── latest.bin           # Dernier snapshot complet
+├── crdt-state/              # État Yjs des fichiers fermés (rejoué à l'ouverture)
+├── snapshots/               # Snapshots compactés d'un document ouvert
 └── cache/                   # Cache local (peut être supprimé)
     └── mermaid-svg/         # SVGs Mermaid pré-rendus
 ```
+
+La personne n'est pas le dossier. Profil et clé Ed25519 vivent dans le répertoire de données de l'application (`profiles/primary`, puis `slot-2` … si une seconde fenêtre verrouille le premier). Un ancien `.knit/identity/` peut être importé une fois ; il n'est plus la source du réseau.
 
 ### Ce qui NE DOIT PAS être dans `.knit/` (piège courant)
 
@@ -356,9 +354,10 @@ mon-coffre-fort/
 Pour les informations qui doivent être **les mêmes chez tous les pairs** (nom du coffre, structure, conventions) :
 
 ```yaml
-# .knitshare — Synchronisé entre tous les pairs
+# .knitshare — Même fichier dans chaque dossier local du coffre
 nom: "Mon Projet"
-version: 1
+id: "00000000-0000-4000-8000-000000000000"
+version: 2
 
 structure:
   wiki: "wiki/"
@@ -374,7 +373,7 @@ mermaid:
   theme_sync: true           # Les diagrammes suivent le thème de chaque utilisateur
 ```
 
-Ce fichier EST un `.md`/`.yaml` normal → synchronisé par le CRDT comme les autres fichiers → les agents IA peuvent le lire.
+Ce fichier est du texte lisible. Au join, il est copié avec le manifeste (pas un snapshot binaire de tout le coffre). Les notes ouvertes continuent de fusionner par Yjs. Les agents IA peuvent le lire. Un ancien fichier sans `id` reste lisible : l'id est ajouté au prochain open si le dossier contient déjà des notes.
 
 Le `.knit/config.yaml` local, lui, contient les préférences **personnelles** :
 
@@ -410,7 +409,7 @@ graph TD
         CREATE --> C1["📁 Choisir un dossier<br/>(nouveau ou existant)"]
         C1 --> C2["✏️ Nommer le coffre-fort"]
         C2 --> C3["🎨 Choisir la couleur<br/>(slider hue)"]
-        C3 --> C4["🔑 Générer lidentité<br/>(clé Ed25519 automatique)"]
+        C3 --> C4["Attribuer un id de coffre<br/>(clé personne déjà dans l'app)"]
         C4 --> C5["📋 Afficher le Code dInvitation<br/>(à partager aux collaborateurs)"]
         C5 --> C6["✅ Coffre-fort créé !"]
     end
@@ -419,7 +418,7 @@ graph TD
         JOIN --> J1["🔑 Coller le Code dInvitation"]
         J1 --> J2["📁 Choisir où stocker<br/>le coffre-fort localement"]
         J2 --> J3["🎨 Choisir la couleur<br/>(préférence personnelle)"]
-        J3 --> J4["🔄 Connexion au pair...<br/>Téléchargement du snapshot"]
+        J3 --> J4["Contrôle de l'id<br/>puis copie du manifeste"]
         J4 --> J5["✅ Synchronisé !"]
     end
 
@@ -588,7 +587,7 @@ graph TD
 │       │ ████████████░░░░░  68%       │           │
 │       └──────────────────────────────┘           │
 │                                                  │
-│       📥 Réception du snapshot...                │
+│       Réception du manifeste...                  │
 │       ✅ wiki/accueil.md                         │
 │       ✅ wiki/architecture.md                    │
 │       ✅ projet/taches/task-001.md               │
@@ -619,9 +618,8 @@ sequenceDiagram
     
     W->>K: init_vault(path, name)
     K->>FS: Créer .knit/config.yaml
-    K->>FS: Créer .knitshare (config partagée)
-    K->>K: Générer keypair Ed25519
-    K->>FS: Sauver .knit/identity/keypair.bin
+    K->>FS: Créer .knitshare (nom + id)
+    K->>K: Réutiliser la clé personne (répertoire applicatif)
     K->>FS: Créer wiki/, projet/taches/, KNIT.md
     K->>I: Démarrer le node Iroh local
     K->>W: Retourner le code d'invitation
@@ -630,15 +628,14 @@ sequenceDiagram
     Note over U,I: === REJOINDRE UN COFFRE-FORT ===
 
     U->>W: Colle le code d'invitation
-    W->>K: join_vault(code, local_path)
-    K->>K: Générer keypair Ed25519 (propre à ce pair)
+    W->>K: join (code, dossier local vide)
     K->>I: Connexion au pair via le code
     I->>I: Tentative connexion directe (mDNS/QUIC)
     I->>I: Fallback relay si NAT bloque
-
-    K->>K: Télécharger le snapshot CRDT
-    K->>FS: Écrire les fichiers .md depuis le snapshot
-    K->>FS: Créer .knit/ local
+    K->>K: Handshake : même vault_id, ou dossier encore sans id
+    K->>K: Lire le manifeste (chemin, taille, xxh3)
+    K->>FS: Écrire les fichiers manquants (WriteGuard)
+    Note over K,FS: Un autre id, ou un dossier déjà rempli, arrête le join. Un fichier divergent est conservé.
     K->>W: "Synchronisé !"
     W->>U: Ouvrir le coffre-fort
 ```
@@ -653,5 +650,5 @@ sequenceDiagram
 | Round-trip Markdown lossy | **CodeMirror 6** comme éditeur principal | Texte brut = fidélité parfaite au `.md` |
 | Complexité sous-estimée | **4 jalons / 13 semaines** | Plan réaliste avec livrables testables |
 | P2P sans serveur impossible | **Modèle hybride** : mDNS en LAN + relay aveugle Iroh en WAN | Honnête, sécurisé, fonctionnel |
-| Dossier `.knit/` | **Local uniquement**, jamais synchronisé. `.knitshare` pour la config partagée | Évite l'écrasement des clés entre pairs |
+| Dossier `.knit/` | **Local uniquement**. Personne = répertoire applicatif. `.knitshare` porte `nom` + `id` | Deux coffres distincts ne fusionnent pas ; deux dossiers du même id se répliquent |
 | Wizard d'initialisation | **Créer / Rejoindre** en 3 écrans max, code d'invitation simple | Simple, efficace, pas de friction |

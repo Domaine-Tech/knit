@@ -60,9 +60,17 @@ versions/
 │   └── sprint-8/
 │       └── SPRINT.md
 │
-└── v1.1.0/                 # Version 1.1.0 — Mise à jour fluide
+├── v1.1.0/                 # Version 1.1.0 — Mise à jour fluide
+│   ├── CHANGELOG.md
+│   └── sprint-9/
+│       └── SPRINT.md
+│
+├── v1.1.2/                 # Version 1.1.2 — Licence, Paramètres, updater
+│   └── CHANGELOG.md
+│
+└── v1.2.0/                 # Version livrée — personnes, coffres distincts (sprint 10)
     ├── CHANGELOG.md
-    └── sprint-9/
+    └── sprint-10/
         └── SPRINT.md
 ```
 

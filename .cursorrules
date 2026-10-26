@@ -11,7 +11,7 @@ Vous êtes un agent IA collaborant au développement de **Knit**, une applicatio
    - Synchronisation réseau P2P chiffrée de bout en bout via **Iroh** (QUIC). Aucun serveur central de stockage.
    - Images et médias stockés dans `assets/` et synchronisés via **Iroh Blobs**.
    - Clic tree sur un média → onglet `docType: image` / `ImageView` (aperçu, pas d'édition Markdown du binaire).
-   - Données locales dans `.knit/` (JAMAIS versionné ni partagé). Configuration partagée dans `.knitshare` (versionné et synchronisé).
+   - Données locales dans `.knit/` (JAMAIS versionné ni partagé) : cache, corbeille, snapshots, état CRDT. La personne (profil + clé Ed25519) vit dans le répertoire de données de l'application, un profil verrouillé par fenêtre. Le coffre partagé est `.knitshare` (`nom` + `id` UUID, `version: 2`), répliqué entre les dossiers du même coffre.
 
 2. **Éditeur Markdown Pur (CodeMirror 6)** :
    - Le texte est du Markdown brut. Ne JAMAIS introduire de format propriétaire, d'AST JSON opaque ou de balises cachées.

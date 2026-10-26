@@ -206,7 +206,7 @@
 | B-041a | Virtualisation de l'arborescence (Windowing Sidebar pour 50 000+ notes sans lag) | 🟠 | ✅ | Sprint 8 |
 | B-050 | Cache LRU des Documents CRDT & Libération Mémoire (LRU Doc Cache max 20 Y.Docs) | 🟠 | ✅ | Sprint 8 |
 | B-042 | README final + screenshots + documentation utilisateur | 🟠 | ✅ | Sprint 8 |
-| B-114 | Réplication initiale du coffre au join (bootstrap arbre Markdown + snapshots via P2P après `prepare_join_vault`) | 🔴 | 💡 | Sprint 8+ |
+| B-114 | Réplication initiale du coffre au join par manifeste (fichiers manquants, sans écraser un autre coffre) | 🔴 | ✅ | Sprint 10 |
 | B-115 | Visibilité arbre : build exclus ; `.knit`/dots listés (masqués UI, toggle œil) ; purge index/localContents à la bascule coffre | 🟡 | ✅ | UX post-S7 |
 | B-116 | Registre local des coffres + VaultSwitcher (`Ctrl+Shift+O`) ; Wizard si dossier sans `.knitshare` (Vite + Tauri) | 🟠 | ✅ | UX post-S7 |
 
@@ -223,6 +223,21 @@
 | B-119 | UI : bandeau Header, barre de progression, toast de redémarrage, modale de notes | 🟠 | ✅ | Sprint 9 |
 | B-120 | Entrées tray « Vérifier les mises à jour » / « Redémarrer pour appliquer » | 🟠 | ✅ | Sprint 9 |
 | B-121 | Tests de la logique pure (progression cumulée, skip, no-op web) | 🟡 | ✅ | Sprint 9 |
+
+---
+
+## v1.2.0 — Personnes et coffres distincts
+
+> Livré. Les 6 sources de version sont **1.2.0**.
+
+### Sprint 10 — Identité personne, garde-fou de coffre, manifeste
+
+| # | Tâche | Priorité | Statut | Sprint |
+|---|---|---|---|---|
+| B-114 | Réplication au join par manifeste (clôture) | 🔴 | ✅ | Sprint 10 |
+| B-122 | Identité personne hors coffre (profil + clé dans le répertoire applicatif, verrou de slot) | 🔴 | ✅ | Sprint 10 |
+| B-123 | `id` + `nom` dans `.knitshare`, handshake `vault_id`, refus si les coffres diffèrent | 🔴 | ✅ | Sprint 10 |
+| B-124 | Persistance des updates Yjs de fichiers fermés dans `.knit/crdt-state` | 🟠 | ✅ | Sprint 10 |
 
 ---
 

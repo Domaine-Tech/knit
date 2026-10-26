@@ -12,7 +12,7 @@ Knit est une application collaborative local-first et peer-to-peer (P2P) pour la
 
 ## Principes Fondamentaux de Développement
 1. **Markdown Pur & Pas d'Enfermement** : Ne jamais corrompre les fichiers Markdown avec des métadonnées propriétaires cachées. Respecter la syntaxe CommonMark + YAML Frontmatter.
-2. **P2P & Local-First** : Ne jamais introduire de dépendance à un serveur centralisé pour le stockage. `.knit/` reste strictement local (clés, cache), `.knitshare` est synchronisé.
+2. **P2P & Local-First** : Ne jamais introduire de dépendance à un serveur centralisé pour le stockage. `.knit/` reste strictement local (cache, corbeille, snapshots, état CRDT). La personne (profil + clé Ed25519) vit dans le répertoire de données de l'application, pas dans le coffre. `.knitshare` porte `nom` et `id` (UUID, `version: 2`) et se réplique entre les dossiers du même coffre.
 3. **Collaboration Sobre & Non Intrusive** :
    - Suivre scrupuleusement la charte [docs/UI_UX.md](docs/UI_UX.md).
    - Les curseurs distants doivent être fins (2px) et les surlignages translucides (15-20% d'opacité).

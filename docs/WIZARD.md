@@ -191,7 +191,7 @@ graph TD
 │       │ ████████████░░░░░  68%       │           │
 │       └──────────────────────────────┘           │
 │                                                  │
-│       📥 Réception du snapshot...                │
+│       Réception du manifeste...                  │
 │       ✅ wiki/accueil.md                         │
 │       ✅ wiki/architecture.md                    │
 │       🔄 projet/taches/task-002.md               │
@@ -213,12 +213,10 @@ graph TD
 mon-projet/
 ├── .knit/
 │   ├── config.yaml          # Thème personnel (hue, mode)
-│   ├── identity/
-│   │   └── keypair.bin      # Clé privée locale
-│   ├── crdt-state/          # (vide au départ)
+│   ├── crdt-state/          # Updates Yjs des fichiers fermés
 │   ├── snapshots/           # (vide au départ)
 │   └── cache/               # (vide au départ)
-├── .knitshare               # Config partagée (nom, conventions)
+├── .knitshare               # nom + id du coffre (répliqué)
 ├── KNIT.md                  # Instructions universelles pour les IA
 ├── GUIDE_IA.md              # Playbook d'exploitation (B-043a) — maximiser Knit pour l'humain
 ├── .cursor/rules/knit.mdc   # Règles d'édition pour Cursor IDE
@@ -236,4 +234,4 @@ mon-projet/
 
 ### Après "Rejoindre un coffre-fort"
 
-Même structure, mais les fichiers `.md` sont téléchargés depuis le pair via le snapshot CRDT. Le `.knit/` est généré localement avec une clé privée **unique à ce pair**.
+Même structure de notes. Avant toute copie, le wizard affiche le nom du coffre distant et le nom de l'hôte, et n'accepte qu'un dossier vide (ou une coquille sans notes). La copie suit un manifeste (chemin, taille, xxh3) : fichiers manquants ajoutés, fichiers déjà divergents conservés, autre `id` refusé. Le `.knit/` local ne part pas sur le réseau. La clé de la personne est celle du profil applicatif, pas une clé rangée dans le coffre.

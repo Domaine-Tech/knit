@@ -345,7 +345,7 @@ Projet : Knit — Application de bureau Tauri v2 (Rust + React 19).
 Architecture de sécurité :
 - Accès local au système de fichiers (coffre Markdown de l'utilisateur).
 - Synchronisation P2P LAN / Libp2p mdns sans serveur central.
-- Dossier local technique confidentiel `.knit/` (clés privées, cache, snapshots CRDT) vs fichier partagé `.knitshare`.
+- Dossier local technique `.knit/` (cache, corbeille, snapshots, `.knit/crdt-state`) vs personne (profil + clé dans le répertoire applicatif) vs fichier partagé `.knitshare` (`nom`, `id`).
 - Moteur de rendu dynamique Markdown avec support de Mermaid inline, Callouts GFM, et tableaux.
 Périmètre analysé : {{PERIMETRE_AUDIT_SECURITE}}
 </context>
@@ -857,7 +857,7 @@ Invariants et règles obligatoires avant tout commit & push :
    - `knit-app/src/utils/version.ts` : `export const APP_VERSION = 'X.Y.Z'`
 2. Sources documentaires de version : `versions/VERSIONING.md`, `versions/vX.Y.Z/CHANGELOG.md`, sprint actif, `.knit/AI_MEMORY.md`, tags Git `v*`.
 3. Sécurité du coffre & exclusion des fichiers locaux :
-   - Ne JAMAIS stager ou committer : clés privées (`.key`, `knit-updater.key`, `.knit/identity/`), cache `.knit/`, snapshots CRDT, `.env`.
+   - Ne JAMAIS stager ou committer : clés privées (`.key`, `knit-updater.key`, profils applicatifs, `.knit/identity/` résiduel), cache `.knit/`, snapshots CRDT, `.env`.
 4. Règle Zéro-Émoji UI (`DuotoneIcon`).
 5. Santé du code : `npm run lint`, `cargo check --workspace` (ou équivalent CI déjà vert).
 6. **Push main = bump PATCH** (voir rules) pour relancer Release / builds installateurs.

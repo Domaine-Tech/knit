@@ -12,11 +12,12 @@ globs: knit-core/**/*.rs, knit-app/src-tauri/**/*.rs
 
 ## 2. Séparation Stricte Local vs Synchronisé
 - Le répertoire `.knit/` est strictement LOCAL :
-  - Clé privée Ed25519 dans `.knit/identity/` (ne JAMAIS la propager en P2P).
-  - Cache Mermaid et snapshots compactés dans `.knit/snapshots/`.
-- Le fichier `.knitshare` est SYNCHRONISÉ :
-  - Nom du coffre, chemins de structure, conventions d'équipe.
-  - Doit être lisible par un humain et sérialisé en YAML propre.
+  - Cache, corbeille, snapshots (`.knit/snapshots/`) et état CRDT des fichiers fermés (`.knit/crdt-state/`).
+  - La clé Ed25519 et le profil de la personne vivent dans le répertoire de données de l'application (`profiles/`), un slot verrouillé par processus. Ne jamais les propager en P2P. Un `.knit/identity/` résiduel n'est plus la source du réseau.
+- Le fichier `.knitshare` est répliqué entre les dossiers qui portent le même `id` :
+  - `nom`, `id` (UUID), `version: 2`, chemins de structure, conventions d'équipe.
+  - Lecture tolérante d'un ancien fichier sans `id` : l'id est attribué au prochain open si le dossier contient déjà des notes.
+  - Doit être lisible par un humain (lignes `clé: valeur`, pas un snapshot binaire).
 
 ## 3. Gestion des Médias (Iroh Blobs)
 - Les images et pièces jointes du dossier `assets/` ne doivent JAMAIS transiter par l'OpLog textuel Yjs.
